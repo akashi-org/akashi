@@ -1,0 +1,12 @@
+include MANIFEST.in
+include LICENSE.md
+include LICENSE.Apachev2
+include LICENSE.GPLv3
+include README
+include on_install.py
+include on_publish.py
+exclude *.sh
+recursive-include sdist_temp *
+recursive-exclude work *
+recursive-exclude scripts *
+recursive-exclude tests *

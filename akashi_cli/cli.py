@@ -1,0 +1,81 @@
+from .utils import BIN_PATH, LIBRARY_PATH
+from .parser import argument_parse
+
+import signal
+import threading
+from subprocess import Popen
+from typing import Any
+
+# for http-asp
+import requests
+import json
+
+import os
+
+
+class ServerThread(threading.Thread):
+
+    def __init__(self, *args: Any):
+        super().__init__()
+        self.daemon = True
+        self.args = args
+        self.proc = None
+
+    def run(self):
+
+        # [XXX] To avoid deadlock issues, stderr must be redirected to /dev/null
+        # self.proc = Popen(
+        #     [BIN_PATH, *args],
+        #     stdin=PIPE, stdout=PIPE, stderr=DEVNULL, env=os.environ
+        # )
+
+        self.proc = Popen(
+            [BIN_PATH, *self.args], env=os.environ
+        )
+
+        while True:
+            try:
+                input_str = input()
+            except BrokenPipeError as e:
+                print(e)
+                break
+
+            # self.proc.stdin.write((input_str + '\n').encode('utf-8'))
+            # self.proc.stdin.flush()
+            # stdout_v = self.proc.stdout.readline()
+            # print(stdout_v.decode('utf-8'))
+
+            # pyright:reportUnknownMemberType=false
+            resp = requests.get("http://localhost:1234/asp", json=json.loads(input_str))
+            print(resp.json())
+
+    def terminate(self):
+        if self.proc:
+            self.proc.terminate()
+
+
+def akashi_cli() -> None:
+    # [XXX] argument_parse() must be called before configuring signals, or weird bugs occur
+    akconf_jstr = argument_parse()
+
+    if 'LD_LIBRARY_PATH' in os.environ.keys():
+        os.environ['LD_LIBRARY_PATH'] += os.pathsep + LIBRARY_PATH
+    else:
+        os.environ['LD_LIBRARY_PATH'] = LIBRARY_PATH
+
+    if 'QT_LOGGING_RULES' not in os.environ.keys():
+        os.environ['QT_LOGGING_RULES'] = '*=false;*.critical=true'
+
+    sigset = []
+    sigset += [signal.SIGINT, signal.SIGHUP, signal.SIGQUIT, signal.SIGTERM]
+    sigset += [signal.SIGPIPE, signal.SIGCHLD]
+
+    signal.pthread_sigmask(signal.SIG_BLOCK, sigset)
+
+    th_server = ServerThread(akconf_jstr)
+    th_server.start()
+
+    signal.sigwait(sigset)
+
+    th_server.terminate()
+    print('')

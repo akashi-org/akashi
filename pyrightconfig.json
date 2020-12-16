@@ -1,0 +1,9 @@
+{
+  "include": ["akashi_cli", "akashi_core", "tests"],
+  "verboseOutput": true,
+  "typeCheckingMode": "strict",
+  "strictListInference": true,
+  "strictDictionaryInference": true,
+  "strictParameterNoneValue": true,
+  "reportPrivateUsage": false
+}

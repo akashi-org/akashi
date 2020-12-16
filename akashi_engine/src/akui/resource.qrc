@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="/">
+    <file alias="FontAwesome-solid.otf">assets/fonts/fontawesome-free-5.12.1-desktop/otfs/Font Awesome 5 Free-Solid-900.otf</file>
+  </qresource>
+</RCC>
