@@ -2,61 +2,35 @@ name: Check CLA sign status
 
 on:
   pull_request:
-    types: opened
+    types: [opened]
 
 jobs:
-  comment:
+  check:
     runs-on: ubuntu-20.04
     env:
       USER_NAME: ${{ github.event.pull_request.user.login }}
-      IS_SUPER_USER: false
       IS_SIGNED: false
-      SUPER_USERS: ${{ secrets.SUPER_USERS }} # aaa,bbb,ccc
-      CLA_REPO: ${{ secrets.CLA_REPO }}
+      CLA_REPO: "akashi-org/akashi-dev"
+    if: github.event.pull_request.user.login != 'crux14'
     steps:
 
-    - name: check pull request's author name
-      run: |
-        (for user in $(echo $SUPER_USERS | tr "," "\n") ; do test $user = $USER_NAME && break; done) && (echo "IS_SUPER_USER=true" >> $GITHUB_ENV) || :
-
     - name: checkout
-      if: env.IS_SUPER_USER == false
       uses: actions/checkout@v2
       with:
-        repository: ${{ secrets.CLA_REPO }}
+        repository: ${{ env.CLA_REPO }}
         path: cla_repo
 
     - name: validate sign
-      if: env.IS_SUPER_USER == false 
       run: |
         cd cla_repo
         CHECKSUM=$(md5sum cla.md | awk '{ print $1 }')
         test -f "contributors/${CHECKSUM}/${USER_NAME}.md" && (echo "IS_SIGNED=true" >> $GITHUB_ENV) || :
 
     - name: notify_if_not_signed
-      if: env.IS_SUPER_USER == 'false' && env.IS_SIGNED == 'false'
+      if: env.IS_SIGNED == 'false'
       env:
         URL: ${{ github.event.pull_request.comments_url }}
       run: |
-        echo "Hi @${USER_NAME}!\n\nThank you for your pull request. We require contributors to sign our Contributor License Agreement, but you don't seem to have signed yet.\n\nIn order for us to review and merge your code, please sign at [${CLA_REPO}](https://github.com/${CLA_REPO}). For details on how to sign the Contributor License Agreement, please see [Sign the CLA](https://github.com/${CLA_REPO}/blob/master/sign-cla.md).\n\nNOTICE: For now, we basically **only** accept pull requests from persons **who are not contributing on behalf of others.** So, if you are creating this pull request under your company's direction and control, we cannot accept your pull request." >> comments
-        curl -X POST \
-             -H "Content-Type:application/json" \
-             -H "Authorization: token ${{ secrets.GH_API_TOKEN }}" \
-             -d "{\"body\": \"$(cat comments)\"}" \
-             ${URL}
-
-    - name: exit_if_not_signed
-      if: env.IS_SUPER_USER == false && env.IS_SIGNED == false
-      run: |
+        echo "::error::We require contributors to sign our Contributor License Agreement, but you don't seem to have signed yet. In order for us to review and merge your code, please sign at https://github.com/${CLA_REPO}. For details on how to sign the Contributor License Agreement, please see https://github.com/${CLA_REPO}/blob/master/sign-cla.md. [NOTICE]: For now, we basically **only** accept pull requests from persons **who are not contributing on behalf of others.** So, if you are creating this pull request under your company's direction and control, we cannot accept your pull request."
         exit 1
 
-    - name: notify_if_signed
-      if: env.IS_SUPER_USER == false && env.IS_SIGNED == true
-      env:
-        URL: ${{ github.event.pull_request.comments_url }}
-      run: |
-        API_URL=$(echo $URL | sed 's/comments$/labels/g')
-        curl -X POST \
-             -H "Authorization: token ${{ secrets.GH_API_TOKEN }}" \
-             -d "{\"labels\": [\"CLA Signed\"]}" \
-             ${API_URL}
