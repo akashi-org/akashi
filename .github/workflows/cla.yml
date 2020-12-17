@@ -20,21 +20,21 @@ jobs:
         (for user in $(echo $SUPER_USERS | tr "," "\n") ; do test $user = $USER_NAME && break; done) && (echo "IS_SUPER_USER=true" >> $GITHUB_ENV) || :
 
     - name: checkout
-      if: env.IS_SUPER_USER == 'false' 
+      if: "! env.IS_SUPER_USER"
       uses: actions/checkout@v2
       with:
         repository: ${{ secrets.CLA_REPO }}
         path: cla_repo
 
     - name: validate sign
-      if: env.IS_SUPER_USER == 'false' 
+      if: "! env.IS_SUPER_USER"
       run: |
         cd cla_repo
         CHECKSUM=$(md5sum cla.md | awk '{ print $1 }')
         test -f "contributors/${CHECKSUM}/${USER_NAME}.md" && (echo "IS_SIGNED=true" >> $GITHUB_ENV) || :
 
     - name: notify_if_not_signed
-      if: env.IS_SUPER_USER == 'false' && env.IS_SIGNED == 'false'
+      if: "! env.IS_SUPER_USER" && "! env.IS_SIGNED"
       env:
         URL: ${{ github.event.pull_request.comments_url }}
       run: |
@@ -46,12 +46,12 @@ jobs:
              ${URL}
 
     - name: exit_if_not_signed
-      if: env.IS_SUPER_USER == 'false' && env.IS_SIGNED == 'false'
+      if: "! env.IS_SUPER_USER" && "! env.IS_SIGNED"
       run: |
         exit 1
 
     - name: notify_if_signed
-      if: env.IS_SUPER_USER == 'false' && env.IS_SIGNED == 'true'
+      if: "! env.IS_SUPER_USER" && env.IS_SIGNED
       env:
         URL: ${{ github.event.pull_request.comments_url }}
       run: |
