@@ -2,7 +2,7 @@ Copyright (c) [2020-present] [crux14 <michaels310t@gmail.com>]
 
 
 
-Akashi Engine consists of three software components: **akashi-cli**, **akashi-engine**, and **akashi-core**. **akashi-cli** is a Python CLI frontend of Akashi Engine, and works together with **akashi-engine** through IPC. **akashi-engine**, written in C++,  is the core engine of Akashi, and offers various features commonly expected as a video editor, including basic GUI interface, video playback, video editing, and scripting features. **akashi-engine** is single or multiple binary file(s), and can have arbitrary file names, such as akashi_renderer, akashi_kernel, and akashi_engine. **akashi-core** is a core library of Akashi, which is written in Python. In Akashi, at every step of the video editing process, users write scripts using **akashi-core** which are supposed to be interpreted by **akashi-engine**.
+Akashi consists of three software components: **akashi-cli**, **akashi-engine**, and **akashi-core**. **akashi-cli** is a Python CLI frontend of Akashi, and works together with **akashi-engine** through IPC. **akashi-engine**, written in C++, is the core engine of Akashi, and offers various features commonly expected as a video editor, including basic GUI interface, video playback, video editing, and scripting features. **akashi-engine** is single or multiple binary file(s), and can have arbitrary file names, such as *akashi_renderer*, *akashi_kernel*, and *akashi_engine*. **akashi-core** is a core library of Akashi, which is written in Python. In Akashi, at every step of the video editing process, users write scripts using **akashi-core** which are supposed to be interpreted by **akashi-engine**.
 
 
 
