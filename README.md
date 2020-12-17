@@ -1,6 +1,9 @@
+:warning: Akashi is still in the very early stages of development, and not ready for production in any sense.
+
 # Akashi
 
-## What is Akashi?
+[![license](https://img.shields.io/badge/license-GPLv3%2FApache%202-blue)](LICENSE.md)
+
 
 **Akashi** is a next-generation video editor. 
 
@@ -69,6 +72,10 @@ After all, the first and top priority of **Akashi** is the maximization of user 
 TBD
 
 ## Contributing
+
+TBD
+
+## Development Status
 
 TBD
 
