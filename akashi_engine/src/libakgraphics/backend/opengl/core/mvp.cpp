@@ -41,13 +41,13 @@ namespace akashi {
             GET_GLFUNC(ctx, glGetIntegerv)(GL_VIEWPORT, viewport);
             int screen_width = viewport[2];
             int screen_height = viewport[3];
-            double aspect = (double)tex.width / tex.height;
+            double aspect = (double)tex.effective_width / tex.effective_height;
             double scale_w = 1.0;
             double scale_h = 1.0;
 
-            if (tex.width < screen_width && tex.height < screen_height) {
-                scale_w = (double)tex.width / screen_width;
-                scale_h = (double)tex.height / screen_height;
+            if (tex.effective_width < screen_width && tex.height < screen_height) {
+                scale_w = (double)tex.effective_width / screen_width;
+                scale_h = (double)tex.effective_height / screen_height;
             } else if (screen_width > screen_height) {
                 // fixed height
                 scale_w = (screen_height * aspect) / screen_width;

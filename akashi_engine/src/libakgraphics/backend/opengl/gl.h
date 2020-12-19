@@ -211,8 +211,10 @@ namespace akashi {
             GLuint buffer;
             void* image = nullptr;
             void* surface = nullptr;
-            int width;
-            int height;
+            int width;  // includes stride
+            int height; // includes stdide
+            int effective_width;
+            int effective_height;
             GLenum format = GL_RGBA;
             GLenum internal_format = GL_RGBA;
         };
