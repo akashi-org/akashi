@@ -97,6 +97,8 @@ namespace akashi {
                                                  const FramebufferObject::Property& prop) const {
             tex.width = prop.width;
             tex.height = prop.height;
+            tex.effective_width = tex.width;
+            tex.effective_height = tex.height;
             tex.image = nullptr;
             tex.index = FramebufferObject::FBO_TEX_UNIT;
 

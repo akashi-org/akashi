@@ -126,6 +126,7 @@ namespace akashi {
                 return true;
             }
 
+            // [TODO] it stinks around here
             VTexSizeFormat size_format;
             size_format.video_width = buf_data->prop().width;
             size_format.video_height = buf_data->prop().height;
@@ -184,6 +185,9 @@ namespace akashi {
             tex.image = buf_data.prop().video_data[vdata_index].buf;
             tex.width = buf_data.prop().video_data[vdata_index].stride;
             tex.height = vdata_index == 0 ? buf_data.prop().height : buf_data.prop().chroma_height;
+            tex.effective_width =
+                vdata_index == 0 ? buf_data.prop().width : buf_data.prop().chroma_width;
+            tex.effective_height = tex.height;
             tex.format = GL_LUMINANCE;
             tex.internal_format = GL_LUMINANCE;
 
@@ -261,6 +265,8 @@ namespace akashi {
             tex.image = surface->pixels;
             tex.width = surface->w;
             tex.height = surface->h;
+            tex.effective_width = tex.width;
+            tex.effective_height = tex.height;
             tex.format = (surface->format->BytesPerPixel == 3) ? GL_RGB : GL_RGBA;
             tex.surface = surface;
 
@@ -317,6 +323,8 @@ namespace akashi {
             tex.image = surface->pixels;
             tex.width = surface->w;
             tex.height = surface->h;
+            tex.effective_width = surface->w;
+            tex.effective_height = surface->w;
             tex.format = (surface->format->BytesPerPixel == 3) ? GL_RGB : GL_RGBA;
             tex.surface = surface;
 

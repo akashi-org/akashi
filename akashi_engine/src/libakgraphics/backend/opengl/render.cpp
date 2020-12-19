@@ -38,7 +38,7 @@ namespace akashi {
             // activate fbo
             this->render_init(ctx, {fbo_prop.fbo, fbo_prop.width, fbo_prop.height});
 
-            // when new atom is came
+            // when new atom comes
             if (m_current_atom_uuid != frame_ctx.layer_ctxs[0].atom_uuid) {
                 AKLOG_DEBUG("new atom: old: {}, new: {}", m_current_atom_uuid,
                             frame_ctx.layer_ctxs[0].atom_uuid);
@@ -58,7 +58,7 @@ namespace akashi {
                 }
                 m_current_atom_uuid = frame_ctx.layer_ctxs[0].atom_uuid;
             }
-            // when exisiting atom is came
+            // when exisiting atom comes
             else {
                 for (const auto& layer_ctx : frame_ctx.layer_ctxs) {
                     auto it = m_target_map.find(layer_ctx.uuid);
