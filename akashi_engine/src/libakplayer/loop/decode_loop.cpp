@@ -133,8 +133,8 @@ namespace akashi {
                                 const auto comp_layer_uuid =
                                     decode_res.layer_uuid + std::to_string(decode_state.loop_cnt);
 
-                                ctx.buffer->vq->enqueue(comp_layer_uuid,
-                                                        std::move(decode_res.buffer));
+                                auto queue_size = ctx.buffer->vq->enqueue(
+                                    comp_layer_uuid, std::move(decode_res.buffer));
 
                                 bool need_first_render = false;
                                 {
@@ -142,7 +142,7 @@ namespace akashi {
                                     need_first_render = ctx.state->m_prop.need_first_render;
                                 }
 
-                                if (need_first_render) {
+                                if (need_first_render || queue_size == 1) {
                                     ctx.event->emit_update();
                                     AKLOG_DEBUGN("DecodeLoop::decode_atom(): Render Call");
                                 }
