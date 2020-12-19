@@ -14,7 +14,7 @@ jobs:
   build-sdist:
     runs-on: ubuntu-latest
     container: 
-      image: ghcr.io/crux14/akashi-engine/build-sdist:0.1.4
+      image: ghcr.io/crux14/akashi-engine/build-sdist:0.1.5
       credentials:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.CR_PAT }}
@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-sdist
     container: 
-      image: ghcr.io/crux14/akashi-engine/test-pipinst:0.1.3
+      image: ghcr.io/crux14/akashi-engine/test-pipinst:0.1.4
       credentials:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.CR_PAT }}

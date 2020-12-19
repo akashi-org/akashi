@@ -1,6 +1,6 @@
 project (akeval CXX)
 
-find_package(PythonLibs 3.8 EXACT REQUIRED)
+find_package(PythonLibs 3.9 EXACT REQUIRED)
 message("-- Python Found " ${PYTHONLIBS_VERSION_STRING})
 
 add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}

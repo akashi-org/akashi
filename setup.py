@@ -68,7 +68,7 @@ setup(
     install_requires=[
         'requests'
     ],
-    python_requires='>=3.8,<3.9',
+    python_requires='>=3.9,<3.10',
     entry_points={
         'console_scripts': [
             'akashi-cli = akashi_cli:akashi_cli'
