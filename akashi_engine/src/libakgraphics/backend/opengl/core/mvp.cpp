@@ -4,6 +4,7 @@
 
 #include <libakcore/logger.h>
 #include <libakcore/element.h>
+#include <libakcore/rational.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -33,40 +34,38 @@ namespace akashi {
 
         void update_scale(const GLRenderContext& ctx, const GLTextureData& tex,
                           glm::mat4& new_mvp) {
-            // [TODO] it looks like there might be problems with numerical errors. we should use
-            // rational here.
-
             // adjustment of aspect ratio
             GLint viewport[4];
             GET_GLFUNC(ctx, glGetIntegerv)(GL_VIEWPORT, viewport);
             int screen_width = viewport[2];
             int screen_height = viewport[3];
-            double aspect = (double)tex.effective_width / tex.effective_height;
-            double scale_w = 1.0;
-            double scale_h = 1.0;
+            Rational aspect = Rational(tex.effective_width, 1) / Rational(tex.effective_height, 1);
+            Rational scale_w = Rational(1l);
+            Rational scale_h = Rational(1l);
 
             if (tex.effective_width < screen_width && tex.height < screen_height) {
-                scale_w = (double)tex.effective_width / screen_width;
-                scale_h = (double)tex.effective_height / screen_height;
+                scale_w = Rational(tex.effective_width, 1) / Rational(screen_width, 1);
+                scale_h = Rational(tex.effective_height, 1) / Rational(screen_height, 1);
             } else if (screen_width > screen_height) {
                 // fixed height
-                scale_w = (screen_height * aspect) / screen_width;
-                scale_h = 1.0;
-                if (scale_w > 1) {
+                scale_w = (Rational(screen_height, 1) * aspect) / Rational(screen_width, 1);
+                scale_h = Rational(1l);
+                if (scale_w > Rational(1l)) {
                     scale_h /= scale_w;
-                    scale_w = 1.0;
+                    scale_w = Rational(1l);
                 }
             } else {
                 // fixed width
-                scale_w = 1.0;
-                scale_h = (screen_width / aspect) / screen_height;
-                if (scale_h > 1) {
+                scale_w = Rational(1l);
+                scale_h = (Rational(screen_width, 1) / aspect) / Rational(screen_height, 1);
+                if (scale_h > Rational(1l)) {
                     scale_w /= scale_h;
-                    scale_h = 1.0;
+                    scale_h = Rational(1l);
                 }
             }
 
-            new_mvp = glm::scale(new_mvp, glm::vec3(scale_w, scale_h, 1.0));
+            new_mvp =
+                glm::scale(new_mvp, glm::vec3(scale_w.to_decimal(), scale_h.to_decimal(), 1.0));
         }
 
     }
