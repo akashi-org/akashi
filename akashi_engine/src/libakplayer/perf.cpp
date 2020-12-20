@@ -28,6 +28,27 @@ namespace akashi {
             m_elapsed_time = audio_time;
         }
 
+        void PerfMonitor::log_render_start() {
+            m_render_timer.reset();
+            m_render_timer.start();
+        }
+
+        void PerfMonitor::log_render_end() {
+            m_render_timer.stop();
+            m_render_cnt += 1;
+            if (m_render_cnt == 1) {
+                m_av_render_time = m_render_timer.current_time();
+            } else {
+                // a[n] = (((n-1) * a[n-1]) + x[n]) / n
+                m_av_render_time = (core::Rational(m_render_cnt - 1, 1) * m_av_render_time +
+                                    m_render_timer.current_time()) /
+                                   core::Rational(m_render_cnt, 1);
+            }
+            AKLOG_DEBUG("render_time: {:05.4f} sec (av: {}, count: {})",
+                        m_render_timer.current_time().to_decimal(), m_av_render_time.to_decimal(),
+                        m_render_cnt);
+        }
+
         core::Rational Timer::current_time(void) const {
             if (!m_started) {
                 AKLOG_ERRORN("Timer::current_time(): not started yet");
