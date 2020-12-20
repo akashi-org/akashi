@@ -183,7 +183,7 @@ namespace akashi {
                                             const buffer::AVBufferData& buf_data,
                                             const int vdata_index) const {
             tex.image = buf_data.prop().video_data[vdata_index].buf;
-            tex.width = buf_data.prop().video_data[vdata_index].stride;
+            tex.width = buf_data.prop().video_data[vdata_index].stride - 1;
             tex.height = vdata_index == 0 ? buf_data.prop().height : buf_data.prop().chroma_height;
             tex.effective_width =
                 vdata_index == 0 ? buf_data.prop().width : buf_data.prop().chroma_width;
