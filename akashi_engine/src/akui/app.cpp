@@ -24,10 +24,11 @@ namespace akashi {
     namespace ui {
 
         void UILoop::ui_thread(UILoopContext ctx, UILoop* loop) {
+            QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+
             QApplication app(ctx.argc, ctx.argv);
 
             QApplication::setApplicationName("Akashi Player");
-            QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
             QTextCodec::setCodecForLocale(QTextCodec::codecForLocale());
 
             loop->set_on_thread_exit([](void*) { qApp->exit(0); }, nullptr);
