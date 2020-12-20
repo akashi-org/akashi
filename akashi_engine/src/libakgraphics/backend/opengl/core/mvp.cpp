@@ -22,14 +22,16 @@ namespace akashi {
             int screen_width = viewport[2];
             int screen_height = viewport[3];
 
-            int c_x = screen_width / 2;
-            int c_y = screen_height / 2;
+            auto c_x = Rational(screen_width, 1) / 2;
+            auto c_y = Rational(screen_height, 1) / 2;
 
-            double a_x = layer_ctx.x; // mouse coord
-            double a_y = layer_ctx.y; // mouse coord
+            auto a_x = Rational(layer_ctx.x); // mouse coord
+            auto a_y = Rational(layer_ctx.y); // mouse coord
 
-            new_mvp = glm::translate(new_mvp, glm::vec3(2 * (a_x - c_x) / screen_width,
-                                                        -2 * (a_y - c_y) / screen_height, 0.0));
+            new_mvp = glm::translate(
+                new_mvp,
+                glm::vec3((Rational(2l) * (a_x - c_x) / screen_width).to_decimal(),
+                          (Rational(-2l) * (a_y - c_y) / screen_height).to_decimal(), 0.0));
         }
 
         void update_scale(const GLRenderContext& ctx, const GLTextureData& tex,
