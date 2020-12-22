@@ -78,13 +78,13 @@ namespace akashi {
             }
 
             // [TODO] really necessary to call twice?
-            GET_GLFUNC(ctx, glFinish)();
+            // GET_GLFUNC(ctx, glFinish)();
 
             // deactivate fbo
             this->render_init(ctx, {params.default_fb, params.screen_width, params.screen_height});
             ctx.fbo->render(ctx);
 
-            GET_GLFUNC(ctx, glFinish)();
+            // GET_GLFUNC(ctx, glFinish)();
 
             return true;
         }

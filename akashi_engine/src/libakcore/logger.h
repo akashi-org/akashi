@@ -5,22 +5,35 @@
 
 #define FORMAT_MSG(msg) ("/{}]({}:{}) " msg)
 
+#ifndef NDEBUG
+#define ASSERT_LOGTAG()                                                                            \
+    ((!std::getenv("AK_LOGTAG")) ||                                                                \
+     (std::string(std::getenv("AK_LOGTAG")) ==                                                     \
+      std::string(akashi::core::detail::get_log_tag_str(__FILE__))))
+#else
+#define ASSERT_LOGTAG() (true)
+#endif
+
 #define AKLOG_LOG(lvl, msg, ...)                                                                   \
     do {                                                                                           \
         static_assert(lvl != akashi::core::LogLevel::OFF, "LogLevel::OFF is not supported");       \
-        SPDLOG_LOGGER_CALL(spdlog::default_logger_raw(),                                           \
-                           static_cast<spdlog::level::level_enum>(lvl), FORMAT_MSG(msg),           \
-                           akashi::core::detail::get_log_tag_str(__FILE__),                        \
-                           akashi::core::detail::to_module_path(__FILE__), __LINE__, __VA_ARGS__); \
+        if (ASSERT_LOGTAG()) {                                                                     \
+            SPDLOG_LOGGER_CALL(                                                                    \
+                spdlog::default_logger_raw(), static_cast<spdlog::level::level_enum>(lvl),         \
+                FORMAT_MSG(msg), akashi::core::detail::get_log_tag_str(__FILE__),                  \
+                akashi::core::detail::to_module_path(__FILE__), __LINE__, __VA_ARGS__);            \
+        }                                                                                          \
     } while (0)
 
 #define AKLOG_LOGN(lvl, msg)                                                                       \
     do {                                                                                           \
         static_assert(lvl != akashi::core::LogLevel::OFF, "LogLevel::OFF is not supported");       \
-        SPDLOG_LOGGER_CALL(spdlog::default_logger_raw(),                                           \
-                           static_cast<spdlog::level::level_enum>(lvl), FORMAT_MSG(msg),           \
-                           akashi::core::detail::get_log_tag_str(__FILE__),                        \
-                           akashi::core::detail::to_module_path(__FILE__), __LINE__);              \
+        if (ASSERT_LOGTAG()) {                                                                     \
+            SPDLOG_LOGGER_CALL(spdlog::default_logger_raw(),                                       \
+                               static_cast<spdlog::level::level_enum>(lvl), FORMAT_MSG(msg),       \
+                               akashi::core::detail::get_log_tag_str(__FILE__),                    \
+                               akashi::core::detail::to_module_path(__FILE__), __LINE__);          \
+        }                                                                                          \
     } while (0)
 
 #define AKLOG_DEBUG(msg, ...) AKLOG_LOG(akashi::core::LogLevel::DEBUG, msg, __VA_ARGS__)

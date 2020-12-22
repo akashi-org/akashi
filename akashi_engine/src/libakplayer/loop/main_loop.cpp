@@ -40,7 +40,9 @@ namespace akashi {
                     ctx.state->set_render_completed(false);
                     eval_buf->set_render_buf(current_frame_ctx);
                     ctx.event->emit_update();
+                    p_perf->log_render_start();
                     ctx.state->wait_for_render_completed();
+                    p_perf->log_render_end();
                 }
 
                 MainLoop::update_time(ctx, current_frame_ctx);

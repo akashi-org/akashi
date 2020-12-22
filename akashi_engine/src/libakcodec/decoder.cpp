@@ -17,6 +17,16 @@ namespace akashi {
                              const core::Rational& decode_start) {
             m_atom_profiles = atom_profiles;
             m_decode_start = decode_start;
+
+            // find the appropriate current_atom_idx for m_decode_start
+            for (const auto& atom_profile : m_atom_profiles) {
+                if (to_rational(atom_profile.from) <= m_decode_start &&
+                    m_decode_start <= to_rational(atom_profile.to)) {
+                    break;
+                }
+                m_current_atom_idx += 1;
+            }
+
             m_max_atom_idx = atom_profiles.size() == 0 ? 0 : atom_profiles.size() - 1;
 
             for (size_t i = 0; i < atom_profiles.size(); i++) {
