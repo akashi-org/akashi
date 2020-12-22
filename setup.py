@@ -61,6 +61,10 @@ setup(
     author='crux14',
     license='Apache-2.0',
     packages=['akashi_cli', 'akashi_core'],
+    package_data={
+        "akashi_cli": ["py.typed"],
+        "akashi_core": ["py.typed"],
+    },
     cmdclass={
         'sdist': SdistCommand,
         'install': InstallCommand
