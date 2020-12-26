@@ -33,7 +33,6 @@ namespace akashi {
             void frame_step(void);
             void frame_back_step(void);
 
-            QSize sizeHint() const override { return QSize(480, 270); }
           Q_SIGNALS:
             void closed(void);
             void render_prof_updated(akashi::core::RenderProfile& render_prof);
