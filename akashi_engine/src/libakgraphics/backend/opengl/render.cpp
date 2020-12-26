@@ -107,7 +107,7 @@ namespace akashi {
             GET_GLFUNC(ctx, glClearColor)(0.0, 0.0, 0.0, 1.0);
             GET_GLFUNC(ctx, glClear)(GL_COLOR_BUFFER_BIT);
 
-            // [XXX] require when interacting with alpha blend thing.
+            // [XXX] required when interacting with alpha blend thing.
             GET_GLFUNC(ctx, glEnable)(GL_BLEND);
             GET_GLFUNC(ctx, glBlendFunc)(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
