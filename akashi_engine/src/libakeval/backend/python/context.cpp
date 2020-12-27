@@ -21,8 +21,6 @@
 #include <libakcore/rational.h>
 #include <libakwatch/item.h>
 
-#include <libakplayer/perf.h>
-
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
@@ -101,8 +99,6 @@ namespace akashi {
         };
 
         core::FrameContext PyEvalContext::eval_kron(const char* module_path, const KronArg& arg) {
-            player::Timer timer;
-            timer.start();
             FrameContext frame_ctx;
             frame_ctx.pts = Fraction{-1, 1};
 
@@ -130,15 +126,7 @@ namespace akashi {
                 }
                 return frame_ctx;
             }
-            timer.stop();
-            AKLOG_WARN("PyEvalContext::eval_kron() frame eval time: {} sec",
-                       timer.current_time().to_decimal());
-
-            timer.start();
             frame_ctx = parse_frameContext(borrowed_ptr(frame));
-            timer.stop();
-            AKLOG_WARN("PyEvalContext::eval_kron() convert time: {} sec",
-                       timer.current_time().to_decimal());
 
             return frame_ctx;
         };
