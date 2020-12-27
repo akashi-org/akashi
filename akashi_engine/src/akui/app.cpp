@@ -13,6 +13,7 @@
 #include <QApplication>
 #include <QTextCodec>
 #include <thread>
+#include <QSurfaceFormat>
 
 #include <csignal>
 #include <unistd.h>
@@ -27,6 +28,11 @@ namespace akashi {
             QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
             QApplication app(ctx.argc, ctx.argv);
+
+            QSurfaceFormat format;
+            format.setVersion(4, 2);
+            format.setProfile(QSurfaceFormat::CoreProfile);
+            QSurfaceFormat::setDefaultFormat(format);
 
             QApplication::setApplicationName("Akashi Player");
             QTextCodec::setCodecForLocale(QTextCodec::codecForLocale());

@@ -7,6 +7,7 @@
 #include <functional>
 
 #include <GL/gl.h>
+#include <GL/glext.h>
 #include <glm/glm.hpp>
 
 #define PREFIXED_GLFUNC(func_name) akpriv##func_name

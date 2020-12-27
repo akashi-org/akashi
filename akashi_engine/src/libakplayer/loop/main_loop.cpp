@@ -2,12 +2,12 @@
 
 #include "../akplayer.h"
 #include "../event.h"
-#include "../perf.h"
 #include "../eval_buffer.h"
 
 #include <libakcore/logger.h>
 #include <libakcore/rational.h>
 #include <libakcore/memory.h>
+#include <libakcore/perf.h>
 #include <libakeval/item.h>
 #include <libakstate/akstate.h>
 
@@ -16,7 +16,7 @@ using namespace akashi::core;
 namespace akashi {
     namespace player {
 
-        core::owned_ptr<PerfMonitor> MainLoop::p_perf(new PerfMonitor);
+        core::owned_ptr<core::PerfMonitor> MainLoop::p_perf(new core::PerfMonitor);
 
         void MainLoop::mainloop_thread(MainLoopContext ctx) {
             auto [player, state, event, eval_buf] = ctx;
@@ -42,7 +42,7 @@ namespace akashi {
                     ctx.event->emit_update();
                     p_perf->log_render_start();
                     ctx.state->wait_for_render_completed();
-                    p_perf->log_render_end();
+                    p_perf->log_render_end("render_time");
                 }
 
                 MainLoop::update_time(ctx, current_frame_ctx);

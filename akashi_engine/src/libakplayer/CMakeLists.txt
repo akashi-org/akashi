@@ -5,7 +5,6 @@ find_package(Threads REQUIRED)
 
 add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   ./akplayer.cpp
-  ./perf.cpp
   ./event.cpp
   ./eval_buffer.cpp
   ./loop/main_loop.cpp

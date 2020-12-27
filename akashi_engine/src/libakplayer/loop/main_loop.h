@@ -7,6 +7,7 @@
 namespace akashi {
     namespace core {
         struct FrameContext;
+        class PerfMonitor;
     }
     namespace state {
         class AKState;
@@ -27,7 +28,7 @@ namespace akashi {
 
         class MainLoop final {
           private:
-            static core::owned_ptr<PerfMonitor> p_perf;
+            static core::owned_ptr<core::PerfMonitor> p_perf;
 
           public:
             explicit MainLoop(){};

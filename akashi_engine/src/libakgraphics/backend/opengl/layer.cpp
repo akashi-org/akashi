@@ -188,8 +188,8 @@ namespace akashi {
             tex.effective_width =
                 vdata_index == 0 ? buf_data.prop().width : buf_data.prop().chroma_width;
             tex.effective_height = tex.height;
-            tex.format = GL_LUMINANCE;
-            tex.internal_format = GL_LUMINANCE;
+            tex.format = GL_RED;
+            tex.internal_format = GL_R8;
 
             // [TODO] could this be duplicate with the other indices
             tex.index = vdata_index;

@@ -103,8 +103,7 @@ namespace akashi {
                 ctx.extensions.append(" " + std::string(ext));
             }
 
-            // logger::debug<LogTag::GRAPHICS>(FORMAT_MSG("GL_EXTENSION_STRING: {}"),
-            // ctx.extensions);
+            AKLOG_INFO("GL_EXTENSION_STRING:{}", ctx.extensions);
 
             return true;
         }
