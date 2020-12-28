@@ -72,6 +72,13 @@ namespace akashi {
             // Do not XDECREF syscore::Path
             Py_XDECREF(dir);
 
+            if (std::getenv("AK_CORELIB_PATH")) {
+                auto corelib_path = PyUnicode_DecodeFSDefault(
+                    core::Path(std::getenv("AK_CORELIB_PATH")).to_abspath().to_cloned_str());
+                PyList_Insert(sysPath, 0, corelib_path);
+                Py_XDECREF(corelib_path);
+            }
+
             m_corelib = lib::akashi_core::InitModule::from();
 
             version_check();
