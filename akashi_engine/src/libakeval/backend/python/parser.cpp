@@ -152,6 +152,10 @@ namespace akashi {
                     VideoLayerContext layer_ctx_;
                     layer_ctx_.src = get_attr(obj, "src").to<PythonString>().char_p();
                     layer_ctx_.start = parse_second(borrowed_ptr(obj->attr("start")));
+                    if (obj->has_attr("effect_path")) {
+                        layer_ctx_.effect_path[json::optional::attr_name] =
+                            get_attr(obj, "effect_path").to<PythonString>().char_p();
+                    }
                     layer_ctx.video_layer_ctx = layer_ctx_;
                     break;
                 }
@@ -162,12 +166,20 @@ namespace akashi {
                         layer_ctx_.style[json::optional::attr_name] =
                             parse_style(borrowed_ptr(obj->attr("style")));
                     }
+                    if (obj->has_attr("effect_path")) {
+                        layer_ctx_.effect_path[json::optional::attr_name] =
+                            get_attr(obj, "effect_path").to<PythonString>().char_p();
+                    }
                     layer_ctx.text_layer_ctx = layer_ctx_;
                     break;
                 }
                 case LayerType::IMAGE: {
                     ImageLayerContext layer_ctx_;
                     layer_ctx_.src = get_attr(obj, "src").to<PythonString>().char_p();
+                    if (obj->has_attr("effect_path")) {
+                        layer_ctx_.effect_path[json::optional::attr_name] =
+                            get_attr(obj, "effect_path").to<PythonString>().char_p();
+                    }
                     layer_ctx.image_layer_ctx = layer_ctx_;
                     break;
                 }

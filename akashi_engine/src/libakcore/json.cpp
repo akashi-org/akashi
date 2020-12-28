@@ -44,6 +44,9 @@ namespace akashi {
                     VideoLayerContext layer_ctx;
                     layer_ctx.src = j.at("src");
                     layer_ctx.start = j.at("start");
+                    if (j.contains("effect_path")) {
+                        layer_ctx.effect_path[json::optional::attr_name] = j.at("effect_path");
+                    }
                     entry.video_layer_ctx = layer_ctx;
                     break;
                 }
@@ -53,12 +56,18 @@ namespace akashi {
                     if (j.contains("style")) {
                         layer_ctx.style[json::optional::attr_name] = j.at("style");
                     }
+                    if (j.contains("effect_path")) {
+                        layer_ctx.effect_path[json::optional::attr_name] = j.at("effect_path");
+                    }
                     entry.text_layer_ctx = layer_ctx;
                     break;
                 }
                 case LayerType::IMAGE: {
                     ImageLayerContext layer_ctx;
                     layer_ctx.src = j.at("src");
+                    if (j.contains("effect_path")) {
+                        layer_ctx.effect_path[json::optional::attr_name] = j.at("effect_path");
+                    }
                     entry.image_layer_ctx = layer_ctx;
                     break;
                 }
