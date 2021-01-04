@@ -1,7 +1,7 @@
 #pragma once
 
 #include "./gl.h"
-#include "./objects/quad/quad.h"
+#include "./objects/quad/layer_quad.h"
 #include "./objects/quad/video_quad.h"
 
 #include <libakcodec/akcodec.h>
@@ -16,6 +16,7 @@ namespace akashi {
     namespace core {
         class Rational;
         struct LayerContext;
+        enum class LayerType;
     }
     namespace buffer {
         class AVBufferData;
@@ -37,8 +38,11 @@ namespace akashi {
 
             virtual void update_layer(core::LayerContext layer_ctx) { m_layer_ctx = layer_ctx; };
 
+            virtual void update_shader(const GLRenderContext&, const std::vector<const char*>) {}
+
           protected:
             akashi::core::LayerContext m_layer_ctx;
+            akashi::core::LayerType m_layer_type;
         };
 
         class VideoLayerTarget final : public LayerTarget {
@@ -51,6 +55,9 @@ namespace akashi {
             bool render(core::borrowed_ptr<GLGraphicsContext> glx_ctx, const GLRenderContext& ctx,
                         const akashi::core::Rational& pts) override;
             bool destroy(const GLRenderContext& ctx) override;
+
+            void update_shader(const GLRenderContext& ctx,
+                               const std::vector<const char*> paths) override;
 
           private:
             bool load_mesh(const GLRenderContext& ctx, VideoQuadMesh& mesh,
@@ -76,14 +83,17 @@ namespace akashi {
                         const core::Rational& pts) override;
             bool destroy(const GLRenderContext& ctx) override;
 
+            void update_shader(const GLRenderContext& ctx,
+                               const std::vector<const char*> paths) override;
+
           private:
-            bool load_mesh(const GLRenderContext& ctx, QuadMesh& mesh,
+            bool load_mesh(const GLRenderContext& ctx, LayerQuadMesh& mesh,
                            core::LayerContext& layer_ctx) const;
             bool load_texture(const GLRenderContext& ctx, GLTextureData& tex,
                               core::LayerContext& layer_ctx) const;
 
           private:
-            QuadObject m_quad_obj;
+            LayerQuadObject m_quad_obj;
         };
 
         class ImageLayerTarget final : public LayerTarget {
@@ -97,14 +107,17 @@ namespace akashi {
                         const core::Rational& pts) override;
             bool destroy(const GLRenderContext& ctx) override;
 
+            void update_shader(const GLRenderContext& ctx,
+                               const std::vector<const char*> paths) override;
+
           private:
-            bool load_mesh(const GLRenderContext& ctx, QuadMesh& mesh,
+            bool load_mesh(const GLRenderContext& ctx, LayerQuadMesh& mesh,
                            core::LayerContext& layer_ctx) const;
             bool load_texture(const GLRenderContext& ctx, GLTextureData& tex,
                               core::LayerContext& layer_ctx) const;
 
           private:
-            QuadObject m_quad_obj;
+            LayerQuadObject m_quad_obj;
         };
 
     }

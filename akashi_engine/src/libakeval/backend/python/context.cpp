@@ -72,6 +72,13 @@ namespace akashi {
             // Do not XDECREF syscore::Path
             Py_XDECREF(dir);
 
+            if (std::getenv("AK_CORELIB_PATH")) {
+                auto corelib_path = PyUnicode_DecodeFSDefault(
+                    core::Path(std::getenv("AK_CORELIB_PATH")).to_abspath().to_cloned_str());
+                PyList_Insert(sysPath, 0, corelib_path);
+                Py_XDECREF(corelib_path);
+            }
+
             m_corelib = lib::akashi_core::InitModule::from();
 
             version_check();
@@ -191,11 +198,11 @@ namespace akashi {
             return render_prof;
         }
 
-        void PyEvalContext::reload(const watch::WatchEventList& event_list) {
-            for (size_t i = 0; i < event_list.size; i++) {
-                switch (event_list.events[i].flag) {
+        void PyEvalContext::reload(const std::vector<watch::WatchEvent>& events) {
+            for (const auto& event : events) {
+                switch (event.flag) {
                     case watch::WatchEventFlag::CREATED: {
-                        auto module_path = Path(event_list.events[i].file_path);
+                        auto module_path = Path(event.file_path);
                         auto it = this->m_modules.find(module_path.to_str());
                         // check duplication
                         if (it == this->m_modules.end()) {
@@ -204,7 +211,7 @@ namespace akashi {
                         break;
                     }
                     case watch::WatchEventFlag::REMOVED: {
-                        auto module_path = Path(event_list.events[i].file_path);
+                        auto module_path = Path(event.file_path);
                         auto it = this->m_modules.find(module_path.to_str());
                         if (it != this->m_modules.end()) {
                             delete it->second;

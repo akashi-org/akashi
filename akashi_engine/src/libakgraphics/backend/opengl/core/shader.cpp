@@ -37,17 +37,6 @@ namespace akashi {
                 goto exit;
             }
 
-            /* if (gl->GetTranslatedShaderSourceANGLE) { */
-            /*     GLint len = 0; */
-            /*     gl->GetShaderiv(shader, GL_TRANSLATED_SHADER_SOURCE_LENGTH_ANGLE, &len); */
-            /*     if (len > 0) { */
-            /*         GLchar *sstr = talloc_zero_size(NULL, len + 1); */
-            /*         gl->GetTranslatedShaderSourceANGLE(shader, len, NULL, sstr); */
-            /*         MP_DBG(ra, "Translated shader:\n"); */
-            /*         mp_log_source(ra->log, MSGL_DEBUG, sstr); */
-            /*     } */
-            /* } */
-
             GET_GLFUNC(ctx, glAttachShader)(prog, shader);
 
         exit:
@@ -55,9 +44,7 @@ namespace akashi {
                 free(log_str);
                 log_str = nullptr;
             }
-            if (shader != 0) {
-                GET_GLFUNC(ctx, glDeleteShader)(shader);
-            }
+            GET_GLFUNC(ctx, glDeleteShader)(shader);
             return res;
         }
 
@@ -73,7 +60,8 @@ namespace akashi {
             if (!link_status) {
                 GLchar* log_str = static_cast<GLchar*>(calloc(log_length + 1, sizeof(GLchar)));
                 GET_GLFUNC(ctx, glGetProgramInfoLog)(prog, log_length, nullptr, log_str);
-                AKLOG_ERROR("link_program() failed: Failed to link shader: {}, {}", link_status);
+                AKLOG_ERROR("link_program() failed: Failed to link shader: {}, {}", link_status,
+                            log_str);
                 free(log_str);
                 return false;
             } else {

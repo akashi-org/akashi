@@ -5,6 +5,7 @@
 #include "./framebuffer.h"
 #include "./objects/quad/quad.h"
 #include "./layer.h"
+#include "./context.h"
 
 #include <libakcore/logger.h>
 #include <libakcore/element.h>
@@ -66,6 +67,16 @@ namespace akashi {
                         it->second->update_layer(layer_ctx);
                     }
                 }
+            }
+
+            if (glx_ctx->shader_reload()) {
+                for (auto iter = m_targets.rbegin(), end = m_targets.rend(); iter != end; ++iter) {
+                    const auto& target = *iter;
+                    if (target) {
+                        target->update_shader(ctx, glx_ctx->updated_shader_paths());
+                    }
+                }
+                glx_ctx->set_shader_reload(false);
             }
 
             // render

@@ -25,6 +25,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/opengl/resource/font.cpp"
   "./backend/opengl/objects/quad/quad.cpp"
   "./backend/opengl/objects/quad/video_quad.cpp"
+  "./backend/opengl/objects/quad/layer_quad.cpp"
 )
 
 file(GLOB INTERFACE_HEADERS

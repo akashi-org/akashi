@@ -14,7 +14,7 @@ namespace akashi {
         class AKState;
     }
     namespace watch {
-        struct WatchEventList;
+        struct WatchEvent;
     }
     namespace eval {
 
@@ -37,7 +37,7 @@ namespace akashi {
             virtual core::RenderProfile render_prof(const char* module_path) = 0;
             // virtual bool evalbuf_dequeue_ready(const char* module_path) = 0;
 
-            virtual void reload(const watch::WatchEventList& event_list) = 0;
+            virtual void reload(const std::vector<watch::WatchEvent>& events) = 0;
         };
 
     }

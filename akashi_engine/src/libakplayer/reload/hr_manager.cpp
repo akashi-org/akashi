@@ -11,6 +11,9 @@
 #include <libakbuffer/video_queue.h>
 #include <libakaudio/akaudio.h>
 #include <libakeval/akeval.h>
+#include <libakwatch/item.h>
+
+#include <regex>
 
 using namespace akashi::core;
 
@@ -76,6 +79,29 @@ namespace akashi {
         }
 
         void HRManager::reload(const watch::WatchEventList& event_list) {
+            std::vector<watch::WatchEvent> python_events;
+            std::vector<watch::WatchEvent> shader_events;
+            for (size_t i = 0; i < event_list.size; i++) {
+                std::cmatch m;
+                if (std::regex_match(event_list.events[i].file_path, m, std::regex(".*\\.py$"))) {
+                    python_events.push_back(event_list.events[i]);
+                }
+                if (std::regex_match(event_list.events[i].file_path, m,
+                                     std::regex(".*\\.(vert|tesc|tese|geom|frag|comp)$"))) {
+                    shader_events.push_back(event_list.events[i]);
+                }
+            }
+
+            if (shader_events.size() > 0) {
+                this->reload_shader(shader_events);
+            }
+
+            if (python_events.size() > 0) {
+                this->reload_python(python_events);
+            }
+        }
+
+        void HRManager::reload_python(const std::vector<watch::WatchEvent>& events) {
             m_event->emit_change_play_state(state::PlayState::PAUSED);
             m_state->wait_for_not_play_ready();
 
@@ -100,7 +126,7 @@ namespace akashi {
             m_buffer->aq->clear(true);
 
             // kron_reload
-            m_eval->reload(event_list);
+            m_eval->reload(events);
 
             auto profile = m_eval->render_prof(entry_path.to_abspath().to_str());
 
@@ -141,6 +167,17 @@ namespace akashi {
             // m_audio->play();
 
             return;
+        }
+
+        void HRManager::reload_shader(const std::vector<watch::WatchEvent>& events) {
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+                m_state->m_prop.shader_reload = true;
+                for (const auto& event : events) {
+                    m_state->m_prop.updated_shader_paths.push_back(event.file_path);
+                }
+            }
+            m_event->emit_update();
         }
     }
 

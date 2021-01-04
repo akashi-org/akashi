@@ -51,9 +51,9 @@ namespace akashi {
             return m_eval_ctx->render_prof(module_path);
         }
 
-        void AKEval::reload(const watch::WatchEventList& event_list) {
+        void AKEval::reload(const std::vector<watch::WatchEvent>& events) {
             ASSERT();
-            return m_eval_ctx->reload(event_list);
+            return m_eval_ctx->reload(events);
         }
 
     }

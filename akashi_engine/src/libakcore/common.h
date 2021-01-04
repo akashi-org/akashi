@@ -33,6 +33,16 @@ namespace akashi {
                     return optional_v[optional::attr_name];
                 }
 
+                template <class T>
+                bool is_none(optional::type<T>& optional_v) {
+                    return optional_v.count(optional::attr_name) == 0;
+                }
+
+                template <class T>
+                bool is_none(optional::type<T> const& optional_v) {
+                    return optional_v.count(optional::attr_name) == 0;
+                }
+
             }
         }
     }

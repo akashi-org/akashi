@@ -45,6 +45,7 @@ class _VideoLayerRequiredParams:
 class VideoLayerParams(CommonLayerParams, _VideoLayerRequiredParams):
     _type: Literal['VIDEO'] = field(default='VIDEO', init=False)
     start: Second = field(default=Second(0))
+    frag_path: str = field(default="")
 
 
 @dataclass
@@ -72,6 +73,7 @@ class _TextLayerRequiredParams:
 class TextLayerParams(CommonLayerParams, _TextLayerRequiredParams):
     _type: Literal['TEXT'] = field(default='TEXT', init=False)
     style: TextLayerStyle = field(default_factory=TextLayerStyle)
+    frag_path: str = field(default="")
 
 
 @dataclass
@@ -82,7 +84,7 @@ class _ImageLayerRequiredParams:
 @dataclass
 class ImageLayerParams(CommonLayerParams, _ImageLayerRequiredParams):
     _type: Literal['IMAGE'] = field(default='IMAGE', init=False)
-    src: str
+    frag_path: str = field(default="")
 
 
 LayerParams = Union[
