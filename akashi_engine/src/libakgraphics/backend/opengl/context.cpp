@@ -45,9 +45,6 @@ namespace akashi {
                 return false;
             }
 
-            m_render_ctx->pass = new QuadPass;
-            CHECK_AK_ERROR2(m_render_ctx->pass->create(*m_render_ctx));
-
             m_render_ctx->render_scene = new RenderScene;
             m_render_ctx->render_scene->create(*m_render_ctx);
 

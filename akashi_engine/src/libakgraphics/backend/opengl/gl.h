@@ -234,9 +234,6 @@ namespace akashi {
             RenderScene* render_scene = nullptr;
 
             // [TODO] unique_ptr?
-            QuadPass* pass = nullptr;
-
-            // [TODO] unique_ptr?
             FramebufferObject* fbo = nullptr;
 
             std::string default_font_path;

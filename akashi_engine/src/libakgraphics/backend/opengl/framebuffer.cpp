@@ -17,8 +17,11 @@ namespace akashi {
             mesh.flip_y = -1;
             CHECK_AK_ERROR2(this->load_fbo(ctx, m_prop, mesh.tex, fbo_width, fbo_height));
 
+            QuadPass pass;
+            CHECK_AK_ERROR2(pass.create(ctx));
+
             // [TODO] nullptr check
-            m_prop.quad.create(ctx, *ctx.pass, std::move(mesh));
+            m_prop.quad.create(ctx, std::move(pass), std::move(mesh));
 
             return true;
         }
