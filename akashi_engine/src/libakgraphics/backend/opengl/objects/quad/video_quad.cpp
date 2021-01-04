@@ -7,14 +7,19 @@
 
 #include <libakcore/logger.h>
 #include <libakcore/error.h>
+#include <libakcore/element.h>
+#include <libakcore/string.h>
+
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 using namespace akashi::core;
 
-#include <string>
-
 // inspired by https://github.com/brion/yuv-canvas/blob/master/shaders/YCbCr.vsh
 static constexpr const char* vshader_src = u8R"(
-    #version 130
+    #version 420
     uniform mat4 mvpMatrix;
     uniform float flipY;
     in vec3 vertices;
@@ -32,15 +37,19 @@ static constexpr const char* vshader_src = u8R"(
 
 // inspired by https://github.com/brion/yuv-canvas/blob/master/shaders/YCbCr.fsh
 static constexpr const char* fshader_src = u8R"(
-    #version 130
+    #version 420
     uniform sampler2D textureY;
     uniform sampler2D textureCb;
     uniform sampler2D textureCr;
+    uniform float time;
+    uniform vec2 resolution;
 
     in vec2 vLumaUvs;
     in vec2 vChromaUvs;
 
     out vec4 fragColor;
+
+    void frag_main(inout vec4 rv);
 
     void main(void){
 
@@ -56,20 +65,39 @@ static constexpr const char* fshader_src = u8R"(
             fYmul + 2.017234375   * fCb - 1.081390625,
             1
         );
+        frag_main(fragColor);
 })";
+
+static constexpr const char* default_user_fshader_src = u8R"(
+    #version 420
+    uniform float time;
+    uniform vec2 resolution;
+    void frag_main(inout vec4 _fragColor){
+    }
+)";
 
 namespace akashi {
     namespace graphics {
 
         /* --- VideoQuadPass --- */
 
-        bool VideoQuadPass::create(const GLRenderContext& ctx, const VTexSizeFormat& format) {
+        bool VideoQuadPass::create(const GLRenderContext& ctx, const VTexSizeFormat& format,
+                                   const core::LayerContext& layer) {
             m_prop.prog = GET_GLFUNC(ctx, glCreateProgram)();
             m_size_format = format;
 
             // [TODO] maybe we should return values after execute deleteProgram
             // when link_shader fails
-            this->load_shader(ctx, m_prop.prog);
+            // [TODO] frag_path lifetime?
+            if (!json::optional::is_none(layer.video_layer_ctx.frag_path) &&
+                !json::optional::unwrap(layer.video_layer_ctx.frag_path).empty()) {
+                std::ifstream ist(json::optional::unwrap(layer.video_layer_ctx.frag_path));
+                std::stringstream sbuf;
+                sbuf << ist.rdbuf();
+                this->load_shader(ctx, m_prop.prog, sbuf.str().c_str());
+            } else {
+                this->load_shader(ctx, m_prop.prog, default_user_fshader_src);
+            }
 
             // uniform location
             m_prop.mvp_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "mvpMatrix");
@@ -77,6 +105,9 @@ namespace akashi {
             m_prop.texY_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "textureY");
             m_prop.texCb_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "textureCb");
             m_prop.texCr_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "textureCr");
+            m_prop.time_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "time");
+            m_prop.resolution_loc =
+                GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "resolution");
 
             CHECK_AK_ERROR2(this->load_vao(ctx, format, m_prop.prog, m_prop.vao));
 
@@ -99,9 +130,32 @@ namespace akashi {
 
         const VideoQuadPassProp& VideoQuadPass::get_prop(void) const { return m_prop; }
 
-        bool VideoQuadPass::load_shader(const GLRenderContext& ctx, const GLuint prog) const {
+        void VideoQuadPass::shader_reload(const GLRenderContext& ctx,
+                                          const core::LayerContext& layer,
+                                          const std::vector<const char*> paths) {
+            std::string shader_path{""};
+            if (!json::optional::is_none(layer.video_layer_ctx.frag_path) &&
+                !json::optional::unwrap(layer.video_layer_ctx.frag_path).empty()) {
+                shader_path = json::optional::unwrap(layer.video_layer_ctx.frag_path);
+            }
+            if (shader_path.empty()) {
+                return;
+            }
+
+            for (const auto& path : paths) {
+                if (shader_path == std::string(path)) {
+                    this->destroy(ctx);
+                    this->create(ctx, m_size_format, layer);
+                    break;
+                }
+            }
+        }
+
+        bool VideoQuadPass::load_shader(const GLRenderContext& ctx, const GLuint prog,
+                                        const char* user_fshader_src) const {
             CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_VERTEX_SHADER, vshader_src));
             CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_FRAGMENT_SHADER, fshader_src));
+            CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_FRAGMENT_SHADER, user_fshader_src));
             CHECK_AK_ERROR2(link_shader(ctx, prog));
             return true;
         }
@@ -197,7 +251,7 @@ namespace akashi {
 
         void VideoQuadObject::create(const GLRenderContext&, const VideoQuadPass&& pass,
                                      VideoQuadMesh&& mesh) {
-            m_prop.pass = pass;
+            m_prop.pass = std::move(pass);
             m_prop.mesh = mesh;
             m_created = true;
         }

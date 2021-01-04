@@ -16,6 +16,7 @@
 
 #include <SDL.h>
 #include <string>
+#include <array>
 
 using namespace akashi::core;
 
@@ -54,7 +55,8 @@ namespace akashi {
         static bool video_layer_render(const GLRenderContext& ctx,
                                        const VideoQuadPassProp& pass_prop,
                                        const VideoQuadMesh& mesh_prop,
-                                       const LayerContext& layer_ctx) {
+                                       const LayerContext& layer_ctx, const core::Rational& pts,
+                                       const std::array<int, 2>& resolution) {
             GET_GLFUNC(ctx, glUseProgram)(pass_prop.prog);
 
             use_texture(ctx, mesh_prop.texY, pass_prop.texY_loc);
@@ -72,6 +74,9 @@ namespace akashi {
             (pass_prop.mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 
             GET_GLFUNC(ctx, glUniform1f)(pass_prop.flipY_loc, mesh_prop.flip_y);
+            GET_GLFUNC(ctx, glUniform1f)(pass_prop.time_loc, pts.to_decimal());
+
+            GET_GLFUNC(ctx, glUniform2f)(pass_prop.resolution_loc, resolution[0], resolution[1]);
 
             GET_GLFUNC(ctx, glBindVertexArray)(pass_prop.vao);
             // [XXX] required when using glDrawElements
@@ -101,7 +106,8 @@ namespace akashi {
                     const auto& obj_prop = m_quad_obj.get_prop();
                     const auto& pass_prop = obj_prop.pass.get_prop();
                     const auto& mesh_prop = obj_prop.mesh;
-                    CHECK_AK_ERROR2(video_layer_render(ctx, pass_prop, mesh_prop, m_layer_ctx));
+                    CHECK_AK_ERROR2(video_layer_render(ctx, pass_prop, mesh_prop, m_layer_ctx, pts,
+                                                       glx_ctx->resolution()));
 
                     AKLOG_INFON("VideoLayerTarget::render(): rendered by using the last frame");
                 }
@@ -120,7 +126,8 @@ namespace akashi {
                     const auto& obj_prop = m_quad_obj.get_prop();
                     const auto& pass_prop = obj_prop.pass.get_prop();
                     const auto& mesh_prop = obj_prop.mesh;
-                    CHECK_AK_ERROR2(video_layer_render(ctx, pass_prop, mesh_prop, m_layer_ctx));
+                    CHECK_AK_ERROR2(video_layer_render(ctx, pass_prop, mesh_prop, m_layer_ctx, pts,
+                                                       glx_ctx->resolution()));
                     AKLOG_INFON("VideoLayerTarget::render(): rendered by using the last frame");
                 }
                 return true;
@@ -137,16 +144,15 @@ namespace akashi {
 
             if (!m_quad_obj.created()) {
                 VideoQuadPass pass;
-                pass.create(ctx, size_format);
+                pass.create(ctx, size_format, m_layer_ctx);
 
                 VideoQuadMesh mesh;
                 CHECK_AK_ERROR2(this->load_mesh(ctx, mesh, m_layer_ctx, *buf_data));
                 m_quad_obj.create(ctx, std::move(pass), std::move(mesh));
-
             } else {
                 if (m_quad_obj.need_update_pass(size_format)) {
                     VideoQuadPass pass;
-                    pass.create(ctx, size_format);
+                    pass.create(ctx, size_format, m_layer_ctx);
                     m_quad_obj.update_pass(ctx, std::move(pass));
                 }
                 VideoQuadMesh mesh;
@@ -158,7 +164,8 @@ namespace akashi {
             const auto& pass_prop = obj_prop.pass.get_prop();
             const auto& mesh_prop = obj_prop.mesh;
 
-            CHECK_AK_ERROR2(video_layer_render(ctx, pass_prop, mesh_prop, m_layer_ctx));
+            CHECK_AK_ERROR2(video_layer_render(ctx, pass_prop, mesh_prop, m_layer_ctx, pts,
+                                               glx_ctx->resolution()));
 
             m_current_pts = pts;
             return true;
@@ -168,6 +175,13 @@ namespace akashi {
             m_quad_obj.destroy(ctx);
             return true;
         }
+
+        void VideoLayerTarget::update_shader(const GLRenderContext& ctx,
+                                             const std::vector<const char*> paths) {
+            if (m_quad_obj.created()) {
+                m_quad_obj.get_prop_mut().pass.shader_reload(ctx, m_layer_ctx, paths);
+            }
+        };
 
         bool VideoLayerTarget::load_mesh(const GLRenderContext& ctx, VideoQuadMesh& mesh,
                                          const core::LayerContext& layer_ctx,
@@ -236,8 +250,8 @@ namespace akashi {
 
         bool TextLayerTarget::load_texture(const GLRenderContext& ctx, GLTextureData& tex,
                                            core::LayerContext& layer_ctx) const {
-            // [XXX] json::optional::unwrap_or internally calls std::map[], which is not defined for
-            // the const value, so we must use non-const value when using unwrap_or
+            // [XXX] json::optional::unwrap_or internally calls std::map[], which is not defined
+            // for the const value, so we must use non-const value when using unwrap_or
 
             SDL_Surface* surface = nullptr;
 

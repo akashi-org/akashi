@@ -15,7 +15,7 @@ namespace akashi {
         class AKState;
     }
     namespace watch {
-        struct WatchEventList;
+        struct WatchEvent;
     }
     namespace eval {
 
@@ -36,7 +36,7 @@ namespace akashi {
 
             core::RenderProfile render_prof(const char* module_path);
 
-            void reload(const watch::WatchEventList& event_list);
+            void reload(const std::vector<watch::WatchEvent>& events);
 
           private:
             core::owned_ptr<EvalContext> m_eval_ctx;

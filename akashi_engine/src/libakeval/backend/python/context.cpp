@@ -198,11 +198,11 @@ namespace akashi {
             return render_prof;
         }
 
-        void PyEvalContext::reload(const watch::WatchEventList& event_list) {
-            for (size_t i = 0; i < event_list.size; i++) {
-                switch (event_list.events[i].flag) {
+        void PyEvalContext::reload(const std::vector<watch::WatchEvent>& events) {
+            for (const auto& event : events) {
+                switch (event.flag) {
                     case watch::WatchEventFlag::CREATED: {
-                        auto module_path = Path(event_list.events[i].file_path);
+                        auto module_path = Path(event.file_path);
                         auto it = this->m_modules.find(module_path.to_str());
                         // check duplication
                         if (it == this->m_modules.end()) {
@@ -211,7 +211,7 @@ namespace akashi {
                         break;
                     }
                     case watch::WatchEventFlag::REMOVED: {
-                        auto module_path = Path(event_list.events[i].file_path);
+                        auto module_path = Path(event.file_path);
                         auto it = this->m_modules.find(module_path.to_str());
                         if (it != this->m_modules.end()) {
                             delete it->second;

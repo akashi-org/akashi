@@ -37,6 +37,8 @@ namespace akashi {
 
             virtual void update_layer(core::LayerContext layer_ctx) { m_layer_ctx = layer_ctx; };
 
+            virtual void update_shader(const GLRenderContext&, const std::vector<const char*>) {}
+
           protected:
             akashi::core::LayerContext m_layer_ctx;
         };
@@ -51,6 +53,9 @@ namespace akashi {
             bool render(core::borrowed_ptr<GLGraphicsContext> glx_ctx, const GLRenderContext& ctx,
                         const akashi::core::Rational& pts) override;
             bool destroy(const GLRenderContext& ctx) override;
+
+            void update_shader(const GLRenderContext& ctx,
+                               const std::vector<const char*> paths) override;
 
           private:
             bool load_mesh(const GLRenderContext& ctx, VideoQuadMesh& mesh,

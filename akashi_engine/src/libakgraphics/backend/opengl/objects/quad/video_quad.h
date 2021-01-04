@@ -3,9 +3,14 @@
 #include "../../gl.h"
 
 #include <libakcore/error.h>
+#include <libakcore/string.h>
 #include <glm/glm.hpp>
 
 namespace akashi {
+    namespace core {
+        struct LayerContext;
+    }
+
     namespace graphics {
 
         class VTexSizeFormat {
@@ -47,6 +52,10 @@ namespace akashi {
             GLuint mvp_loc;
 
             GLuint flipY_loc;
+
+            GLuint time_loc;
+
+            GLuint resolution_loc;
         };
 
         class VideoQuadPass final {
@@ -54,13 +63,18 @@ namespace akashi {
             explicit VideoQuadPass(void) = default;
             virtual ~VideoQuadPass(void) = default;
 
-            bool create(const GLRenderContext& ctx, const VTexSizeFormat& format);
+            bool create(const GLRenderContext& ctx, const VTexSizeFormat& format,
+                        const core::LayerContext& layer);
             bool destroy(const GLRenderContext& ctx);
             bool need_update(const VTexSizeFormat& new_format) const;
             const VideoQuadPassProp& get_prop() const;
 
+            void shader_reload(const GLRenderContext& ctx, const core::LayerContext& layer,
+                               const std::vector<const char*> paths);
+
           private:
-            bool load_shader(const GLRenderContext& ctx, const GLuint prog) const;
+            bool load_shader(const GLRenderContext& ctx, const GLuint prog,
+                             const char* user_fshader_src) const;
             bool load_vao(const GLRenderContext& ctx, const VTexSizeFormat& format,
                           const GLuint prog, GLuint& vao) const;
             bool load_ibo(const GLRenderContext& ctx, GLuint& ibo) const;
@@ -94,6 +108,8 @@ namespace akashi {
             void destroy(const GLRenderContext& ctx);
 
             const VideoQuadObjectProp& get_prop() const;
+
+            VideoQuadObjectProp& get_prop_mut() { return m_prop; }
 
             bool created(void) const;
 

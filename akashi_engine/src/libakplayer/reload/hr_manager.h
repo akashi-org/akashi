@@ -1,6 +1,7 @@
 #pragma once
 
 #include <libakcore/memory.h>
+#include <vector>
 
 namespace akashi {
     namespace core {
@@ -20,6 +21,7 @@ namespace akashi {
     }
     namespace watch {
         struct WatchEventList;
+        struct WatchEvent;
     }
     namespace player {
 
@@ -36,6 +38,10 @@ namespace akashi {
             virtual ~HRManager();
 
             void reload(const watch::WatchEventList& event_list);
+
+          private:
+            void reload_python(const std::vector<watch::WatchEvent>& events);
+            void reload_shader(const std::vector<watch::WatchEvent>& events);
 
           private:
             core::borrowed_ptr<state::AKState> m_state;

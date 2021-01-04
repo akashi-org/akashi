@@ -185,15 +185,6 @@ namespace akashi {
                                                                                 GLsizei*,
                                                                                 GLchar* source);
 
-            //                                                  GLchar PREFIXED_GLFUNC(glsource);
-
-            // void(GLAPIENTRY* PREFIXED_GLFUNC(glDebugMessageCallback))(MP_GLDEBUGPROC callback,
-            // const void* userParam);
-
-            // void*(GLAPIENTRY* PREFIXED_GLFUNC(glMPGetNativeDisplay))(const char
-            // PREFIXED_GLFUNC(glname);
-            //
-
             void(GLAPIENTRY* PREFIXED_GLFUNC(glDrawBuffers))(GLsizei, const GLenum*);
 
             void(GLAPIENTRY* PREFIXED_GLFUNC(glGenRenderbuffers))(GLsizei, GLuint*);

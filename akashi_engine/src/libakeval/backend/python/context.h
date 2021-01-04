@@ -27,7 +27,7 @@ namespace akashi {
         struct EvalConfig;
     }
     namespace watch {
-        struct WatchEventList;
+        struct WatchEvent;
     }
     namespace eval {
 
@@ -53,7 +53,7 @@ namespace akashi {
 
             core::RenderProfile render_prof(const char* module_path) override;
 
-            void reload(const watch::WatchEventList& event_list) override;
+            void reload(const std::vector<watch::WatchEvent>& events) override;
 
             const std::vector<std::string> loaded_module_paths(bool kron_module_only) const;
 

@@ -5,6 +5,8 @@
 #include <libakcore/memory.h>
 
 #include <memory>
+#include <array>
+#include <vector>
 
 namespace akashi {
     namespace core {
@@ -42,7 +44,15 @@ namespace akashi {
 
             size_t loop_cnt();
 
+            bool shader_reload();
+
+            void set_shader_reload(bool reloaded);
+
+            std::vector<const char*> updated_shader_paths(void);
+
             core::Rational current_time() const;
+
+            std::array<int, 2> resolution();
 
             std::unique_ptr<buffer::AVBufferData> dequeue(std::string layer_uuid,
                                                           const core::Rational& pts);
