@@ -13,6 +13,7 @@ namespace akashi {
 
         struct Style {
             json::optional::type<uint32_t> font_size;
+            json::optional::type<std::string> font_path;
             json::optional::type<std::string> fill;
             json::optional::type<std::string> color;
         };

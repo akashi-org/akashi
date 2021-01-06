@@ -280,7 +280,8 @@ namespace akashi {
             auto fg_color = hex_to_sdl(fill);
             info.fg = fg_color;
 
-            info.font_path = ctx.default_font_path.c_str();
+            auto font_path = json::optional::unwrap_or(style.font_path);
+            info.font_path = font_path.empty() ? ctx.default_font_path.c_str() : font_path.c_str();
 
             auto font_size = json::optional::unwrap_or(style.font_size);
             int default_font_size = 12;

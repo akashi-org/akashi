@@ -204,6 +204,10 @@ namespace akashi {
                 style.font_size[json::optional::attr_name] =
                     get_item(obj, "font_size").to<unsigned long>();
             }
+            if (has_key(obj, "font_path")) {
+                style.font_path[json::optional::attr_name] =
+                    get_item(obj, "font_path").to<PythonString>().char_p();
+            }
             if (has_key(obj, "fill")) {
                 style.fill[json::optional::attr_name] =
                     get_item(obj, "fill").to<PythonString>().char_p();

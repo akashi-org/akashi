@@ -61,6 +61,7 @@ class AudioLayerParams(CommonLayerParams, _AudioLayerRequiredParams):
 
 class TextLayerStyle(TypedDict, total=False):
     font_size: int
+    font_path: str
     fill: str  # rrggbb
 
 
