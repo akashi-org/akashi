@@ -22,17 +22,20 @@ namespace akashi {
             std::string src;
             Fraction start;
             json::optional::type<std::string> frag_path;
+            json::optional::type<std::string> geom_path;
         };
 
         struct TextLayerContext {
             std::string text;
             json::optional::type<Style> style;
             json::optional::type<std::string> frag_path;
+            json::optional::type<std::string> geom_path;
         };
 
         struct ImageLayerContext {
             std::string src;
             json::optional::type<std::string> frag_path;
+            json::optional::type<std::string> geom_path;
         };
 
         struct LayerContext {
