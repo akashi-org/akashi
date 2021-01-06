@@ -65,7 +65,6 @@ endif()
 
 add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./rational.cpp"
-  "./json.cpp"
   "./logger.cpp"
   "./memory.cpp"
   "./path.cpp"
@@ -81,7 +80,6 @@ file(GLOB INTERFACE_HEADERS
   config.h
   element.h
   error.h
-  json.h
   logger.h
   memory.h
   path.h
