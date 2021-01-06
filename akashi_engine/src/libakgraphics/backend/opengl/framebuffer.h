@@ -24,7 +24,8 @@ namespace akashi {
             explicit FramebufferObject(void) = default;
             ~FramebufferObject(void) = default;
 
-            bool create(const GLRenderContext& ctx, int fbo_width, int fbo_height);
+            bool create(const GLRenderContext& ctx, QuadPass* fbo_pass, int fbo_width,
+                        int fbo_height);
             bool render(const GLRenderContext& ctx) const;
             bool destroy(const GLRenderContext& ctx);
             const FramebufferObject::Property& get_prop(void) const;

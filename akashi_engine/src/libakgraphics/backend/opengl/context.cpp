@@ -30,7 +30,12 @@ namespace akashi {
             m_render_ctx = make_owned<GLRenderContext>();
         };
 
-        GLGraphicsContext::~GLGraphicsContext(){};
+        GLGraphicsContext::~GLGraphicsContext() {
+            if (m_fbo_pass) {
+                m_fbo_pass->destroy(*m_render_ctx);
+                m_fbo_pass = nullptr;
+            }
+        };
 
         bool GLGraphicsContext::load_api(const GetProcAddress& get_proc_address) {
             if (load_gl_getString(get_proc_address, *m_render_ctx) != ErrorType::OK) {
@@ -44,6 +49,10 @@ namespace akashi {
             if (load_gl_functions(get_proc_address, *m_render_ctx) != ErrorType::OK) {
                 return false;
             }
+
+            // [XXX] make sure to create fbo pass before load_fbo
+            m_fbo_pass = new QuadPass;
+            CHECK_AK_ERROR2(m_fbo_pass->create(*m_render_ctx));
 
             m_render_ctx->render_scene = new RenderScene;
             m_render_ctx->render_scene->create(*m_render_ctx);
@@ -67,7 +76,8 @@ namespace akashi {
                 video_height = m_state->m_prop.video_height;
             }
 
-            CHECK_AK_ERROR2(m_render_ctx->fbo->create(*m_render_ctx, video_width, video_height));
+            CHECK_AK_ERROR2(
+                m_render_ctx->fbo->create(*m_render_ctx, m_fbo_pass, video_width, video_height));
 
             return true;
         }

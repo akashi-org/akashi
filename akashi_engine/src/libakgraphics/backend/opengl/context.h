@@ -29,6 +29,7 @@ namespace akashi {
         struct GLRenderContext;
         struct GetProcAddress;
         struct RenderParams;
+        class QuadPass;
         class GLGraphicsContext : public GraphicsContext {
           public:
             explicit GLGraphicsContext(core::borrowed_ptr<state::AKState> state,
@@ -62,6 +63,7 @@ namespace akashi {
             core::borrowed_ptr<buffer::AVBuffer> m_buffer;
             core::borrowed_ptr<audio::AKAudio> m_audio;
             core::owned_ptr<GLRenderContext> m_render_ctx;
+            QuadPass* m_fbo_pass = nullptr;
         };
 
     }
