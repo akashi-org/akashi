@@ -16,7 +16,7 @@ using namespace akashi::core;
 #include <sstream>
 
 static constexpr const char* vshader_src = u8R"(
-    #version 420
+    #version 420 core
     uniform mat4 mvpMatrix;
     uniform float flipY;
     in vec3 vertices;
@@ -31,7 +31,7 @@ static constexpr const char* vshader_src = u8R"(
 )";
 
 static constexpr const char* fshader_src = u8R"(
-    #version 420
+    #version 420 core
     uniform sampler2D texture0;
     in vec2 vUvs;
 
@@ -47,7 +47,7 @@ static constexpr const char* fshader_src = u8R"(
 )";
 
 static constexpr const char* default_user_fshader_src = u8R"(
-    #version 420
+    #version 420 core
     uniform float time;
     uniform vec2 resolution;
     void frag_main(inout vec4 _fragColor){

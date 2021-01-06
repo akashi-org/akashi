@@ -19,7 +19,7 @@ using namespace akashi::core;
 
 // inspired by https://github.com/brion/yuv-canvas/blob/master/shaders/YCbCr.vsh
 static constexpr const char* vshader_src = u8R"(
-    #version 420
+    #version 420 core
     uniform mat4 mvpMatrix;
     uniform float flipY;
     in vec3 vertices;
@@ -37,7 +37,7 @@ static constexpr const char* vshader_src = u8R"(
 
 // inspired by https://github.com/brion/yuv-canvas/blob/master/shaders/YCbCr.fsh
 static constexpr const char* fshader_src = u8R"(
-    #version 420
+    #version 420 core
     uniform sampler2D textureY;
     uniform sampler2D textureCb;
     uniform sampler2D textureCr;
@@ -69,7 +69,7 @@ static constexpr const char* fshader_src = u8R"(
 })";
 
 static constexpr const char* default_user_fshader_src = u8R"(
-    #version 420
+    #version 420 core
     uniform float time;
     uniform vec2 resolution;
     void frag_main(inout vec4 _fragColor){
