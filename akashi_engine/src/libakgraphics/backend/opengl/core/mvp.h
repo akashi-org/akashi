@@ -13,8 +13,8 @@ namespace akashi {
         void update_translate(const GLRenderContext& ctx, const core::LayerContext& layer_ctx,
                               glm::mat4& new_mvp);
 
-        void update_scale(const GLRenderContext& ctx, const GLTextureData& text,
-                          glm::mat4& new_mvp);
+        void update_scale(const GLRenderContext& ctx, const GLTextureData& tex, glm::mat4& new_mvp,
+                          const double scale_ratio = 1.0);
 
         // void update_mvp(GLRenderContext& ctx, const GLRenderPass& pass, glm::mat4& new_mvp);
 

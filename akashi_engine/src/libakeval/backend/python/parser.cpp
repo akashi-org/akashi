@@ -152,6 +152,7 @@ namespace akashi {
                     VideoLayerContext layer_ctx_;
                     layer_ctx_.src = get_attr(obj, "src").to<PythonString>().char_p();
                     layer_ctx_.start = parse_second(borrowed_ptr(obj->attr("start")));
+                    layer_ctx_.scale = get_attr(obj, "scale").to<double>();
                     if (obj->has_attr("frag_path")) {
                         layer_ctx_.frag_path[json::optional::attr_name] =
                             get_attr(obj, "frag_path").to<PythonString>().char_p();
@@ -166,6 +167,7 @@ namespace akashi {
                 case LayerType::TEXT: {
                     TextLayerContext layer_ctx_;
                     layer_ctx_.text = get_attr(obj, "text").to<PythonString>().char_p();
+                    layer_ctx_.scale = get_attr(obj, "scale").to<double>();
                     if (obj->has_attr("style")) {
                         layer_ctx_.style[json::optional::attr_name] =
                             parse_style(borrowed_ptr(obj->attr("style")));
@@ -184,6 +186,7 @@ namespace akashi {
                 case LayerType::IMAGE: {
                     ImageLayerContext layer_ctx_;
                     layer_ctx_.src = get_attr(obj, "src").to<PythonString>().char_p();
+                    layer_ctx_.scale = get_attr(obj, "scale").to<double>();
                     if (obj->has_attr("frag_path")) {
                         layer_ctx_.frag_path[json::optional::attr_name] =
                             get_attr(obj, "frag_path").to<PythonString>().char_p();

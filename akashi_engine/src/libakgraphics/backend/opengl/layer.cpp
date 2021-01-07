@@ -31,10 +31,20 @@ namespace akashi {
             use_texture(ctx, mesh_prop.tex, pass_prop.tex_loc);
 
             glm::mat4 new_mvp = mesh_prop.mvp;
-            if (static_cast<LayerType>(layer_ctx.type) == LayerType::TEXT) {
-                update_translate(ctx, layer_ctx, new_mvp);
+            switch (static_cast<LayerType>(layer_ctx.type)) {
+                case LayerType::TEXT: {
+                    update_translate(ctx, layer_ctx, new_mvp);
+                    update_scale(ctx, mesh_prop.tex, new_mvp, layer_ctx.text_layer_ctx.scale);
+                    break;
+                }
+                case LayerType::IMAGE: {
+                    update_scale(ctx, mesh_prop.tex, new_mvp, layer_ctx.image_layer_ctx.scale);
+                    break;
+                }
+                default: {
+                    break;
+                }
             }
-            update_scale(ctx, mesh_prop.tex, new_mvp);
 
             GET_GLFUNC(ctx, glUniformMatrix4fv)
             (pass_prop.mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
@@ -72,7 +82,7 @@ namespace akashi {
             // [XXX] looks confusing, but we only need to process the texY,
             // because update_scale gets the magnification rate from the size of the tex, and
             // reflect it to mvp
-            update_scale(ctx, mesh_prop.texY, new_mvp);
+            update_scale(ctx, mesh_prop.texY, new_mvp, layer_ctx.video_layer_ctx.scale);
 
             GET_GLFUNC(ctx, glUniformMatrix4fv)
             (pass_prop.mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);

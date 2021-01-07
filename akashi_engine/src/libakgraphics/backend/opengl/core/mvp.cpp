@@ -34,8 +34,8 @@ namespace akashi {
                           (Rational(-2l) * (a_y - c_y) / screen_height).to_decimal(), 0.0));
         }
 
-        void update_scale(const GLRenderContext& ctx, const GLTextureData& tex,
-                          glm::mat4& new_mvp) {
+        void update_scale(const GLRenderContext& ctx, const GLTextureData& tex, glm::mat4& new_mvp,
+                          const double scale_ratio) {
             // adjustment of aspect ratio
             GLint viewport[4];
             GET_GLFUNC(ctx, glGetIntegerv)(GL_VIEWPORT, viewport);
@@ -67,7 +67,8 @@ namespace akashi {
             }
 
             new_mvp =
-                glm::scale(new_mvp, glm::vec3(scale_w.to_decimal(), scale_h.to_decimal(), 1.0));
+                glm::scale(new_mvp, glm::vec3(scale_w.to_decimal(), scale_h.to_decimal(), 1.0) *
+                                        (float)scale_ratio);
         }
 
     }
