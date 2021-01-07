@@ -19,33 +19,38 @@ using namespace akashi::core;
 
 // inspired by https://github.com/brion/yuv-canvas/blob/master/shaders/YCbCr.vsh
 static constexpr const char* vshader_src = u8R"(
-    #version 420
+    #version 420 core
     uniform mat4 mvpMatrix;
     uniform float flipY;
     in vec3 vertices;
     in vec2 lumaUvs;
     in vec2 chromaUvs;
 
-    out vec2 vLumaUvs;
-    out vec2 vChromaUvs;
+    out VS_OUT {
+        vec2 vLumaUvs;
+        vec2 vChromaUvs;
+    } vs_out;
     
     void main(void){
-        vLumaUvs = lumaUvs;
-        vChromaUvs = chromaUvs;
+        vs_out.vLumaUvs = lumaUvs;
+        vs_out.vChromaUvs = chromaUvs;
         gl_Position = mvpMatrix * vec4(vertices * vec3(1, flipY, 1), 1.0);
-})";
+    }
+)";
 
 // inspired by https://github.com/brion/yuv-canvas/blob/master/shaders/YCbCr.fsh
 static constexpr const char* fshader_src = u8R"(
-    #version 420
+    #version 420 core
     uniform sampler2D textureY;
     uniform sampler2D textureCb;
     uniform sampler2D textureCr;
     uniform float time;
     uniform vec2 resolution;
 
-    in vec2 vLumaUvs;
-    in vec2 vChromaUvs;
+    in GS_OUT {
+        vec2 vLumaUvs;
+        vec2 vChromaUvs;
+    } fs_in;
 
     out vec4 fragColor;
 
@@ -53,9 +58,9 @@ static constexpr const char* fshader_src = u8R"(
 
     void main(void){
 
-        float fY = texture(textureY, vLumaUvs).x;
-        float fCb = texture(textureCb, vChromaUvs).x;
-        float fCr = texture(textureCr, vChromaUvs).x;
+        float fY = texture(textureY, fs_in.vLumaUvs).x;
+        float fCb = texture(textureCb, fs_in.vChromaUvs).x;
+        float fCr = texture(textureCr, fs_in.vChromaUvs).x;
 
         float fYmul = fY * 1.1643828125;
 
@@ -69,11 +74,37 @@ static constexpr const char* fshader_src = u8R"(
 })";
 
 static constexpr const char* default_user_fshader_src = u8R"(
-    #version 420
+    #version 420 core
     uniform float time;
     uniform vec2 resolution;
     void frag_main(inout vec4 _fragColor){
     }
+)";
+
+static constexpr const char* default_user_gshader_src = u8R"(
+    #version 420 core
+    layout (triangles) in;
+    layout (triangle_strip, max_vertices = 3) out;
+
+    in VS_OUT {
+        vec2 vLumaUvs;
+        vec2 vChromaUvs;
+    } gs_in[];
+
+    out GS_OUT {
+        vec2 vLumaUvs;
+        vec2 vChromaUvs;
+    } gs_out;
+    
+    void main() { 
+        for(int i = 0; i < 3; i++){
+            gs_out.vLumaUvs = gs_in[i].vLumaUvs; 
+            gs_out.vChromaUvs = gs_in[i].vChromaUvs;
+            gl_Position = gl_in[i].gl_Position;
+            EmitVertex();
+        }
+        EndPrimitive();
+    }  
 )";
 
 namespace akashi {
@@ -86,18 +117,9 @@ namespace akashi {
             m_prop.prog = GET_GLFUNC(ctx, glCreateProgram)();
             m_size_format = format;
 
-            // [TODO] maybe we should return values after execute deleteProgram
-            // when link_shader fails
-            // [TODO] frag_path lifetime?
-            if (!json::optional::is_none(layer.video_layer_ctx.frag_path) &&
-                !json::optional::unwrap(layer.video_layer_ctx.frag_path).empty()) {
-                std::ifstream ist(json::optional::unwrap(layer.video_layer_ctx.frag_path));
-                std::stringstream sbuf;
-                sbuf << ist.rdbuf();
-                this->load_shader(ctx, m_prop.prog, sbuf.str().c_str());
-            } else {
-                this->load_shader(ctx, m_prop.prog, default_user_fshader_src);
-            }
+            // loading shader
+            m_shader_set.load(layer, core::LayerType::VIDEO);
+            this->load_shader(ctx, m_prop.prog, m_shader_set);
 
             // uniform location
             m_prop.mvp_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "mvpMatrix");
@@ -110,7 +132,6 @@ namespace akashi {
                 GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "resolution");
 
             CHECK_AK_ERROR2(this->load_vao(ctx, format, m_prop.prog, m_prop.vao));
-
             CHECK_AK_ERROR2(this->load_ibo(ctx, m_prop.ibo));
             m_prop.ibo_length = 6;
 
@@ -124,26 +145,13 @@ namespace akashi {
             return true;
         }
 
-        bool VideoQuadPass::need_update(const VTexSizeFormat& new_format) const {
-            return m_size_format != new_format;
-        }
-
         const VideoQuadPassProp& VideoQuadPass::get_prop(void) const { return m_prop; }
 
         void VideoQuadPass::shader_reload(const GLRenderContext& ctx,
                                           const core::LayerContext& layer,
-                                          const std::vector<const char*> paths) {
-            std::string shader_path{""};
-            if (!json::optional::is_none(layer.video_layer_ctx.frag_path) &&
-                !json::optional::unwrap(layer.video_layer_ctx.frag_path).empty()) {
-                shader_path = json::optional::unwrap(layer.video_layer_ctx.frag_path);
-            }
-            if (shader_path.empty()) {
-                return;
-            }
-
+                                          const std::vector<const char*>& paths) {
             for (const auto& path : paths) {
-                if (shader_path == std::string(path)) {
+                if (m_shader_set.contains(path)) {
                     this->destroy(ctx);
                     this->create(ctx, m_size_format, layer);
                     break;
@@ -152,10 +160,17 @@ namespace akashi {
         }
 
         bool VideoQuadPass::load_shader(const GLRenderContext& ctx, const GLuint prog,
-                                        const char* user_fshader_src) const {
+                                        const UserShaderSet& shader_set) const {
             CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_VERTEX_SHADER, vshader_src));
             CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_FRAGMENT_SHADER, fshader_src));
-            CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_FRAGMENT_SHADER, user_fshader_src));
+            CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_FRAGMENT_SHADER,
+                                                  shader_set.frag().path.empty()
+                                                      ? default_user_fshader_src
+                                                      : shader_set.frag().body.c_str()));
+            CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_GEOMETRY_SHADER,
+                                                  shader_set.geom().path.empty()
+                                                      ? default_user_gshader_src
+                                                      : shader_set.geom().body.c_str()));
             CHECK_AK_ERROR2(link_shader(ctx, prog));
             return true;
         }
@@ -278,10 +293,6 @@ namespace akashi {
             free_texture(ctx, m_prop.mesh.texCr);
 
             m_prop.mesh = mesh;
-        }
-
-        bool VideoQuadObject::need_update_pass(const VTexSizeFormat& format) {
-            return m_prop.pass.need_update(format);
         }
 
     }

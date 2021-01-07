@@ -12,16 +12,14 @@ using namespace akashi::core;
 namespace akashi {
     namespace graphics {
 
-        bool FramebufferObject::create(const GLRenderContext& ctx, int fbo_width, int fbo_height) {
+        bool FramebufferObject::create(const GLRenderContext& ctx, QuadPass* fbo_pass,
+                                       int fbo_width, int fbo_height) {
             QuadMesh mesh;
             mesh.flip_y = -1;
             CHECK_AK_ERROR2(this->load_fbo(ctx, m_prop, mesh.tex, fbo_width, fbo_height));
 
-            QuadPass pass;
-            CHECK_AK_ERROR2(pass.create(ctx));
-
             // [TODO] nullptr check
-            m_prop.quad.create(ctx, std::move(pass), std::move(mesh));
+            m_prop.quad.create(ctx, *fbo_pass, std::move(mesh));
 
             return true;
         }

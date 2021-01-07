@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../gl.h"
+#include "../../core/shader.h"
 
 #include <libakcore/error.h>
 
@@ -47,12 +48,13 @@ namespace akashi {
 
           private:
             bool load_shader(const GLRenderContext& ctx, const GLuint prog,
-                             const char* user_fshader_src) const;
+                             const UserShaderSet& shader_set) const;
             bool load_vao(const GLRenderContext& ctx, const GLuint prog, GLuint& vao) const;
             bool load_ibo(const GLRenderContext& ctx, GLuint& ibo) const;
 
           private:
             LayerQuadPassProp m_prop;
+            UserShaderSet m_shader_set;
         };
 
         struct LayerQuadMesh {

@@ -45,7 +45,9 @@ class _VideoLayerRequiredParams:
 class VideoLayerParams(CommonLayerParams, _VideoLayerRequiredParams):
     _type: Literal['VIDEO'] = field(default='VIDEO', init=False)
     start: Second = field(default=Second(0))
+    scale: float = field(default=1.0)
     frag_path: str = field(default="")
+    geom_path: str = field(default="")
 
 
 @dataclass
@@ -61,6 +63,7 @@ class AudioLayerParams(CommonLayerParams, _AudioLayerRequiredParams):
 
 class TextLayerStyle(TypedDict, total=False):
     font_size: int
+    font_path: str
     fill: str  # rrggbb
 
 
@@ -71,9 +74,11 @@ class _TextLayerRequiredParams:
 
 @dataclass
 class TextLayerParams(CommonLayerParams, _TextLayerRequiredParams):
+    scale: float = field(default=1.0)
     _type: Literal['TEXT'] = field(default='TEXT', init=False)
     style: TextLayerStyle = field(default_factory=TextLayerStyle)
     frag_path: str = field(default="")
+    geom_path: str = field(default="")
 
 
 @dataclass
@@ -84,7 +89,9 @@ class _ImageLayerRequiredParams:
 @dataclass
 class ImageLayerParams(CommonLayerParams, _ImageLayerRequiredParams):
     _type: Literal['IMAGE'] = field(default='IMAGE', init=False)
+    scale: float = field(default=1.0)
     frag_path: str = field(default="")
+    geom_path: str = field(default="")
 
 
 LayerParams = Union[

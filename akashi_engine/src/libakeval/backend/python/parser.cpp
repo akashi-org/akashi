@@ -152,9 +152,14 @@ namespace akashi {
                     VideoLayerContext layer_ctx_;
                     layer_ctx_.src = get_attr(obj, "src").to<PythonString>().char_p();
                     layer_ctx_.start = parse_second(borrowed_ptr(obj->attr("start")));
+                    layer_ctx_.scale = get_attr(obj, "scale").to<double>();
                     if (obj->has_attr("frag_path")) {
                         layer_ctx_.frag_path[json::optional::attr_name] =
                             get_attr(obj, "frag_path").to<PythonString>().char_p();
+                    }
+                    if (obj->has_attr("geom_path")) {
+                        layer_ctx_.geom_path[json::optional::attr_name] =
+                            get_attr(obj, "geom_path").to<PythonString>().char_p();
                     }
                     layer_ctx.video_layer_ctx = layer_ctx_;
                     break;
@@ -162,6 +167,7 @@ namespace akashi {
                 case LayerType::TEXT: {
                     TextLayerContext layer_ctx_;
                     layer_ctx_.text = get_attr(obj, "text").to<PythonString>().char_p();
+                    layer_ctx_.scale = get_attr(obj, "scale").to<double>();
                     if (obj->has_attr("style")) {
                         layer_ctx_.style[json::optional::attr_name] =
                             parse_style(borrowed_ptr(obj->attr("style")));
@@ -170,15 +176,24 @@ namespace akashi {
                         layer_ctx_.frag_path[json::optional::attr_name] =
                             get_attr(obj, "frag_path").to<PythonString>().char_p();
                     }
+                    if (obj->has_attr("geom_path")) {
+                        layer_ctx_.geom_path[json::optional::attr_name] =
+                            get_attr(obj, "geom_path").to<PythonString>().char_p();
+                    }
                     layer_ctx.text_layer_ctx = layer_ctx_;
                     break;
                 }
                 case LayerType::IMAGE: {
                     ImageLayerContext layer_ctx_;
                     layer_ctx_.src = get_attr(obj, "src").to<PythonString>().char_p();
+                    layer_ctx_.scale = get_attr(obj, "scale").to<double>();
                     if (obj->has_attr("frag_path")) {
                         layer_ctx_.frag_path[json::optional::attr_name] =
                             get_attr(obj, "frag_path").to<PythonString>().char_p();
+                    }
+                    if (obj->has_attr("geom_path")) {
+                        layer_ctx_.geom_path[json::optional::attr_name] =
+                            get_attr(obj, "geom_path").to<PythonString>().char_p();
                     }
                     layer_ctx.image_layer_ctx = layer_ctx_;
                     break;
@@ -203,6 +218,10 @@ namespace akashi {
             if (has_key(obj, "font_size")) {
                 style.font_size[json::optional::attr_name] =
                     get_item(obj, "font_size").to<unsigned long>();
+            }
+            if (has_key(obj, "font_path")) {
+                style.font_path[json::optional::attr_name] =
+                    get_item(obj, "font_path").to<PythonString>().char_p();
             }
             if (has_key(obj, "fill")) {
                 style.fill[json::optional::attr_name] =

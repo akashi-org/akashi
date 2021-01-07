@@ -14,6 +14,9 @@ namespace akashi {
                 constexpr static char attr_name[] = "value";
 
                 template <class T>
+                static optional::type<T> none;
+
+                template <class T>
                 T unwrap(optional::type<T>& optional_v) {
                     return optional_v.at(optional::attr_name);
                 }

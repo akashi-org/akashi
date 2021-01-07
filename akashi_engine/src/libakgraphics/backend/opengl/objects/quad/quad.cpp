@@ -13,7 +13,7 @@ using namespace akashi::core;
 #include <string>
 
 static constexpr const char* vshader_src = u8R"(
-    #version 130
+    #version 420 core
     uniform mat4 mvpMatrix;
     uniform float flipY;
     in vec3 vertices;
@@ -27,7 +27,7 @@ static constexpr const char* vshader_src = u8R"(
 })";
 
 static constexpr const char* fshader_src = u8R"(
-    #version 130
+    #version 420 core
     uniform sampler2D texture0;
     in vec2 vUvs;
 

@@ -31,10 +31,20 @@ namespace akashi {
             use_texture(ctx, mesh_prop.tex, pass_prop.tex_loc);
 
             glm::mat4 new_mvp = mesh_prop.mvp;
-            if (static_cast<LayerType>(layer_ctx.type) == LayerType::TEXT) {
-                update_translate(ctx, layer_ctx, new_mvp);
+            switch (static_cast<LayerType>(layer_ctx.type)) {
+                case LayerType::TEXT: {
+                    update_translate(ctx, layer_ctx, new_mvp);
+                    update_scale(ctx, mesh_prop.tex, new_mvp, layer_ctx.text_layer_ctx.scale);
+                    break;
+                }
+                case LayerType::IMAGE: {
+                    update_scale(ctx, mesh_prop.tex, new_mvp, layer_ctx.image_layer_ctx.scale);
+                    break;
+                }
+                default: {
+                    break;
+                }
             }
-            update_scale(ctx, mesh_prop.tex, new_mvp);
 
             GET_GLFUNC(ctx, glUniformMatrix4fv)
             (pass_prop.mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
@@ -72,7 +82,7 @@ namespace akashi {
             // [XXX] looks confusing, but we only need to process the texY,
             // because update_scale gets the magnification rate from the size of the tex, and
             // reflect it to mvp
-            update_scale(ctx, mesh_prop.texY, new_mvp);
+            update_scale(ctx, mesh_prop.texY, new_mvp, layer_ctx.video_layer_ctx.scale);
 
             GET_GLFUNC(ctx, glUniformMatrix4fv)
             (pass_prop.mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
@@ -147,21 +157,13 @@ namespace akashi {
             size_format.chroma_tex_width = buf_data->prop().video_data[1].stride *
                                            buf_data->prop().width / buf_data->prop().chroma_width;
 
+            VideoQuadMesh mesh;
+            CHECK_AK_ERROR2(this->load_mesh(ctx, mesh, m_layer_ctx, *buf_data));
             if (!m_quad_obj.created()) {
                 VideoQuadPass pass;
                 pass.create(ctx, size_format, m_layer_ctx);
-
-                VideoQuadMesh mesh;
-                CHECK_AK_ERROR2(this->load_mesh(ctx, mesh, m_layer_ctx, *buf_data));
                 m_quad_obj.create(ctx, std::move(pass), std::move(mesh));
             } else {
-                if (m_quad_obj.need_update_pass(size_format)) {
-                    VideoQuadPass pass;
-                    pass.create(ctx, size_format, m_layer_ctx);
-                    m_quad_obj.update_pass(ctx, std::move(pass));
-                }
-                VideoQuadMesh mesh;
-                CHECK_AK_ERROR2(this->load_mesh(ctx, mesh, m_layer_ctx, *buf_data));
                 m_quad_obj.update_mesh(ctx, std::move(mesh));
             }
 
@@ -280,7 +282,8 @@ namespace akashi {
             auto fg_color = hex_to_sdl(fill);
             info.fg = fg_color;
 
-            info.font_path = ctx.default_font_path.c_str();
+            auto font_path = json::optional::unwrap_or(style.font_path);
+            info.font_path = font_path.empty() ? ctx.default_font_path.c_str() : font_path.c_str();
 
             auto font_size = json::optional::unwrap_or(style.font_size);
             int default_font_size = 12;

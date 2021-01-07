@@ -13,6 +13,7 @@ namespace akashi {
 
         struct Style {
             json::optional::type<uint32_t> font_size;
+            json::optional::type<std::string> font_path;
             json::optional::type<std::string> fill;
             json::optional::type<std::string> color;
         };
@@ -20,18 +21,24 @@ namespace akashi {
         struct VideoLayerContext {
             std::string src;
             Fraction start;
+            double scale;
             json::optional::type<std::string> frag_path;
+            json::optional::type<std::string> geom_path;
         };
 
         struct TextLayerContext {
             std::string text;
+            double scale;
             json::optional::type<Style> style;
             json::optional::type<std::string> frag_path;
+            json::optional::type<std::string> geom_path;
         };
 
         struct ImageLayerContext {
             std::string src;
+            double scale;
             json::optional::type<std::string> frag_path;
+            json::optional::type<std::string> geom_path;
         };
 
         struct LayerContext {

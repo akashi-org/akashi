@@ -130,27 +130,34 @@ namespace akashi {
             switch (layer_type) {
                 case LayerType::VIDEO: {
                     auto target = new VideoLayerTarget;
-                    target->create(ctx, layer_ctx);
+                    if (!target->create(ctx, layer_ctx)) {
+                        break;
+                    }
                     m_targets.push_back(target);
                     m_target_map.insert({layer_ctx.uuid, target});
-                    break;
+                    return true;
                 }
                 case LayerType::AUDIO: {
+                    AKLOG_WARNN("audio layer not implemented!");
                     break;
                 }
                 case LayerType::TEXT: {
                     auto target = new TextLayerTarget;
-                    target->create(ctx, layer_ctx);
+                    if (!target->create(ctx, layer_ctx)) {
+                        break;
+                    }
                     m_targets.push_back(target);
                     m_target_map.insert({layer_ctx.uuid, target});
-                    break;
+                    return true;
                 }
                 case LayerType::IMAGE: {
                     auto target = new ImageLayerTarget;
-                    target->create(ctx, layer_ctx);
+                    if (!target->create(ctx, layer_ctx)) {
+                        break;
+                    }
                     m_targets.push_back(target);
                     m_target_map.insert({layer_ctx.uuid, target});
-                    break;
+                    return true;
                 }
                 default: {
                     AKLOG_ERROR("RenderScene::add_layer(): Invalid layer type '{}' found",
@@ -158,7 +165,8 @@ namespace akashi {
                     return false;
                 }
             }
-            return true;
+            AKLOG_WARN("skip adding the layer: {}", layer_ctx.uuid);
+            return false;
         }
     }
 }

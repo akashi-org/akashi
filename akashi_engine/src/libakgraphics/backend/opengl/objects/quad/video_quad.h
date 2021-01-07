@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../gl.h"
+#include "../../core/shader.h"
 
 #include <libakcore/error.h>
 #include <libakcore/string.h>
@@ -10,7 +11,6 @@ namespace akashi {
     namespace core {
         struct LayerContext;
     }
-
     namespace graphics {
 
         class VTexSizeFormat {
@@ -66,15 +66,14 @@ namespace akashi {
             bool create(const GLRenderContext& ctx, const VTexSizeFormat& format,
                         const core::LayerContext& layer);
             bool destroy(const GLRenderContext& ctx);
-            bool need_update(const VTexSizeFormat& new_format) const;
             const VideoQuadPassProp& get_prop() const;
 
             void shader_reload(const GLRenderContext& ctx, const core::LayerContext& layer,
-                               const std::vector<const char*> paths);
+                               const std::vector<const char*>& paths);
 
           private:
             bool load_shader(const GLRenderContext& ctx, const GLuint prog,
-                             const char* user_fshader_src) const;
+                             const UserShaderSet& shader_set) const;
             bool load_vao(const GLRenderContext& ctx, const VTexSizeFormat& format,
                           const GLuint prog, GLuint& vao) const;
             bool load_ibo(const GLRenderContext& ctx, GLuint& ibo) const;
@@ -82,6 +81,7 @@ namespace akashi {
           private:
             VideoQuadPassProp m_prop;
             VTexSizeFormat m_size_format;
+            UserShaderSet m_shader_set;
         };
 
         struct VideoQuadMesh {
@@ -116,8 +116,6 @@ namespace akashi {
             void update_pass(const GLRenderContext& ctx, VideoQuadPass&& pass);
 
             void update_mesh(const GLRenderContext& ctx, VideoQuadMesh&& mesh);
-
-            bool need_update_pass(const VTexSizeFormat& format);
 
           private:
             VideoQuadObjectProp m_prop;
