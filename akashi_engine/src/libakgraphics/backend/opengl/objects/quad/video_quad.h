@@ -66,7 +66,6 @@ namespace akashi {
             bool create(const GLRenderContext& ctx, const VTexSizeFormat& format,
                         const core::LayerContext& layer);
             bool destroy(const GLRenderContext& ctx);
-            bool need_update(const VTexSizeFormat& new_format) const;
             const VideoQuadPassProp& get_prop() const;
 
             void shader_reload(const GLRenderContext& ctx, const core::LayerContext& layer,
@@ -117,8 +116,6 @@ namespace akashi {
             void update_pass(const GLRenderContext& ctx, VideoQuadPass&& pass);
 
             void update_mesh(const GLRenderContext& ctx, VideoQuadMesh&& mesh);
-
-            bool need_update_pass(const VTexSizeFormat& format);
 
           private:
             VideoQuadObjectProp m_prop;

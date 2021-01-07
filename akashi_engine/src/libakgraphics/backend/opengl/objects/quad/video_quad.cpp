@@ -145,10 +145,6 @@ namespace akashi {
             return true;
         }
 
-        bool VideoQuadPass::need_update(const VTexSizeFormat& new_format) const {
-            return m_size_format != new_format;
-        }
-
         const VideoQuadPassProp& VideoQuadPass::get_prop(void) const { return m_prop; }
 
         void VideoQuadPass::shader_reload(const GLRenderContext& ctx,
@@ -297,10 +293,6 @@ namespace akashi {
             free_texture(ctx, m_prop.mesh.texCr);
 
             m_prop.mesh = mesh;
-        }
-
-        bool VideoQuadObject::need_update_pass(const VTexSizeFormat& format) {
-            return m_prop.pass.need_update(format);
         }
 
     }
