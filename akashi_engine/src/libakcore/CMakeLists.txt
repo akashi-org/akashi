@@ -66,7 +66,6 @@ endif()
 add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./rational.cpp"
   "./logger.cpp"
-  "./memory.cpp"
   "./path.cpp"
   "./config.cpp"
   "./string.cpp"
