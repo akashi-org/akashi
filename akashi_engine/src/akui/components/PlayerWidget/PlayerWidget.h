@@ -8,6 +8,8 @@
 
 #include <QOpenGLWidget>
 
+class QTimer;
+
 namespace akashi {
     namespace state {
         class AKState;
@@ -21,6 +23,10 @@ namespace akashi {
 
             using RenderProfile = akashi::core::RenderProfile;
             using Fraction = akashi::core::Fraction;
+
+            // If the cursor remains stationary after the time below passed, the cursor gets hidden
+            // automatically. This behavior is only applicable when m_enable_smart_cursor is true.
+            static const int CURSOR_INTERVAL_MS = 1500;
 
           public:
             explicit PlayerWidget(akashi::core::borrowed_ptr<akashi::state::AKState> state,
@@ -43,6 +49,11 @@ namespace akashi {
           protected:
             void initializeGL() override;
             void paintGL() override;
+
+            virtual void mouseMoveEvent(QMouseEvent*) override;
+            virtual void enterEvent(QEvent* event) override;
+            virtual void leaveEvent(QEvent* event) override;
+
           private Q_SLOTS:
 
           private:
@@ -54,6 +65,8 @@ namespace akashi {
           private:
             akashi::core::borrowed_ptr<akashi::state::AKState> m_state;
             akashi::core::owned_ptr<akashi::player::AKPlayer> m_player;
+            QTimer* m_cursor_timer;
+            bool m_enable_smart_cursor = true; // if true, hide the cursor automatically
         };
 
     }

@@ -24,6 +24,7 @@ namespace akashi {
             int64_t input_start_pts = 0;
             bool decode_ended = false;
             akashi::core::Rational cur_decode_pts = akashi::core::Rational(0, 1);
+            AVMediaType media_type = AVMEDIA_TYPE_UNKNOWN;
         };
 
         struct InputSource {

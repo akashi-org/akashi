@@ -9,6 +9,9 @@
 #include <libakgraphics/item.h>
 
 #include <QOpenGLContext>
+#include <QApplication>
+#include <QTimer>
+
 #include <vector>
 
 using namespace akashi::core;
@@ -29,6 +32,16 @@ namespace akashi {
             : QOpenGLWidget(parent, f), m_state(state) {
             m_player = make_owned<akashi::player::AKPlayer>(m_state);
             this->setObjectName("player_widget");
+
+            this->setMouseTracking(true);
+            m_cursor_timer = new QTimer(this);
+            m_cursor_timer->setInterval(PlayerWidget::CURSOR_INTERVAL_MS);
+            m_cursor_timer->setSingleShot(true);
+            QObject::connect(m_cursor_timer, &QTimer::timeout, [this]() {
+                if (m_enable_smart_cursor) {
+                    QApplication::setOverrideCursor(QCursor(Qt::BlankCursor));
+                }
+            });
         }
 
         PlayerWidget::~PlayerWidget() {}
@@ -63,6 +76,22 @@ namespace akashi {
             params.screen_height = this->height();
             params.default_fb = this->defaultFramebufferObject();
             m_player->render(params);
+        }
+
+        void PlayerWidget::mouseMoveEvent(QMouseEvent*) {
+            if (m_enable_smart_cursor) {
+                QApplication::restoreOverrideCursor();
+                if (m_cursor_timer) {
+                    m_cursor_timer->start();
+                }
+            }
+        }
+
+        void PlayerWidget::enterEvent(QEvent*) { m_enable_smart_cursor = true; }
+
+        void PlayerWidget::leaveEvent(QEvent*) {
+            m_enable_smart_cursor = false;
+            QApplication::restoreOverrideCursor();
         }
 
         void PlayerWidget::on_event(void* evt_ctx, akashi::event::Event evt) {
