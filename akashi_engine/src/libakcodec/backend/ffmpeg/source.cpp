@@ -181,29 +181,33 @@ namespace akashi {
         bool FFLayerSource::seek(const core::Rational& seek_pts) {
             for (size_t stream_idx = 0; stream_idx < m_input_src->ifmt_ctx->nb_streams;
                  stream_idx++) {
-                auto stream_time_base = m_input_src->dec_streams[stream_idx].dec_ctx->time_base;
+                auto media_type = m_input_src->dec_streams[stream_idx].media_type;
+                if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO ||
+                    media_type == AVMediaType::AVMEDIA_TYPE_AUDIO) {
+                    auto stream_time_base = m_input_src->dec_streams[stream_idx].dec_ctx->time_base;
 
-                auto dst_pts =
-                    av_rescale_q(seek_pts.num(), (AVRational){1, static_cast<int>(seek_pts.den())},
-                                 stream_time_base);
+                    auto dst_pts = av_rescale_q(seek_pts.num(),
+                                                (AVRational){1, static_cast<int>(seek_pts.den())},
+                                                stream_time_base);
 
-                // long dst_pts = 0;
-                // if (stream_time_base.num == 1) {
-                //     dst_pts = av_rescale(seek_value.num(), seek_value.den(),
-                //                          stream_time_base.den);
-                // } else {
-                //     dst_pts =
-                //         av_rescale_q(seek_value.num(),
-                //                      (AVRational){1, static_cast<int>(seek_value.den())},
-                //                      stream_time_base);
-                // }
+                    // long dst_pts = 0;
+                    // if (stream_time_base.num == 1) {
+                    //     dst_pts = av_rescale(seek_value.num(), seek_value.den(),
+                    //                          stream_time_base.den);
+                    // } else {
+                    //     dst_pts =
+                    //         av_rescale_q(seek_value.num(),
+                    //                      (AVRational){1, static_cast<int>(seek_value.den())},
+                    //                      stream_time_base);
+                    // }
 
-                if (av_seek_frame(m_input_src->ifmt_ctx, stream_idx, dst_pts,
-                                  AVSEEK_FLAG_BACKWARD) < 0) {
-                    AKLOG_ERRORN("FFLayerSource::seek(): Seek Failed");
-                    return false;
-                } else {
-                    avcodec_flush_buffers(m_input_src->dec_streams[stream_idx].dec_ctx);
+                    if (av_seek_frame(m_input_src->ifmt_ctx, stream_idx, dst_pts,
+                                      AVSEEK_FLAG_BACKWARD) < 0) {
+                        AKLOG_ERRORN("FFLayerSource::seek(): Seek Failed");
+                        return false;
+                    } else {
+                        avcodec_flush_buffers(m_input_src->dec_streams[stream_idx].dec_ctx);
+                    }
                 }
             }
             return true;

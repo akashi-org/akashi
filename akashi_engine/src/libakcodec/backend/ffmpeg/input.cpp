@@ -106,6 +106,7 @@ namespace akashi {
 
             for (unsigned int i = 0; i < format_ctx->nb_streams; i++) {
                 AVMediaType media_type = format_ctx->streams[i]->codecpar->codec_type;
+                input_src->dec_streams[i].media_type = media_type;
                 if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO ||
                     media_type == AVMediaType::AVMEDIA_TYPE_AUDIO) {
                     AVCodecID codec_id = format_ctx->streams[i]->codecpar->codec_id;
