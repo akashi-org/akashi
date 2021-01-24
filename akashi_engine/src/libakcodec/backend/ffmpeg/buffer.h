@@ -3,6 +3,7 @@
 #include <libakbuffer/avbuffer.h>
 #include <libakcore/rational.h>
 #include <libakcore/class.h>
+#include <libakcore/hw_accel.h>
 
 extern "C" {
 #include <libavutil/avutil.h>
@@ -44,6 +45,7 @@ namespace akashi {
                 akashi::core::AKAudioSpec out_audio_spec;
                 const char* uuid;
                 buffer::AVBufferType media_type = buffer::AVBufferType::UNKNOWN;
+                core::VideoDecodeMethod decode_method = core::VideoDecodeMethod::NONE;
             };
 
           public:
@@ -52,7 +54,7 @@ namespace akashi {
             FFmpegBufferData(FFmpegBufferData&& buf_data) = default;
 
           private:
-            void populate_video(const AVFrame* frame);
+            void populate_video(AVFrame* frame);
             void populate_audio(const AVFrame* frame,
                                 const akashi::core::AKAudioSpec& out_audio_spec,
                                 DecodeStream* dec_stream);

@@ -29,10 +29,11 @@ namespace akashi {
         FFLayerSource::~FFLayerSource() { this->finalize(); }
 
         bool FFLayerSource::init(const core::LayerProfile& layer_profile,
-                                 const core::Rational& decode_start) {
+                                 const core::Rational& decode_start,
+                                 const core::VideoDecodeMethod& decode_method) {
             m_done_init = true;
 
-            if (read_inputsrc(m_input_src, layer_profile.src.c_str()) < 0) {
+            if (read_inputsrc(m_input_src, layer_profile.src.c_str(), decode_method) < 0) {
                 AKLOG_ERRORN("FFLayerSource::init(): Failed to parse input from argument");
                 return false;
             }
@@ -57,6 +58,12 @@ namespace akashi {
             m_pkt = av_packet_alloc();
             if (!m_pkt) {
                 AKLOG_ERRORN("FFLayerSource::init(): Failed to alloc packet");
+                return false;
+            }
+
+            m_proxy_frame = av_frame_alloc();
+            if (!m_proxy_frame) {
+                AKLOG_ERRORN("FFLayerSource::init(): Failed to alloc proxy frame");
                 return false;
             }
 
@@ -119,7 +126,7 @@ namespace akashi {
                 DecodeStream* dec_stream = &m_input_src->dec_streams[m_pkt->stream_index];
 
                 // get a frame
-                ret_tmp = decode_packet(m_pkt, m_frame, dec_stream->dec_ctx);
+                ret_tmp = decode_packet(m_pkt, m_proxy_frame, dec_stream->dec_ctx);
                 if (ret_tmp == AVERROR(EAGAIN)) {
                     decode_result.result = DecodeResultCode::DECODE_AGAIN;
                     goto exit;
@@ -128,6 +135,20 @@ namespace akashi {
                                 av_err2str(ret_tmp));
                     decode_result.result = DecodeResultCode::ERROR;
                     goto exit;
+                }
+
+                if (m_proxy_frame->hw_frames_ctx &&
+                    m_input_src->decode_method == VideoDecodeMethod::VAAPI_COPY) {
+                    if (auto ret = av_hwframe_transfer_data(m_frame, m_proxy_frame, 0); ret < 0) {
+                        AKLOG_ERROR("av_hwframe_transfer_data() failed, ret={}", av_err2str(ret));
+                        goto exit;
+                    } else {
+                        // [XXX] be careful that some fields of m_frame are nuked!
+                        // no need to re-set width, height, format, linesize to m_frame!
+                        m_frame->pts = m_proxy_frame->pts;
+                    }
+                } else {
+                    av_frame_ref(m_frame, m_proxy_frame);
                 }
 
                 // necessary for the pts calculation, but is it really necessary?
@@ -153,13 +174,14 @@ namespace akashi {
 
                 FFmpegBufferData::InputData ffbuf_input;
 
-                ffbuf_input.frame = m_frame;
+                ffbuf_input.frame = m_frame; // [XXX] after this, `m_frame` should not be accessed
                 ffbuf_input.start_frame = false; // [TODO] remove this
                 ffbuf_input.pts = pts_set.frame_pts();
                 ffbuf_input.rpts = pts_set.frame_rpts();
                 ffbuf_input.out_audio_spec = out_audio_spec;
                 ffbuf_input.uuid = m_input_src->uuid;
                 ffbuf_input.media_type = to_res_buf_type(dec_stream->dec_ctx->codec_type);
+                ffbuf_input.decode_method = m_input_src->decode_method;
 
                 std::unique_ptr<FFmpegBufferData> buf_data(
                     new FFmpegBufferData(ffbuf_input, dec_stream));
@@ -174,6 +196,7 @@ namespace akashi {
 
         exit:
             av_frame_unref(m_frame);
+            av_frame_unref(m_proxy_frame);
             av_packet_unref(m_pkt);
             return decode_result;
         }
@@ -217,6 +240,10 @@ namespace akashi {
             if (m_pkt) {
                 av_packet_free(&m_pkt);
                 m_pkt = nullptr;
+            }
+            if (m_proxy_frame) {
+                av_frame_free(&m_proxy_frame);
+                m_proxy_frame = nullptr;
             }
             if (m_frame) {
                 av_frame_free(&m_frame);

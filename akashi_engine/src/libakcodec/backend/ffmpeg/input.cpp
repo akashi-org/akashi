@@ -3,12 +3,15 @@
 #include "./error.h"
 
 #include <libakcore/logger.h>
+#include <libakcore/hw_accel.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
 #include <libswresample/swresample.h>
+#include <libavutil/hwcontext.h>
+#include <libavutil/hwcontext_vaapi.h>
 }
 
 #include <vector>
@@ -46,17 +49,26 @@ namespace akashi {
                 avformat_free_context(input_src->ifmt_ctx);
             }
 
+            if (input_src->hw_device_ctx != nullptr) {
+                av_buffer_unref(&input_src->hw_device_ctx);
+                input_src->hw_device_ctx = nullptr;
+            }
+
             if (input_src != nullptr) {
                 delete input_src;
                 input_src = nullptr;
             }
         };
 
-        int read_inputsrc(InputSource*& input_src, const char* input_path) {
+        int read_inputsrc(InputSource*& input_src, const char* input_path,
+                          const core::VideoDecodeMethod& decode_method) {
             int ret_code = 0;
 
             input_src = new InputSource;
             init_input_src(input_src, input_path);
+
+            input_src->decode_method = decode_method;
+
             // input_src[i].io_ctx = new IOContext(input_paths[i]);
             if (read_av_input(input_src) < 0) {
                 ret_code = -1;
@@ -94,8 +106,50 @@ namespace akashi {
                 goto end;
             }
 
-        end:
+            switch (input_src->decode_method) {
+                case core::VideoDecodeMethod::VAAPI:
+                case core::VideoDecodeMethod::VAAPI_COPY: {
+                    ret = av_hwdevice_ctx_create(&input_src->hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI,
+                                                 NULL, NULL, 0);
+                    if (ret < 0) {
+                        AKLOG_ERROR("av_hwdevice_ctx_create(() failed, code={}({})", AVERROR(ret),
+                                    av_err2str(ret));
+                        goto end;
+                    }
 
+                    {
+                        auto raw_hw_device_ctx = (AVHWDeviceContext*)input_src->hw_device_ctx->data;
+                        auto dpy =
+                            static_cast<AVVAAPIDeviceContext*>(raw_hw_device_ctx->hwctx)->display;
+                        AKLOG_INFO("VADisplay: {}", dpy ? "ok" : "null");
+                        AKLOG_INFO("VA Vendor String: {}", vaQueryVendorString(dpy));
+
+                        // int va_max_num_profiles = vaMaxNumProfiles(dpy);
+                        // auto va_profiles = static_cast<VAProfile*>(
+                        //     malloc(sizeof(VAProfile) * va_max_num_profiles));
+                        // if (va_profiles) {
+                        //     int va_num_profiles = -1;
+                        //     if (VAStatus status =
+                        //             vaQueryConfigProfiles(dpy, va_profiles, &va_num_profiles);
+                        //         status != VA_STATUS_SUCCESS) {
+                        //         AKLOG_INFO("vaQueryConfigProfiles() failed: {}",
+                        //                    vaErrorStr(status));
+                        //     } else {
+                        //         for (int i = 0; i < va_num_profiles; i++) {
+                        //             AKLOG_INFO("VAProfiles: {}",
+                        //             static_cast<int>(va_profiles[i]));
+                        //         }
+                        //     }
+                        //     free(va_profiles);
+                        // }
+                    }
+                    break;
+                }
+                default: {
+                }
+            }
+
+        end:
             return ret;
         };
 
@@ -135,6 +189,26 @@ namespace akashi {
                         0) {
                         AKLOG_ERRORN("avcodec_parameters_to_context() error");
                         return -1;
+                    }
+
+                    if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO && input_src->hw_device_ctx) {
+                        codec_ctx->hw_device_ctx = av_buffer_ref(input_src->hw_device_ctx);
+                        if (!codec_ctx->hw_device_ctx) {
+                            AKLOG_ERRORN("A hardware device reference create failed");
+                            return -1;
+                        }
+                        codec_ctx->get_format = [](AVCodecContext*,
+                                                   const enum AVPixelFormat* pix_fmts) {
+                            const enum AVPixelFormat* p;
+
+                            for (p = pix_fmts; *p != AV_PIX_FMT_NONE; p++) {
+                                if (*p == AV_PIX_FMT_VAAPI)
+                                    return *p;
+                            }
+
+                            AKLOG_ERRORN("Failed to get a suitable HW surface format. ");
+                            return AV_PIX_FMT_NONE;
+                        };
                     }
 
                     int ret = 0;

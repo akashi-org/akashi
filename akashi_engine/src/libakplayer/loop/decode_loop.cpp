@@ -93,7 +93,10 @@ namespace akashi {
                         new codec::AKDecoder(decode_state.atom_profiles, decode_state.decode_pts);
                 }
 
-                auto decode_res = decoder->decode({ctx.state->m_atomic_state.audio_spec.load()});
+                auto decode_res = decoder->decode({
+                    ctx.state->m_atomic_state.audio_spec.load(),
+                    ctx.state->m_atomic_state.decode_method.load(),
+                });
 
                 switch (decode_res.result) {
                     case codec::DecodeResultCode::ERROR: {

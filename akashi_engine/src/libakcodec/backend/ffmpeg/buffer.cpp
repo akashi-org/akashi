@@ -1,6 +1,7 @@
 #include "./buffer.h"
 
 #include "./input.h"
+#include "./error.h"
 
 #include <libakbuffer/avbuffer.h>
 #include <libakcore/rational.h>
@@ -11,6 +12,7 @@ extern "C" {
 #include <libavutil/frame.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/pixdesc.h>
+#include <libavutil/hwcontext.h>
 }
 
 using namespace akashi::core;
@@ -130,6 +132,7 @@ namespace akashi {
             prop.rpts = input.rpts;
             prop.uuid = input.uuid;
             prop.start_frame = input.start_frame;
+            prop.decode_method = input.decode_method;
 
             m_prop = prop;
 
@@ -172,7 +175,7 @@ namespace akashi {
             }
         }
 
-        void FFmpegBufferData::populate_video(const AVFrame* frame) {
+        void FFmpegBufferData::populate_video(AVFrame* frame) {
             m_prop.width = frame->width;
             m_prop.height = frame->height;
 

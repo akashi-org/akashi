@@ -7,6 +7,7 @@
 #include <libakcore/audio.h>
 #include <libakcore/rational.h>
 #include <libakcore/memory.h>
+#include <libakcore/hw_accel.h>
 
 #include <libakbuffer/avbuffer.h>
 #include <libakbuffer/audio_queue.h>
@@ -66,7 +67,7 @@ namespace akashi {
             bool enable_loop = false;
             bool decode_finished = false;
             while (!decode_finished) {
-                auto decode_res = decoder->decode({audio_spec});
+                auto decode_res = decoder->decode({audio_spec, core::VideoDecodeMethod::SW});
 
                 switch (decode_res.result) {
                     case DecodeResultCode::ERROR: {

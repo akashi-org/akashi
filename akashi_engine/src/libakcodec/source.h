@@ -10,6 +10,7 @@ namespace akashi {
     namespace core {
         struct LayerProfile;
         struct AKAudioSpec;
+        enum class VideoDecodeMethod;
     }
     namespace codec {
 
@@ -21,7 +22,8 @@ namespace akashi {
             virtual ~LayerSource() = default;
 
             virtual bool init(const core::LayerProfile& layer_profile,
-                              const core::Rational& decode_start) = 0;
+                              const core::Rational& decode_start,
+                              const core::VideoDecodeMethod& decode_method) = 0;
 
             virtual DecodeResult decode(const DecodeArg& decode_arg) = 0;
 
@@ -37,7 +39,8 @@ namespace akashi {
             explicit AtomSource();
             virtual ~AtomSource();
 
-            void init(const core::AtomProfile& atom_profile, const core::Rational& decode_start);
+            void init(const core::AtomProfile& atom_profile, const core::Rational& decode_start,
+                      const core::VideoDecodeMethod& decode_method);
 
             DecodeResult decode(const DecodeArg& decode_arg);
 

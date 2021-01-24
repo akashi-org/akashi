@@ -15,6 +15,7 @@ namespace akashi {
     namespace core {
         struct LayerProfile;
         class Rational;
+        enum class VideoDecodeMethod;
     }
     namespace codec {
 
@@ -30,7 +31,8 @@ namespace akashi {
             virtual ~FFLayerSource();
 
             virtual bool init(const core::LayerProfile& layer_profile,
-                              const core::Rational& decode_start) override;
+                              const core::Rational& decode_start,
+                              const core::VideoDecodeMethod& decode_method) override;
 
             virtual DecodeResult decode(const DecodeArg& decode_arg) override;
 
@@ -48,6 +50,7 @@ namespace akashi {
           private:
             InputSource* m_input_src = nullptr;
             AVPacket* m_pkt = nullptr;
+            AVFrame* m_proxy_frame = nullptr;
             AVFrame* m_frame = nullptr;
             bool m_done_init = false;
         };

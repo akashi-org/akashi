@@ -9,6 +9,7 @@
 #include <libakcore/error.h>
 #include <libakcore/element.h>
 #include <libakcore/string.h>
+#include <libakbuffer/avbuffer.h>
 
 #include <string>
 #include <iostream>
@@ -38,7 +39,6 @@ static constexpr const char* vshader_src = u8R"(
     }
 )";
 
-// inspired by https://github.com/brion/yuv-canvas/blob/master/shaders/YCbCr.fsh
 static constexpr const char* fshader_src = u8R"(
     #version 420 core
     uniform sampler2D textureY;
@@ -54,24 +54,68 @@ static constexpr const char* fshader_src = u8R"(
 
     out vec4 fragColor;
 
+    void to_rgb(inout vec4 _fragColor, vec2 vLumaUvs, vec2 vChromaUvs);
+
     void frag_main(inout vec4 rv);
 
     void main(void){
+        to_rgb(fragColor, fs_in.vLumaUvs, fs_in.vChromaUvs);
+        frag_main(fragColor);
+})";
 
-        float fY = texture(textureY, fs_in.vLumaUvs).x;
-        float fCb = texture(textureCb, fs_in.vChromaUvs).x;
-        float fCr = texture(textureCr, fs_in.vChromaUvs).x;
+// inspired by https://github.com/brion/yuv-canvas/blob/master/shaders/YCbCr.fsh
+static constexpr const char* color_conv_fshader_sw = u8R"(
+    #version 420 core
+    uniform sampler2D textureY;
+    uniform sampler2D textureCb;
+    uniform sampler2D textureCr;
+
+    void to_rgb(inout vec4 _fragColor, vec2 vLumaUvs, vec2 vChromaUvs){
+
+        float fY = texture(textureY, vLumaUvs).r;
+        float fCb = texture(textureCb, vChromaUvs).r;
+        float fCr = texture(textureCr, vChromaUvs).r;
 
         float fYmul = fY * 1.1643828125;
 
-        fragColor = vec4(
+        _fragColor = vec4(
             fYmul + 1.59602734375 * fCr - 0.87078515625,
             fYmul - 0.39176171875 * fCb - 0.81296875 * fCr + 0.52959375,
             fYmul + 2.017234375   * fCb - 1.081390625,
             1
         );
-        frag_main(fragColor);
-})";
+    }
+)";
+
+static constexpr const char* color_conv_fshader_vaapi = u8R"(
+    #version 420 core
+    uniform sampler2D textureY;
+    uniform sampler2D textureCb;
+
+    void to_rgb(inout vec4 _fragColor, vec2 vLumaUvs, vec2 vChromaUvs){
+
+        vec3 rc = vec3(1.164, 0.0, 1.596);
+        vec3 gc = vec3(1.164, -0.391, -0.813);
+        vec3 bc = vec3(1.164, 2.018, 0.0);
+
+        vec3 offset = vec3(-0.0625, -0.5, -0.5);
+
+        vec3 yuv = vec3(
+            texture(textureY, vLumaUvs).r,
+            texture(textureCb, vLumaUvs).r,
+            texture(textureCb, vLumaUvs).g
+        );
+        // yuv = clamp(yuv, 0.0, 1.0);
+        yuv += offset;
+
+        _fragColor = vec4(
+            dot(yuv, rc),
+            dot(yuv, gc),
+            dot(yuv, bc),
+            1
+        );
+    }
+)";
 
 static constexpr const char* default_user_fshader_src = u8R"(
     #version 420 core
@@ -113,13 +157,15 @@ namespace akashi {
         /* --- VideoQuadPass --- */
 
         bool VideoQuadPass::create(const GLRenderContext& ctx, const VTexSizeFormat& format,
-                                   const core::LayerContext& layer) {
+                                   const core::LayerContext& layer,
+                                   const core::VideoDecodeMethod& decode_method) {
             m_prop.prog = GET_GLFUNC(ctx, glCreateProgram)();
             m_size_format = format;
+            m_decode_method = decode_method;
 
             // loading shader
             m_shader_set.load(layer, core::LayerType::VIDEO);
-            this->load_shader(ctx, m_prop.prog, m_shader_set);
+            this->load_shader(ctx, m_prop.prog, m_shader_set, decode_method);
 
             // uniform location
             m_prop.mvp_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "mvpMatrix");
@@ -153,16 +199,21 @@ namespace akashi {
             for (const auto& path : paths) {
                 if (m_shader_set.contains(path)) {
                     this->destroy(ctx);
-                    this->create(ctx, m_size_format, layer);
+                    this->create(ctx, m_size_format, layer, m_decode_method);
                     break;
                 }
             }
         }
 
         bool VideoQuadPass::load_shader(const GLRenderContext& ctx, const GLuint prog,
-                                        const UserShaderSet& shader_set) const {
+                                        const UserShaderSet& shader_set,
+                                        const core::VideoDecodeMethod& decode_method) const {
             CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_VERTEX_SHADER, vshader_src));
             CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_FRAGMENT_SHADER, fshader_src));
+            CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_FRAGMENT_SHADER,
+                                                  decode_method == VideoDecodeMethod::SW
+                                                      ? color_conv_fshader_sw
+                                                      : color_conv_fshader_vaapi));
             CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_FRAGMENT_SHADER,
                                                   shader_set.frag().path.empty()
                                                       ? default_user_fshader_src
@@ -262,6 +313,87 @@ namespace akashi {
             return true;
         }
 
+        /* --- VideoQuadMesh --- */
+
+        template <enum core::VideoDecodeMethod>
+        bool VideoQuadMesh::create_inner(const GLRenderContext&, const buffer::AVBufferData&) {
+            throw std::runtime_error("Not Implemented Error: create_inner()");
+        }
+
+        template <>
+        bool VideoQuadMesh::create_inner<core::VideoDecodeMethod::SW>(
+            const GLRenderContext& ctx, const buffer::AVBufferData& buf_data) {
+            for (size_t i = 0; i < m_textures.size(); i++) {
+                auto& tex = m_textures[i];
+                tex.image = buf_data.prop().video_data[i].buf;
+                tex.width = buf_data.prop().video_data[i].stride - 1;
+                tex.height = i == 0 ? buf_data.prop().height : buf_data.prop().chroma_height;
+                tex.effective_width = i == 0 ? buf_data.prop().width : buf_data.prop().chroma_width;
+                tex.effective_height = tex.height;
+
+                tex.format = GL_RED;
+                tex.internal_format = GL_R8;
+
+                // [TODO] could this be duplicate with the other indices
+                tex.index = i;
+
+                // [TODO] error-check?
+                create_texture(ctx, tex);
+            }
+            return true;
+        }
+
+        template <>
+        bool VideoQuadMesh::create_inner<core::VideoDecodeMethod::VAAPI_COPY>(
+            const GLRenderContext& ctx, const buffer::AVBufferData& buf_data) {
+            for (size_t i = 0; i < 2; i++) {
+                auto& tex = m_textures[i];
+                tex.image = buf_data.prop().video_data[i].buf;
+                tex.width = i == 0 ? buf_data.prop().video_data[i].stride - 1
+                                   : buf_data.prop().chroma_width;
+                tex.height = i == 0 ? buf_data.prop().height : buf_data.prop().chroma_height;
+                tex.effective_width = i == 0 ? buf_data.prop().width : buf_data.prop().chroma_width;
+                tex.effective_height = tex.height;
+
+                tex.format = i == 0 ? GL_RED : GL_RG;
+                tex.internal_format = i == 0 ? GL_R8 : GL_RG8;
+
+                // [TODO] could this be duplicate with the other indices
+                tex.index = i;
+
+                // [TODO] error-check?
+                create_texture(ctx, tex);
+            }
+            return true;
+        }
+
+        bool VideoQuadMesh::create(const GLRenderContext& ctx,
+                                   const buffer::AVBufferData& buf_data) {
+            m_textures.reserve(3);
+            m_textures.resize(3);
+
+            m_decode_method = buf_data.prop().decode_method;
+
+            switch (m_decode_method) {
+                case VideoDecodeMethod::SW: {
+                    return this->create_inner<core::VideoDecodeMethod::SW>(ctx, buf_data);
+                }
+                case VideoDecodeMethod::VAAPI_COPY: {
+                    return this->create_inner<core::VideoDecodeMethod::VAAPI_COPY>(ctx, buf_data);
+                }
+                default: {
+                    return false;
+                }
+            }
+        }
+
+        bool VideoQuadMesh::destroy(const GLRenderContext& ctx) {
+            for (auto&& tex : m_textures) {
+                free_texture(ctx, tex);
+            }
+            return true;
+        }
+
         /* --- VideoQuadObject --- */
 
         void VideoQuadObject::create(const GLRenderContext&, const VideoQuadPass&& pass,
@@ -271,11 +403,7 @@ namespace akashi {
             m_created = true;
         }
 
-        void VideoQuadObject::destroy(const GLRenderContext& ctx) {
-            free_texture(ctx, m_prop.mesh.texY);
-            free_texture(ctx, m_prop.mesh.texCb);
-            free_texture(ctx, m_prop.mesh.texCr);
-        }
+        void VideoQuadObject::destroy(const GLRenderContext& ctx) { m_prop.mesh.destroy(ctx); }
 
         const VideoQuadObjectProp& VideoQuadObject::get_prop(void) const { return m_prop; }
 
@@ -288,9 +416,10 @@ namespace akashi {
 
         void VideoQuadObject::update_mesh(const GLRenderContext& ctx, VideoQuadMesh&& mesh) {
             // [TODO] is it ok to free it here?
-            free_texture(ctx, m_prop.mesh.texY);
-            free_texture(ctx, m_prop.mesh.texCb);
-            free_texture(ctx, m_prop.mesh.texCr);
+            // free_texture(ctx, m_prop.mesh.texY);
+            // free_texture(ctx, m_prop.mesh.texCb);
+            // free_texture(ctx, m_prop.mesh.texCr);
+            m_prop.mesh.destroy(ctx);
 
             m_prop.mesh = mesh;
         }

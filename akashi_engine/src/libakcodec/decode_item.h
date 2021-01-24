@@ -9,6 +9,7 @@
 namespace akashi {
     namespace core {
         class Rational;
+        enum class VideoDecodeMethod;
     }
     namespace buffer {
         class AVBufferData;
@@ -17,6 +18,7 @@ namespace akashi {
 
         struct DecodeArg {
             core::AKAudioSpec out_audio_spec;
+            core::VideoDecodeMethod decode_method;
         };
 
         enum class DecodeResultCode {

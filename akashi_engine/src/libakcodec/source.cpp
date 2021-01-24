@@ -24,14 +24,15 @@ namespace akashi {
         }
 
         void AtomSource::init(const core::AtomProfile& atom_profile,
-                              const core::Rational& decode_start) {
+                              const core::Rational& decode_start,
+                              const core::VideoDecodeMethod& decode_method) {
             m_done_init = true;
             m_atom_profile = atom_profile;
             m_max_layer_idx = atom_profile.layers.size() == 0 ? 0 : atom_profile.layers.size() - 1;
 
             for (size_t i = 0; i < atom_profile.layers.size(); i++) {
                 m_layer_sources.push_back(make_owned<FFLayerSource>());
-                m_layer_sources[i]->init(m_atom_profile.layers[i], decode_start);
+                m_layer_sources[i]->init(m_atom_profile.layers[i], decode_start, decode_method);
             }
         }
 

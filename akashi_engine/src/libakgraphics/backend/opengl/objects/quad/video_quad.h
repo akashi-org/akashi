@@ -5,11 +5,16 @@
 
 #include <libakcore/error.h>
 #include <libakcore/string.h>
+#include <libakcore/hw_accel.h>
+
 #include <glm/glm.hpp>
 
 namespace akashi {
     namespace core {
         struct LayerContext;
+    }
+    namespace buffer {
+        class AVBufferData;
     }
     namespace graphics {
 
@@ -64,7 +69,8 @@ namespace akashi {
             virtual ~VideoQuadPass(void) = default;
 
             bool create(const GLRenderContext& ctx, const VTexSizeFormat& format,
-                        const core::LayerContext& layer);
+                        const core::LayerContext& layer,
+                        const core::VideoDecodeMethod& decode_method);
             bool destroy(const GLRenderContext& ctx);
             const VideoQuadPassProp& get_prop() const;
 
@@ -73,7 +79,8 @@ namespace akashi {
 
           private:
             bool load_shader(const GLRenderContext& ctx, const GLuint prog,
-                             const UserShaderSet& shader_set) const;
+                             const UserShaderSet& shader_set,
+                             const core::VideoDecodeMethod& decode_method) const;
             bool load_vao(const GLRenderContext& ctx, const VTexSizeFormat& format,
                           const GLuint prog, GLuint& vao) const;
             bool load_ibo(const GLRenderContext& ctx, GLuint& ibo) const;
@@ -82,14 +89,33 @@ namespace akashi {
             VideoQuadPassProp m_prop;
             VTexSizeFormat m_size_format;
             UserShaderSet m_shader_set;
+            core::VideoDecodeMethod m_decode_method;
         };
 
-        struct VideoQuadMesh {
-            GLTextureData texY;
-            GLTextureData texCb;
-            GLTextureData texCr;
-            glm::mat4 mvp = glm::mat4(1.0f);
-            int8_t flip_y = 1; // if -1, upside down
+        class VideoQuadMesh final {
+          public:
+            explicit VideoQuadMesh(void) = default;
+            virtual ~VideoQuadMesh(void) = default;
+
+            bool create(const GLRenderContext& ctx, const buffer::AVBufferData& buf_data);
+
+            bool destroy(const GLRenderContext& ctx);
+
+            const std::vector<GLTextureData>& textures(void) const { return m_textures; }
+            const glm::mat4& mvp(void) const { return m_mvp; }
+            int8_t flip_y(void) const { return m_flip_y; }
+
+            core::VideoDecodeMethod decode_method(void) const { return m_decode_method; }
+
+          private:
+            template <enum core::VideoDecodeMethod>
+            bool create_inner(const GLRenderContext& ctx, const buffer::AVBufferData& buf_data);
+
+          private:
+            std::vector<GLTextureData> m_textures;
+            glm::mat4 m_mvp = glm::mat4(1.0f);
+            int8_t m_flip_y = 1; // if -1, upside down
+            core::VideoDecodeMethod m_decode_method;
         };
 
         struct VideoQuadObjectProp {
