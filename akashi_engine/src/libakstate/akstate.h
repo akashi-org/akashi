@@ -4,6 +4,7 @@
 #include <libakcore/element.h>
 #include <libakcore/audio.h>
 #include <libakcore/path.h>
+#include <libakcore/hw_accel.h>
 
 #include <mutex>
 #include <condition_variable>
@@ -120,6 +121,8 @@ namespace akashi {
             bool shader_reload = false; // temporary
 
             std::vector<const char*> updated_shader_paths;
+
+            core::VideoDecodeMethod decode_method;
         };
 
         struct AtomicState {

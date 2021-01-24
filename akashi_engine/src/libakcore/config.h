@@ -2,6 +2,7 @@
 
 #include "./rational.h"
 #include "./audio.h"
+#include "./hw_accel.h"
 
 #include <string>
 #include <vector>
@@ -26,6 +27,7 @@ namespace akashi {
         struct PlaybackConf {
             bool enable_loop;
             double gain;
+            VideoDecodeMethod decode_method;
             size_t video_max_queue_size;
             size_t audio_max_queue_size;
         };

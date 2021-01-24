@@ -84,6 +84,7 @@ file(GLOB INTERFACE_HEADERS
   path.h
   rational.h
   string.h
+  hw_accel.h
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES 
   PUBLIC_HEADER "${INTERFACE_HEADERS}" # [XXX] we need double quotes here!
