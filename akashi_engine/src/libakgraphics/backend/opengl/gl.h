@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../../item.h"
+
 #include <libakcore/element.h>
 
 #include <string>
@@ -8,11 +10,15 @@
 
 #include <GL/gl.h>
 #include <GL/glext.h>
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
 #include <glm/glm.hpp>
 
 #define PREFIXED_GLFUNC(func_name) akpriv##func_name
 
 #define GET_GLFUNC(gl_render_ctx, func_name) gl_render_ctx.func.PREFIXED_GLFUNC(func_name)
+
+#define GET_EGLFUNC(gl_render_ctx, func_name) gl_render_ctx.egl_func.func_name
 
 namespace akashi {
     namespace graphics {
@@ -198,6 +204,17 @@ namespace akashi {
                                                                          GLuint);
         };
 
+        struct EGLFunction {
+            EGLint(EGLAPIENTRY* eglGetError)(void);
+            EGLDisplay(EGLAPIENTRY* eglGetCurrentDisplay)(void);
+            EGLContext(EGLAPIENTRY* eglGetCurrentContext)(void);
+            EGLImageKHR(EGLAPIENTRY* eglCreateImageKHR)(EGLDisplay dpy, EGLContext ctx,
+                                                        EGLenum target, EGLClientBuffer buffer,
+                                                        const EGLint* attrib_list);
+            EGLBoolean(EGLAPIENTRY* eglDestroyImageKHR)(EGLDisplay dpy, EGLImageKHR image);
+            void(EGLAPIENTRY* glEGLImageTargetTexture2DOES)(GLenum, GLeglImageOES);
+        };
+
         struct GLTextureData {
             int index = 0;
             GLuint buffer;
@@ -230,6 +247,8 @@ namespace akashi {
 
             GLFunction func;
 
+            EGLFunction egl_func;
+
             // [TODO] unique_ptr?
             RenderScene* render_scene = nullptr;
 
@@ -237,6 +256,8 @@ namespace akashi {
             FramebufferObject* fbo = nullptr;
 
             std::string default_font_path;
+
+            EGLGetProcAddress egl_get_proc_address;
         };
 
     }

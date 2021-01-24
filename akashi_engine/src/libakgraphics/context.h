@@ -20,6 +20,7 @@ namespace akashi {
     namespace graphics {
 
         struct GetProcAddress;
+        struct EGLGetProcAddress;
         struct RenderParams;
         class GraphicsContext;
         class GraphicsContext {
@@ -29,7 +30,8 @@ namespace akashi {
                                      core::borrowed_ptr<audio::AKAudio>){};
             virtual ~GraphicsContext(){};
 
-            virtual bool load_api(const GetProcAddress& get_proc_address) = 0;
+            virtual bool load_api(const GetProcAddress& get_proc_address,
+                                  const EGLGetProcAddress& egl_get_proc_address) = 0;
             virtual bool load_fbo(const core::RenderProfile& render_prof) = 0;
             virtual void render(const RenderParams& params,
                                 const core::FrameContext& frame_ctx) = 0;

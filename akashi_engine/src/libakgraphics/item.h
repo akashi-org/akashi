@@ -9,6 +9,10 @@ namespace akashi {
             std::function<void*(void* ctx, const char* name)> func;
         };
 
+        struct EGLGetProcAddress {
+            std::function<void*(void* ctx, const char* name)> func;
+        };
+
         struct RenderParams {
             unsigned int default_fb;
             int screen_width;

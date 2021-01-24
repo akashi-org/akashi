@@ -16,6 +16,7 @@ namespace akashi {
     namespace graphics {
         class AKGraphics;
         struct GetProcAddress;
+        struct EGLGetProcAddress;
         struct RenderParams;
     }
     namespace buffer {
@@ -37,7 +38,8 @@ namespace akashi {
             virtual ~AKPlayer();
 
             void init(event::EventCallback cb, void* evt_ctx,
-                      graphics::GetProcAddress get_proc_address);
+                      graphics::GetProcAddress get_proc_address,
+                      graphics::EGLGetProcAddress egl_get_proc_address);
 
             void render(const graphics::RenderParams& params);
 

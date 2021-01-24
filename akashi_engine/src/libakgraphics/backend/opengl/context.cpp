@@ -37,7 +37,11 @@ namespace akashi {
             }
         };
 
-        bool GLGraphicsContext::load_api(const GetProcAddress& get_proc_address) {
+        bool GLGraphicsContext::load_api(const GetProcAddress& get_proc_address,
+                                         const EGLGetProcAddress& egl_get_proc_address) {
+            m_render_ctx->egl_get_proc_address = egl_get_proc_address;
+            load_egl_functions(egl_get_proc_address, *m_render_ctx);
+
             if (load_gl_getString(get_proc_address, *m_render_ctx) != ErrorType::OK) {
                 return false;
             }
