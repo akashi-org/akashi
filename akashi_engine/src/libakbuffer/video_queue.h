@@ -3,6 +3,7 @@
 #include <libakcore/rational.h>
 #include <libakcore/audio.h>
 #include <libakcore/memory.h>
+#include <libakcore/hw_accel.h>
 
 #include <cstdint>
 #include <deque>
@@ -44,11 +45,17 @@ namespace akashi {
             void clear(bool notify = true);
 
           private:
+            bool is_not_full(void) const;
+
+          private:
             core::borrowed_ptr<state::AKState> m_state;
             std::unordered_map<std::string, VideoQueueData> m_qmap;
             size_t m_queue_size = 0;
+            size_t m_queue_count = 0; // queue count in total
             std::mutex m_qmap_mtx;
             unsigned int m_max_queue_size = 0;
+            size_t m_max_queue_count = 0;
+            core::VideoDecodeMethod m_decode_method = core::VideoDecodeMethod::NONE;
         };
 
     }

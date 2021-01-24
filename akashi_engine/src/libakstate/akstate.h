@@ -88,6 +88,8 @@ namespace akashi {
 
             size_t video_max_queue_size = 1024 * 1024 * 300; // 300mb
 
+            size_t video_max_queue_count = 64;
+
             size_t audio_max_queue_size = 1024 * 1024 * 100; // 100mb
 
             // used for dequeueing

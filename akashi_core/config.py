@@ -73,6 +73,7 @@ class PlaybackConf:
     gain: float = 0.5  # 0 ~ 1.0
     decode_method: VideoDecodeMethod = VideoDecodeMethod.SW
     video_max_queue_size: int = 1024 * 1024 * 300  # 300mb
+    video_max_queue_count: int = 64  # max frame counts (applicable for hwdec)
     audio_max_queue_size: int = 1024 * 1024 * 10  # 10mb
 
 

@@ -19,7 +19,8 @@ namespace akashi {
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AudioConf, format, sample_rate, channels,
                                            channel_layout);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PlaybackConf, enable_loop, gain, decode_method,
-                                           video_max_queue_size, audio_max_queue_size);
+                                           video_max_queue_size, video_max_queue_count,
+                                           audio_max_queue_size);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(UIConf, resolution);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AKConf, general, video, audio, playback, ui);
 
