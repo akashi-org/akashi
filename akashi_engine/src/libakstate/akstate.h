@@ -121,8 +121,6 @@ namespace akashi {
             bool shader_reload = false; // temporary
 
             std::vector<const char*> updated_shader_paths;
-
-            core::VideoDecodeMethod decode_method;
         };
 
         struct AtomicState {
@@ -141,6 +139,8 @@ namespace akashi {
             std::atomic<double> volume = 0.5;
 
             std::atomic<bool> ui_can_seek = true;
+
+            std::atomic<core::VideoDecodeMethod> decode_method = core::VideoDecodeMethod::NONE;
         };
 
         class AKState final {
