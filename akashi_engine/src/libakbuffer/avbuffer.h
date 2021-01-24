@@ -5,6 +5,8 @@
 #include <libakcore/memory.h>
 #include <libakcore/hw_accel.h>
 
+#include <va/va.h>
+
 namespace akashi {
 
     namespace state {
@@ -40,6 +42,9 @@ namespace akashi {
                 int channels = -1;
                 int nb_samples = -1;
                 core::VideoDecodeMethod decode_method = core::VideoDecodeMethod::NONE;
+
+                VADisplay va_display;
+                VASurfaceID va_surface_id;
             };
 
           public:

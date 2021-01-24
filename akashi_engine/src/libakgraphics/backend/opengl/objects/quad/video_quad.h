@@ -6,15 +6,16 @@
 #include <libakcore/error.h>
 #include <libakcore/string.h>
 #include <libakcore/hw_accel.h>
+#include <libakcore/memory.h>
+#include <libakbuffer/avbuffer.h>
 
 #include <glm/glm.hpp>
+#include <va/va.h>
+#include <va/va_drmcommon.h>
 
 namespace akashi {
     namespace core {
         struct LayerContext;
-    }
-    namespace buffer {
-        class AVBufferData;
     }
     namespace graphics {
 
@@ -94,12 +95,22 @@ namespace akashi {
 
         class VideoQuadMesh final {
           public:
+            struct VAAPIContext {
+                VAImage va_image;
+                VADRMPRIMESurfaceDescriptor desc;
+                EGLImage egl_images[3] = {nullptr};
+                bool need_free = false;
+            };
+
+          public:
             explicit VideoQuadMesh(void) = default;
             virtual ~VideoQuadMesh(void) = default;
 
-            bool create(const GLRenderContext& ctx, const buffer::AVBufferData& buf_data);
+            bool create(const GLRenderContext& ctx, core::owned_ptr<buffer::AVBufferData> buf_data);
 
             bool destroy(const GLRenderContext& ctx);
+
+            void update(const GLRenderContext& ctx, core::owned_ptr<buffer::AVBufferData> buf_data);
 
             const std::vector<GLTextureData>& textures(void) const { return m_textures; }
             const glm::mat4& mvp(void) const { return m_mvp; }
@@ -111,11 +122,15 @@ namespace akashi {
             template <enum core::VideoDecodeMethod>
             bool create_inner(const GLRenderContext& ctx, const buffer::AVBufferData& buf_data);
 
+            void free_vaapi_context(const GLRenderContext& ctx);
+
           private:
             std::vector<GLTextureData> m_textures;
             glm::mat4 m_mvp = glm::mat4(1.0f);
             int8_t m_flip_y = 1; // if -1, upside down
             core::VideoDecodeMethod m_decode_method;
+            core::owned_ptr<buffer::AVBufferData> m_buf_data = nullptr;
+            VAAPIContext m_vaapi_ctx;
         };
 
         struct VideoQuadObjectProp {
@@ -127,10 +142,9 @@ namespace akashi {
           public:
             explicit VideoQuadObject(void) = default;
             virtual ~VideoQuadObject(void) = default;
-            VideoQuadObject(VideoQuadObject&&) = default;
 
             void create(const GLRenderContext& ctx, const VideoQuadPass&& pass,
-                        VideoQuadMesh&& mesh);
+                        core::owned_ptr<buffer::AVBufferData> buf_data);
             void destroy(const GLRenderContext& ctx);
 
             const VideoQuadObjectProp& get_prop() const;
@@ -141,7 +155,8 @@ namespace akashi {
 
             void update_pass(const GLRenderContext& ctx, VideoQuadPass&& pass);
 
-            void update_mesh(const GLRenderContext& ctx, VideoQuadMesh&& mesh);
+            void update_mesh(const GLRenderContext& ctx,
+                             core::owned_ptr<buffer::AVBufferData> buf_data);
 
           private:
             VideoQuadObjectProp m_prop;

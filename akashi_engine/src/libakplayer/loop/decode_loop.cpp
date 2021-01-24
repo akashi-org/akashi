@@ -93,10 +93,14 @@ namespace akashi {
                         new codec::AKDecoder(decode_state.atom_profiles, decode_state.decode_pts);
                 }
 
-                auto decode_res = decoder->decode({
-                    ctx.state->m_atomic_state.audio_spec.load(),
-                    ctx.state->m_atomic_state.decode_method.load(),
-                });
+                codec::DecodeArg decode_args;
+                {
+                    std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
+                    decode_args.out_audio_spec = ctx.state->m_atomic_state.audio_spec.load();
+                    decode_args.decode_method = ctx.state->m_atomic_state.decode_method.load();
+                    decode_args.video_max_queue_count = ctx.state->m_prop.video_max_queue_count;
+                }
+                auto decode_res = decoder->decode(decode_args);
 
                 switch (decode_res.result) {
                     case codec::DecodeResultCode::ERROR: {

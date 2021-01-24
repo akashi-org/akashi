@@ -17,6 +17,8 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
 #include <libswresample/swresample.h>
+#include <libavutil/hwcontext.h>
+#include <libavutil/hwcontext_vaapi.h>
 }
 
 #include <algorithm>
@@ -30,10 +32,12 @@ namespace akashi {
 
         bool FFLayerSource::init(const core::LayerProfile& layer_profile,
                                  const core::Rational& decode_start,
-                                 const core::VideoDecodeMethod& decode_method) {
+                                 const core::VideoDecodeMethod& decode_method,
+                                 const size_t video_max_queue_count) {
             m_done_init = true;
 
-            if (read_inputsrc(m_input_src, layer_profile.src.c_str(), decode_method) < 0) {
+            if (read_inputsrc(m_input_src, layer_profile.src.c_str(), decode_method,
+                              video_max_queue_count) < 0) {
                 AKLOG_ERRORN("FFLayerSource::init(): Failed to parse input from argument");
                 return false;
             }
@@ -174,7 +178,14 @@ namespace akashi {
 
                 FFmpegBufferData::InputData ffbuf_input;
 
-                ffbuf_input.frame = m_frame; // [XXX] after this, `m_frame` should not be accessed
+                if (m_input_src->decode_method == VideoDecodeMethod::VAAPI) {
+                    AVFrame* new_frame = av_frame_alloc();
+                    av_frame_ref(new_frame, m_frame);
+                    ffbuf_input.frame = new_frame;
+                } else {
+                    ffbuf_input.frame =
+                        m_frame; // [XXX] after this, `m_frame` should not be accessed
+                }
                 ffbuf_input.start_frame = false; // [TODO] remove this
                 ffbuf_input.pts = pts_set.frame_pts();
                 ffbuf_input.rpts = pts_set.frame_rpts();
@@ -182,6 +193,12 @@ namespace akashi {
                 ffbuf_input.uuid = m_input_src->uuid;
                 ffbuf_input.media_type = to_res_buf_type(dec_stream->dec_ctx->codec_type);
                 ffbuf_input.decode_method = m_input_src->decode_method;
+
+                if (m_input_src->decode_method == VideoDecodeMethod::VAAPI) {
+                    auto raw_hw_device_ctx = (AVHWDeviceContext*)m_input_src->hw_device_ctx->data;
+                    ffbuf_input.va_display =
+                        static_cast<AVVAAPIDeviceContext*>(raw_hw_device_ctx->hwctx)->display;
+                }
 
                 std::unique_ptr<FFmpegBufferData> buf_data(
                     new FFmpegBufferData(ffbuf_input, dec_stream));

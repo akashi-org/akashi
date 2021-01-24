@@ -4,6 +4,7 @@
 #include "../../core/shader.h"
 #include "../../core/buffer.h"
 #include "../../core/texture.h"
+#include "../../../../drm_fourcc_excerpt.h"
 
 #include <libakcore/logger.h>
 #include <libakcore/error.h>
@@ -15,6 +16,13 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+
+#include <unistd.h>
+
+#include <va/va.h>
+#include <va/va_drmcommon.h>
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
 
 using namespace akashi::core;
 
@@ -337,9 +345,138 @@ namespace akashi {
                 // [TODO] could this be duplicate with the other indices
                 tex.index = i;
 
-                // [TODO] error-check?
-                create_texture(ctx, tex);
+                GET_GLFUNC(ctx, glBindTexture)(GL_TEXTURE_2D, tex.buffer);
+                GET_GLFUNC(ctx, glTexImage2D)
+                (GL_TEXTURE_2D, 0, tex.internal_format, tex.width, tex.height, 0, tex.format,
+                 GL_UNSIGNED_BYTE, tex.image);
+
+                // [XXX] make sure to explicity setup when not using mimap
+                GET_GLFUNC(ctx, glTexParameteri)(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                GET_GLFUNC(ctx, glTexParameteri)(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                GET_GLFUNC(ctx, glTexParameteri)
+                (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                GET_GLFUNC(ctx, glTexParameteri)
+                (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+                GET_GLFUNC(ctx, glBindTexture)(GL_TEXTURE_2D, 0);
             }
+            return true;
+        }
+
+        template <>
+        bool VideoQuadMesh::create_inner<core::VideoDecodeMethod::VAAPI>(
+            const GLRenderContext& ctx, const buffer::AVBufferData& buf_data) {
+            if (auto status = vaExportSurfaceHandle(
+                    buf_data.prop().va_display, buf_data.prop().va_surface_id,
+                    VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
+                    VA_EXPORT_SURFACE_READ_ONLY | VA_EXPORT_SURFACE_SEPARATE_LAYERS,
+                    &m_vaapi_ctx.desc);
+                status != 0) {
+                AKLOG_ERROR("vaExportSurfaceHandle() failed: {}", vaErrorStr(status));
+                return false;
+            }
+
+            if (auto status =
+                    vaSyncSurface(buf_data.prop().va_display, buf_data.prop().va_surface_id);
+                status != 0) {
+                AKLOG_ERROR("vaSyncSurface() failed: {}", vaErrorStr(status));
+                return false;
+            }
+            m_vaapi_ctx.need_free = true;
+
+            for (uint32_t i = 0; i < m_vaapi_ctx.desc.num_layers; i++) {
+                if (m_vaapi_ctx.desc.layers[i].num_planes > 1) {
+                    AKLOG_ERRORN("multiplane layer is not supported");
+                    return false;
+                }
+
+                auto& tex = m_textures[i];
+                tex.index = i;
+
+                switch (m_vaapi_ctx.desc.layers[i].drm_format) {
+                    case DRM_FORMAT_R8: {
+                        tex.format = GL_RED;
+                        tex.internal_format = GL_R8;
+                        tex.width = m_vaapi_ctx.desc.width;
+                        tex.height = m_vaapi_ctx.desc.height;
+                        tex.effective_width = buf_data.prop().width;
+                        tex.effective_height = tex.height;
+                        break;
+                    }
+                    case DRM_FORMAT_RG88: {
+                        tex.format = GL_RG;
+                        tex.internal_format = GL_RG8;
+                        tex.width = buf_data.prop().chroma_width;
+                        tex.height = buf_data.prop().chroma_height;
+                        tex.effective_width = tex.width;
+                        tex.effective_height = tex.height;
+                        break;
+                    }
+                    case DRM_FORMAT_GR88: {
+                        tex.format = GL_RG;
+                        tex.internal_format = GL_RG8;
+                        tex.reversed = 1;
+                        tex.width = buf_data.prop().chroma_width;
+                        tex.height = buf_data.prop().chroma_height;
+                        tex.effective_width = tex.width;
+                        tex.effective_height = tex.height;
+                        break;
+                    }
+                    default: {
+                        AKLOG_ERROR("not supported drm format found: {}",
+                                    m_vaapi_ctx.desc.layers[i].drm_format);
+                        return false;
+                    }
+                }
+
+                GET_GLFUNC(ctx, glBindTexture)(GL_TEXTURE_2D, tex.buffer);
+                GET_GLFUNC(ctx, glTexParameteri)(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                GET_GLFUNC(ctx, glTexParameteri)(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                GET_GLFUNC(ctx, glTexParameteri)
+                (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                GET_GLFUNC(ctx, glTexParameteri)
+                (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+                GET_GLFUNC(ctx, glBindTexture)(GL_TEXTURE_2D, 0);
+
+                auto obj_idx = m_vaapi_ctx.desc.layers[i].object_index[0]; // singleplane layer
+                EGLuint64KHR modifier = m_vaapi_ctx.desc.objects[obj_idx].drm_format_modifier;
+
+                // clang-format off
+                EGLint attribs[] = {
+                    EGL_WIDTH, tex.width,
+                    EGL_HEIGHT, tex.height,
+                    EGL_LINUX_DRM_FOURCC_EXT, (EGLint)m_vaapi_ctx.desc.layers[i].drm_format,
+                    EGL_DMA_BUF_PLANE0_FD_EXT, m_vaapi_ctx.desc.objects[obj_idx].fd,
+                    EGL_DMA_BUF_PLANE0_OFFSET_EXT, (EGLint)m_vaapi_ctx.desc.layers[i].offset[0], // singleplane layer
+                    EGL_DMA_BUF_PLANE0_PITCH_EXT, (EGLint)m_vaapi_ctx.desc.layers[i].pitch[0], // singleplane layer
+                    EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT, (EGLint)(modifier & 0xffffffff),
+                    EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT, (EGLint)(modifier >> 32),
+                    EGL_NONE
+                };
+                // clang-format on
+
+                // clang-format off
+                m_vaapi_ctx.egl_images[i] = GET_EGLFUNC(ctx, eglCreateImageKHR)(
+                    GET_EGLFUNC(ctx, eglGetCurrentDisplay)(),
+                    EGL_NO_CONTEXT,
+                    EGL_LINUX_DMA_BUF_EXT,
+                    nullptr,
+                    attribs
+                );
+                // clang-format on
+
+                if (!m_vaapi_ctx.egl_images[i]) {
+                    AKLOG_ERROR("eglCreateImageKHR() failed: {}", GET_EGLFUNC(ctx, eglGetError)());
+                    return false;
+                }
+
+                GET_GLFUNC(ctx, glBindTexture)(GL_TEXTURE_2D, tex.buffer);
+                GET_EGLFUNC(ctx, glEGLImageTargetTexture2DOES)
+                (GL_TEXTURE_2D, m_vaapi_ctx.egl_images[i]);
+            }
+
+            GET_GLFUNC(ctx, glBindTexture)(GL_TEXTURE_2D, 0);
             return true;
         }
 
@@ -361,25 +498,45 @@ namespace akashi {
                 // [TODO] could this be duplicate with the other indices
                 tex.index = i;
 
-                // [TODO] error-check?
-                create_texture(ctx, tex);
+                GET_GLFUNC(ctx, glBindTexture)(GL_TEXTURE_2D, tex.buffer);
+                GET_GLFUNC(ctx, glTexImage2D)
+                (GL_TEXTURE_2D, 0, tex.internal_format, tex.width, tex.height, 0, tex.format,
+                 GL_UNSIGNED_BYTE, tex.image);
+
+                // [XXX] make sure to explicity setup when not using mimap
+                GET_GLFUNC(ctx, glTexParameteri)(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                GET_GLFUNC(ctx, glTexParameteri)(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                GET_GLFUNC(ctx, glTexParameteri)
+                (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                GET_GLFUNC(ctx, glTexParameteri)
+                (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+                GET_GLFUNC(ctx, glBindTexture)(GL_TEXTURE_2D, 0);
             }
             return true;
         }
 
         bool VideoQuadMesh::create(const GLRenderContext& ctx,
-                                   const buffer::AVBufferData& buf_data) {
+                                   core::owned_ptr<buffer::AVBufferData> buf_data) {
+            m_buf_data = std::move(buf_data);
             m_textures.reserve(3);
             m_textures.resize(3);
+            for (auto&& tex : m_textures) {
+                GET_GLFUNC(ctx, glGenTextures)(1, &tex.buffer);
+            }
 
-            m_decode_method = buf_data.prop().decode_method;
+            m_decode_method = m_buf_data->prop().decode_method;
 
             switch (m_decode_method) {
                 case VideoDecodeMethod::SW: {
-                    return this->create_inner<core::VideoDecodeMethod::SW>(ctx, buf_data);
+                    return this->create_inner<core::VideoDecodeMethod::SW>(ctx, *m_buf_data);
+                }
+                case VideoDecodeMethod::VAAPI: {
+                    return this->create_inner<core::VideoDecodeMethod::VAAPI>(ctx, *m_buf_data);
                 }
                 case VideoDecodeMethod::VAAPI_COPY: {
-                    return this->create_inner<core::VideoDecodeMethod::VAAPI_COPY>(ctx, buf_data);
+                    return this->create_inner<core::VideoDecodeMethod::VAAPI_COPY>(ctx,
+                                                                                   *m_buf_data);
                 }
                 default: {
                     return false;
@@ -391,15 +548,60 @@ namespace akashi {
             for (auto&& tex : m_textures) {
                 free_texture(ctx, tex);
             }
+            if (m_buf_data) {
+                m_buf_data.reset(nullptr);
+            }
             return true;
+        }
+
+        void VideoQuadMesh::update(const GLRenderContext& ctx,
+                                   core::owned_ptr<buffer::AVBufferData> buf_data) {
+            if (m_decode_method == VideoDecodeMethod::VAAPI) {
+                // [XXX] must be called before updating m_buf_data
+                this->free_vaapi_context(ctx);
+            }
+            m_buf_data = std::move(buf_data);
+            switch (m_decode_method) {
+                case VideoDecodeMethod::SW: {
+                    this->create_inner<core::VideoDecodeMethod::SW>(ctx, *m_buf_data);
+                    break;
+                }
+                case VideoDecodeMethod::VAAPI: {
+                    this->create_inner<core::VideoDecodeMethod::VAAPI>(ctx, *m_buf_data);
+                    break;
+                }
+                case VideoDecodeMethod::VAAPI_COPY: {
+                    this->create_inner<core::VideoDecodeMethod::VAAPI_COPY>(ctx, *m_buf_data);
+                    break;
+                }
+                default: {
+                }
+            }
+        }
+
+        void VideoQuadMesh::free_vaapi_context(const GLRenderContext& ctx) {
+            if (m_vaapi_ctx.need_free) {
+                for (uint32_t i = 0; i < m_vaapi_ctx.desc.num_layers; i++) {
+                    auto obj_idx = m_vaapi_ctx.desc.layers[i].object_index[0]; // singleplane layer
+                    close(m_vaapi_ctx.desc.objects[obj_idx].fd);
+                }
+                for (int i = 0; i < 3; i++) {
+                    if (m_vaapi_ctx.egl_images[i]) {
+                        GET_EGLFUNC(ctx, eglDestroyImageKHR)
+                        (GET_EGLFUNC(ctx, eglGetCurrentDisplay)(), m_vaapi_ctx.egl_images[i]);
+                    }
+                    m_vaapi_ctx.egl_images[i] = nullptr;
+                }
+                m_vaapi_ctx.need_free = false;
+            }
         }
 
         /* --- VideoQuadObject --- */
 
-        void VideoQuadObject::create(const GLRenderContext&, const VideoQuadPass&& pass,
-                                     VideoQuadMesh&& mesh) {
+        void VideoQuadObject::create(const GLRenderContext& ctx, const VideoQuadPass&& pass,
+                                     core::owned_ptr<buffer::AVBufferData> buf_data) {
             m_prop.pass = std::move(pass);
-            m_prop.mesh = mesh;
+            m_prop.mesh.create(ctx, std::move(buf_data));
             m_created = true;
         }
 
@@ -414,14 +616,9 @@ namespace akashi {
             m_prop.pass = pass;
         }
 
-        void VideoQuadObject::update_mesh(const GLRenderContext& ctx, VideoQuadMesh&& mesh) {
-            // [TODO] is it ok to free it here?
-            // free_texture(ctx, m_prop.mesh.texY);
-            // free_texture(ctx, m_prop.mesh.texCb);
-            // free_texture(ctx, m_prop.mesh.texCr);
-            m_prop.mesh.destroy(ctx);
-
-            m_prop.mesh = mesh;
+        void VideoQuadObject::update_mesh(const GLRenderContext& ctx,
+                                          core::owned_ptr<buffer::AVBufferData> buf_data) {
+            m_prop.mesh.update(ctx, std::move(buf_data));
         }
 
     }

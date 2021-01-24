@@ -226,6 +226,8 @@ namespace akashi {
             int effective_height;
             GLenum format = GL_RGBA;
             GLenum internal_format = GL_RGBA;
+            int8_t reversed =
+                0; // if 1, tex format is GL_RG8, but the order of r and g are reversed
         };
 
         struct GLRenderContext {

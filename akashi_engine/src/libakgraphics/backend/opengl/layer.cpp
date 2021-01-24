@@ -160,14 +160,12 @@ namespace akashi {
             size_format.chroma_tex_width = buf_data->prop().video_data[1].stride *
                                            buf_data->prop().width / buf_data->prop().chroma_width;
 
-            VideoQuadMesh mesh;
-            CHECK_AK_ERROR2(mesh.create(ctx, *buf_data));
             if (!m_quad_obj.created()) {
                 VideoQuadPass pass;
                 pass.create(ctx, size_format, m_layer_ctx, buf_data->prop().decode_method);
-                m_quad_obj.create(ctx, std::move(pass), std::move(mesh));
+                m_quad_obj.create(ctx, std::move(pass), std::move(buf_data));
             } else {
-                m_quad_obj.update_mesh(ctx, std::move(mesh));
+                m_quad_obj.update_mesh(ctx, std::move(buf_data));
             }
 
             const auto& obj_prop = m_quad_obj.get_prop();

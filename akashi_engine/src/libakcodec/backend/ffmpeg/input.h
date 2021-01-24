@@ -34,6 +34,8 @@ namespace akashi {
 
             core::VideoDecodeMethod decode_method = core::VideoDecodeMethod::NONE;
 
+            size_t video_max_queue_count = 0;
+
             AVBufferRef* hw_device_ctx = nullptr;
 
             std::vector<DecodeStream> dec_streams;
@@ -65,7 +67,8 @@ namespace akashi {
         void free_input_src(InputSource*& input_src);
 
         int read_inputsrc(InputSource*& input_src, const char* input_path,
-                          const core::VideoDecodeMethod& decode_method);
+                          const core::VideoDecodeMethod& decode_method,
+                          const size_t video_max_queue_count);
 
         int read_av_input(InputSource* input_src);
 

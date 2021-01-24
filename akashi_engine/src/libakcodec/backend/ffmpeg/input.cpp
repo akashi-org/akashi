@@ -61,13 +61,15 @@ namespace akashi {
         };
 
         int read_inputsrc(InputSource*& input_src, const char* input_path,
-                          const core::VideoDecodeMethod& decode_method) {
+                          const core::VideoDecodeMethod& decode_method,
+                          const size_t video_max_queue_count) {
             int ret_code = 0;
 
             input_src = new InputSource;
             init_input_src(input_src, input_path);
 
             input_src->decode_method = decode_method;
+            input_src->video_max_queue_count = video_max_queue_count;
 
             // input_src[i].io_ctx = new IOContext(input_paths[i]);
             if (read_av_input(input_src) < 0) {
@@ -197,18 +199,42 @@ namespace akashi {
                             AKLOG_ERRORN("A hardware device reference create failed");
                             return -1;
                         }
-                        codec_ctx->get_format = [](AVCodecContext*,
+                        codec_ctx->get_format = [](AVCodecContext* cb_codec_ctx,
                                                    const enum AVPixelFormat* pix_fmts) {
                             const enum AVPixelFormat* p;
 
                             for (p = pix_fmts; *p != AV_PIX_FMT_NONE; p++) {
-                                if (*p == AV_PIX_FMT_VAAPI)
+                                if (*p == AV_PIX_FMT_VAAPI) {
+                                    auto input_src =
+                                        reinterpret_cast<InputSource*>(cb_codec_ctx->opaque);
+                                    if (input_src->decode_method ==
+                                        core::VideoDecodeMethod::VAAPI) {
+                                        cb_codec_ctx->hw_frames_ctx =
+                                            av_hwframe_ctx_alloc(input_src->hw_device_ctx);
+                                        auto hw_frames_ctx =
+                                            (AVHWFramesContext*)cb_codec_ctx->hw_frames_ctx->data;
+
+                                        hw_frames_ctx->format = AV_PIX_FMT_VAAPI;
+                                        hw_frames_ctx->sw_format = cb_codec_ctx->sw_pix_fmt;
+                                        hw_frames_ctx->width = cb_codec_ctx->width;
+                                        hw_frames_ctx->height = cb_codec_ctx->height;
+
+                                        hw_frames_ctx->initial_pool_size =
+                                            input_src->video_max_queue_count * 2;
+                                        hw_frames_ctx->pool = nullptr;
+
+                                        av_hwframe_ctx_init(cb_codec_ctx->hw_frames_ctx);
+                                    }
+
                                     return *p;
+                                }
                             }
 
                             AKLOG_ERRORN("Failed to get a suitable HW surface format. ");
                             return AV_PIX_FMT_NONE;
                         };
+
+                        codec_ctx->opaque = input_src;
                     }
 
                     int ret = 0;
