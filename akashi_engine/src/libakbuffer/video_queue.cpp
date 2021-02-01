@@ -22,6 +22,8 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 m_max_queue_size = m_state->m_prop.video_max_queue_size;
+                m_max_queue_count = m_state->m_prop.video_max_queue_count;
+                m_decode_method = m_state->m_atomic_state.decode_method.load();
             }
         }
 
@@ -42,13 +44,14 @@ namespace akashi {
                 m_qmap[layer_uuid].buf.push_back(std::move(buf_data));
 
                 queue_size = m_qmap.at(layer_uuid).buf.size();
+                m_queue_count += 1;
 
                 AKLOG_INFO(
                     "Enqueued {}, {}, id: {}, start_frame: {}", m_qmap.at(layer_uuid).buf.size(),
                     m_qmap.at(layer_uuid).buf.back()->prop().pts.to_decimal(), layer_uuid.c_str(),
                     m_qmap.at(layer_uuid).buf.back()->prop().start_frame);
 
-                not_full = m_queue_size <= m_max_queue_size;
+                not_full = this->is_not_full();
             }
             m_state->set_video_decode_ready(not_full);
 
@@ -95,6 +98,7 @@ namespace akashi {
                     else {
                         res = std::move(m_qmap[layer_uuid].buf.front());
                         m_queue_size -= res->prop().data_size;
+                        m_queue_count -= 1;
                         m_qmap[layer_uuid].buf.pop_front();
                         AKLOG_INFO("Dequeued {}, {}, {}", m_qmap[layer_uuid].buf.size(),
                                    res->prop().pts.to_decimal(), layer_uuid);
@@ -103,9 +107,10 @@ namespace akashi {
 
                     auto temp = std::move(m_qmap[layer_uuid].buf.front());
                     m_queue_size -= temp->prop().data_size;
+                    m_queue_count -= 1;
                     m_qmap[layer_uuid].buf.pop_front();
                 }
-                not_full = m_queue_size <= m_max_queue_size;
+                not_full = this->is_not_full();
             }
             m_state->set_video_decode_ready(not_full);
 
@@ -164,9 +169,10 @@ namespace akashi {
 
                         auto temp = std::move(m_qmap[layer_uuid].buf.front());
                         m_queue_size -= temp->prop().data_size;
+                        m_queue_count -= 1;
                         m_qmap[layer_uuid].buf.pop_front();
                     }
-                    not_full = m_queue_size <= m_max_queue_size;
+                    not_full = this->is_not_full();
                 }
                 m_state->set_video_decode_ready(not_full);
             }
@@ -178,11 +184,23 @@ namespace akashi {
                 std::lock_guard<std::mutex> lock(m_qmap_mtx);
                 m_qmap.clear();
                 m_queue_size = 0;
+                m_queue_count = 0;
             }
             if (notify) {
                 m_state->set_video_decode_ready(true);
             }
         };
+
+        bool VideoQueue::is_not_full(void) const {
+            switch (m_decode_method) {
+                case core::VideoDecodeMethod::VAAPI: {
+                    return m_queue_count <= m_max_queue_count;
+                }
+                default: {
+                    return m_queue_size <= m_max_queue_size;
+                }
+            }
+        }
 
     }
 }

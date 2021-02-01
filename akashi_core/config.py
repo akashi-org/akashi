@@ -57,11 +57,23 @@ class AudioConf:
     channel_layout: AudioChannelLayout = AudioChannelLayout.STEREO
 
 
+class VideoDecodeMethod(Enum):
+    NONE = -1
+    SW = 0  # software decode
+    VAAPI = auto()  # vaapi
+    VAAPI_COPY = auto()  # vaapi-copy
+
+    def to_json(self):
+        return self.value
+
+
 @dataclass(frozen=True)
 class PlaybackConf:
     enable_loop: bool = True
     gain: float = 0.5  # 0 ~ 1.0
+    decode_method: VideoDecodeMethod = VideoDecodeMethod.SW
     video_max_queue_size: int = 1024 * 1024 * 300  # 300mb
+    video_max_queue_count: int = 64  # max frame counts (applicable for hwdec)
     audio_max_queue_size: int = 1024 * 1024 * 10  # 10mb
 
 

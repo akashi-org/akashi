@@ -23,8 +23,9 @@ namespace akashi {
 
         AKGraphics::~AKGraphics() {}
 
-        bool AKGraphics::load_api(const GetProcAddress& get_proc_address) {
-            return m_gfx_ctx->load_api(get_proc_address);
+        bool AKGraphics::load_api(const GetProcAddress& get_proc_address,
+                                  const EGLGetProcAddress& egl_get_proc_address) {
+            return m_gfx_ctx->load_api(get_proc_address, egl_get_proc_address);
         }
 
         bool AKGraphics::load_fbo(const core::RenderProfile& render_prof) {

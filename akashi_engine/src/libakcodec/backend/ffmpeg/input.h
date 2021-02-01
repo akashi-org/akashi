@@ -1,6 +1,7 @@
 #pragma once
 
 #include <libakcore/rational.h>
+#include <libakcore/hw_accel.h>
 
 extern "C" {
 #include <libavutil/avutil.h>
@@ -11,6 +12,7 @@ extern "C" {
 
 struct AVCodecContext;
 struct AVFormatContext;
+struct AVBufferRef;
 
 namespace akashi {
     namespace codec {
@@ -29,6 +31,12 @@ namespace akashi {
 
         struct InputSource {
             AVFormatContext* ifmt_ctx;
+
+            core::VideoDecodeMethod decode_method = core::VideoDecodeMethod::NONE;
+
+            size_t video_max_queue_count = 0;
+
+            AVBufferRef* hw_device_ctx = nullptr;
 
             std::vector<DecodeStream> dec_streams;
 
@@ -58,7 +66,9 @@ namespace akashi {
 
         void free_input_src(InputSource*& input_src);
 
-        int read_inputsrc(InputSource*& input_src, const char* input_path);
+        int read_inputsrc(InputSource*& input_src, const char* input_path,
+                          const core::VideoDecodeMethod& decode_method,
+                          const size_t video_max_queue_count);
 
         int read_av_input(InputSource* input_src);
 

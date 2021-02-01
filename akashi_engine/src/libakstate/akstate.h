@@ -4,6 +4,7 @@
 #include <libakcore/element.h>
 #include <libakcore/audio.h>
 #include <libakcore/path.h>
+#include <libakcore/hw_accel.h>
 
 #include <mutex>
 #include <condition_variable>
@@ -87,6 +88,8 @@ namespace akashi {
 
             size_t video_max_queue_size = 1024 * 1024 * 300; // 300mb
 
+            size_t video_max_queue_count = 64;
+
             size_t audio_max_queue_size = 1024 * 1024 * 100; // 100mb
 
             // used for dequeueing
@@ -138,6 +141,8 @@ namespace akashi {
             std::atomic<double> volume = 0.5;
 
             std::atomic<bool> ui_can_seek = true;
+
+            std::atomic<core::VideoDecodeMethod> decode_method = core::VideoDecodeMethod::NONE;
         };
 
         class AKState final {

@@ -12,6 +12,8 @@
 #include <QApplication>
 #include <QTimer>
 
+#include <EGL/egl.h>
+
 #include <vector>
 
 using namespace akashi::core;
@@ -25,6 +27,11 @@ namespace akashi {
                 return nullptr;
             }
             return reinterpret_cast<void*>(glctx->getProcAddress(QByteArray(name)));
+        }
+
+        static void* egl_get_proc_address(void*, const char* name) {
+            // [TODO] add checks for validity of egl?
+            return reinterpret_cast<void*>(eglGetProcAddress(name));
         }
 
         PlayerWidget::PlayerWidget(akashi::core::borrowed_ptr<akashi::state::AKState> state,
@@ -67,7 +74,8 @@ namespace akashi {
         void PlayerWidget::frame_back_step(void) { m_player->frame_back_step(); }
 
         void PlayerWidget::initializeGL() {
-            m_player->init({PlayerWidget::on_event}, this, {get_proc_address});
+            m_player->init({PlayerWidget::on_event}, this, {get_proc_address},
+                           {egl_get_proc_address});
         }
 
         void PlayerWidget::paintGL() {

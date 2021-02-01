@@ -66,6 +66,8 @@ def akashi_cli() -> None:
     if 'QT_LOGGING_RULES' not in os.environ.keys():
         os.environ['QT_LOGGING_RULES'] = '*=false;*.critical=true'
 
+    os.environ['QT_XCB_GL_INTEGRATION'] = 'xcb_egl'
+
     sigset = []
     sigset += [signal.SIGINT, signal.SIGHUP, signal.SIGQUIT, signal.SIGTERM]
     sigset += [signal.SIGPIPE, signal.SIGCHLD]

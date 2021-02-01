@@ -73,21 +73,23 @@ namespace akashi {
                                        const std::array<int, 2>& resolution) {
             GET_GLFUNC(ctx, glUseProgram)(pass_prop.prog);
 
-            use_texture(ctx, mesh_prop.texY, pass_prop.texY_loc);
-            use_texture(ctx, mesh_prop.texCb, pass_prop.texCb_loc);
-            use_texture(ctx, mesh_prop.texCr, pass_prop.texCr_loc);
+            use_texture(ctx, mesh_prop.textures()[0], pass_prop.texY_loc);
+            use_texture(ctx, mesh_prop.textures()[1], pass_prop.texCb_loc);
+            if (mesh_prop.decode_method() == VideoDecodeMethod::SW) {
+                use_texture(ctx, mesh_prop.textures()[2], pass_prop.texCr_loc);
+            }
 
-            glm::mat4 new_mvp = mesh_prop.mvp;
+            glm::mat4 new_mvp = mesh_prop.mvp();
             update_translate(ctx, layer_ctx, new_mvp);
             // [XXX] looks confusing, but we only need to process the texY,
             // because update_scale gets the magnification rate from the size of the tex, and
             // reflect it to mvp
-            update_scale(ctx, mesh_prop.texY, new_mvp, layer_ctx.video_layer_ctx.scale);
+            update_scale(ctx, mesh_prop.textures()[0], new_mvp, layer_ctx.video_layer_ctx.scale);
 
             GET_GLFUNC(ctx, glUniformMatrix4fv)
             (pass_prop.mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 
-            GET_GLFUNC(ctx, glUniform1f)(pass_prop.flipY_loc, mesh_prop.flip_y);
+            GET_GLFUNC(ctx, glUniform1f)(pass_prop.flipY_loc, mesh_prop.flip_y());
             GET_GLFUNC(ctx, glUniform1f)(pass_prop.time_loc, pts.to_decimal());
 
             GET_GLFUNC(ctx, glUniform2f)(pass_prop.resolution_loc, resolution[0], resolution[1]);
@@ -152,19 +154,18 @@ namespace akashi {
             VTexSizeFormat size_format;
             size_format.video_width = buf_data->prop().width;
             size_format.video_height = buf_data->prop().height;
-            size_format.luma_tex_width = buf_data->prop().video_data[0].stride;
+            size_format.luma_tex_width = buf_data->prop().width;
+            // size_format.luma_tex_width = buf_data->prop().video_data[0].stride;
             // [TODO] not sure why this calculation is valid
             size_format.chroma_tex_width = buf_data->prop().video_data[1].stride *
                                            buf_data->prop().width / buf_data->prop().chroma_width;
 
-            VideoQuadMesh mesh;
-            CHECK_AK_ERROR2(this->load_mesh(ctx, mesh, m_layer_ctx, *buf_data));
             if (!m_quad_obj.created()) {
                 VideoQuadPass pass;
-                pass.create(ctx, size_format, m_layer_ctx);
-                m_quad_obj.create(ctx, std::move(pass), std::move(mesh));
+                pass.create(ctx, size_format, m_layer_ctx, buf_data->prop().decode_method);
+                m_quad_obj.create(ctx, std::move(pass), std::move(buf_data));
             } else {
-                m_quad_obj.update_mesh(ctx, std::move(mesh));
+                m_quad_obj.update_mesh(ctx, std::move(buf_data));
             }
 
             const auto& obj_prop = m_quad_obj.get_prop();
@@ -189,37 +190,6 @@ namespace akashi {
                 m_quad_obj.get_prop_mut().pass.shader_reload(ctx, m_layer_ctx, paths);
             }
         };
-
-        bool VideoLayerTarget::load_mesh(const GLRenderContext& ctx, VideoQuadMesh& mesh,
-                                         const core::LayerContext& layer_ctx,
-                                         const buffer::AVBufferData& buf_data) const {
-            CHECK_AK_ERROR2(this->load_texture(ctx, mesh.texY, layer_ctx, buf_data, 0));
-            CHECK_AK_ERROR2(this->load_texture(ctx, mesh.texCb, layer_ctx, buf_data, 1));
-            CHECK_AK_ERROR2(this->load_texture(ctx, mesh.texCr, layer_ctx, buf_data, 2));
-            return true;
-        }
-
-        bool VideoLayerTarget::load_texture(const GLRenderContext& ctx, GLTextureData& tex,
-                                            const core::LayerContext&,
-                                            const buffer::AVBufferData& buf_data,
-                                            const int vdata_index) const {
-            tex.image = buf_data.prop().video_data[vdata_index].buf;
-            tex.width = buf_data.prop().video_data[vdata_index].stride - 1;
-            tex.height = vdata_index == 0 ? buf_data.prop().height : buf_data.prop().chroma_height;
-            tex.effective_width =
-                vdata_index == 0 ? buf_data.prop().width : buf_data.prop().chroma_width;
-            tex.effective_height = tex.height;
-            tex.format = GL_RED;
-            tex.internal_format = GL_R8;
-
-            // [TODO] could this be duplicate with the other indices
-            tex.index = vdata_index;
-
-            // [TODO] error-check?
-            create_texture(ctx, tex);
-
-            return true;
-        }
 
         /* --- TextLayerTarget --- */
 

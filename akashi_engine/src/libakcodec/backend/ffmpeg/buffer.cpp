@@ -1,6 +1,7 @@
 #include "./buffer.h"
 
 #include "./input.h"
+#include "./error.h"
 
 #include <libakbuffer/avbuffer.h>
 #include <libakcore/rational.h>
@@ -11,6 +12,7 @@ extern "C" {
 #include <libavutil/frame.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/pixdesc.h>
+#include <libavutil/hwcontext.h>
 }
 
 using namespace akashi::core;
@@ -130,14 +132,19 @@ namespace akashi {
             prop.rpts = input.rpts;
             prop.uuid = input.uuid;
             prop.start_frame = input.start_frame;
+            prop.decode_method = input.decode_method;
 
             m_prop = prop;
 
             memcpy(this->m_linesize, input.frame->linesize, sizeof(this->m_linesize));
 
+            if (m_prop.decode_method == VideoDecodeMethod::VAAPI) {
+                m_frame = input.frame;
+            }
+
             switch (m_prop.media_type) {
                 case buffer::AVBufferType::VIDEO: {
-                    this->populate_video(input.frame);
+                    this->populate_video(input);
                     break;
                 }
                 case buffer::AVBufferType::AUDIO: {
@@ -170,11 +177,21 @@ namespace akashi {
                                 m_prop.media_type);
                 }
             }
+
+            if (m_frame && m_prop.decode_method == VideoDecodeMethod::VAAPI) {
+                av_frame_free(&m_frame);
+            }
         }
 
-        void FFmpegBufferData::populate_video(const AVFrame* frame) {
+        void FFmpegBufferData::populate_video(const InputData& input) {
+            auto frame = input.frame;
             m_prop.width = frame->width;
             m_prop.height = frame->height;
+
+            if (input.va_display) {
+                m_prop.va_display = input.va_display;
+                m_prop.va_surface_id = (uintptr_t)frame->data[3];
+            }
 
             const AVPixFmtDescriptor* desc =
                 av_pix_fmt_desc_get(static_cast<AVPixelFormat>(frame->format));
@@ -193,16 +210,19 @@ namespace akashi {
                 FFmpegBufferData::Property::VideoEntry entry;
                 entry.stride = frame->linesize[i];
 
-                auto plain_buf_size = frame->linesize[i] * plain_height[i];
-                entry.buf = static_cast<uint8_t*>(av_malloc(plain_buf_size));
-                if (!entry.buf) {
-                    AKLOG_ERRORN("FFmpegBufferData::popludate_video(): Failed to alloc data");
-                    continue;
+                if (m_prop.decode_method != VideoDecodeMethod::VAAPI) {
+                    auto plain_buf_size = frame->linesize[i] * plain_height[i];
+                    entry.buf = static_cast<uint8_t*>(av_malloc(plain_buf_size));
+                    if (!entry.buf) {
+                        AKLOG_ERRORN("FFmpegBufferData::popludate_video(): Failed to alloc data");
+                        continue;
+                    }
+                    std::memcpy(entry.buf, static_cast<const uint8_t*>(frame->data[i]),
+                                plain_buf_size);
+                    m_prop.data_size += plain_buf_size;
                 }
-                std::memcpy(entry.buf, static_cast<const uint8_t*>(frame->data[i]), plain_buf_size);
 
                 m_prop.video_data[i] = entry;
-                m_prop.data_size += plain_buf_size;
             }
         }
 

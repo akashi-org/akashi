@@ -28,6 +28,7 @@ namespace akashi {
 
         struct GLRenderContext;
         struct GetProcAddress;
+        struct EGLGetProcAddress;
         struct RenderParams;
         class QuadPass;
         class GLGraphicsContext : public GraphicsContext {
@@ -37,7 +38,8 @@ namespace akashi {
                                        core::borrowed_ptr<audio::AKAudio> audio);
             virtual ~GLGraphicsContext();
 
-            bool load_api(const GetProcAddress& get_proc_address) override;
+            bool load_api(const GetProcAddress& get_proc_address,
+                          const EGLGetProcAddress& egl_get_proc_address) override;
 
             bool load_fbo(const core::RenderProfile& render_prof) override;
 

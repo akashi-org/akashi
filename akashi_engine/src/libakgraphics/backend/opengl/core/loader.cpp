@@ -13,6 +13,9 @@ using namespace akashi::core;
 #define DEF_FN(ctx, proc_addr, func_name)                                                          \
     set_gl_function(proc_addr.func(nullptr, #func_name), GET_GLFUNC(ctx, func_name), #func_name)
 
+#define DEF_EGL_FN(ctx, proc_addr, func_name)                                                      \
+    set_egl_function(proc_addr.func(nullptr, #func_name), GET_EGLFUNC(ctx, func_name), #func_name)
+
 #define DEF_FN_CHECK(ctx, proc_addr, func_name) CHECK_AK_ERROR(DEF_FN(ctx, proc_addr, func_name))
 
 namespace akashi {
@@ -23,6 +26,16 @@ namespace akashi {
             if (func == nullptr) {
                 AKLOG_ERROR("set_gl_function() failed: Could not load OpenGL functions: {}",
                             func_name);
+                return false;
+            }
+            func_slot = reinterpret_cast<T>(func);
+            return true;
+        }
+
+        template <class T>
+        static bool set_egl_function(void* func, T& func_slot, const char* func_name) {
+            if (func == nullptr) {
+                AKLOG_ERROR("Could not load EGL functions: {}", func_name);
                 return false;
             }
             func_slot = reinterpret_cast<T>(func);
@@ -196,6 +209,16 @@ namespace akashi {
         ak_error_t load_gl_getString(const GetProcAddress& get_proc_address, GLRenderContext& ctx) {
             DEF_FN_CHECK(ctx, get_proc_address, glGetString);
             return ErrorType::OK;
+        }
+
+        void load_egl_functions(const EGLGetProcAddress& egl_get_proc_address,
+                                GLRenderContext& ctx) {
+            DEF_EGL_FN(ctx, egl_get_proc_address, eglGetError);
+            DEF_EGL_FN(ctx, egl_get_proc_address, eglGetCurrentDisplay);
+            DEF_EGL_FN(ctx, egl_get_proc_address, eglGetCurrentContext);
+            DEF_EGL_FN(ctx, egl_get_proc_address, eglCreateImageKHR);
+            DEF_EGL_FN(ctx, egl_get_proc_address, eglDestroyImageKHR);
+            DEF_EGL_FN(ctx, egl_get_proc_address, glEGLImageTargetTexture2DOES);
         }
 
     }

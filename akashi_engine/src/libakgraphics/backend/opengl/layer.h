@@ -60,14 +60,6 @@ namespace akashi {
                                const std::vector<const char*> paths) override;
 
           private:
-            bool load_mesh(const GLRenderContext& ctx, VideoQuadMesh& mesh,
-                           const akashi::core::LayerContext& layer_ctx,
-                           const buffer::AVBufferData& buf_data) const;
-            bool load_texture(const GLRenderContext& ctx, GLTextureData& tex,
-                              const core::LayerContext& layer_ctx,
-                              const buffer::AVBufferData& buf_data, const int vdata_index) const;
-
-          private:
             VideoQuadObject m_quad_obj;
             core::Rational m_current_pts = core::Rational(-1, 1);
         };
