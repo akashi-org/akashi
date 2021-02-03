@@ -9,6 +9,8 @@
 
 You can edit your videos only by programs without being bothered with complex GUI.
 
+![screenshot](https://user-images.githubusercontent.com/70841910/106698725-4aab9700-65d9-11eb-951c-9d751a741a99.png)
+
 ## Why Akashi?
 
 ### The development style of existing video editors
@@ -67,15 +69,21 @@ If we can incorporate the application development style with video editing, what
 
 After all, the first and top priority of **Akashi** is the maximization of user experience. Freeing people from the pain of video development is the goal of **Akashi**, and the greatest value we can provide to you.
 
-## Getting Started
+## Screenshots
 
-TBD
+![sample1](https://user-images.githubusercontent.com/70841910/106697192-2ef2c180-65d6-11eb-8956-32208aed015b.gif)
 
-## Contributing
+## Tasks
 
-TBD
-
-## Development Status
-
-TBD
+- [x] Basic Playback Feature 
+- [x] Basic Hot Reload Feature
+- [x] Basic Shader Effects
+- [x] Hardware Decoding(VA-API)
+- [ ] Basic Encoder
+- [ ] Deployment by AppImage
+- [ ] Introduce Unit Tests and E2E
+- [ ] Refactor Kron System
+- [ ] ASP Editing
+- [ ] Documentation
+- [ ] Qt -> GLFW
 
