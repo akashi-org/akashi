@@ -11,8 +11,11 @@ namespace akashi {
     }
     namespace encoder {
 
+        class EncodeQueue;
+
         struct ConsumeLoopContext {
             core::borrowed_ptr<state::AKState> state;
+            core::borrowed_ptr<EncodeQueue> queue;
         };
 
         class ConsumeLoop final {

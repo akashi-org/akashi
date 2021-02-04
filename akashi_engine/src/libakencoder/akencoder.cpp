@@ -1,4 +1,5 @@
 #include "./akencoder.h"
+#include "./encode_queue.h"
 #include "./producer/producer.h"
 #include "./consumer/consumer.h"
 
@@ -24,6 +25,8 @@ namespace akashi {
         void EncodeLoop::encode_thread(EncodeLoopContext ctx, EncodeLoop* loop) {
             AKLOG_INFON("Encoder init");
 
+            EncodeQueue encode_queue{ctx.state};
+
             ProduceLoop produce_loop;
             ConsumeLoop consume_loop;
 
@@ -38,8 +41,8 @@ namespace akashi {
                 },
                 &exit_ctx);
 
-            produce_loop.run({ctx.state});
-            consume_loop.run({ctx.state});
+            produce_loop.run({ctx.state, borrowed_ptr(&encode_queue)});
+            consume_loop.run({ctx.state, borrowed_ptr(&encode_queue)});
 
             int wait_millsec = 5000;
             while (wait_millsec > 0) {

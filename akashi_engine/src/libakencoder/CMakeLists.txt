@@ -5,6 +5,7 @@ find_package(Threads REQUIRED)
 
 add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   ./akencoder.cpp
+  ./encode_queue.cpp
   ./producer/producer.cpp
   ./consumer/consumer.cpp
 )
