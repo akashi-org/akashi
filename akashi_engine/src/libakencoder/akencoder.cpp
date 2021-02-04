@@ -1,4 +1,6 @@
 #include "./akencoder.h"
+#include "./producer/producer.h"
+#include "./consumer/consumer.h"
 
 #include <libakcore/logger.h>
 
@@ -14,10 +16,30 @@ using namespace akashi::core;
 namespace akashi {
     namespace encoder {
 
-        void EncodeLoop::encode_thread(EncodeLoopContext, EncodeLoop* loop) {
+        struct ExitContext {
+            ProduceLoop* produce_loop = nullptr;
+            ConsumeLoop* consume_loop = nullptr;
+        };
+
+        void EncodeLoop::encode_thread(EncodeLoopContext ctx, EncodeLoop* loop) {
             AKLOG_INFON("Encoder init");
 
-            loop->set_on_thread_exit([](void*) { AKLOG_INFON("Successfully exited"); }, nullptr);
+            ProduceLoop produce_loop;
+            ConsumeLoop consume_loop;
+
+            ExitContext exit_ctx{&produce_loop, &consume_loop};
+
+            loop->set_on_thread_exit(
+                [](void* ctx) {
+                    auto exit_ctx_ = reinterpret_cast<ExitContext*>(ctx);
+                    exit_ctx_->produce_loop->terminate();
+                    exit_ctx_->consume_loop->terminate();
+                    AKLOG_INFON("Successfully exited");
+                },
+                &exit_ctx);
+
+            produce_loop.run({ctx.state});
+            consume_loop.run({ctx.state});
 
             int wait_millsec = 5000;
             while (wait_millsec > 0) {
