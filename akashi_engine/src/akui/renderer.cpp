@@ -6,6 +6,7 @@
 #include <libakcore/memory.h>
 #include <libakstate/akstate.h>
 #include <libakencoder/akencoder.h>
+#include <libakencoder/encode_state.h>
 
 #include <string>
 #include <signal.h>
@@ -51,8 +52,10 @@ int main(int argc, char** argv) {
     create_logger(cap);
 
     if (std::getenv("AK_ENABLE_ENCODER")) {
-        auto akconf = akashi::core::parse_akconfig(argv[1]);
-        akashi::state::AKState state(akconf);
+        // [TODO] impl below
+        // auto akconf = akashi::core::parse_akencoder_config(argv[1]);
+        // akashi::encoder::EncodeState state(akconf);
+        akashi::encoder::EncodeState state;
         akashi::encoder::EncodeLoop encode_loop;
         encode_loop.run({akashi::core::borrowed_ptr(&state)});
 

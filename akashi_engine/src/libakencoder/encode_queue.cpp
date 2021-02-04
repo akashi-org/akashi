@@ -9,7 +9,7 @@
 namespace akashi {
     namespace encoder {
 
-        EncodeQueue::EncodeQueue(core::borrowed_ptr<state::AKState> state) : m_state(state) {}
+        EncodeQueue::EncodeQueue(core::borrowed_ptr<EncodeState> state) : m_state(state) {}
 
         EncodeQueue::~EncodeQueue() {
             m_state_not_empty.cv.notify_all();

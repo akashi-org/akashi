@@ -1,13 +1,9 @@
 #pragma once
 
-#include <libakcore/memory.h>
-
 #include <mutex>
 #include <condition_variable>
-#include <deque>
-#include <vector>
 
-#define AK_DEF_ENCODE_QUEUE_STATE(name, v_type, v_init)                                            \
+#define AK_DEF_SYNC_ENCODE_STATE(name, v_type, v_init)                                             \
   private:                                                                                         \
     struct {                                                                                       \
         v_type value = v_init;                                                                     \
@@ -38,46 +34,31 @@
         while (!m_state_##name.value) {                                                            \
             m_state_##name.cv.wait(lock);                                                          \
         }                                                                                          \
+    }                                                                                              \
+    void wait_for_not_##name() {                                                                   \
+        std::unique_lock<std::mutex> lock(m_state_##name.mtx);                                     \
+        while (m_state_##name.value) {                                                             \
+            m_state_##name.cv.wait(lock);                                                          \
+        }                                                                                          \
     }
 
 namespace akashi {
     namespace encoder {
 
-        class EncodeState;
+        struct EncodeStateProp {};
 
-        struct EncodeQueueData {
-            int test_data = -1;
+        class EncodeState final {
+            AK_DEF_SYNC_ENCODE_STATE(producer_finished, bool, false);
+            AK_DEF_SYNC_ENCODE_STATE(consumer_finished, bool, false);
+
+          public:
+            explicit EncodeState(void);
+            virtual ~EncodeState(void);
+
+          public:
+            EncodeStateProp m_prop;
+            std::mutex m_prop_mtx;
         };
 
-        class EncodeQueue final {
-          public:
-            inline const static EncodeQueueData BLANK_DATA = {-1};
-
-          public:
-            constexpr static size_t MAX_QUEUE_SIZE = 300;
-
-          public:
-            explicit EncodeQueue(core::borrowed_ptr<EncodeState> state);
-
-            virtual ~EncodeQueue();
-
-            void enqueue(EncodeQueueData&& data);
-
-            EncodeQueueData dequeue(void);
-
-            const EncodeQueueData& top(void);
-
-            void clear(void);
-
-            AK_DEF_ENCODE_QUEUE_STATE(not_empty, bool, false);
-            AK_DEF_ENCODE_QUEUE_STATE(not_full, bool, true);
-
-          private:
-            core::borrowed_ptr<EncodeState> m_state;
-            struct {
-                std::deque<EncodeQueueData> buf;
-                std::mutex mtx;
-            } m_synced_buf;
-        };
     }
 }

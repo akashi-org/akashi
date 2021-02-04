@@ -5,6 +5,7 @@ find_package(Threads REQUIRED)
 
 add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   ./akencoder.cpp
+  ./encode_state.cpp
   ./encode_queue.cpp
   ./producer/producer.cpp
   ./consumer/consumer.cpp
@@ -23,7 +24,6 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
   PRIVATE akcore
-  PRIVATE akstate
   PRIVATE Threads::Threads
   PRIVATE atomic
 )

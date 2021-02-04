@@ -1,31 +1,47 @@
 #include "./producer.h"
 #include "../encode_queue.h"
+#include "../encode_state.h"
 
 #include <libakcore/logger.h>
+
+// temporary
+#include <chrono>
+#include <thread>
 
 using namespace akashi::core;
 
 namespace akashi {
     namespace encoder {
 
+        static void exit_thread(ProduceLoopContext ctx) {
+            ctx.state->set_producer_finished(true, true);
+        }
+
         void ProduceLoop::produce_thread(ProduceLoopContext ctx, ProduceLoop* loop) {
             AKLOG_INFON("Producer init");
-            loop->set_on_thread_exit([](void*) { AKLOG_INFON("Producer Successfully exited"); },
-                                     nullptr);
+            loop->set_on_thread_exit(
+                [ctx](void*) {
+                    exit_thread(ctx);
+                    AKLOG_INFON("Producer Successfully exited");
+                },
+                nullptr);
 
-            bool finished = false;
             int cnt = 0;
             // enqueue data until all frames processed
-            while (!finished) {
+            while (cnt < 100) {
                 ctx.queue->wait_for_not_full();
                 // eval
                 // decode
                 // render
                 // enqueue
 
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
                 ctx.queue->enqueue({cnt});
                 cnt += 1;
             }
+            exit_thread(ctx);
+            AKLOG_INFON("Producer finished");
         }
 
     }
