@@ -2,11 +2,22 @@
 
 #include <libakcore/logger.h>
 
+#include <libakcore/config.h>
+#include <libakcore/memory.h>
+#include <libakstate/akstate.h>
+#include <libakencoder/akencoder.h>
+
 #include <string>
 #include <signal.h>
 #include <string.h>
 
 using namespace akashi::core;
+
+void do_sigwait(sigset_t& ss) {
+    int signum;
+    sigwait(&ss, &signum);
+    fprintf(stderr, "signal %s(%d) trapped\n", strsignal(signum), signum);
+}
 
 int main(int argc, char** argv) {
     sigset_t ss;
@@ -39,14 +50,21 @@ int main(int argc, char** argv) {
 
     create_logger(cap);
 
-    akashi::ui::UILoop ui_loop;
-    ui_loop.run({argc, argv});
+    if (std::getenv("AK_ENABLE_ENCODER")) {
+        auto akconf = akashi::core::parse_akconfig(argv[1]);
+        akashi::state::AKState state(akconf);
+        akashi::encoder::EncodeLoop encode_loop;
+        encode_loop.run({akashi::core::borrowed_ptr(&state)});
 
-    int signum;
-    sigwait(&ss, &signum);
+        do_sigwait(ss);
+        encode_loop.terminate();
+    } else {
+        akashi::ui::UILoop ui_loop;
+        ui_loop.run({argc, argv});
 
-    fprintf(stderr, "signal %s(%d) trapped\n", strsignal(signum), signum);
-    ui_loop.terminate();
+        do_sigwait(ss);
+        ui_loop.terminate();
+    }
 
     destroy_logger();
     return 0;

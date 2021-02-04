@@ -65,6 +65,7 @@ add_subdirectory("./src/libakwatch")
 add_subdirectory("./src/libakserver")
 add_subdirectory("./src/libakstate")
 add_subdirectory("./src/libakevent")
+add_subdirectory("./src/libakencoder")
 
 add_subdirectory("./src/akui")
 set_target_properties(akashi_renderer PROPERTIES

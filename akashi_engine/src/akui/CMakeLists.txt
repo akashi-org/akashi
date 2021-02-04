@@ -58,6 +58,7 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE akevent
   PRIVATE akgraphics # [TODO] RenderParams, GetProcAddress
   PRIVATE akserver # for asp
+  PRIVATE akencoder 
   PRIVATE EGL
 )
 
