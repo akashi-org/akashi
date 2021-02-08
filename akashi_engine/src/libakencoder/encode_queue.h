@@ -41,9 +41,10 @@
     }
 
 namespace akashi {
+    namespace state {
+        class AKState;
+    }
     namespace encoder {
-
-        class EncodeState;
 
         struct EncodeQueueData {
             int test_data = -1;
@@ -57,7 +58,7 @@ namespace akashi {
             constexpr static size_t MAX_QUEUE_SIZE = 300;
 
           public:
-            explicit EncodeQueue(core::borrowed_ptr<EncodeState> state);
+            explicit EncodeQueue(core::borrowed_ptr<state::AKState> state);
 
             virtual ~EncodeQueue();
 
@@ -73,7 +74,7 @@ namespace akashi {
             AK_DEF_ENCODE_QUEUE_STATE(not_full, bool, true);
 
           private:
-            core::borrowed_ptr<EncodeState> m_state;
+            core::borrowed_ptr<state::AKState> m_state;
             struct {
                 std::deque<EncodeQueueData> buf;
                 std::mutex mtx;

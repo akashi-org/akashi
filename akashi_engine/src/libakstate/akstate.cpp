@@ -36,6 +36,8 @@ namespace akashi {
             // m_state_audio_play_ready.cv.notify_all();
             // m_state_video_decode_ready.cv.notify_all();
             // m_state_audio_decode_ready.cv.notify_all();
+            // m_state_producer_finished.cv.notify_all();
+            // m_state_consumer_finished.cv.notify_all();
         }
 
     }

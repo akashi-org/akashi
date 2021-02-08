@@ -1,6 +1,7 @@
 #include "./encode_queue.h"
 
 #include <libakcore/memory.h>
+#include <libakstate/akstate.h>
 
 #include <mutex>
 #include <deque>
@@ -9,7 +10,7 @@
 namespace akashi {
     namespace encoder {
 
-        EncodeQueue::EncodeQueue(core::borrowed_ptr<EncodeState> state) : m_state(state) {}
+        EncodeQueue::EncodeQueue(core::borrowed_ptr<state::AKState> state) : m_state(state) {}
 
         EncodeQueue::~EncodeQueue() {
             m_state_not_empty.cv.notify_all();

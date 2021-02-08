@@ -6,13 +6,15 @@
 #include <mutex>
 
 namespace akashi {
+    namespace state {
+        class AKState;
+    }
     namespace encoder {
 
-        class EncodeState;
         class EncodeQueue;
 
         struct ConsumeLoopContext {
-            core::borrowed_ptr<EncodeState> state;
+            core::borrowed_ptr<state::AKState> state;
             core::borrowed_ptr<EncodeQueue> queue;
         };
 

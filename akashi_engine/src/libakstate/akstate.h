@@ -159,6 +159,9 @@ namespace akashi {
             AK_DEF_SYNC_STATE(video_decode_ready, bool, true)
             AK_DEF_SYNC_STATE(audio_decode_ready, bool, true)
 
+            AK_DEF_SYNC_STATE(producer_finished, bool, false);
+            AK_DEF_SYNC_STATE(consumer_finished, bool, false);
+
           public:
             PlayerProperty m_prop;
             std::mutex m_prop_mtx;

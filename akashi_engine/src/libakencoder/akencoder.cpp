@@ -1,17 +1,13 @@
 #include "./akencoder.h"
 #include "./encode_queue.h"
-#include "./encode_state.h"
 #include "./producer/producer.h"
 #include "./consumer/consumer.h"
 
 #include <libakcore/logger.h>
+#include <libakstate/akstate.h>
 
 #include <csignal>
 #include <unistd.h>
-
-// temporary
-#include <chrono>
-#include <thread>
 
 #include <mutex>
 
