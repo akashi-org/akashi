@@ -94,14 +94,17 @@ namespace akashi {
 
         // [TODO] since this is called from outside the eval thread, maybe we should use GIL?
         void PyEvalContext::exit(void) {
-            for (auto it = m_modules.begin(); it != m_modules.end(); it++) {
-                delete it->second;
-            }
+            if (!m_exited) {
+                for (auto it = m_modules.begin(); it != m_modules.end(); it++) {
+                    delete it->second;
+                }
 
-            if (Py_FinalizeEx() < 0) {
-                AKLOG_ERRORN("PythonVM::exit(): Py_FinalizeEx() failed");
-            } else {
-                AKLOG_INFON("PythonVM::exit(): Successfully exited");
+                if (Py_FinalizeEx() < 0) {
+                    AKLOG_ERRORN("PythonVM::exit(): Py_FinalizeEx() failed");
+                } else {
+                    AKLOG_INFON("PythonVM::exit(): Successfully exited");
+                }
+                m_exited = true;
             }
         };
 

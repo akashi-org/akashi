@@ -72,6 +72,7 @@ namespace akashi {
             std::unordered_map<std::string, PythonModule*> m_modules;
             core::borrowed_ptr<state::AKState> m_state;
             core::owned_ptr<lib::akashi_core::InitModule> m_corelib;
+            bool m_exited = false;
         };
 
     }

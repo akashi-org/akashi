@@ -47,7 +47,7 @@ namespace akashi {
     namespace encoder {
 
         struct EncodeQueueData {
-            int test_data = -1;
+            double test_data = -1;
         };
 
         class EncodeQueue final {
