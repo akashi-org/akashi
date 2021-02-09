@@ -25,6 +25,8 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE akcore
   PRIVATE akstate
   PRIVATE akeval
+  PRIVATE akcodec
+  PRIVATE akbuffer
   PRIVATE Threads::Threads
   PRIVATE atomic
 )
