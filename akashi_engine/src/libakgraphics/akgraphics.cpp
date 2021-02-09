@@ -6,7 +6,6 @@
 #include <libakcore/memory.h>
 #include <libakcore/element.h>
 #include <libakcore/logger.h>
-#include <libakaudio/akaudio.h>
 #include <libakstate/akstate.h>
 #include <libakbuffer/avbuffer.h>
 
@@ -16,9 +15,8 @@ namespace akashi {
     namespace graphics {
 
         AKGraphics::AKGraphics(core::borrowed_ptr<state::AKState> state,
-                               core::borrowed_ptr<buffer::AVBuffer> buffer,
-                               core::borrowed_ptr<audio::AKAudio> audio) {
-            m_gfx_ctx = make_owned<GLGraphicsContext>(state, buffer, audio);
+                               core::borrowed_ptr<buffer::AVBuffer> buffer) {
+            m_gfx_ctx = make_owned<GLGraphicsContext>(state, buffer);
         }
 
         AKGraphics::~AKGraphics() {}

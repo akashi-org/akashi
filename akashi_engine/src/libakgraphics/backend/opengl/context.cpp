@@ -10,7 +10,6 @@
 #include "./render.h"
 
 #include <libakcore/logger.h>
-#include <libakaudio/akaudio.h>
 #include <libakstate/akstate.h>
 #include <libakbuffer/avbuffer.h>
 #include <libakbuffer/video_queue.h>
@@ -23,10 +22,8 @@ namespace akashi {
     namespace graphics {
 
         GLGraphicsContext::GLGraphicsContext(core::borrowed_ptr<state::AKState> state,
-                                             core::borrowed_ptr<buffer::AVBuffer> buffer,
-                                             core::borrowed_ptr<audio::AKAudio> audio)
-            : GraphicsContext(state, buffer, audio), m_state(state), m_buffer(buffer),
-              m_audio(audio) {
+                                             core::borrowed_ptr<buffer::AVBuffer> buffer)
+            : GraphicsContext(state, buffer), m_state(state), m_buffer(buffer) {
             m_render_ctx = make_owned<GLRenderContext>();
         };
 
@@ -127,8 +124,6 @@ namespace akashi {
             }
             return paths;
         }
-
-        core::Rational GLGraphicsContext::current_time() const { return m_audio->current_time(); }
 
         std::array<int, 2> GLGraphicsContext::resolution() {
             std::array<int, 2> res{0, 0};

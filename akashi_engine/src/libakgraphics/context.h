@@ -11,9 +11,6 @@ namespace akashi {
     namespace buffer {
         class AVBuffer;
     }
-    namespace audio {
-        class AKAudio;
-    }
     namespace state {
         class AKState;
     }
@@ -26,8 +23,7 @@ namespace akashi {
         class GraphicsContext {
           public:
             explicit GraphicsContext(core::borrowed_ptr<state::AKState>,
-                                     core::borrowed_ptr<buffer::AVBuffer>,
-                                     core::borrowed_ptr<audio::AKAudio>){};
+                                     core::borrowed_ptr<buffer::AVBuffer>){};
             virtual ~GraphicsContext(){};
 
             virtual bool load_api(const GetProcAddress& get_proc_address,

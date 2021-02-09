@@ -50,8 +50,7 @@ namespace akashi {
                 m_state, borrowed_ptr(m_buffer),
                 borrowed_ptr<event::AKEvent>(borrowed_ptr(m_event).operator->()));
 
-            m_gfx = make_owned<graphics::AKGraphics>(m_state, borrowed_ptr(m_buffer),
-                                                     borrowed_ptr(m_audio));
+            m_gfx = make_owned<graphics::AKGraphics>(m_state, borrowed_ptr(m_buffer));
             m_gfx->load_api(get_proc_address, egl_get_proc_address);
 
             m_mainloop = make_owned<MainLoop>();

@@ -61,7 +61,6 @@ target_link_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   PRIVATE akcore
   PRIVATE akbuffer
-  PRIVATE akaudio # for current_time()
   PRIVATE akstate
   PRIVATE ${SDL2_LIBRARIES}
   PRIVATE ${SDL2_IMAGE_LIBRARIES}
