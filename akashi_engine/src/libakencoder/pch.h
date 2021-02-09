@@ -5,3 +5,5 @@
 #endif
 
 #include <libakcore/logger.h>
+
+#include <GLFW/glfw3.h>

@@ -13,6 +13,8 @@
 #include <libakbuffer/video_queue.h>
 #include <libakbuffer/audio_queue.h>
 
+#include <GLFW/glfw3.h>
+
 using namespace akashi::core;
 
 namespace akashi {
@@ -153,6 +155,8 @@ namespace akashi {
 
         void ProduceLoop::produce_thread(ProduceLoopContext ctx, ProduceLoop* loop) {
             AKLOG_INFON("Producer init");
+
+            glfwInit();
 
             auto eval = make_owned<eval::AKEval>(borrowed_ptr(ctx.state));
 
