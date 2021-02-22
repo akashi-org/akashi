@@ -12,8 +12,16 @@
 #include <libakbuffer/avbuffer.h>
 #include <libakbuffer/video_queue.h>
 #include <libakbuffer/audio_queue.h>
+#include <libakgraphics/akgraphics.h>
+#include <libakgraphics/item.h>
 
 #include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_X11
+// #define GLFW_EXPOSE_NATIVE_WAYLAND
+#define GLFW_EXPOSE_NATIVE_EGL
+#include <GLFW/glfw3native.h>
+
+#include <EGL/egl.h>
 
 using namespace akashi::core;
 
@@ -25,14 +33,32 @@ namespace akashi {
             eval::AKEval* eval = nullptr;
         };
         struct EncodeContext {
+            core::RenderProfile render_profile;
             Rational cur_pts;
             Rational fps;
             Rational duration;
+            int video_width;
+            int video_height;
             core::Path entry_path{""};
             core::owned_ptr<codec::AKDecoder> decoder;
             core::owned_ptr<buffer::AVBuffer> buffer;
 
+            core::owned_ptr<graphics::AKGraphics> gfx;
+            graphics::EncodeRenderParams er_params;
+            GLFWwindow* window = nullptr;
+
             bool decode_ended = false;
+
+          public:
+            ~EncodeContext() {
+                if (this->window) {
+                    glfwDestroyWindow(this->window);
+                    glfwTerminate();
+                }
+                if (this->er_params.buffer) {
+                    delete this->er_params.buffer;
+                }
+            }
         };
 
         static void exit_thread(ExitContext& exit_ctx) {
@@ -48,21 +74,66 @@ namespace akashi {
             Rational fps;
             core::Path entry_path{""};
             RenderProfile profile;
+            int video_width = -1;
+            int video_height = -1;
             {
                 std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
                 entry_path = ctx.state->m_prop.eval_state.config.entry_path;
                 fps = ctx.state->m_prop.fps;
                 profile = eval->render_prof(entry_path.to_abspath().to_str());
+                video_width = ctx.state->m_prop.video_width;
+                video_height = ctx.state->m_prop.video_height;
 
                 ctx.state->m_prop.render_prof = profile;
             }
 
-            return {.cur_pts = start_pts,
+            return {.render_profile = profile,
+                    .cur_pts = start_pts,
                     .fps = fps,
                     .duration = to_rational(profile.duration),
+                    .video_width = video_width,
+                    .video_height = video_height,
                     .entry_path = entry_path,
                     .decoder = make_owned<codec::AKDecoder>(profile.atom_profiles, start_pts),
-                    .buffer = make_owned<buffer::AVBuffer>(borrowed_ptr(ctx.state))};
+                    .buffer = make_owned<buffer::AVBuffer>(borrowed_ptr(ctx.state)),
+                    .gfx = nullptr};
+        }
+
+        static void* get_proc_address(void*, const char* name) {
+            return reinterpret_cast<void*>(glfwGetProcAddress(name));
+        }
+
+        static void* egl_get_proc_address(void*, const char* name) {
+            // [TODO] add checks for validity of egl?
+            return reinterpret_cast<void*>(eglGetProcAddress(name));
+        }
+
+        static void init_encode_context(ProduceLoopContext& ctx, EncodeContext& encode_ctx) {
+            glfwInit();
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+            glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+            // on linux/x11 system, force egl over glx
+            glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+
+            // glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+            // glfwWindowHint(GLFW_CONTEXT_NO_ERROR, GLFW_TRUE);
+
+            glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
+            encode_ctx.window = glfwCreateWindow(640, 480, "", NULL, NULL);
+
+            glfwMakeContextCurrent(encode_ctx.window);
+
+            encode_ctx.gfx =
+                make_owned<graphics::AKGraphics>(ctx.state, borrowed_ptr(encode_ctx.buffer));
+            encode_ctx.gfx->load_api({get_proc_address}, {egl_get_proc_address});
+            encode_ctx.gfx->load_fbo(encode_ctx.render_profile, true);
+
+            encode_ctx.er_params.buffer =
+                new uint8_t[encode_ctx.video_width * encode_ctx.video_height * 3];
         }
 
         static void update_encode_context(EncodeContext& encode_ctx) {
@@ -156,8 +227,6 @@ namespace akashi {
         void ProduceLoop::produce_thread(ProduceLoopContext ctx, ProduceLoop* loop) {
             AKLOG_INFON("Producer init");
 
-            glfwInit();
-
             auto eval = make_owned<eval::AKEval>(borrowed_ptr(ctx.state));
 
             ExitContext exit_ctx{ctx, eval.get()};
@@ -171,13 +240,11 @@ namespace akashi {
                 &exit_ctx);
 
             // enqueue data until all frames processed
-            for (
-                /* clang-format off */
-                auto encode_ctx = create_encode_context(ctx, borrowed_ptr(eval)); 
-                can_produce(encode_ctx);
-                update_encode_context(encode_ctx)
-                /* clang-format on */
-            ) {
+
+            auto encode_ctx = create_encode_context(ctx, borrowed_ptr(eval));
+            init_encode_context(ctx, encode_ctx);
+
+            for (; can_produce(encode_ctx); update_encode_context(encode_ctx)) {
                 ctx.queue->wait_for_not_full();
 
                 // eval
@@ -189,6 +256,20 @@ namespace akashi {
                 }
 
                 // render
+                // glfwMakeContextCurrent(encode_ctx.window);
+                encode_ctx.gfx->encode_render(encode_ctx.er_params, frame_ctx[0]);
+
+                // serialize fbo into ppm image
+                std::string fname = std::string("frame_") +
+                                    std::to_string(encode_ctx.cur_pts.to_decimal()) + ".ppm";
+                FILE* fout = fopen(fname.c_str(), "w");
+                fprintf(fout, "P6\n%d %d\n%d\n", encode_ctx.er_params.width,
+                        encode_ctx.er_params.height, 255);
+                fwrite(encode_ctx.er_params.buffer, 1,
+                       encode_ctx.er_params.width * encode_ctx.er_params.height * 3, fout);
+                fclose(fout);
+
+                // glfwSwapBuffers(encode_ctx.window);
 
                 // enqueue
                 ctx.queue->enqueue({encode_ctx.cur_pts.to_decimal()});

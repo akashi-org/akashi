@@ -198,6 +198,7 @@ namespace akashi {
             m_layer_type = core::LayerType::TEXT;
 
             LayerQuadMesh mesh;
+            mesh.flip_y = ctx.layer_flip_y;
             CHECK_AK_ERROR2(this->load_mesh(ctx, mesh, m_layer_ctx));
 
             LayerQuadPass pass;
@@ -285,6 +286,7 @@ namespace akashi {
             m_layer_type = core::LayerType::IMAGE;
 
             LayerQuadMesh mesh;
+            mesh.flip_y = ctx.layer_flip_y;
             CHECK_AK_ERROR2(this->load_mesh(ctx, mesh, m_layer_ctx));
 
             LayerQuadPass pass;

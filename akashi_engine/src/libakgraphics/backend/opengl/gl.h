@@ -45,7 +45,8 @@ namespace akashi {
             // GLenum);
             void(GLAPIENTRY* PREFIXED_GLFUNC(glFlush))(void);
             void(GLAPIENTRY* PREFIXED_GLFUNC(glFinish))(void);
-            // void(GLAPIENTRY* PREFIXED_GLFUNC(glPixelStorei))(GLenum, GLint); void(GLAPIENTRY*
+            void(GLAPIENTRY* PREFIXED_GLFUNC(glPixelStorei))(GLenum, GLint);
+            // void(GLAPIENTRY*
             // PREFIXED_GLFUNC(glTexImage1D))(GLenum, GLint, GLint, GLsizei, GLint, GLenum, GLenum,
             //                              const GLvoid*);
             void(GLAPIENTRY* PREFIXED_GLFUNC(glTexImage2D))(GLenum, GLint, GLint, GLsizei, GLsizei,
@@ -55,8 +56,9 @@ namespace akashi {
                                                                const GLvoid*);
             void(GLAPIENTRY* PREFIXED_GLFUNC(glTexParameteri))(GLenum, GLenum, GLint);
             void(GLAPIENTRY* PREFIXED_GLFUNC(glGetIntegerv))(GLenum, GLint*);
-            // void(GLAPIENTRY* PREFIXED_GLFUNC(glReadPixels))(GLint, GLint, GLsizei, GLsizei,
-            // GLenum, GLenum, GLvoid*); void(GLAPIENTRY* PREFIXED_GLFUNC(glReadBuffer))(GLenum);
+            void(GLAPIENTRY* PREFIXED_GLFUNC(glReadPixels))(GLint, GLint, GLsizei, GLsizei, GLenum,
+                                                            GLenum, GLvoid*);
+            void(GLAPIENTRY* PREFIXED_GLFUNC(glReadBuffer))(GLenum);
             void(GLAPIENTRY* PREFIXED_GLFUNC(glDrawArrays))(GLenum, GLint, GLsizei);
             void(GLAPIENTRY* PREFIXED_GLFUNC(glDrawElements))(GLenum mode, GLsizei count,
                                                               GLenum type, const void* indices);
@@ -260,6 +262,8 @@ namespace akashi {
             std::string default_font_path;
 
             EGLGetProcAddress egl_get_proc_address;
+
+            int layer_flip_y = 1; // if -1, upside down
         };
 
     }

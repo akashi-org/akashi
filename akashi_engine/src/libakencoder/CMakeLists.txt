@@ -57,9 +57,11 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE akeval
   PRIVATE akcodec
   PRIVATE akbuffer
+  PRIVATE akgraphics
   PRIVATE Threads::Threads
   PRIVATE atomic
   PRIVATE glfw
+  PRIVATE EGL
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")

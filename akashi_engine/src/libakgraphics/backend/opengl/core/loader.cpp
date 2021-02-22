@@ -203,6 +203,10 @@ namespace akashi {
             DEF_FN_CHECK(ctx, get_proc_address, glRenderbufferStorage);
             DEF_FN_CHECK(ctx, get_proc_address, glFramebufferRenderbuffer);
 
+            DEF_FN_CHECK(ctx, get_proc_address, glPixelStorei);
+            DEF_FN_CHECK(ctx, get_proc_address, glReadPixels);
+            DEF_FN_CHECK(ctx, get_proc_address, glReadBuffer);
+
             return ErrorType::OK;
         }
 

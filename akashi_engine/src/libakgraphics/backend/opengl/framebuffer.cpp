@@ -13,9 +13,9 @@ namespace akashi {
     namespace graphics {
 
         bool FramebufferObject::create(const GLRenderContext& ctx, QuadPass* fbo_pass,
-                                       int fbo_width, int fbo_height) {
+                                       int fbo_width, int fbo_height, bool flip_y) {
             QuadMesh mesh;
-            mesh.flip_y = -1;
+            mesh.flip_y = flip_y ? -1 : 0;
             CHECK_AK_ERROR2(this->load_fbo(ctx, m_prop, mesh.tex, fbo_width, fbo_height));
 
             // [TODO] nullptr check

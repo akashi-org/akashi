@@ -518,6 +518,7 @@ namespace akashi {
 
         bool VideoQuadMesh::create(const GLRenderContext& ctx,
                                    core::owned_ptr<buffer::AVBufferData> buf_data) {
+            m_flip_y = ctx.layer_flip_y;
             m_buf_data = std::move(buf_data);
             m_textures.reserve(3);
             m_textures.resize(3);
