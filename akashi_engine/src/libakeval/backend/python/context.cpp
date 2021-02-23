@@ -99,6 +99,18 @@ namespace akashi {
                     delete it->second;
                 }
 
+                // clang-format off
+                // [XXX] take notice of the following points
+                // * m_corelib is managed by owned_ptr(unique_ptr)
+                // * When m_corelib is freed, Py_XDECREF() will be called somewhere in the call graph
+                // * Py_XDECREF() must not be called after Py_FinalizeEx() (really?)
+                // * After PyEvalContext::exit(), the destructor of this class will be called
+                // * m_corelib will be freed in the destructor of this class because of owned_ptr
+                // * So, if m_corelib is not explicitly freed here, Py_XDECREF() can be called after Py_FinalizeEx()
+                // * And that will cause a segmentation fault
+                // clang-format on
+                m_corelib.reset();
+
                 if (Py_FinalizeEx() < 0) {
                     AKLOG_ERRORN("PythonVM::exit(): Py_FinalizeEx() failed");
                 } else {

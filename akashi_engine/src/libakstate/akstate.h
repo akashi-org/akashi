@@ -5,6 +5,7 @@
 #include <libakcore/audio.h>
 #include <libakcore/path.h>
 #include <libakcore/hw_accel.h>
+#include <libakcore/config.h>
 
 #include <mutex>
 #include <condition_variable>
@@ -167,6 +168,9 @@ namespace akashi {
             std::mutex m_prop_mtx;
 
             AtomicState m_atomic_state;
+
+            // no need to be synced
+            core::EncodeConf m_encode_conf;
 
           public:
             explicit AKState(const core::AKConf& akconf);

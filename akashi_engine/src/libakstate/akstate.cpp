@@ -25,6 +25,8 @@ namespace akashi {
             m_prop.video_max_queue_size = akconf.playback.video_max_queue_size;
             m_prop.video_max_queue_count = akconf.playback.video_max_queue_count;
             m_prop.audio_max_queue_size = akconf.playback.audio_max_queue_size;
+
+            m_encode_conf = akconf.encode;
         }
 
         AKState::~AKState() {

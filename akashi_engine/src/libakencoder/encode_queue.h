@@ -1,6 +1,7 @@
 #pragma once
 
 #include <libakcore/memory.h>
+#include <libakcodec/encode_item.h>
 
 #include <mutex>
 #include <condition_variable>
@@ -46,16 +47,14 @@ namespace akashi {
     }
     namespace encoder {
 
-        struct EncodeQueueData {
-            double test_data = -1;
-        };
+        struct EncodeQueueData : public codec::EncodeArg {};
 
         class EncodeQueue final {
           public:
-            inline const static EncodeQueueData BLANK_DATA = {-1};
+            inline const static EncodeQueueData BLANK_DATA = {};
 
           public:
-            constexpr static size_t MAX_QUEUE_SIZE = 300;
+            constexpr static size_t MAX_QUEUE_SIZE = 10;
 
           public:
             explicit EncodeQueue(core::borrowed_ptr<state::AKState> state);

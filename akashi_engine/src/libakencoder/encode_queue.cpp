@@ -32,7 +32,7 @@ namespace akashi {
         }
 
         EncodeQueueData EncodeQueue::dequeue(void) {
-            EncodeQueueData data = BLANK_DATA;
+            EncodeQueueData data;
             size_t buf_size = 0;
             {
                 std::lock_guard<std::mutex> lock(m_synced_buf.mtx);

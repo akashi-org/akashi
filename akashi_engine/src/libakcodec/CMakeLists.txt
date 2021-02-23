@@ -15,8 +15,10 @@ find_package(Threads REQUIRED)
 
 add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./decoder.cpp"
+  "./encoder.cpp"
   "./source.cpp"
   "./backend/ffmpeg/source.cpp"
+  "./backend/ffmpeg/sink.cpp"
   "./backend/ffmpeg/decode.cpp"
   "./backend/ffmpeg/input.cpp"
   "./backend/ffmpeg/buffer.cpp"
@@ -54,6 +56,7 @@ target_link_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   PRIVATE akcore
   PRIVATE akbuffer
+  PRIVATE akstate # for akencoder
   PRIVATE Threads::Threads
   PRIVATE ${AVDEVICE_LIBRARIES}
   PRIVATE ${AVFILTER_LIBRARIES}

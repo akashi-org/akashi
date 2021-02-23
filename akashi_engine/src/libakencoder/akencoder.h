@@ -15,6 +15,7 @@ namespace akashi {
             core::borrowed_ptr<state::AKState> state;
         };
 
+        struct ExitContext;
         class EncodeLoop final {
           public:
             explicit EncodeLoop(){};
@@ -22,12 +23,15 @@ namespace akashi {
             virtual ~EncodeLoop() { this->terminate(); }
 
             void terminate() {
-                {
-                    std::lock_guard<std::mutex> lock(m_on_thread_exit.mtx);
-                    if (m_on_thread_exit.func) {
-                        m_on_thread_exit.func(m_on_thread_exit.ctx);
+                if (!m_thread_exited) {
+                    {
+                        std::lock_guard<std::mutex> lock(m_on_thread_exit.mtx);
+                        if (m_on_thread_exit.func) {
+                            m_on_thread_exit.func(m_on_thread_exit.ctx);
+                        }
+                        m_on_thread_exit.func = nullptr;
+                        m_thread_exited = true;
                     }
-                    m_on_thread_exit.func = nullptr;
                 }
                 if (m_th) {
                     delete m_th;
@@ -52,6 +56,8 @@ namespace akashi {
           private:
             static void encode_thread(EncodeLoopContext ctx, EncodeLoop* loop);
 
+            static void exit_thread(ExitContext& exit_ctx);
+
           private:
             std::thread* m_th = nullptr;
             struct {
@@ -59,6 +65,7 @@ namespace akashi {
                 void* ctx;
                 std::mutex mtx;
             } m_on_thread_exit;
+            bool m_thread_exited = false;
         };
 
     }

@@ -3,6 +3,7 @@
 #include "./rational.h"
 #include "./audio.h"
 #include "./hw_accel.h"
+#include "./codec.h"
 
 #include <string>
 #include <vector>
@@ -37,12 +38,19 @@ namespace akashi {
             std::pair<int, int> resolution;
         };
 
+        struct EncodeConf {
+            std::string out_fname;
+            EncodeCodec video_codec;
+            EncodeCodec audio_codec;
+        };
+
         struct AKConf {
             GenerelConf general;
             VideoConf video;
             AudioConf audio;
             PlaybackConf playback;
             UIConf ui;
+            EncodeConf encode;
         };
 
         AKConf parse_akconfig(const char* json_str);

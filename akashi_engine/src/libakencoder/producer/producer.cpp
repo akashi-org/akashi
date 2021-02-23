@@ -30,6 +30,7 @@ namespace akashi {
 
         struct ExitContext {
             ProduceLoopContext ctx;
+            ProduceLoop* loop;
             eval::AKEval* eval = nullptr;
         };
         struct EncodeContext {
@@ -55,18 +56,11 @@ namespace akashi {
                     glfwDestroyWindow(this->window);
                     glfwTerminate();
                 }
-                if (this->er_params.buffer) {
-                    delete this->er_params.buffer;
-                }
+                // if (this->er_params.buffer) {
+                //     delete this->er_params.buffer;
+                // }
             }
         };
-
-        static void exit_thread(ExitContext& exit_ctx) {
-            if (exit_ctx.eval) {
-                exit_ctx.eval->exit();
-            }
-            exit_ctx.ctx.state->set_producer_finished(true, true);
-        }
 
         static EncodeContext create_encode_context(ProduceLoopContext& ctx,
                                                    core::borrowed_ptr<eval::AKEval> eval) {
@@ -131,9 +125,6 @@ namespace akashi {
                 make_owned<graphics::AKGraphics>(ctx.state, borrowed_ptr(encode_ctx.buffer));
             encode_ctx.gfx->load_api({get_proc_address}, {egl_get_proc_address});
             encode_ctx.gfx->load_fbo(encode_ctx.render_profile, true);
-
-            encode_ctx.er_params.buffer =
-                new uint8_t[encode_ctx.video_width * encode_ctx.video_height * 3];
         }
 
         static void update_encode_context(EncodeContext& encode_ctx) {
@@ -196,10 +187,10 @@ namespace akashi {
                                 break;
                             }
                             case buffer::AVBufferType::AUDIO: {
-                                const auto comp_layer_uuid =
-                                    decode_res.layer_uuid + std::to_string(0);
-                                encode_ctx.buffer->aq->enqueue(comp_layer_uuid,
-                                                               std::move(decode_res.buffer));
+                                // const auto comp_layer_uuid =
+                                //     decode_res.layer_uuid + std::to_string(0);
+                                // encode_ctx.buffer->aq->enqueue(comp_layer_uuid,
+                                //                                std::move(decode_res.buffer));
                                 break;
                             }
                             default: {
@@ -229,12 +220,12 @@ namespace akashi {
 
             auto eval = make_owned<eval::AKEval>(borrowed_ptr(ctx.state));
 
-            ExitContext exit_ctx{ctx, eval.get()};
+            ExitContext exit_ctx{ctx, loop, eval.get()};
 
             loop->set_on_thread_exit(
                 [](void* ctx_) {
                     auto exit_ctx_ = reinterpret_cast<ExitContext*>(ctx_);
-                    exit_thread(*exit_ctx_);
+                    ProduceLoop::exit_thread(*exit_ctx_);
                     AKLOG_INFON("Producer Successfully exited");
                 },
                 &exit_ctx);
@@ -257,26 +248,31 @@ namespace akashi {
 
                 // render
                 // glfwMakeContextCurrent(encode_ctx.window);
+                encode_ctx.er_params.buffer =
+                    new uint8_t[encode_ctx.video_width * encode_ctx.video_height * 3];
                 encode_ctx.gfx->encode_render(encode_ctx.er_params, frame_ctx[0]);
-
-                // serialize fbo into ppm image
-                std::string fname = std::string("frame_") +
-                                    std::to_string(encode_ctx.cur_pts.to_decimal()) + ".ppm";
-                FILE* fout = fopen(fname.c_str(), "w");
-                fprintf(fout, "P6\n%d %d\n%d\n", encode_ctx.er_params.width,
-                        encode_ctx.er_params.height, 255);
-                fwrite(encode_ctx.er_params.buffer, 1,
-                       encode_ctx.er_params.width * encode_ctx.er_params.height * 3, fout);
-                fclose(fout);
-
                 // glfwSwapBuffers(encode_ctx.window);
 
                 // enqueue
-                ctx.queue->enqueue({encode_ctx.cur_pts.to_decimal()});
+                EncodeQueueData queue_data;
+                queue_data.pts = encode_ctx.cur_pts;
+                queue_data.buffer.reset(encode_ctx.er_params.buffer);
+                queue_data.buf_size = encode_ctx.video_width * encode_ctx.video_height * 3;
+                queue_data.type = buffer::AVBufferType::VIDEO;
+
+                ctx.queue->enqueue(std::move(queue_data));
             }
 
-            exit_thread(exit_ctx);
+            ProduceLoop::exit_thread(exit_ctx);
             AKLOG_INFON("Producer finished");
+        }
+
+        void ProduceLoop::exit_thread(ExitContext& exit_ctx) {
+            if (exit_ctx.eval) {
+                exit_ctx.eval->exit();
+            }
+            exit_ctx.loop->m_thread_exited = true;
+            exit_ctx.ctx.state->set_producer_finished(true, true);
         }
 
     }
