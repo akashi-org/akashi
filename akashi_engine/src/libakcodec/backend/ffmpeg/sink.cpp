@@ -240,6 +240,10 @@ namespace akashi {
                 // [XXX] settings for interlacing?
             }
 
+            if (m_ofmt_ctx->flags & AVFMT_GLOBALHEADER) {
+                enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+            }
+
             // open encoder
             // codec_opts?
             if (auto err = avcodec_open2(enc_ctx, codec, nullptr); err < 0) {
