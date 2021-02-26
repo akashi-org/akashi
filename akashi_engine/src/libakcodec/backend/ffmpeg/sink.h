@@ -34,6 +34,8 @@ namespace akashi {
 
             virtual EncodeWriteResult write(const EncodeWriteArg& write_arg) override;
 
+            virtual size_t nb_samples_per_frame(void) override;
+
             virtual bool close(void) override;
 
           private:

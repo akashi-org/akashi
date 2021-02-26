@@ -24,6 +24,10 @@ namespace akashi {
             return m_frame_sink->write(write_arg);
         }
 
+        size_t AKEncoder::nb_samples_per_frame(void) {
+            return m_frame_sink->nb_samples_per_frame();
+        }
+
         bool AKEncoder::close(void) {
             AKLOG_INFON("Now closing encoder...");
             return m_frame_sink->close();

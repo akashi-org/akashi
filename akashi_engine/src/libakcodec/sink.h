@@ -16,6 +16,7 @@ namespace akashi {
             virtual ~FrameSink(){};
             virtual EncodeResultCode send(const EncodeArg& encode_arg) = 0;
             virtual EncodeWriteResult write(const EncodeWriteArg& write_arg) = 0;
+            virtual size_t nb_samples_per_frame(void) = 0;
             virtual bool close(void) = 0;
         };
 

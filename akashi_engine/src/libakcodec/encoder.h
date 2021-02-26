@@ -20,6 +20,8 @@ namespace akashi {
 
             EncodeWriteResult write(const EncodeWriteArg& write_arg);
 
+            size_t nb_samples_per_frame(void);
+
             bool close(void);
 
           private:

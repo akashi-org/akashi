@@ -197,6 +197,30 @@ namespace akashi {
             return {.result = result};
         }
 
+        size_t FFFrameSink::nb_samples_per_frame(void) {
+            if (m_audio_stream.enc_ctx) {
+                return m_audio_stream.enc_ctx->frame_size;
+            }
+            // in case where AV_CODEC_CAP_VARIABLE_FRAME_SIZE is set
+            else {
+                if (m_video_stream.enc_ctx) {
+                    Rational fps;
+                    int sample_rate;
+                    {
+                        std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+                        fps = m_state->m_prop.fps;
+                        sample_rate = m_state->m_atomic_state.audio_spec.load().sample_rate;
+                    }
+                    return static_cast<size_t>(
+                        ((Rational(1l) / fps) * Rational(sample_rate, 1)).to_decimal());
+                } else {
+                    AKLOG_WARNN(
+                        "Could not find the appropriate nb_samples per frame. Using arbitrary number for it");
+                    return 256;
+                }
+            }
+        }
+
         bool FFFrameSink::close(void) {
             if (m_video_stream.enc_ctx && !m_encoder_flushed) {
                 this->flush_encoder(buffer::AVBufferType::VIDEO);
