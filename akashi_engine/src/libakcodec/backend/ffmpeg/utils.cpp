@@ -77,18 +77,19 @@ namespace akashi {
             }
         }
 
-        AVSampleFormat to_ff_sample_format(const core::AKAudioSampleFormat& format) {
+        AVSampleFormat to_ff_sample_format(const core::AKAudioSampleFormat& format,
+                                           bool force_planar) {
             switch (format) {
                 case AKAudioSampleFormat::U8:
-                    return AV_SAMPLE_FMT_U8;
+                    return force_planar ? AV_SAMPLE_FMT_U8P : AV_SAMPLE_FMT_U8;
                 case AKAudioSampleFormat::S16:
-                    return AV_SAMPLE_FMT_S16;
+                    return force_planar ? AV_SAMPLE_FMT_S16P : AV_SAMPLE_FMT_S16;
                 case AKAudioSampleFormat::S32:
-                    return AV_SAMPLE_FMT_S32;
+                    return force_planar ? AV_SAMPLE_FMT_S32P : AV_SAMPLE_FMT_S32;
                 case AKAudioSampleFormat::FLT:
-                    return AV_SAMPLE_FMT_FLT;
+                    return force_planar ? AV_SAMPLE_FMT_FLTP : AV_SAMPLE_FMT_FLT;
                 case AKAudioSampleFormat::DBL:
-                    return AV_SAMPLE_FMT_DBL;
+                    return force_planar ? AV_SAMPLE_FMT_DBLP : AV_SAMPLE_FMT_DBL;
                 default:
                     AKLOG_ERROR("to_ff_sample_format() failed. Invalid format {}", format);
                     return AV_SAMPLE_FMT_NONE;

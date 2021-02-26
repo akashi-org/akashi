@@ -335,8 +335,9 @@ namespace akashi {
                 enc_ctx->channel_layout =
                     to_ff_channel_layout(m_state->m_atomic_state.audio_spec.load().channel_layout);
                 enc_ctx->channels = av_get_channel_layout_nb_channels(enc_ctx->channel_layout);
+                // [XXX] force planar format
                 enc_ctx->sample_fmt =
-                    to_ff_sample_format(m_state->m_atomic_state.audio_spec.load().format);
+                    to_ff_sample_format(m_state->m_atomic_state.audio_spec.load().format, true);
                 enc_ctx->time_base = {1, enc_ctx->sample_rate};
                 // [XXX] settings for other params(bit_rate, ...)
             }
