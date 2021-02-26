@@ -4,10 +4,12 @@
 #include <libakbuffer/avbuffer.h>
 #include <libakcore/rational.h>
 #include <libakcore/logger.h>
+#include <libakcore/audio.h>
 
 extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/samplefmt.h>
+#include <libavutil/channel_layout.h>
 }
 
 using namespace akashi::core;
@@ -59,6 +61,37 @@ namespace akashi {
                 default: {
                     return AV_CODEC_ID_NONE;
                 }
+            }
+        }
+
+        uint64_t to_ff_channel_layout(const core::AKAudioChannelLayout& channel_layout) {
+            switch (channel_layout) {
+                case core::AKAudioChannelLayout::MONO:
+                    return AV_CH_LAYOUT_MONO;
+                case core::AKAudioChannelLayout::STEREO:
+                    return AV_CH_LAYOUT_STEREO;
+                case core::AKAudioChannelLayout::NONE: {
+                    AKLOG_ERROR("to_ff_channel_layout() failed. Invalid layout {}", channel_layout);
+                    return -1;
+                }
+            }
+        }
+
+        AVSampleFormat to_ff_sample_format(const core::AKAudioSampleFormat& format) {
+            switch (format) {
+                case AKAudioSampleFormat::U8:
+                    return AV_SAMPLE_FMT_U8;
+                case AKAudioSampleFormat::S16:
+                    return AV_SAMPLE_FMT_S16;
+                case AKAudioSampleFormat::S32:
+                    return AV_SAMPLE_FMT_S32;
+                case AKAudioSampleFormat::FLT:
+                    return AV_SAMPLE_FMT_FLT;
+                case AKAudioSampleFormat::DBL:
+                    return AV_SAMPLE_FMT_DBL;
+                default:
+                    AKLOG_ERROR("to_ff_sample_format() failed. Invalid format {}", format);
+                    return AV_SAMPLE_FMT_NONE;
             }
         }
 

@@ -286,6 +286,65 @@ namespace akashi {
             return true;
         }
 
+        bool FFFrameSink::init_audio_stream() {
+            // find codec
+            auto codec_id = to_ff_codec_id(m_state->m_encode_conf.audio_codec);
+            auto codec = avcodec_find_encoder(codec_id);
+            if (!codec) {
+                AKLOG_ERROR("avcodec_find_encoder() failed, codec_id: {}", codec_id);
+                return false;
+            }
+
+            // alloc codec ctx
+            m_audio_stream.enc_ctx = avcodec_alloc_context3(codec);
+            if (!m_audio_stream.enc_ctx) {
+                AKLOG_ERRORN("avcodec_alloc_context3() failed");
+                return false;
+            }
+            auto enc_ctx = m_audio_stream.enc_ctx;
+
+            // codec ctx settings
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+
+                enc_ctx->sample_rate = m_state->m_atomic_state.audio_spec.load().sample_rate;
+                enc_ctx->channel_layout =
+                    to_ff_channel_layout(m_state->m_atomic_state.audio_spec.load().channel_layout);
+                enc_ctx->channels = av_get_channel_layout_nb_channels(enc_ctx->channel_layout);
+                enc_ctx->sample_fmt =
+                    to_ff_sample_format(m_state->m_atomic_state.audio_spec.load().format);
+                enc_ctx->time_base = {1, enc_ctx->sample_rate};
+                // [XXX] settings for other params(bit_rate, ...)
+            }
+
+            if (m_ofmt_ctx->flags & AVFMT_GLOBALHEADER) {
+                enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+            }
+
+            // open encoder
+            // codec_opts?
+            if (auto err = avcodec_open2(enc_ctx, codec, nullptr); err < 0) {
+                AKLOG_ERROR("avcodec_open2() failed, ret={}", av_err2str(err));
+                return false;
+            }
+
+            // init stream
+            m_audio_stream.enc_stream = avformat_new_stream(m_ofmt_ctx, codec);
+            if (!m_audio_stream.enc_stream) {
+                AKLOG_ERRORN("avformat_new_stream() failed");
+                return false;
+            }
+
+            if (auto err =
+                    avcodec_parameters_from_context(m_audio_stream.enc_stream->codecpar, enc_ctx);
+                err < 0) {
+                AKLOG_ERROR("avcodec_parameters_from_context() failed, ret={}", av_err2str(err));
+                return false;
+            }
+
+            return true;
+        }
+
         bool FFFrameSink::init_video_frame(AVFrame** frame, const EncodeArg& encode_arg) {
             // alloc frame
             *frame = av_frame_alloc();

@@ -14,6 +14,8 @@ namespace akashi {
     }
     namespace core {
         enum class EncodeCodec;
+        enum class AKAudioChannelLayout;
+        enum class AKAudioSampleFormat;
     }
     namespace codec {
 
@@ -26,6 +28,10 @@ namespace akashi {
         buffer::AVBufferType to_res_buf_type(const AVMediaType& media_type);
 
         AVCodecID to_ff_codec_id(const core::EncodeCodec& codec);
+
+        uint64_t to_ff_channel_layout(const core::AKAudioChannelLayout& channel_layout);
+
+        AVSampleFormat to_ff_sample_format(const core::AKAudioSampleFormat& format);
 
     }
 }

@@ -2,6 +2,7 @@
 
 #include "./input.h"
 #include "./error.h"
+#include "./utils.h"
 
 #include <libakbuffer/avbuffer.h>
 #include <libakcore/rational.h>
@@ -10,7 +11,6 @@
 extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/frame.h>
-#include <libavutil/channel_layout.h>
 #include <libavutil/pixdesc.h>
 #include <libavutil/hwcontext.h>
 }
@@ -19,37 +19,6 @@ using namespace akashi::core;
 
 namespace akashi {
     namespace codec {
-
-        static AVSampleFormat to_ff_sample_format(const AKAudioSampleFormat& format) {
-            switch (format) {
-                case AKAudioSampleFormat::U8:
-                    return AV_SAMPLE_FMT_U8;
-                case AKAudioSampleFormat::S16:
-                    return AV_SAMPLE_FMT_S16;
-                case AKAudioSampleFormat::S32:
-                    return AV_SAMPLE_FMT_S32;
-                case AKAudioSampleFormat::FLT:
-                    return AV_SAMPLE_FMT_FLT;
-                case AKAudioSampleFormat::DBL:
-                    return AV_SAMPLE_FMT_DBL;
-                default:
-                    AKLOG_ERROR("to_ff_sample_format() failed. Invalid format {}", format);
-                    return AV_SAMPLE_FMT_NONE;
-            }
-        }
-
-        static int to_ff_channel_layout(const AKAudioChannelLayout& channel_layout) {
-            switch (channel_layout) {
-                case AKAudioChannelLayout::MONO:
-                    return AV_CH_LAYOUT_MONO;
-                case AKAudioChannelLayout::STEREO:
-                    return AV_CH_LAYOUT_STEREO;
-                default: {
-                    AKLOG_ERROR("to_ff_channel_layout() failed. Invalid layout {}", channel_layout);
-                    return -1;
-                }
-            }
-        }
 
         FFAudioSpec to_ff_audio_spec(const AKAudioSpec& spec, const int nb_samples) {
             FFAudioSpec ff_spec;

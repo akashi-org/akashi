@@ -38,7 +38,11 @@ namespace akashi {
 
           private:
             bool init_video_stream();
+
+            bool init_audio_stream();
+
             bool init_video_frame(AVFrame** frame, const EncodeArg& encode_arg);
+
             bool populate_video_frame(AVFrame* frame, const EncodeArg& encode_arg);
 
             void flush_encoder(const buffer::AVBufferType& type);
