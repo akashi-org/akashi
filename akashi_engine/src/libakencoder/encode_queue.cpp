@@ -10,7 +10,12 @@
 namespace akashi {
     namespace encoder {
 
-        EncodeQueue::EncodeQueue(core::borrowed_ptr<state::AKState> state) : m_state(state) {}
+        EncodeQueue::EncodeQueue(core::borrowed_ptr<state::AKState> state) : m_state(state) {
+            {
+                std::lock_guard<std::mutex> lock(m_synced_buf.mtx);
+                m_max_queue_count = m_state->m_encode_conf.encode_max_queue_count;
+            }
+        }
 
         EncodeQueue::~EncodeQueue() {
             m_state_not_empty.cv.notify_all();
@@ -25,7 +30,7 @@ namespace akashi {
                 buf_size = m_synced_buf.buf.size();
             }
 
-            if (buf_size >= EncodeQueue::MAX_QUEUE_SIZE) {
+            if (buf_size >= m_max_queue_count) {
                 this->set_not_full(false, true);
             }
             this->set_not_empty(true, true);
@@ -43,7 +48,7 @@ namespace akashi {
                 m_synced_buf.buf.pop_front();
                 buf_size = m_synced_buf.buf.size();
             }
-            if (buf_size < EncodeQueue::MAX_QUEUE_SIZE) {
+            if (buf_size < m_max_queue_count) {
                 this->set_not_full(true, true);
             }
             if (buf_size <= 0) {

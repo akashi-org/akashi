@@ -42,6 +42,7 @@ namespace akashi {
             std::string out_fname;
             EncodeCodec video_codec;
             EncodeCodec audio_codec;
+            size_t encode_max_queue_count;
         };
 
         struct AKConf {

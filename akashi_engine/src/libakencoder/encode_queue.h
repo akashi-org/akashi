@@ -54,9 +54,6 @@ namespace akashi {
             inline const static EncodeQueueData BLANK_DATA = {};
 
           public:
-            constexpr static size_t MAX_QUEUE_SIZE = 10;
-
-          public:
             explicit EncodeQueue(core::borrowed_ptr<state::AKState> state);
 
             virtual ~EncodeQueue();
@@ -78,6 +75,8 @@ namespace akashi {
                 std::deque<EncodeQueueData> buf;
                 std::mutex mtx;
             } m_synced_buf;
+
+            size_t m_max_queue_count = 10;
         };
     }
 }

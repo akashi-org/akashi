@@ -97,6 +97,7 @@ class EncodeConf:
     out_fname: str = ''
     video_codec: EncodeCodec = EncodeCodec.NONE
     audio_codec: EncodeCodec = EncodeCodec.NONE
+    encode_max_queue_count: int = 10  # max queue element counts
 
 
 @dataclass(frozen=True)
