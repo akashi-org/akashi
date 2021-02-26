@@ -35,9 +35,9 @@ namespace akashi {
             if (m_state->m_encode_conf.video_codec != EncodeCodec::NONE) {
                 this->init_video_stream();
             }
-            // if (m_state->m_encode_conf.audio_codec != EncodeCodec::NONE) {
-            //    this->init_audio_stream();
-            // }
+            if (m_state->m_encode_conf.audio_codec != EncodeCodec::NONE) {
+                this->init_audio_stream();
+            }
 
             // init io
             if (auto err = avio_open(&m_ofmt_ctx->pb, out_fname.c_str(), AVIO_FLAG_WRITE);
@@ -339,6 +339,24 @@ namespace akashi {
                     to_ff_sample_format(m_state->m_atomic_state.audio_spec.load().format);
                 enc_ctx->time_base = {1, enc_ctx->sample_rate};
                 // [XXX] settings for other params(bit_rate, ...)
+            }
+
+            // validate sample_fmt
+            {
+                const enum AVSampleFormat* p = codec->sample_fmts;
+                bool success = false;
+                while (*p != AV_SAMPLE_FMT_NONE) {
+                    if (*p == enc_ctx->sample_fmt) {
+                        success = true;
+                        break;
+                    }
+                    p++;
+                }
+                if (!success) {
+                    AKLOG_ERROR("Not supported sample format `{}` found",
+                                av_get_sample_fmt_name(enc_ctx->sample_fmt));
+                    return false;
+                }
             }
 
             if (m_ofmt_ctx->flags & AVFMT_GLOBALHEADER) {
