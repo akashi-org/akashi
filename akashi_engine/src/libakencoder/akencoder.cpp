@@ -23,10 +23,30 @@ namespace akashi {
             EncodeLoop* loop;
         };
 
+        static void early_exit() { kill(getpid(), SIGTERM); }
+
         void EncodeLoop::encode_thread(EncodeLoopContext ctx, EncodeLoop* loop) {
             AKLOG_INFON("Encoder init");
 
             codec::AKEncoder encoder{ctx.state};
+
+            if (ctx.state->m_encode_conf.audio_codec != core::EncodeCodec::NONE) {
+                // [XXX] must be done before decoder initialization
+                auto aformat = encoder.validate_audio_format(
+                    ctx.state->m_atomic_state.encode_audio_spec.load().format);
+                if (aformat == AKAudioSampleFormat::NONE) {
+                    return early_exit();
+                } else {
+                    auto decode_spec = ctx.state->m_atomic_state.audio_spec.load();
+                    decode_spec.format = aformat;
+                    ctx.state->m_atomic_state.audio_spec.store(decode_spec);
+                    ctx.state->m_atomic_state.encode_audio_spec.store(decode_spec);
+                }
+            }
+            if (!encoder.open()) {
+                return early_exit();
+            }
+
             EncodeQueue encode_queue{ctx.state};
 
             ProduceLoop produce_loop;

@@ -2,10 +2,13 @@
 
 #include <libakcore/memory.h>
 #include <libakstate/akstate.h>
+#include <libakcore/logger.h>
 
 #include <mutex>
 #include <deque>
 #include <vector>
+
+using namespace akashi::core;
 
 namespace akashi {
     namespace encoder {
@@ -33,6 +36,7 @@ namespace akashi {
             if (buf_size >= m_max_queue_count) {
                 this->set_not_full(false, true);
             }
+
             this->set_not_empty(true, true);
         }
 
@@ -48,6 +52,7 @@ namespace akashi {
                 m_synced_buf.buf.pop_front();
                 buf_size = m_synced_buf.buf.size();
             }
+
             if (buf_size < m_max_queue_count) {
                 this->set_not_full(true, true);
             }
@@ -58,9 +63,11 @@ namespace akashi {
         }
 
         void EncodeQueue::clear(void) {
-            std::lock_guard<std::mutex> lock(m_synced_buf.mtx);
-            if (!m_synced_buf.buf.empty()) {
-                m_synced_buf.buf.clear();
+            {
+                std::lock_guard<std::mutex> lock(m_synced_buf.mtx);
+                if (!m_synced_buf.buf.empty()) {
+                    m_synced_buf.buf.clear();
+                }
             }
             this->set_not_full(true, true);
             this->set_not_empty(false, true);

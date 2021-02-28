@@ -22,35 +22,7 @@ namespace akashi {
     namespace codec {
 
         FFFrameSink::FFFrameSink(core::borrowed_ptr<state::AKState> state)
-            : FrameSink(state), m_state(state) {
-            auto out_fname = m_state->m_encode_conf.out_fname;
-            if (auto err = avformat_alloc_output_context2(&m_ofmt_ctx, nullptr, nullptr,
-                                                          out_fname.c_str());
-                err < 0) {
-                AKLOG_ERROR("avformat_alloc_output_context2() failed, ret={}", av_err2str(err));
-                return;
-            }
-
-            // init streams
-            if (m_state->m_encode_conf.video_codec != EncodeCodec::NONE) {
-                this->init_video_stream();
-            }
-            if (m_state->m_encode_conf.audio_codec != EncodeCodec::NONE) {
-                this->init_audio_stream();
-            }
-
-            // init io
-            if (auto err = avio_open(&m_ofmt_ctx->pb, out_fname.c_str(), AVIO_FLAG_WRITE);
-                err < 0) {
-                AKLOG_ERROR("avio_open() failed, ret={}", av_err2str(err));
-                return;
-            }
-
-            if (auto err = avformat_write_header(m_ofmt_ctx, nullptr); err < 0) {
-                AKLOG_ERROR("avformat_write_header() failed, ret={}", av_err2str(err));
-                return;
-            }
-        };
+            : FrameSink(state), m_state(state){};
 
         FFFrameSink::~FFFrameSink() {
             // video stream
@@ -88,6 +60,53 @@ namespace akashi {
             }
         }
 
+        bool FFFrameSink::open(void) {
+            auto out_fname = m_state->m_encode_conf.out_fname;
+            if (auto err = avformat_alloc_output_context2(&m_ofmt_ctx, nullptr, nullptr,
+                                                          out_fname.c_str());
+                err < 0) {
+                AKLOG_ERROR("avformat_alloc_output_context2() failed, ret={}", av_err2str(err));
+                return false;
+            }
+
+            // init streams
+            if (m_state->m_encode_conf.video_codec != EncodeCodec::NONE &&
+                !this->init_video_stream()) {
+                return false;
+            }
+            if (m_state->m_encode_conf.audio_codec != EncodeCodec::NONE &&
+                !this->init_audio_stream()) {
+                return false;
+            }
+
+            // init io
+            if (auto err = avio_open(&m_ofmt_ctx->pb, out_fname.c_str(), AVIO_FLAG_WRITE);
+                err < 0) {
+                AKLOG_ERROR("avio_open() failed, ret={}", av_err2str(err));
+                return false;
+            }
+
+            if (auto err = avformat_write_header(m_ofmt_ctx, nullptr); err < 0) {
+                AKLOG_ERROR("avformat_write_header() failed, ret={}", av_err2str(err));
+                return false;
+            }
+            return true;
+        }
+
+        bool FFFrameSink::close(void) {
+            if (m_video_stream.enc_ctx && !m_encoder_flushed) {
+                this->flush_encoder(buffer::AVBufferType::VIDEO);
+            }
+            if (m_audio_stream.enc_ctx && !m_encoder_flushed) {
+                this->flush_encoder(buffer::AVBufferType::AUDIO);
+            }
+            m_encoder_flushed = true;
+            if (m_ofmt_ctx) {
+                av_write_trailer(m_ofmt_ctx);
+            }
+            return true;
+        }
+
         EncodeResultCode FFFrameSink::send(const EncodeArg& encode_arg) {
             // init avframe
             AVFrame* frame = nullptr;
@@ -109,6 +128,16 @@ namespace akashi {
                     break;
                 }
                 case buffer::AVBufferType::AUDIO: {
+                    if (!this->init_audio_frame(&frame, encode_arg)) {
+                        av_frame_free(&frame);
+                        return EncodeResultCode::ERROR;
+                    }
+                    if (!this->populate_audio_frame(frame, encode_arg)) {
+                        av_frame_free(&frame);
+                        return EncodeResultCode::ERROR;
+                    }
+                    enc_ctx = m_audio_stream.enc_ctx;
+                    enc_stream = m_audio_stream.enc_stream;
                     break;
                 }
                 default: {
@@ -139,46 +168,18 @@ namespace akashi {
         EncodeWriteResult FFFrameSink::write(const EncodeWriteArg& write_arg) {
             AVPacket* pkt = av_packet_alloc();
             EncodeResultCode result = EncodeResultCode::NONE;
+            AVCodecContext* enc_ctx = nullptr;
+            AVStream* enc_stream = nullptr;
 
             switch (write_arg.type) {
                 case buffer::AVBufferType::VIDEO: {
-                    auto enc_ctx = m_video_stream.enc_ctx;
-                    auto enc_stream = m_video_stream.enc_stream;
-
-                    // recv pkt and write it to file
-                    auto err = avcodec_receive_packet(enc_ctx, pkt);
-                    if (err == AVERROR(EAGAIN)) {
-                        result = EncodeResultCode::RECV_EAGAIN;
-                        goto exit;
-                    } else if (err == AVERROR_EOF) {
-                        result = EncodeResultCode::RECV_EOF;
-                        goto exit;
-                    } else if (err < 0) {
-                        AKLOG_ERROR("avcodec_receive_packet() failed, ret={}", av_err2str(err));
-                        result = EncodeResultCode::ERROR;
-                        goto exit;
-                    }
-
-                    pkt->stream_index = enc_stream->index;
-                    av_packet_rescale_ts(pkt, enc_ctx->time_base, enc_stream->time_base);
-
-                    auto pkt_pts =
-                        Rational(av_rescale_q(pkt->pts, enc_stream->time_base, AV_TIME_BASE_Q),
-                                 AV_TIME_BASE);
-
-                    if (auto err = av_interleaved_write_frame(m_ofmt_ctx, pkt); err < 0) {
-                        AKLOG_ERROR("av_interleaved_write_frame() failed, ret={}", av_err2str(err));
-                        // break or return?
-                    }
-
-                    AKLOG_WARN("Frame (type: {}, pts: {}) written", write_arg.type,
-                               pkt_pts.to_decimal());
-
-                    // [TODO] really necessary?
-                    // see av_interleaved_write_frame()'s documentation
-                    // av_packet_unref(pkt);
+                    enc_ctx = m_video_stream.enc_ctx;
+                    enc_stream = m_video_stream.enc_stream;
+                    break;
                 }
                 case buffer::AVBufferType::AUDIO: {
+                    enc_ctx = m_audio_stream.enc_ctx;
+                    enc_stream = m_audio_stream.enc_stream;
                     break;
                 }
                 default: {
@@ -188,6 +189,39 @@ namespace akashi {
                 }
             }
 
+            // recv pkt and write it to file
+            {
+                auto err = avcodec_receive_packet(enc_ctx, pkt);
+                if (err == AVERROR(EAGAIN)) {
+                    result = EncodeResultCode::RECV_EAGAIN;
+                    goto exit;
+                } else if (err == AVERROR_EOF) {
+                    result = EncodeResultCode::RECV_EOF;
+                    goto exit;
+                } else if (err < 0) {
+                    AKLOG_ERROR("avcodec_receive_packet() failed, ret={}", av_err2str(err));
+                    result = EncodeResultCode::ERROR;
+                    goto exit;
+                }
+
+                pkt->stream_index = enc_stream->index;
+                av_packet_rescale_ts(pkt, enc_ctx->time_base, enc_stream->time_base);
+
+                auto pkt_pts = Rational(
+                    av_rescale_q(pkt->pts, enc_stream->time_base, AV_TIME_BASE_Q), AV_TIME_BASE);
+
+                if (auto err = av_interleaved_write_frame(m_ofmt_ctx, pkt); err < 0) {
+                    AKLOG_ERROR("av_interleaved_write_frame() failed, ret={}", av_err2str(err));
+                    // break or return?
+                }
+
+                AKLOG_WARN("Frame (type: {}, pts: {}) written", write_arg.type,
+                           pkt_pts.to_decimal());
+
+                // [TODO] really necessary?
+                // see av_interleaved_write_frame()'s documentation
+                // av_packet_unref(pkt);
+            }
             result = EncodeResultCode::OK;
 
         exit:
@@ -209,8 +243,10 @@ namespace akashi {
                     {
                         std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                         fps = m_state->m_prop.fps;
-                        sample_rate = m_state->m_atomic_state.audio_spec.load().sample_rate;
+                        sample_rate = m_state->m_atomic_state.encode_audio_spec.load().sample_rate;
                     }
+                    AKLOG_WARNN(
+                        "Could not find the appropriate nb_samples per frame. Using calculated number for it");
                     return static_cast<size_t>(
                         ((Rational(1l) / fps) * Rational(sample_rate, 1)).to_decimal());
                 } else {
@@ -221,18 +257,44 @@ namespace akashi {
             }
         }
 
-        bool FFFrameSink::close(void) {
-            if (m_video_stream.enc_ctx && !m_encoder_flushed) {
-                this->flush_encoder(buffer::AVBufferType::VIDEO);
+        core::AKAudioSampleFormat
+        FFFrameSink::validate_audio_format(const core::AKAudioSampleFormat& sample_format) {
+            // find codec
+            auto codec_id = to_ff_codec_id(m_state->m_encode_conf.audio_codec);
+            auto codec = avcodec_find_encoder(codec_id);
+            if (!codec) {
+                AKLOG_ERROR("avcodec_find_encoder() failed, codec_id: {}", codec_id);
+                return core::AKAudioSampleFormat::NONE;
             }
-            if (m_audio_stream.enc_ctx && !m_encoder_flushed) {
-                this->flush_encoder(buffer::AVBufferType::AUDIO);
+
+            const enum AVSampleFormat* p = codec->sample_fmts;
+            auto ff_sample_fmt = to_ff_sample_format(sample_format);
+            auto ff_sample_fmt_alt = av_get_alt_sample_fmt(
+                ff_sample_fmt, av_sample_fmt_is_planar(ff_sample_fmt) ? 0 : 1);
+            bool success = false;
+            bool alt_success = false;
+            while (*p != AV_SAMPLE_FMT_NONE) {
+                if (*p == ff_sample_fmt) {
+                    success = true;
+                    break;
+                }
+                if (*p == ff_sample_fmt_alt) {
+                    alt_success = true;
+                }
+                p++;
             }
-            m_encoder_flushed = true;
-            if (m_ofmt_ctx) {
-                av_write_trailer(m_ofmt_ctx);
+            if (!success) {
+                if (alt_success) {
+                    AKLOG_INFO("Using alt sample format `{}`",
+                               av_get_sample_fmt_name(ff_sample_fmt_alt));
+                    return from_ff_sample_format(ff_sample_fmt_alt);
+                }
+                AKLOG_ERROR("Not supported sample format `{}` found",
+                            av_get_sample_fmt_name(ff_sample_fmt));
+                return core::AKAudioSampleFormat::NONE;
+            } else {
+                return from_ff_sample_format(ff_sample_fmt);
             }
-            return true;
         }
 
         bool FFFrameSink::init_video_stream() {
@@ -331,33 +393,14 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
 
-                enc_ctx->sample_rate = m_state->m_atomic_state.audio_spec.load().sample_rate;
-                enc_ctx->channel_layout =
-                    to_ff_channel_layout(m_state->m_atomic_state.audio_spec.load().channel_layout);
+                enc_ctx->sample_rate = m_state->m_atomic_state.encode_audio_spec.load().sample_rate;
+                enc_ctx->channel_layout = to_ff_channel_layout(
+                    m_state->m_atomic_state.encode_audio_spec.load().channel_layout);
                 enc_ctx->channels = av_get_channel_layout_nb_channels(enc_ctx->channel_layout);
-                // [XXX] force planar format
                 enc_ctx->sample_fmt =
-                    to_ff_sample_format(m_state->m_atomic_state.audio_spec.load().format, true);
+                    to_ff_sample_format(m_state->m_atomic_state.encode_audio_spec.load().format);
                 enc_ctx->time_base = {1, enc_ctx->sample_rate};
                 // [XXX] settings for other params(bit_rate, ...)
-            }
-
-            // validate sample_fmt
-            {
-                const enum AVSampleFormat* p = codec->sample_fmts;
-                bool success = false;
-                while (*p != AV_SAMPLE_FMT_NONE) {
-                    if (*p == enc_ctx->sample_fmt) {
-                        success = true;
-                        break;
-                    }
-                    p++;
-                }
-                if (!success) {
-                    AKLOG_ERROR("Not supported sample format `{}` found",
-                                av_get_sample_fmt_name(enc_ctx->sample_fmt));
-                    return false;
-                }
             }
 
             if (m_ofmt_ctx->flags & AVFMT_GLOBALHEADER) {
@@ -414,6 +457,31 @@ namespace akashi {
             return true;
         }
 
+        bool FFFrameSink::init_audio_frame(AVFrame** frame, const EncodeArg& encode_arg) {
+            // alloc frame
+            *frame = av_frame_alloc();
+            if (!(*frame)) {
+                AKLOG_ERRORN("av_frame_alloc() failed");
+                return false;
+            }
+
+            // frame settings
+            (*frame)->nb_samples = encode_arg.nb_samples;
+            (*frame)->format = m_audio_stream.enc_ctx->sample_fmt;
+            (*frame)->channel_layout = m_audio_stream.enc_ctx->channel_layout;
+            // [TODO] is this really necessary?
+            (*frame)->pts = av_rescale_q(encode_arg.pts.num(), {1, (int)encode_arg.pts.den()},
+                                         m_audio_stream.enc_ctx->time_base);
+
+            // alloc audio buffer
+            if (auto err = av_frame_get_buffer(*frame, 0); err < 0) {
+                AKLOG_ERROR("av_frame_get_buffer() failed, ret={}", av_err2str(err));
+                return false;
+            }
+
+            return true;
+        }
+
         bool FFFrameSink::populate_video_frame(AVFrame* frame, const EncodeArg& encode_arg) {
             uint8_t* src_slice[4] = {encode_arg.buffer.get(), 0, 0, 0};
             int src_linesize[4] = {
@@ -426,6 +494,17 @@ namespace akashi {
               frame->data, frame->linesize 
             );
             // clang-format on
+            return true;
+        }
+
+        bool FFFrameSink::populate_audio_frame(AVFrame* frame, const EncodeArg& encode_arg) {
+            if (auto err =
+                    avcodec_fill_audio_frame(frame, frame->channels, (AVSampleFormat)frame->format,
+                                             encode_arg.buffer.get(), encode_arg.buf_size, 0);
+                err < 0) {
+                AKLOG_ERROR("avcodec_fill_audio_frame() failed, ret={}", av_err2str(err));
+                return false;
+            }
             return true;
         }
 
@@ -444,6 +523,10 @@ namespace akashi {
                     AKLOG_ERROR("Invalid type found, {}", type);
                     return;
                 }
+            }
+
+            if (!enc_ctx) {
+                return;
             }
 
             avcodec_send_frame(enc_ctx, nullptr);

@@ -18,6 +18,7 @@ namespace akashi {
 
             m_atomic_state.audio_spec = {akconf.audio.format, akconf.audio.sample_rate,
                                          akconf.audio.channels, akconf.audio.channel_layout};
+            m_atomic_state.encode_audio_spec.store(m_atomic_state.audio_spec);
 
             m_prop.enable_loop = akconf.playback.enable_loop;
             m_atomic_state.volume = akconf.playback.gain;

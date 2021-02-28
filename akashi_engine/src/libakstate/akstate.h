@@ -135,6 +135,8 @@ namespace akashi {
 
             std::atomic<core::AKAudioSpec> audio_spec;
 
+            std::atomic<core::AKAudioSpec> encode_audio_spec;
+
             std::atomic<PlayState> audio_play_state{PlayState::STOPPED};
 
             std::atomic<PlayState> icon_play_state{PlayState::STOPPED};

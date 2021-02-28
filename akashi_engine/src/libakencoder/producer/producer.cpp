@@ -14,6 +14,7 @@
 #include <libakbuffer/audio_queue.h>
 #include <libakgraphics/akgraphics.h>
 #include <libakgraphics/item.h>
+#include <libakcodec/encoder.h>
 
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_X11
@@ -187,10 +188,10 @@ namespace akashi {
                                 break;
                             }
                             case buffer::AVBufferType::AUDIO: {
-                                // const auto comp_layer_uuid =
-                                //     decode_res.layer_uuid + std::to_string(0);
-                                // encode_ctx.buffer->aq->enqueue(comp_layer_uuid,
-                                //                                std::move(decode_res.buffer));
+                                const auto comp_layer_uuid =
+                                    decode_res.layer_uuid + std::to_string(0);
+                                encode_ctx.buffer->aq->enqueue(comp_layer_uuid,
+                                                               std::move(decode_res.buffer));
                                 break;
                             }
                             default: {
@@ -215,6 +216,38 @@ namespace akashi {
                                     encode_ctx.fps.to_decimal(), encode_ctx.duration, 1);
         }
 
+        static core::Rational before_pts = core::Rational(-1, 1);
+
+        static std::vector<EncodeQueueData> audio_buffers(const ProduceLoopContext& ctx,
+                                                          const size_t nb_samples_per_frame,
+                                                          const core::Rational& max_pts) {
+            std::vector<EncodeQueueData> datasets;
+
+            auto audio_spec = ctx.state->m_atomic_state.audio_spec.load();
+            auto audio_buf_size =
+                nb_samples_per_frame * core::size_table(audio_spec.format) * audio_spec.channels;
+            auto frame_dur = core::Rational(audio_buf_size, core::bytes_per_second(audio_spec));
+
+            while (true) {
+                auto frame_pts =
+                    before_pts < Rational(0, 1) ? Rational(0, 1) : frame_dur + before_pts;
+                if (frame_pts > max_pts) {
+                    break;
+                }
+                EncodeQueueData queue_data;
+                queue_data.pts = frame_pts;
+                queue_data.buf_size = audio_buf_size;
+                queue_data.buffer.reset(new uint8_t[queue_data.buf_size]());
+                queue_data.nb_samples = nb_samples_per_frame;
+                queue_data.type = buffer::AVBufferType::AUDIO;
+                datasets.push_back(std::move(queue_data));
+
+                before_pts = frame_pts;
+            }
+
+            return datasets;
+        }
+
         void ProduceLoop::produce_thread(ProduceLoopContext ctx, ProduceLoop* loop) {
             AKLOG_INFON("Producer init");
 
@@ -235,6 +268,8 @@ namespace akashi {
             auto encode_ctx = create_encode_context(ctx, borrowed_ptr(eval));
             init_encode_context(ctx, encode_ctx);
 
+            auto nb_samples_per_frame = ctx.encoder->nb_samples_per_frame();
+
             for (; can_produce(encode_ctx); update_encode_context(encode_ctx)) {
                 ctx.queue->wait_for_not_full();
 
@@ -246,21 +281,30 @@ namespace akashi {
                     break;
                 }
 
-                // render
-                // glfwMakeContextCurrent(encode_ctx.window);
-                encode_ctx.er_params.buffer =
-                    new uint8_t[encode_ctx.video_width * encode_ctx.video_height * 3];
-                encode_ctx.gfx->encode_render(encode_ctx.er_params, frame_ctx[0]);
-                // glfwSwapBuffers(encode_ctx.window);
+                // video render
+                if (ctx.state->m_encode_conf.video_codec != core::EncodeCodec::NONE) {
+                    // glfwMakeContextCurrent(encode_ctx.window);
+                    encode_ctx.er_params.buffer =
+                        new uint8_t[encode_ctx.video_width * encode_ctx.video_height * 3];
+                    encode_ctx.gfx->encode_render(encode_ctx.er_params, frame_ctx[0]);
+                    // glfwSwapBuffers(encode_ctx.window);
 
-                // enqueue
-                EncodeQueueData queue_data;
-                queue_data.pts = encode_ctx.cur_pts;
-                queue_data.buffer.reset(encode_ctx.er_params.buffer);
-                queue_data.buf_size = encode_ctx.video_width * encode_ctx.video_height * 3;
-                queue_data.type = buffer::AVBufferType::VIDEO;
+                    EncodeQueueData queue_data;
+                    queue_data.pts = encode_ctx.cur_pts;
+                    queue_data.buffer.reset(encode_ctx.er_params.buffer);
+                    queue_data.buf_size = encode_ctx.video_width * encode_ctx.video_height * 3;
+                    queue_data.type = buffer::AVBufferType::VIDEO;
 
-                ctx.queue->enqueue(std::move(queue_data));
+                    ctx.queue->enqueue(std::move(queue_data));
+                }
+
+                // audio render
+                if (ctx.state->m_encode_conf.audio_codec != core::EncodeCodec::NONE) {
+                    auto datasets = audio_buffers(ctx, nb_samples_per_frame, encode_ctx.cur_pts);
+                    for (auto&& dataset : datasets) {
+                        ctx.queue->enqueue(std::move(dataset));
+                    }
+                }
             }
 
             ProduceLoop::exit_thread(exit_ctx);

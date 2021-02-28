@@ -11,6 +11,7 @@ namespace akashi {
             core::Rational pts = core::Rational(-1, 1);
             std::unique_ptr<uint8_t> buffer = nullptr;
             int buf_size = 0;
+            size_t nb_samples = 0;
             buffer::AVBufferType type = buffer::AVBufferType::UNKNOWN;
         };
 

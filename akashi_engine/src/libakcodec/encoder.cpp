@@ -16,6 +16,14 @@ namespace akashi {
 
         AKEncoder::~AKEncoder() {}
 
+        bool AKEncoder::open(void) { return m_frame_sink->open(); }
+
+        bool AKEncoder::close(void) {
+            AKLOG_INFON("Now closing encoder...");
+            return m_frame_sink->close();
+            AKLOG_INFON("Successfully closed");
+        }
+
         EncodeResultCode AKEncoder::send(const EncodeArg& encode_arg) {
             return m_frame_sink->send(encode_arg);
         }
@@ -28,10 +36,9 @@ namespace akashi {
             return m_frame_sink->nb_samples_per_frame();
         }
 
-        bool AKEncoder::close(void) {
-            AKLOG_INFON("Now closing encoder...");
-            return m_frame_sink->close();
-            AKLOG_INFON("Successfully closed");
+        core::AKAudioSampleFormat
+        AKEncoder::validate_audio_format(const core::AKAudioSampleFormat& sample_format) {
+            return m_frame_sink->validate_audio_format(sample_format);
         }
 
     }

@@ -7,6 +7,7 @@
 #include <condition_variable>
 #include <deque>
 #include <vector>
+#include <chrono>
 
 #define AK_DEF_ENCODE_QUEUE_STATE(name, v_type, v_init)                                            \
   private:                                                                                         \
@@ -34,10 +35,17 @@
         }                                                                                          \
         return res;                                                                                \
     };                                                                                             \
-    void wait_for_##name() {                                                                       \
+    void wait_for_##name(const int wait_ms = 0) {                                                  \
         std::unique_lock<std::mutex> lock(m_state_##name.mtx);                                     \
         while (!m_state_##name.value) {                                                            \
-            m_state_##name.cv.wait(lock);                                                          \
+            if (wait_ms > 0) {                                                                     \
+                auto res = m_state_##name.cv.wait_for(lock, std::chrono::milliseconds(wait_ms));   \
+                if (res == std::cv_status::timeout) {                                              \
+                    return;                                                                        \
+                }                                                                                  \
+            } else {                                                                               \
+                m_state_##name.cv.wait(lock);                                                      \
+            }                                                                                      \
         }                                                                                          \
     }
 

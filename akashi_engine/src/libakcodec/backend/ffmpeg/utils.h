@@ -31,8 +31,9 @@ namespace akashi {
 
         uint64_t to_ff_channel_layout(const core::AKAudioChannelLayout& channel_layout);
 
-        AVSampleFormat to_ff_sample_format(const core::AKAudioSampleFormat& format,
-                                           bool force_planar = false);
+        AVSampleFormat to_ff_sample_format(const core::AKAudioSampleFormat& format);
+
+        core::AKAudioSampleFormat from_ff_sample_format(const AVSampleFormat& format);
 
     }
 }
