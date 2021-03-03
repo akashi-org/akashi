@@ -35,3 +35,7 @@ endif()
 install(TARGETS ${PROJECT_NAME}
   PUBLIC_HEADER DESTINATION include/lib${PROJECT_NAME}
 )
+
+if(AKASHI_BUILD_TESTS)
+  add_subdirectory("./test")
+endif()
