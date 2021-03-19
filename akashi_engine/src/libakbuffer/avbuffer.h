@@ -17,6 +17,8 @@ namespace akashi {
 
         enum class AVBufferType { UNKNOWN = -1, VIDEO = 0, AUDIO };
 
+        static constexpr const int MAX_AUDIO_PLANE = 8;
+
         class AVBufferData {
           public:
             struct Property {
@@ -31,7 +33,7 @@ namespace akashi {
                 bool start_frame = false;
                 const char* uuid = "";
                 VideoEntry video_data[3];
-                uint8_t* audio_data = nullptr;
+                uint8_t* audio_data[MAX_AUDIO_PLANE];
                 size_t data_size = 0;
                 int chroma_width = -1;
                 int chroma_height = -1;

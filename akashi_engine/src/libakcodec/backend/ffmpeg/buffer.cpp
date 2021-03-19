@@ -32,10 +32,9 @@ namespace akashi {
             return ff_spec;
         }
 
-        bool to_audio_payload(uint8_t*& out_buf, size_t* out_buf_size, const FFAudioSpec& out_spec,
-                              uint8_t* in_buf[AV_NUM_DATA_POINTERS], const FFAudioSpec& in_spec,
-                              DecodeStream* dec_stream) {
-            int MAX_AUDIO_FRAME_SIZE = 192000; /* 1sec, 48khz, 32bit */
+        bool to_audio_payload(uint8_t* out_buf[buffer::MAX_AUDIO_PLANE], size_t* out_buf_size,
+                              const FFAudioSpec& out_spec, uint8_t* in_buf[AV_NUM_DATA_POINTERS],
+                              const FFAudioSpec& in_spec, DecodeStream* dec_stream) {
             int64_t in_channel_layout = av_get_default_channel_layout(in_spec.channels);
             uint64_t out_channel_layout = out_spec.channel_layout;
             int out_channels = av_get_channel_layout_nb_channels(out_channel_layout);
@@ -69,15 +68,16 @@ namespace akashi {
                 dec_stream->swr_ctx_init_done = true;
             }
 
-            out_buf = (uint8_t*)av_malloc(static_cast<size_t>(MAX_AUDIO_FRAME_SIZE) * 2);
-            if (!out_buf) {
-                AKLOG_ERRORN("to_audio_payload(): failed to allocate audio buf");
+            if (auto err = av_samples_alloc(out_buf, nullptr, out_channels, out_spec.nb_samples,
+                                            out_sample_fmt, 1);
+                err < 0) {
+                AKLOG_ERROR("av_samples_alloc() failed, {}", av_err2str(err));
                 return false;
             }
 
             if ((converted_nb_samples =
-                     swr_convert(*swr_ctx, &out_buf, MAX_AUDIO_FRAME_SIZE,
-                                 (const uint8_t**)(in_buf), in_spec.nb_samples)) < 0) {
+                     swr_convert(*swr_ctx, out_buf, out_spec.nb_samples, (const uint8_t**)(in_buf),
+                                 in_spec.nb_samples)) < 0) {
                 AKLOG_ERRORN("to_audio_payload(): failed to resample");
                 return false;
             }
@@ -137,8 +137,7 @@ namespace akashi {
                     break;
                 }
                 case buffer::AVBufferType::AUDIO: {
-                    av_free(m_prop.audio_data);
-                    m_prop.audio_data = nullptr;
+                    av_freep(&m_prop.audio_data[0]);
                     break;
                 }
                 default: {
