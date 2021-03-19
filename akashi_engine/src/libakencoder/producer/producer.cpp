@@ -36,11 +36,10 @@ namespace akashi {
             ProduceLoop* loop;
             eval::AKEval* eval = nullptr;
         };
-
         class AudioBuffer final {
           public:
             struct Data {
-                float* buf = nullptr;
+                uint8_t* buf = nullptr;
                 size_t len = 0;
             };
             enum class Result {
@@ -54,7 +53,7 @@ namespace akashi {
             explicit AudioBuffer(const core::AKAudioSpec& spec, const size_t max_bufsize) {
                 for (int i = 0; i < spec.channels; i++) {
                     m_buffers.push_back(
-                        make_owned<buffer::AudioRingBuffer>(max_bufsize / spec.channels, spec));
+                        make_owned<buffer::AudioRingBuffer2>(max_bufsize / spec.channels, spec));
                 }
             };
             virtual ~AudioBuffer(){};
@@ -99,11 +98,11 @@ namespace akashi {
              * @detail
              * precondition: `buf` is properly allocated
              */
-            AudioBuffer::Result dequeue(float* buf, const size_t len) {
+            AudioBuffer::Result dequeue(uint8_t* buf, const size_t len) {
                 auto nb_channels = m_buffers.size();
                 for (size_t i = 0; i < nb_channels; i++) {
                     auto len_per_ch = len / nb_channels;
-                    auto offset = i * (len_per_ch - 1);
+                    auto offset = i * (len_per_ch);
                     if (!m_buffers[i]->read(&buf[offset], len_per_ch)) {
                         return AudioBuffer::Result::OUT_OF_RANGE;
                     }
@@ -150,10 +149,8 @@ namespace akashi {
                 auto nb_channels = buf_data.prop().channels;
                 for (int i = 0; i < nb_channels; i++) {
                     AudioBuffer::Data data;
-                    auto byte_per_ch = buf_data.prop().data_size / nb_channels;
-                    data.buf = reinterpret_cast<float*>(
-                        &buf_data.prop().audio_data[i * (byte_per_ch - 1)]);
-                    data.len = byte_per_ch / sizeof(float);
+                    data.len = buf_data.prop().data_size / nb_channels;
+                    data.buf = buf_data.prop().audio_data[i];
                     res_data.push_back(std::move(data));
                 }
                 return res_data;
@@ -161,7 +158,7 @@ namespace akashi {
 
           private:
             core::owned_ptr<buffer::AVBufferData> m_back_buffer = nullptr;
-            std::vector<core::owned_ptr<buffer::AudioRingBuffer>> m_buffers;
+            std::vector<core::owned_ptr<buffer::AudioRingBuffer2>> m_buffers;
         };
 
         struct EncodeContext {
@@ -407,13 +404,13 @@ namespace akashi {
                 }
                 EncodeQueueData queue_data;
                 queue_data.pts = frame_pts;
-                queue_data.abuffer_len = audio_buf_size / core::size_table(audio_spec.format);
-                queue_data.abuffer.reset(new float[queue_data.abuffer_len]());
+                queue_data.buf_size = audio_buf_size;
+                queue_data.buffer.reset(new uint8_t[queue_data.buf_size]());
                 queue_data.nb_samples = nb_samples_per_frame;
                 queue_data.type = buffer::AVBufferType::AUDIO;
 
                 auto result =
-                    encode_ctx.abuffer->dequeue(queue_data.abuffer.get(), queue_data.abuffer_len);
+                    encode_ctx.abuffer->dequeue(queue_data.buffer.get(), queue_data.buf_size);
                 if (result == AudioBuffer::Result::OUT_OF_RANGE) {
                     auto before_pts = encode_ctx.abuffer->cur_pts();
                     encode_ctx.abuffer->seek(queue_data.buf_size);
@@ -434,6 +431,16 @@ namespace akashi {
 
             return datasets;
         }
+
+        void save_pcm(uint8_t* buf, size_t buf_size, const char* prefix) {
+            char frame_filename[1024];
+            snprintf(frame_filename, sizeof(frame_filename), "audio_%s.buf", prefix);
+
+            FILE* f;
+            f = fopen(frame_filename, "ab");
+            fwrite(buf, 1, static_cast<size_t>(buf_size), f);
+            fclose(f);
+        };
 
         void ProduceLoop::produce_thread(ProduceLoopContext ctx, ProduceLoop* loop) {
             AKLOG_INFON("Producer init");
@@ -491,11 +498,17 @@ namespace akashi {
                 if (ctx.state->m_encode_conf.audio_codec != core::EncodeCodec::NONE) {
                     auto datasets =
                         audio_buffers2(ctx, encode_ctx, nb_samples_per_frame, encode_ctx.cur_pts);
+                    // for (auto&& dataset : datasets) {
+                    //     save_pcm(dataset.buffer.get(), dataset.buf_size / 2, "left");
+                    //     save_pcm(dataset.buffer.get() + dataset.buf_size / 2, dataset.buf_size /
+                    //     2,
+                    //              "right");
+                    // }
+                    // datasets = audio_buffers(ctx, nb_samples_per_frame, encode_ctx.cur_pts);
+
                     for (auto&& dataset : datasets) {
                         ctx.queue->enqueue(std::move(dataset));
                     }
-
-                    AKLOG_WARN("abuf_pts: {}", encode_ctx.abuffer->cur_pts().to_decimal());
                 }
             }
 
