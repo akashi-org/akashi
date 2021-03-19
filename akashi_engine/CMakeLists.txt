@@ -41,6 +41,7 @@ string(CONCAT COMPILER_FLAGS
   #  " -fno-rtti"
   " -fdiagnostics-color=always"
   " -fdiagnostics-show-template-tree"
+  " -fno-strict-aliasing"
 )
 add_definitions(${COMPILER_FLAGS})
 
