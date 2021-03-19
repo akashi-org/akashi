@@ -1,5 +1,6 @@
 #include "./pts.h"
 #include "./input.h"
+#include "./utils.h"
 
 #include <libakcore/rational.h>
 #include <libakcore/logger.h>
@@ -15,8 +16,7 @@ namespace akashi {
     namespace codec {
 
         akashi::core::Rational pts_to_rational(const int64_t pts, const AVRational& time_base) {
-            return akashi::core::Rational(av_rescale_q(pts, time_base, AV_TIME_BASE_Q),
-                                          AV_TIME_BASE);
+            return akashi::core::Rational(pts) * to_rational(time_base);
         }
         akashi::core::Rational rpts_to_pts(const akashi::core::Rational& rpts,
                                            const akashi::core::Rational& from,

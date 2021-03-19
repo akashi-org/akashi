@@ -207,8 +207,7 @@ namespace akashi {
                 pkt->stream_index = enc_stream->index;
                 av_packet_rescale_ts(pkt, enc_ctx->time_base, enc_stream->time_base);
 
-                auto pkt_pts = Rational(
-                    av_rescale_q(pkt->pts, enc_stream->time_base, AV_TIME_BASE_Q), AV_TIME_BASE);
+                auto pkt_pts = Rational(pkt->pts) * to_rational(enc_stream->time_base);
 
                 if (auto err = av_interleaved_write_frame(m_ofmt_ctx, pkt); err < 0) {
                     AKLOG_ERROR("av_interleaved_write_frame() failed, ret={}", av_err2str(err));
