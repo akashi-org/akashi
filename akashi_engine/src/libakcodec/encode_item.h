@@ -9,9 +9,11 @@ namespace akashi {
     namespace codec {
         struct EncodeArg {
             core::Rational pts = core::Rational(-1, 1);
-            std::unique_ptr<uint8_t> buffer = nullptr;
+            std::unique_ptr<uint8_t[]> buffer = nullptr;
+            std::unique_ptr<float[]> abuffer = nullptr;
             int buf_size = 0;
             size_t nb_samples = 0;
+            size_t abuffer_len = 0;
             buffer::AVBufferType type = buffer::AVBufferType::UNKNOWN;
         };
 

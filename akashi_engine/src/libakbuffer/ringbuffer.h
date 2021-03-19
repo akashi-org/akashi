@@ -34,8 +34,7 @@ namespace akashi {
 
             bool write(const float* w_buf, const size_t w_buf_length, const core::Rational& w_pts,
                        bool mix = false) {
-                if (w_pts < m_buf_pts ||
-                    (w_pts + this->to_pts(w_buf_length)) > this->max_buf_pts()) {
+                if (!this->within_range(w_buf_length, w_pts)) {
                     return false;
                 }
                 auto w_offset = this->to_length(w_pts - m_buf_pts);
@@ -50,7 +49,7 @@ namespace akashi {
                 return true;
             }
 
-            bool read(float* r_buf, const size_t r_buf_length) {
+            bool read(float* r_buf, const size_t r_buf_length) const {
                 if (r_buf_length > m_buf_length) {
                     return false;
                 }
@@ -61,28 +60,51 @@ namespace akashi {
             }
 
             bool seek(const size_t r_buf_length) {
-                if (r_buf_length > m_buf_length) {
-                    return false;
-                }
+                // [TODO] do we really need this?
+                // if (r_buf_length > m_buf_length) {
+                //     return false;
+                // }
                 m_read_idx = (m_read_idx + r_buf_length) % m_buf_length;
                 m_buf_pts += this->to_pts(r_buf_length);
                 return true;
             }
 
+            bool seek2(const size_t byte_size) {
+                auto buf_length =
+                    core::Rational(byte_size, 1) / core::Rational(m_bytes_per_sample, 1);
+                if (buf_length.den() != 1) {
+                    fprintf(stderr, "seek2(): byte_size is not divisible by %ld!\n",
+                            m_bytes_per_sample);
+                    return false;
+                }
+                return this->seek(buf_length.num());
+            }
+
+            bool seek(const core::Rational& dst_pts) {
+                if ((dst_pts - m_buf_pts) < core::Rational(0l)) {
+                    fprintf(stderr, "seek(): only forward seek is available!\n");
+                    return false;
+                }
+                return this->seek(this->to_length(dst_pts - m_buf_pts));
+            }
+
             core::Rational buf_pts(void) const { return m_buf_pts; }
 
-            core::Rational max_buf_pts(void) { return m_buf_pts + this->to_pts(m_buf_length); }
+            core::Rational max_buf_pts(void) const {
+                return m_buf_pts + this->to_pts(m_buf_length);
+            }
 
-            core::Rational to_pts(const size_t buf_length) {
+            core::Rational to_pts(const size_t buf_length) const {
                 return (core::Rational(buf_length * sizeof(float), 1) /
                         this->bytes_per_second2(m_audio_spec));
             }
 
-            int64_t to_length(const core::Rational& pts) {
+            int64_t to_length(const core::Rational& pts) const {
                 auto res = (pts * this->bytes_per_second2(m_audio_spec)) /
                            core::Rational(sizeof(float), 1);
                 if (res.den() != 1) {
-                    fprintf(stderr, "to_bytes(): result is not integer!\n");
+                    fprintf(stderr, "to_length(): result is not integer!\n");
+                    return res.to_decimal();
                 }
                 return res.num();
             }
@@ -96,12 +118,24 @@ namespace akashi {
                 }
             }
 
+            bool within_range(const size_t w_buf_length, const core::Rational& w_pts) const {
+                // lower bound
+                if (w_pts < m_buf_pts) {
+                    return false;
+                }
+                // upper bound
+                if (w_pts + this->to_pts(w_buf_length) > this->max_buf_pts()) {
+                    return false;
+                }
+                return true;
+            }
+
             // debug
             const float* raw() { return m_buffer.get(); }
 
           private:
             // per channel
-            int64_t bytes_per_second2(const core::AKAudioSpec& spec) {
+            int64_t bytes_per_second2(const core::AKAudioSpec& spec) const {
                 return spec.sample_rate * size_table(spec.format);
             }
 

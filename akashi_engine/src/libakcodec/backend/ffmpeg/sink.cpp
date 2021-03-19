@@ -499,7 +499,8 @@ namespace akashi {
         bool FFFrameSink::populate_audio_frame(AVFrame* frame, const EncodeArg& encode_arg) {
             if (auto err =
                     avcodec_fill_audio_frame(frame, frame->channels, (AVSampleFormat)frame->format,
-                                             encode_arg.buffer.get(), encode_arg.buf_size, 0);
+                                             (const uint8_t*)encode_arg.abuffer.get(),
+                                             encode_arg.abuffer_len * sizeof(float), 0);
                 err < 0) {
                 AKLOG_ERROR("avcodec_fill_audio_frame() failed, ret={}", av_err2str(err));
                 return false;
