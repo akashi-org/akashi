@@ -18,6 +18,7 @@ namespace akashi {
     namespace codec {
 
         struct DecodeStream {
+            bool is_active = false; // if false, we do not use this stream
             AVCodecContext* dec_ctx = nullptr;
             struct SwrContext* swr_ctx = nullptr;
             bool swr_ctx_init_done = false;

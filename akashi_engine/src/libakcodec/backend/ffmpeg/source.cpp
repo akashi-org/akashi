@@ -279,6 +279,9 @@ namespace akashi {
 
         bool FFLayerSource::is_streams_end(void) const {
             for (const auto& dec_stream : m_input_src->dec_streams) {
+                if (!dec_stream.is_active) {
+                    continue;
+                }
                 if (!dec_stream.decode_ended) {
                     return false;
                 }
