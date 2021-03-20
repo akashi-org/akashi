@@ -66,6 +66,9 @@ namespace akashi {
                 // if (r_buf_length > m_buf_length) {
                 //     return false;
                 // }
+                for (size_t i = 0; i < r_buf_length; i++) {
+                    m_buffer[(m_read_idx + i) % m_buf_length] = 0;
+                }
                 m_read_idx = (m_read_idx + r_buf_length) % m_buf_length;
                 m_buf_pts += this->to_pts(r_buf_length);
                 return true;
