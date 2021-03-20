@@ -103,7 +103,17 @@ namespace akashi {
 
             void mix_layer(const size_t write_idx, const uint8_t* w_buf,
                            const size_t w_buf_length) {
-                throw std::runtime_error("Not implemented!");
+                for (size_t i = 0; i < w_buf_length; i += 4) {
+                    float old_v = *(float*)(&m_buffer[(i + write_idx) % m_buf_length]);
+                    // float new_v = *(float*)(&audio_data[i]) * layer.gain;
+                    float new_v = *(float*)(&w_buf[i]) * 1;
+                    float mix_gain = 1.0;
+                    float res = old_v + (mix_gain * new_v);
+
+                    for (size_t j = 0; j < sizeof(float); j++) {
+                        m_buffer[((i + write_idx) + j) % m_buf_length] = ((uint8_t*)&res)[j];
+                    }
+                }
             }
 
             bool within_range(const size_t w_buf_length, const core::Rational& w_pts) const {
