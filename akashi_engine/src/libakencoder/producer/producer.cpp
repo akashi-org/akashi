@@ -80,9 +80,10 @@ namespace akashi {
                 }
 #endif
                 auto wbufs = this->to_buffers(*buf_data);
+
                 for (size_t i = 0; i < wbufs.size(); i++) {
                     if (!m_buffers[i]->write(wbufs[i].buf, wbufs[i].len, buf_data->prop().pts,
-                                             false)) {
+                                             true)) {
                         m_back_buffer = std::move(buf_data);
                         return AudioBuffer::Result::OUT_OF_RANGE;
                     }
@@ -316,19 +317,25 @@ namespace akashi {
                     case codec::DecodeResultCode::OK: {
                         switch (decode_res.buffer->prop().media_type) {
                             case buffer::AVBufferType::VIDEO: {
-                                const auto comp_layer_uuid =
-                                    decode_res.layer_uuid + std::to_string(0);
-                                encode_ctx.buffer->vq->enqueue(comp_layer_uuid,
-                                                               std::move(decode_res.buffer));
+                                if (ctx.state->m_encode_conf.video_codec !=
+                                    core::EncodeCodec::NONE) {
+                                    const auto comp_layer_uuid =
+                                        decode_res.layer_uuid + std::to_string(0);
+                                    encode_ctx.buffer->vq->enqueue(comp_layer_uuid,
+                                                                   std::move(decode_res.buffer));
+                                }
                                 break;
                             }
                             case buffer::AVBufferType::AUDIO: {
-                                const auto comp_layer_uuid =
-                                    decode_res.layer_uuid + std::to_string(0);
-                                auto pts = decode_res.buffer->prop().pts;
-                                encode_ctx.abuffer->enqueue(std::move(decode_res.buffer));
-                                AKLOG_INFO("AudioBuffer Enqueued, pts: {}, id: {}",
-                                           pts.to_decimal(), comp_layer_uuid);
+                                if (ctx.state->m_encode_conf.audio_codec !=
+                                    core::EncodeCodec::NONE) {
+                                    const auto comp_layer_uuid =
+                                        decode_res.layer_uuid + std::to_string(0);
+                                    auto pts = decode_res.buffer->prop().pts;
+                                    encode_ctx.abuffer->enqueue(std::move(decode_res.buffer));
+                                    AKLOG_INFO("AudioBuffer Enqueued, pts: {}, id: {}",
+                                               pts.to_decimal(), comp_layer_uuid);
+                                }
                                 break;
                             }
                             default: {
@@ -414,8 +421,8 @@ namespace akashi {
                 if (result == AudioBuffer::Result::OUT_OF_RANGE) {
                     auto before_pts = encode_ctx.abuffer->cur_pts();
                     encode_ctx.abuffer->seek(queue_data.buf_size);
-                    AKLOG_INFO("AudioBuffer Seeked {} => {}", before_pts.to_decimal(),
-                               encode_ctx.abuffer->cur_pts().to_decimal());
+                    AKLOG_ERROR("AudioBuffer Seeked {} => {}", before_pts.to_decimal(),
+                                encode_ctx.abuffer->cur_pts().to_decimal());
                     continue;
                 } else if (result != AudioBuffer::Result::OK) {
                     AKLOG_ERROR("Got invalid result {}", result);
@@ -432,11 +439,19 @@ namespace akashi {
             return datasets;
         }
 
+        static bool needs_finit = true;
         void save_pcm(uint8_t* buf, size_t buf_size, const char* prefix) {
             char frame_filename[1024];
             snprintf(frame_filename, sizeof(frame_filename), "audio_%s.buf", prefix);
 
             FILE* f;
+
+            if (needs_finit) {
+                remove("audio_left.buf");
+                remove("audio_right.buf");
+                needs_finit = false;
+            }
+
             f = fopen(frame_filename, "ab");
             fwrite(buf, 1, static_cast<size_t>(buf_size), f);
             fclose(f);
