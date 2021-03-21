@@ -155,12 +155,6 @@ namespace akashi {
                     av_frame_ref(m_frame, m_proxy_frame);
                 }
 
-                // necessary for the pts calculation, but is it really necessary?
-                if (!dec_stream->is_checked_first_pts) {
-                    dec_stream->first_pts = m_frame->pts;
-                    dec_stream->is_checked_first_pts = true;
-                }
-
                 // pts calculation
                 PTSSet pts_set(m_input_src, m_frame, m_pkt->stream_index);
 
@@ -174,6 +168,13 @@ namespace akashi {
                     m_input_src->dec_streams[m_pkt->stream_index].decode_ended = true;
                     decode_result.result = DecodeResultCode::DECODE_STREAM_ENDED;
                     goto exit;
+                }
+
+                // necessary for the pts calculation, but is it really necessary?
+                if (!dec_stream->is_checked_first_pts) {
+                    dec_stream->first_pts = m_frame->pts;
+                    dec_stream->effective_pts = dec_stream->first_pts;
+                    dec_stream->is_checked_first_pts = true;
                 }
 
                 FFmpegBufferData::InputData ffbuf_input;
@@ -208,6 +209,8 @@ namespace akashi {
 
                 // update the state
                 m_input_src->dec_streams[m_pkt->stream_index].cur_decode_pts = pts_set.frame_pts();
+                m_input_src->dec_streams[m_pkt->stream_index].effective_pts +=
+                    decode_result.buffer->prop().nb_samples;
                 decode_result.result = DecodeResultCode::OK;
             }
 

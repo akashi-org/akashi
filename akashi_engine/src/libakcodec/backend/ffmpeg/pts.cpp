@@ -74,7 +74,12 @@ namespace akashi {
             //      }
 
             // [TODO] maybe we should check that the timebase of both values is same
-            return frame->pts - dec_stream->input_start_pts;
+
+            int64_t frame_pts = frame->pts;
+            if (dec_stream->media_type == AVMEDIA_TYPE_AUDIO) {
+                frame_pts = dec_stream->effective_pts;
+            }
+            return frame_pts - dec_stream->input_start_pts;
         }
 
     }
