@@ -38,7 +38,7 @@ namespace akashi {
 
         bool PTSSet::is_valid(void) const {
             if (m_frame_pts < Rational(0, 1)) {
-                AKLOG_INFON("FramePTS::is_valid(): Negative pts found");
+                AKLOG_INFO("FramePTS::is_valid(): Negative pts found {}", m_frame_pts.to_decimal());
                 return false;
             }
 

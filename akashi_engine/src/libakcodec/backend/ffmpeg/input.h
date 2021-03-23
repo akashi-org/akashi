@@ -29,6 +29,7 @@ namespace akashi {
             akashi::core::Rational cur_decode_pts = akashi::core::Rational(0, 1);
             AVMediaType media_type = AVMEDIA_TYPE_UNKNOWN;
             int64_t effective_pts = 0;
+            int64_t conv_effective_pts = 0;
         };
 
         struct InputSource {

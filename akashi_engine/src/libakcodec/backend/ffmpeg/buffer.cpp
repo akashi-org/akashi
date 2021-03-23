@@ -3,6 +3,7 @@
 #include "./input.h"
 #include "./error.h"
 #include "./utils.h"
+#include "./pts.h"
 
 #include <libakbuffer/avbuffer.h>
 #include <libakcore/rational.h>
@@ -33,7 +34,7 @@ namespace akashi {
         }
 
         bool to_audio_payload(uint8_t* out_buf[buffer::MAX_AUDIO_PLANE], size_t* out_buf_size,
-                              const FFAudioSpec& out_spec, uint8_t* in_buf[AV_NUM_DATA_POINTERS],
+                              FFAudioSpec& out_spec, uint8_t* in_buf[AV_NUM_DATA_POINTERS],
                               const FFAudioSpec& in_spec, DecodeStream* dec_stream) {
             int64_t in_channel_layout = av_get_default_channel_layout(in_spec.channels);
             uint64_t out_channel_layout = out_spec.channel_layout;
@@ -90,6 +91,8 @@ namespace akashi {
             }
             *out_buf_size = temp_payload_buf_size;
 
+            out_spec.nb_samples = converted_nb_samples;
+
             return true;
         }
 
@@ -117,7 +120,7 @@ namespace akashi {
                     break;
                 }
                 case buffer::AVBufferType::AUDIO: {
-                    this->populate_audio(input.frame, input.out_audio_spec, dec_stream);
+                    this->populate_audio(input, dec_stream);
                     break;
                 }
                 default: {
@@ -194,12 +197,12 @@ namespace akashi {
             }
         }
 
-        void FFmpegBufferData::populate_audio(const AVFrame* frame,
-                                              const AKAudioSpec& out_audio_spec,
-                                              DecodeStream* dec_stream) {
+        void FFmpegBufferData::populate_audio(const InputData& input, DecodeStream* dec_stream) {
             uint8_t* in_buf[AV_NUM_DATA_POINTERS];
+
+            auto frame = input.frame;
             FFAudioSpec in_spec;
-            FFAudioSpec out_spec = to_ff_audio_spec(out_audio_spec, frame->nb_samples);
+            FFAudioSpec out_spec = to_ff_audio_spec(input.out_audio_spec, frame->nb_samples);
 
             in_spec.channels = frame->channels;
             in_spec.channel_layout = frame->channel_layout;
@@ -247,10 +250,16 @@ namespace akashi {
                 AKLOG_ERRORN("FFmpegBufferData::populate_audio(): Failed to convert audio data");
             }
 
-            m_prop.sample_rate = out_audio_spec.sample_rate;
-            m_prop.sample_format = out_audio_spec.format;
-            m_prop.channels = out_audio_spec.channels;
+            m_prop.rpts =
+                pts_to_rational(dec_stream->conv_effective_pts, {1, out_spec.sample_rate});
+            m_prop.pts = rpts_to_pts(m_prop.rpts, input.from, input.start);
+
+            m_prop.sample_rate = input.out_audio_spec.sample_rate;
+            m_prop.sample_format = input.out_audio_spec.format;
+            m_prop.channels = input.out_audio_spec.channels;
             m_prop.nb_samples = out_spec.nb_samples;
+
+            dec_stream->conv_effective_pts += out_spec.nb_samples;
 
             if (in_spec.format < AV_SAMPLE_FMT_U8P) {
                 av_free(in_buf[0]);
