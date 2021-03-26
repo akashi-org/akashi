@@ -155,6 +155,12 @@ namespace akashi {
                     av_frame_ref(m_frame, m_proxy_frame);
                 }
 
+                if (!dec_stream->is_checked_first_pts) {
+                    dec_stream->first_pts = m_frame->pts;
+                    dec_stream->effective_pts = dec_stream->first_pts;
+                    dec_stream->is_checked_first_pts = true;
+                }
+
                 // pts calculation
                 PTSSet pts_set(m_input_src, m_frame, m_pkt->stream_index);
 
@@ -172,13 +178,6 @@ namespace akashi {
                     m_input_src->dec_streams[m_pkt->stream_index].effective_pts +=
                         m_frame->nb_samples;
                     goto exit;
-                }
-
-                // necessary for the pts calculation, but is it really necessary?
-                if (!dec_stream->is_checked_first_pts) {
-                    dec_stream->first_pts = m_frame->pts;
-                    dec_stream->effective_pts = dec_stream->first_pts;
-                    dec_stream->is_checked_first_pts = true;
                 }
 
                 FFmpegBufferData::InputData ffbuf_input;
