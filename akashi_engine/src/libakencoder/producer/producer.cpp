@@ -1,6 +1,7 @@
 #include "./producer.h"
 #include "./window.h"
 #include "./decoder.h"
+#include "./audio_renderer.h"
 #include "../encode_queue.h"
 
 #include <libakcore/logger.h>
@@ -43,6 +44,8 @@ namespace akashi {
             core::owned_ptr<buffer::AVBuffer> buffer;
 
             core::owned_ptr<buffer::AudioBuffer> abuffer;
+
+            core::Rational audio_encode_pts = core::Rational(-1, 1);
 
             core::owned_ptr<graphics::AKGraphics> gfx;
             graphics::EncodeRenderParams er_params;
@@ -119,103 +122,6 @@ namespace akashi {
                                     encode_ctx.fps.to_decimal(), encode_ctx.duration, 1);
         }
 
-        static core::Rational before_pts = core::Rational(-1, 1);
-
-        static std::vector<EncodeQueueData> audio_buffers(const ProduceLoopContext& ctx,
-                                                          const size_t nb_samples_per_frame,
-                                                          const core::Rational& max_pts) {
-            std::vector<EncodeQueueData> datasets;
-
-            auto audio_spec = ctx.state->m_atomic_state.audio_spec.load();
-            auto audio_buf_size =
-                nb_samples_per_frame * core::size_table(audio_spec.format) * audio_spec.channels;
-            auto frame_dur = core::Rational(audio_buf_size, core::bytes_per_second(audio_spec));
-
-            while (true) {
-                auto frame_pts =
-                    before_pts < Rational(0, 1) ? Rational(0, 1) : frame_dur + before_pts;
-                if (frame_pts > max_pts) {
-                    break;
-                }
-                EncodeQueueData queue_data;
-                queue_data.pts = frame_pts;
-                queue_data.buf_size = audio_buf_size;
-                queue_data.buffer.reset(new uint8_t[queue_data.buf_size]());
-                queue_data.nb_samples = nb_samples_per_frame;
-                queue_data.type = buffer::AVBufferType::AUDIO;
-                datasets.push_back(std::move(queue_data));
-
-                before_pts = frame_pts;
-            }
-
-            return datasets;
-        }
-
-        static std::vector<EncodeQueueData> audio_buffers2(const ProduceLoopContext& ctx,
-                                                           EncodeContext& encode_ctx,
-                                                           const size_t nb_samples_per_frame,
-                                                           const core::Rational& max_pts) {
-            std::vector<EncodeQueueData> datasets;
-
-            auto audio_spec = ctx.state->m_atomic_state.audio_spec.load();
-            auto audio_buf_size =
-                nb_samples_per_frame * core::size_table(audio_spec.format) * audio_spec.channels;
-            auto frame_dur = core::Rational(audio_buf_size, core::bytes_per_second(audio_spec));
-
-            while (true) {
-                auto frame_pts =
-                    before_pts < Rational(0, 1) ? Rational(0, 1) : frame_dur + before_pts;
-                if (frame_pts > max_pts) {
-                    break;
-                }
-                EncodeQueueData queue_data;
-                queue_data.pts = frame_pts;
-                queue_data.buf_size = audio_buf_size;
-                queue_data.buffer.reset(new uint8_t[queue_data.buf_size]());
-                queue_data.nb_samples = nb_samples_per_frame;
-                queue_data.type = buffer::AVBufferType::AUDIO;
-
-                auto result =
-                    encode_ctx.abuffer->dequeue(queue_data.buffer.get(), queue_data.buf_size);
-                if (result == buffer::AudioBuffer::Result::OUT_OF_RANGE) {
-                    auto before_pts = encode_ctx.abuffer->cur_pts();
-                    encode_ctx.abuffer->seek(queue_data.buf_size);
-                    AKLOG_ERROR("AudioBuffer Seeked {} => {}", before_pts.to_decimal(),
-                                encode_ctx.abuffer->cur_pts().to_decimal());
-                    continue;
-                } else if (result != buffer::AudioBuffer::Result::OK) {
-                    AKLOG_ERROR("Got invalid result {}", result);
-                    // what should we do here?
-                }
-
-                AKLOG_INFO("AudioBuffer Dequeued, pts: {}", frame_pts.to_decimal());
-
-                datasets.push_back(std::move(queue_data));
-
-                before_pts = frame_pts;
-            }
-
-            return datasets;
-        }
-
-        static bool needs_finit = true;
-        void save_pcm(uint8_t* buf, size_t buf_size, const char* prefix) {
-            char frame_filename[1024];
-            snprintf(frame_filename, sizeof(frame_filename), "audio_%s.buf", prefix);
-
-            FILE* f;
-
-            if (needs_finit) {
-                remove("audio_left.buf");
-                remove("audio_right.buf");
-                needs_finit = false;
-            }
-
-            f = fopen(frame_filename, "ab");
-            fwrite(buf, 1, static_cast<size_t>(buf_size), f);
-            fclose(f);
-        };
-
         void ProduceLoop::produce_thread(ProduceLoopContext ctx, ProduceLoop* loop) {
             AKLOG_INFON("Producer init");
 
@@ -279,15 +185,9 @@ namespace akashi {
 
                 // audio render
                 if (ctx.state->m_encode_conf.audio_codec != core::EncodeCodec::NONE) {
-                    auto datasets =
-                        audio_buffers2(ctx, encode_ctx, nb_samples_per_frame, encode_ctx.cur_pts);
-                    // for (auto&& dataset : datasets) {
-                    //     save_pcm(dataset.buffer.get(), dataset.buf_size / 2, "left");
-                    //     save_pcm(dataset.buffer.get() + dataset.buf_size / 2,
-                    //     dataset.buf_size / 2,
-                    //              "right");
-                    // }
-                    // datasets = audio_buffers(ctx, nb_samples_per_frame, encode_ctx.cur_pts);
+                    auto datasets = render_audio(
+                        &encode_ctx.audio_encode_pts, borrowed_ptr(ctx.state),
+                        borrowed_ptr(encode_ctx.abuffer), nb_samples_per_frame, encode_ctx.cur_pts);
 
                     for (auto&& dataset : datasets) {
                         ctx.queue->enqueue(std::move(dataset));

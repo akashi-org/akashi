@@ -34,6 +34,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   ./producer/producer.cpp
   ./producer/window_glfw.cpp
   ./producer/decoder.cpp
+  ./producer/audio_renderer.cpp
   ./consumer/consumer.cpp
 )
 
