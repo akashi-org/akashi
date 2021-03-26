@@ -1,7 +1,6 @@
 project (akbuffer-test CXX)
 
 add_executable(${PROJECT_NAME}
-  test_ringbuffer.cpp
 )
 target_include_directories(${PROJECT_NAME}
   PUBLIC ${CMAKE_SOURCE_DIR}/shared_temp/catch2/include/catch2/

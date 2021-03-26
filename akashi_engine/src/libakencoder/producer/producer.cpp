@@ -17,7 +17,7 @@
 #include <libakgraphics/item.h>
 #include <libakcodec/encoder.h>
 
-#include <libakbuffer/ringbuffer.h>
+#include <libakbuffer/audio_buffer.h>
 
 using namespace akashi::core;
 
@@ -28,131 +28,6 @@ namespace akashi {
             ProduceLoopContext ctx;
             ProduceLoop* loop;
             eval::AKEval* eval = nullptr;
-        };
-        class AudioBuffer final {
-          public:
-            struct Data {
-                uint8_t* buf = nullptr;
-                size_t len = 0;
-            };
-            enum class Result {
-                OUT_OF_RANGE = -2,
-                ERR = -1,
-                NONE = 0,
-                OK = 1,
-            };
-
-          public:
-            explicit AudioBuffer(const core::AKAudioSpec& spec, const size_t max_bufsize) {
-                for (int i = 0; i < spec.channels; i++) {
-                    m_buffers.push_back(
-                        make_owned<buffer::AudioRingBuffer2>(max_bufsize / spec.channels, spec));
-                }
-            };
-            virtual ~AudioBuffer(){};
-
-            // if failed, input buffer is to be stored in m_back_buffer
-            // precondition: write_ready() returns true
-            AudioBuffer::Result enqueue(core::owned_ptr<buffer::AVBufferData> buf_data) {
-                if (m_back_buffer) {
-                    auto back_buffer = std::move(m_back_buffer);
-                    m_back_buffer = nullptr;
-                    // [XXX] here enqueue() must not be called when m_back_buffer remains filled
-                    auto res = this->enqueue(std::move(back_buffer));
-                    // this result is unexpected, but we handle it just in case
-                    if (res != AudioBuffer::Result::OK) {
-                        AKLOG_ERROR("Got invalid ResultCode {}", res);
-                        return AudioBuffer::Result::ERR;
-                    }
-                }
-
-#ifndef NDEBUG
-                if (buf_data->prop().sample_format != core::AKAudioSampleFormat::FLTP) {
-                    AKLOG_ERROR("sample format is not FLTP, {}", buf_data->prop().sample_format);
-                    return AudioBuffer::Result::ERR;
-                }
-#endif
-                auto wbufs = this->to_buffers(*buf_data);
-
-                for (size_t i = 0; i < wbufs.size(); i++) {
-                    if (!m_buffers[i]->write(wbufs[i].buf, wbufs[i].len, buf_data->prop().pts,
-                                             true)) {
-                        m_back_buffer = std::move(buf_data);
-                        return AudioBuffer::Result::OUT_OF_RANGE;
-                    }
-                }
-                return AudioBuffer::Result::OK;
-            }
-
-            /**
-             *
-             * @params (buf) a 1-D planar audio buffer
-             * @params (buf_size) buf length, not in bytes
-             *
-             * @detail
-             * precondition: `buf` is properly allocated
-             */
-            AudioBuffer::Result dequeue(uint8_t* buf, const size_t len) {
-                auto nb_channels = m_buffers.size();
-                for (size_t i = 0; i < nb_channels; i++) {
-                    auto len_per_ch = len / nb_channels;
-                    auto offset = i * (len_per_ch);
-                    if (!m_buffers[i]->read(&buf[offset], len_per_ch)) {
-                        return AudioBuffer::Result::OUT_OF_RANGE;
-                    }
-                    if (!m_buffers[i]->seek(len_per_ch)) {
-                        return AudioBuffer::Result::ERR;
-                    }
-                }
-
-                return AudioBuffer::Result::OK;
-            }
-
-            bool seek(const size_t byte_size) {
-                for (auto&& buffer : m_buffers) {
-                    if (!buffer->seek2(byte_size)) {
-                        // [TODO] maybe we should add some rollback for this?
-                        return false;
-                    }
-                }
-                return true;
-            }
-
-            bool write_ready() const {
-                if (!m_back_buffer) {
-                    return true;
-                }
-                if (m_buffers.empty()) {
-                    return false;
-                }
-                auto wbuf_size = m_back_buffer->prop().data_size / m_back_buffer->prop().channels;
-                auto wpts = m_back_buffer->prop().pts;
-                return this->m_buffers[0]->within_range(wbuf_size, wpts);
-            }
-
-            core::Rational cur_pts() const {
-                if (m_buffers.empty()) {
-                    return core::Rational(-1, 1);
-                }
-                return m_buffers[0]->buf_pts();
-            }
-
-          private:
-            std::vector<AudioBuffer::Data> to_buffers(const buffer::AVBufferData& buf_data) const {
-                std::vector<AudioBuffer::Data> res_data;
-                auto nb_channels = buf_data.prop().channels;
-                for (int i = 0; i < nb_channels; i++) {
-                    AudioBuffer::Data data;
-                    data.len = buf_data.prop().data_size / nb_channels;
-                    data.buf = buf_data.prop().audio_data[i];
-                    res_data.push_back(std::move(data));
-                }
-                return res_data;
-            }
-
-          private:
-            core::owned_ptr<buffer::AVBufferData> m_back_buffer = nullptr;
-            std::vector<core::owned_ptr<buffer::AudioRingBuffer2>> m_buffers;
         };
 
         struct EncodeContext {
@@ -166,7 +41,7 @@ namespace akashi {
             core::owned_ptr<codec::AKDecoder> decoder;
             core::owned_ptr<buffer::AVBuffer> buffer;
 
-            core::owned_ptr<AudioBuffer> abuffer;
+            core::owned_ptr<buffer::AudioBuffer> abuffer;
 
             core::owned_ptr<graphics::AKGraphics> gfx;
             graphics::EncodeRenderParams er_params;
@@ -215,7 +90,8 @@ namespace akashi {
                     .entry_path = entry_path,
                     .decoder = make_owned<codec::AKDecoder>(profile.atom_profiles, start_pts),
                     .buffer = make_owned<buffer::AVBuffer>(borrowed_ptr(ctx.state)),
-                    .abuffer = make_owned<AudioBuffer>(encode_audio_spec, audio_max_queue_size),
+                    .abuffer =
+                        make_owned<buffer::AudioBuffer>(encode_audio_spec, audio_max_queue_size),
                     .gfx = nullptr,
                     .window = make_owned<Window>()};
         }
@@ -381,13 +257,13 @@ namespace akashi {
 
                 auto result =
                     encode_ctx.abuffer->dequeue(queue_data.buffer.get(), queue_data.buf_size);
-                if (result == AudioBuffer::Result::OUT_OF_RANGE) {
+                if (result == buffer::AudioBuffer::Result::OUT_OF_RANGE) {
                     auto before_pts = encode_ctx.abuffer->cur_pts();
                     encode_ctx.abuffer->seek(queue_data.buf_size);
                     AKLOG_ERROR("AudioBuffer Seeked {} => {}", before_pts.to_decimal(),
                                 encode_ctx.abuffer->cur_pts().to_decimal());
                     continue;
-                } else if (result != AudioBuffer::Result::OK) {
+                } else if (result != buffer::AudioBuffer::Result::OK) {
                     AKLOG_ERROR("Got invalid result {}", result);
                     // what should we do here?
                 }

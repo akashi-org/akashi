@@ -4,6 +4,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./avbuffer.cpp"
   "./video_queue.cpp"
   "./audio_queue.cpp"
+  "./audio_buffer.cpp"
 )
 
 file(GLOB INTERFACE_HEADERS
@@ -36,6 +37,6 @@ install(TARGETS ${PROJECT_NAME}
   PUBLIC_HEADER DESTINATION include/lib${PROJECT_NAME}
 )
 
-if(AKASHI_BUILD_TESTS)
-  add_subdirectory("./test")
-endif()
+# if(AKASHI_BUILD_TESTS)
+#   add_subdirectory("./test")
+# endif()
