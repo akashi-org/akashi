@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <memory>
+#include <cassert>
 
 // temporary
 #include <cstdio>
@@ -40,13 +41,20 @@ namespace akashi {
                     return false;
                 }
                 auto w_offset = this->to_length(w_pts - m_buf_pts);
+                auto write_idx = (m_read_idx + w_offset) % m_buf_length;
+
+                if (write_idx % 4 != 0) {
+                    fprintf(stderr,
+                            "write_idx is not divisible by 4. Using an aligned one instead.");
+                    write_idx = 4 * ((write_idx / 4) + 1);
+                }
 
                 if (!mix) {
                     for (size_t i = 0; i < w_buf_length; i++) {
-                        m_buffer[(m_read_idx + w_offset + i) % m_buf_length] = w_buf[i];
+                        m_buffer[(write_idx + i) % m_buf_length] = w_buf[i];
                     }
                 } else {
-                    this->mix_layer((m_read_idx + w_offset) % m_buf_length, w_buf, w_buf_length);
+                    this->mix_layer(write_idx, w_buf, w_buf_length);
                 }
                 return true;
             }
