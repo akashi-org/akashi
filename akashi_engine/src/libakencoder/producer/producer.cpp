@@ -1,4 +1,5 @@
 #include "./producer.h"
+#include "./window.h"
 #include "../encode_queue.h"
 
 #include <libakcore/logger.h>
@@ -17,14 +18,6 @@
 #include <libakcodec/encoder.h>
 
 #include <libakbuffer/ringbuffer.h>
-
-#include <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_X11
-// #define GLFW_EXPOSE_NATIVE_WAYLAND
-#define GLFW_EXPOSE_NATIVE_EGL
-#include <GLFW/glfw3native.h>
-
-#include <EGL/egl.h>
 
 using namespace akashi::core;
 
@@ -177,16 +170,12 @@ namespace akashi {
 
             core::owned_ptr<graphics::AKGraphics> gfx;
             graphics::EncodeRenderParams er_params;
-            GLFWwindow* window = nullptr;
+            core::owned_ptr<Window> window;
 
             bool decode_ended = false;
 
           public:
             ~EncodeContext() {
-                if (this->window) {
-                    glfwDestroyWindow(this->window);
-                    glfwTerminate();
-                }
                 // if (this->er_params.buffer) {
                 //     delete this->er_params.buffer;
                 // }
@@ -227,40 +216,14 @@ namespace akashi {
                     .decoder = make_owned<codec::AKDecoder>(profile.atom_profiles, start_pts),
                     .buffer = make_owned<buffer::AVBuffer>(borrowed_ptr(ctx.state)),
                     .abuffer = make_owned<AudioBuffer>(encode_audio_spec, audio_max_queue_size),
-                    .gfx = nullptr};
-        }
-
-        static void* get_proc_address(void*, const char* name) {
-            return reinterpret_cast<void*>(glfwGetProcAddress(name));
-        }
-
-        static void* egl_get_proc_address(void*, const char* name) {
-            // [TODO] add checks for validity of egl?
-            return reinterpret_cast<void*>(eglGetProcAddress(name));
+                    .gfx = nullptr,
+                    .window = make_owned<Window>()};
         }
 
         static void init_encode_context(ProduceLoopContext& ctx, EncodeContext& encode_ctx) {
-            glfwInit();
-            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-            glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-            // on linux/x11 system, force egl over glx
-            glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-
-            // glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
-            // glfwWindowHint(GLFW_CONTEXT_NO_ERROR, GLFW_TRUE);
-
-            glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-
-            encode_ctx.window = glfwCreateWindow(640, 480, "", NULL, NULL);
-
-            glfwMakeContextCurrent(encode_ctx.window);
-
             encode_ctx.gfx =
                 make_owned<graphics::AKGraphics>(ctx.state, borrowed_ptr(encode_ctx.buffer));
-            encode_ctx.gfx->load_api({get_proc_address}, {egl_get_proc_address});
+            encode_ctx.gfx->load_api({Window::get_proc_address}, {Window::egl_get_proc_address});
             encode_ctx.gfx->load_fbo(encode_ctx.render_profile, true);
         }
 
