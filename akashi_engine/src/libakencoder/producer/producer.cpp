@@ -1,5 +1,6 @@
 #include "./producer.h"
 #include "./window.h"
+#include "./decoder.h"
 #include "../encode_queue.h"
 
 #include <libakcore/logger.h>
@@ -110,87 +111,6 @@ namespace akashi {
         static bool can_produce(const EncodeContext& encode_ctx) {
             // [TODO] exclusive?
             return encode_ctx.cur_pts <= encode_ctx.duration;
-        }
-
-        static bool exec_decode(ProduceLoopContext& ctx, EncodeContext& encode_ctx) {
-            if (encode_ctx.decode_ended) {
-                return true;
-            }
-
-            codec::DecodeArg decode_args;
-            {
-                std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
-                decode_args.out_audio_spec = ctx.state->m_atomic_state.audio_spec.load();
-                decode_args.decode_method = ctx.state->m_atomic_state.decode_method.load();
-                // [TODO] this value should be changed
-                decode_args.video_max_queue_count = ctx.state->m_prop.video_max_queue_count;
-            }
-
-            while (true) {
-                if (!ctx.state->get_video_decode_ready() || !encode_ctx.abuffer->write_ready()) {
-                    break;
-                }
-                auto decode_res = encode_ctx.decoder->decode(decode_args);
-
-                switch (decode_res.result) {
-                    case codec::DecodeResultCode::ERROR: {
-                        AKLOG_ERROR("decode error, code: {}", decode_res.result);
-                        return false;
-                    }
-                    case codec::DecodeResultCode::DECODE_ENDED: {
-                        AKLOG_INFO("DecodeLoop::decode_thread(): ended, code: {}",
-                                   decode_res.result);
-                        encode_ctx.decode_ended = true;
-                        return true;
-                    }
-                    case codec::DecodeResultCode::DECODE_LAYER_EOF:
-                    case codec::DecodeResultCode::DECODE_LAYER_ENDED:
-                    case codec::DecodeResultCode::DECODE_STREAM_ENDED:
-                    case codec::DecodeResultCode::DECODE_ATOM_ENDED:
-                    case codec::DecodeResultCode::DECODE_AGAIN:
-                    case codec::DecodeResultCode::DECODE_SKIPPED: {
-                        AKLOG_INFO("decode skipped or layer ended, code: {}, uuid: {}",
-                                   decode_res.result, decode_res.layer_uuid);
-                        break;
-                    }
-                    case codec::DecodeResultCode::OK: {
-                        switch (decode_res.buffer->prop().media_type) {
-                            case buffer::AVBufferType::VIDEO: {
-                                if (ctx.state->m_encode_conf.video_codec !=
-                                    core::EncodeCodec::NONE) {
-                                    const auto comp_layer_uuid =
-                                        decode_res.layer_uuid + std::to_string(0);
-                                    encode_ctx.buffer->vq->enqueue(comp_layer_uuid,
-                                                                   std::move(decode_res.buffer));
-                                }
-                                break;
-                            }
-                            case buffer::AVBufferType::AUDIO: {
-                                if (ctx.state->m_encode_conf.audio_codec !=
-                                    core::EncodeCodec::NONE) {
-                                    const auto comp_layer_uuid =
-                                        decode_res.layer_uuid + std::to_string(0);
-                                    auto pts = decode_res.buffer->prop().pts;
-                                    encode_ctx.abuffer->enqueue(std::move(decode_res.buffer));
-                                    AKLOG_INFO("AudioBuffer Enqueued, pts: {}, id: {}",
-                                               pts.to_decimal(), comp_layer_uuid);
-                                }
-                                break;
-                            }
-                            default: {
-                            }
-                        }
-
-                        break;
-                    }
-                    default: {
-                        AKLOG_ERROR("invalid result code found, code: {}",
-                                    static_cast<int>(decode_res.result));
-                        return false;
-                    }
-                }
-            }
-            return true;
         }
 
         static std::vector<core::FrameContext>
@@ -320,6 +240,10 @@ namespace akashi {
             // [TODO] maybe we should need an assertion that audio buffer size is grater than or
             // equal to the value of nb_samples_per_frame
 
+            DecodeParams decode_params = {borrowed_ptr(ctx.state), borrowed_ptr(encode_ctx.decoder),
+                                          borrowed_ptr(encode_ctx.buffer),
+                                          borrowed_ptr(encode_ctx.abuffer)};
+
             for (; can_produce(encode_ctx); update_encode_context(encode_ctx)) {
                 ctx.queue->wait_for_not_full();
 
@@ -327,8 +251,13 @@ namespace akashi {
                 auto frame_ctx = pull_frame_context(borrowed_ptr(eval), encode_ctx);
 
                 // decode
-                if (!exec_decode(ctx, encode_ctx)) {
-                    break;
+                if (!encode_ctx.decode_ended) {
+                    auto decode_result = exec_decode(decode_params);
+                    if (decode_result == DecodeResult::ERR) {
+                        break;
+                    } else if (decode_result == DecodeResult::ENDED) {
+                        encode_ctx.decode_ended = true;
+                    }
                 }
 
                 // video render
@@ -354,8 +283,8 @@ namespace akashi {
                         audio_buffers2(ctx, encode_ctx, nb_samples_per_frame, encode_ctx.cur_pts);
                     // for (auto&& dataset : datasets) {
                     //     save_pcm(dataset.buffer.get(), dataset.buf_size / 2, "left");
-                    //     save_pcm(dataset.buffer.get() + dataset.buf_size / 2, dataset.buf_size /
-                    //     2,
+                    //     save_pcm(dataset.buffer.get() + dataset.buf_size / 2,
+                    //     dataset.buf_size / 2,
                     //              "right");
                     // }
                     // datasets = audio_buffers(ctx, nb_samples_per_frame, encode_ctx.cur_pts);
@@ -377,6 +306,5 @@ namespace akashi {
             exit_ctx.loop->m_thread_exited = true;
             exit_ctx.ctx.state->set_producer_finished(true, true);
         }
-
     }
 }

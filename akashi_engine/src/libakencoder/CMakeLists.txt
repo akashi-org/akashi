@@ -33,6 +33,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   ./encode_queue.cpp
   ./producer/producer.cpp
   ./producer/window_glfw.cpp
+  ./producer/decoder.cpp
   ./consumer/consumer.cpp
 )
 
