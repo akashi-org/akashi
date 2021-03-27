@@ -79,7 +79,7 @@ After all, the first and top priority of **Akashi** is the maximization of user 
 - [x] Basic Hot Reload Feature
 - [x] Basic Shader Effects
 - [x] Hardware Decoding(VA-API)
-- [ ] Basic Encoder
+- [x] Basic Encoder
 - [ ] Deployment by AppImage
 - [ ] Introduce Unit Tests and E2E
 - [ ] Refactor Kron System
