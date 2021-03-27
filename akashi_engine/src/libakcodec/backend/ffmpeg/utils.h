@@ -5,7 +5,7 @@
 extern "C" {
 #include <libavutil/rational.h>
 #include <libavutil/samplefmt.h>
-#include <libavcodec/codec_id.h>
+#include <libavcodec/avcodec.h>
 }
 
 namespace akashi {
