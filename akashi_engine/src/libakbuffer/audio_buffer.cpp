@@ -106,6 +106,10 @@ namespace akashi {
             }
 
             bool within_range(const size_t w_buf_length, const core::Rational& w_pts) const {
+                if (w_pts < Rational(0l)) {
+                    AKLOG_WARNN("w_pts is lower than 0!");
+                    return false;
+                }
                 // lower bound
                 if (w_pts < m_buf_pts) {
                     return false;
