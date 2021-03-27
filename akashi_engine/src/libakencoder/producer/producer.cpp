@@ -35,6 +35,7 @@ namespace akashi {
         struct EncodeContext {
             core::RenderProfile render_profile;
             Rational cur_pts;
+            Rational next_pts;
             Rational fps;
             Rational duration;
             int video_width;
@@ -87,6 +88,7 @@ namespace akashi {
 
             return {.render_profile = profile,
                     .cur_pts = start_pts,
+                    .next_pts = start_pts,
                     .fps = fps,
                     .duration = to_rational(profile.duration),
                     .video_width = video_width,
@@ -108,18 +110,23 @@ namespace akashi {
         }
 
         static void update_encode_context(EncodeContext& encode_ctx) {
-            encode_ctx.cur_pts += (Rational(1, 1) / encode_ctx.fps);
+            // loop detected
+            if (encode_ctx.cur_pts >= encode_ctx.next_pts) {
+                // incr cur_pts to terminate the produce session
+                encode_ctx.cur_pts += (Rational(1, 1) / encode_ctx.fps);
+            } else {
+                encode_ctx.cur_pts = encode_ctx.next_pts;
+            }
         }
 
         static bool can_produce(const EncodeContext& encode_ctx) {
-            // [TODO] exclusive?
             return encode_ctx.cur_pts <= encode_ctx.duration;
         }
 
         static std::vector<core::FrameContext>
         pull_frame_context(core::borrowed_ptr<eval::AKEval> eval, const EncodeContext& encode_ctx) {
             return eval->eval_krons(encode_ctx.entry_path.to_abspath().to_str(), encode_ctx.cur_pts,
-                                    encode_ctx.fps.to_decimal(), encode_ctx.duration, 1);
+                                    encode_ctx.fps.to_decimal(), encode_ctx.duration, 2);
         }
 
         void ProduceLoop::produce_thread(ProduceLoopContext ctx, ProduceLoop* loop) {
@@ -155,6 +162,15 @@ namespace akashi {
 
                 // eval
                 auto frame_ctx = pull_frame_context(borrowed_ptr(eval), encode_ctx);
+                if (frame_ctx.empty()) {
+                    break;
+                }
+                if (frame_ctx.size() < 2) {
+                    AKLOG_ERROR("got only {} counts from evaluation", frame_ctx.size());
+                    break;
+                }
+                encode_ctx.cur_pts = to_rational(frame_ctx[0].pts);
+                encode_ctx.next_pts = to_rational(frame_ctx[1].pts);
 
                 // decode
                 if (!encode_ctx.decode_ended) {
