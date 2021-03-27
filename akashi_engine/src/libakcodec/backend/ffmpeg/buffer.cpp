@@ -250,9 +250,10 @@ namespace akashi {
                 AKLOG_ERRORN("FFmpegBufferData::populate_audio(): Failed to convert audio data");
             }
 
-            m_prop.rpts =
-                pts_to_rational(dec_stream->conv_effective_pts, {1, out_spec.sample_rate});
-            m_prop.pts = rpts_to_pts(m_prop.rpts, input.from, input.start);
+            // [XXX] notice that the first arg here is not RPTS in its true sense
+            m_prop.pts = rpts_to_pts(
+                pts_to_rational(dec_stream->conv_effective_pts, {1, out_spec.sample_rate}),
+                input.from, Rational(0l));
 
             m_prop.sample_rate = input.out_audio_spec.sample_rate;
             m_prop.sample_format = input.out_audio_spec.format;

@@ -29,6 +29,8 @@ namespace akashi {
 
                 AVBufferType media_type = AVBufferType::UNKNOWN;
                 core::Rational pts = core::Rational(-1, 1);
+                // [XXX] in audio, calculated by the original sample rate
+                // [TODO] we should remove this?
                 core::Rational rpts = core::Rational(-1, 1);
                 bool start_frame = false;
                 const char* uuid = "";
