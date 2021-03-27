@@ -5,6 +5,8 @@
 #include <libakstate/akstate.h>
 #include <libakcodec/encoder.h>
 
+#include <stdexcept>
+
 using namespace akashi::core;
 
 namespace akashi {
@@ -30,9 +32,8 @@ namespace akashi {
                     AKLOG_DEBUG("SEND_EAGAIN {}", data.pts.to_decimal());
                     break;
                 } else {
-                    // [TODO] what should we do here?
                     AKLOG_ERROR("encode error {}, {}", data.pts.to_decimal(), send_result);
-                    return;
+                    throw std::runtime_error("Encoding aborted");
                 }
             }
         }
