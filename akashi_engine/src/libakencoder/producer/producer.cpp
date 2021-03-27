@@ -62,8 +62,8 @@ namespace akashi {
             }
         };
 
-        static EncodeContext create_encode_context(ProduceLoopContext& ctx,
-                                                   core::borrowed_ptr<eval::AKEval> eval) {
+        static core::owned_ptr<EncodeContext>
+        create_encode_context(ProduceLoopContext& ctx, core::borrowed_ptr<eval::AKEval> eval) {
             Rational start_pts = Rational(0, 1);
             Rational fps;
             core::Path entry_path{""};
@@ -86,20 +86,24 @@ namespace akashi {
                 audio_max_queue_size = ctx.state->m_prop.audio_max_queue_size;
             }
 
-            return {.render_profile = profile,
-                    .cur_pts = start_pts,
-                    .next_pts = start_pts,
-                    .fps = fps,
-                    .duration = to_rational(profile.duration),
-                    .video_width = video_width,
-                    .video_height = video_height,
-                    .entry_path = entry_path,
-                    .decoder = make_owned<codec::AKDecoder>(profile.atom_profiles, start_pts),
-                    .buffer = make_owned<buffer::AVBuffer>(borrowed_ptr(ctx.state)),
-                    .abuffer =
-                        make_owned<buffer::AudioBuffer>(encode_audio_spec, audio_max_queue_size),
-                    .gfx = nullptr,
-                    .window = make_owned<Window>()};
+            core::owned_ptr<EncodeContext> encode_ctx{new EncodeContext};
+
+            encode_ctx->render_profile = profile;
+            encode_ctx->cur_pts = start_pts;
+            encode_ctx->next_pts = start_pts;
+            encode_ctx->fps = fps;
+            encode_ctx->duration = to_rational(profile.duration);
+            encode_ctx->video_width = video_width;
+            encode_ctx->video_height = video_height;
+            encode_ctx->entry_path = entry_path;
+            encode_ctx->decoder = make_owned<codec::AKDecoder>(profile.atom_profiles, start_pts);
+            encode_ctx->buffer = make_owned<buffer::AVBuffer>(borrowed_ptr(ctx.state));
+            encode_ctx->abuffer =
+                make_owned<buffer::AudioBuffer>(encode_audio_spec, audio_max_queue_size);
+            encode_ctx->gfx = nullptr;
+            encode_ctx->window = make_owned<Window>();
+
+            return encode_ctx;
         }
 
         static void init_encode_context(ProduceLoopContext& ctx, EncodeContext& encode_ctx) {
@@ -147,21 +151,21 @@ namespace akashi {
             // enqueue data until all frames processed
 
             auto encode_ctx = create_encode_context(ctx, borrowed_ptr(eval));
-            init_encode_context(ctx, encode_ctx);
+            init_encode_context(ctx, *encode_ctx);
 
             auto nb_samples_per_frame = ctx.encoder->nb_samples_per_frame();
             // [TODO] maybe we should need an assertion that audio buffer size is grater than or
             // equal to the value of nb_samples_per_frame
 
-            DecodeParams decode_params = {borrowed_ptr(ctx.state), borrowed_ptr(encode_ctx.decoder),
-                                          borrowed_ptr(encode_ctx.buffer),
-                                          borrowed_ptr(encode_ctx.abuffer)};
+            DecodeParams decode_params = {
+                borrowed_ptr(ctx.state), borrowed_ptr(encode_ctx->decoder),
+                borrowed_ptr(encode_ctx->buffer), borrowed_ptr(encode_ctx->abuffer)};
 
-            for (; can_produce(encode_ctx); update_encode_context(encode_ctx)) {
+            for (; can_produce(*encode_ctx); update_encode_context(*encode_ctx)) {
                 ctx.queue->wait_for_not_full();
 
                 // eval
-                auto frame_ctx = pull_frame_context(borrowed_ptr(eval), encode_ctx);
+                auto frame_ctx = pull_frame_context(borrowed_ptr(eval), *encode_ctx);
                 if (frame_ctx.empty()) {
                     break;
                 }
@@ -169,31 +173,31 @@ namespace akashi {
                     AKLOG_ERROR("got only {} counts from evaluation", frame_ctx.size());
                     break;
                 }
-                encode_ctx.cur_pts = to_rational(frame_ctx[0].pts);
-                encode_ctx.next_pts = to_rational(frame_ctx[1].pts);
+                encode_ctx->cur_pts = to_rational(frame_ctx[0].pts);
+                encode_ctx->next_pts = to_rational(frame_ctx[1].pts);
 
                 // decode
-                if (!encode_ctx.decode_ended) {
+                if (!encode_ctx->decode_ended) {
                     auto decode_result = exec_decode(decode_params);
                     if (decode_result == DecodeResult::ERR) {
                         break;
                     } else if (decode_result == DecodeResult::ENDED) {
-                        encode_ctx.decode_ended = true;
+                        encode_ctx->decode_ended = true;
                     }
                 }
 
                 // video render
                 if (ctx.state->m_encode_conf.video_codec != core::EncodeCodec::NONE) {
-                    // glfwMakeContextCurrent(encode_ctx.window);
-                    encode_ctx.er_params.buffer =
-                        new uint8_t[encode_ctx.video_width * encode_ctx.video_height * 3];
-                    encode_ctx.gfx->encode_render(encode_ctx.er_params, frame_ctx[0]);
-                    // glfwSwapBuffers(encode_ctx.window);
+                    // glfwMakeContextCurrent(encode_ctx->window);
+                    encode_ctx->er_params.buffer =
+                        new uint8_t[encode_ctx->video_width * encode_ctx->video_height * 3];
+                    encode_ctx->gfx->encode_render(encode_ctx->er_params, frame_ctx[0]);
+                    // glfwSwapBuffers(encode_ctx->window);
 
                     EncodeQueueData queue_data;
-                    queue_data.pts = encode_ctx.cur_pts;
-                    queue_data.buffer.reset(encode_ctx.er_params.buffer);
-                    queue_data.buf_size = encode_ctx.video_width * encode_ctx.video_height * 3;
+                    queue_data.pts = encode_ctx->cur_pts;
+                    queue_data.buffer.reset(encode_ctx->er_params.buffer);
+                    queue_data.buf_size = encode_ctx->video_width * encode_ctx->video_height * 3;
                     queue_data.type = buffer::AVBufferType::VIDEO;
 
                     ctx.queue->enqueue(std::move(queue_data));
@@ -201,9 +205,10 @@ namespace akashi {
 
                 // audio render
                 if (ctx.state->m_encode_conf.audio_codec != core::EncodeCodec::NONE) {
-                    auto datasets = render_audio(
-                        &encode_ctx.audio_encode_pts, borrowed_ptr(ctx.state),
-                        borrowed_ptr(encode_ctx.abuffer), nb_samples_per_frame, encode_ctx.cur_pts);
+                    auto datasets =
+                        render_audio(&encode_ctx->audio_encode_pts, borrowed_ptr(ctx.state),
+                                     borrowed_ptr(encode_ctx->abuffer), nb_samples_per_frame,
+                                     encode_ctx->cur_pts);
 
                     for (auto&& dataset : datasets) {
                         ctx.queue->enqueue(std::move(dataset));
