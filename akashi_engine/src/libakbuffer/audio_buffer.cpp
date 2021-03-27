@@ -125,8 +125,12 @@ namespace akashi {
 
             void mix_layer(const size_t write_idx, const uint8_t* w_buf,
                            const size_t w_buf_length) {
-                for (size_t i = 0; i < w_buf_length; i += 4) {
-                    float old_v = *(float*)(&m_buffer[(i + write_idx) % m_buf_length]);
+                alignas(float) uint8_t temp_buf[sizeof(float)] = {0};
+                for (size_t i = 0; i < w_buf_length; i += sizeof(float)) {
+                    for (size_t d = 0; d < sizeof(float); d++) {
+                        temp_buf[d] = m_buffer[(i + d + write_idx) % m_buf_length];
+                    }
+                    float old_v = *(float*)(temp_buf);
                     // float new_v = *(float*)(&audio_data[i]) * layer.gain;
                     float new_v = *(float*)(&w_buf[i]) * 1;
                     float mix_gain = 1.0;
