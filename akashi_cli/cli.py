@@ -1,10 +1,9 @@
-from .utils import BIN_PATH, LIBRARY_PATH
-from .parser import argument_parse
+from .utils import BIN_PATH, ENCODER_BIN_PATH, LIBRARY_PATH
+from .parser import argument_parse, ParsedOption
 
 import signal
 import threading
 from subprocess import Popen
-from typing import Any
 
 # for http-asp
 import requests
@@ -15,13 +14,23 @@ import os
 
 class ServerThread(threading.Thread):
 
-    def __init__(self, *args: Any):
+    def __init__(self, option: ParsedOption):
         super().__init__()
         self.daemon = True
-        self.args = args
+        self.action = option.action
+        self.akconf = option.akconf
         self.proc = None
 
     def run(self):
+
+        if self.action == 'debug':
+            self.__debug_run()
+        elif self.action == 'build':
+            self.__build_run()
+        else:
+            raise Exception(f'invalid action `{self.action}`type found')
+
+    def __debug_run(self):
 
         # [XXX] To avoid deadlock issues, stderr must be redirected to /dev/null
         # self.proc = Popen(
@@ -30,7 +39,7 @@ class ServerThread(threading.Thread):
         # )
 
         self.proc = Popen(
-            [BIN_PATH, *self.args], env=os.environ
+            [BIN_PATH, self.akconf], env=os.environ
         )
 
         while True:
@@ -49,6 +58,18 @@ class ServerThread(threading.Thread):
             resp = requests.get("http://localhost:1234/asp", json=json.loads(input_str))
             print(resp.json())
 
+    def __build_run(self):
+        # [XXX] To avoid deadlock issues, stderr must be redirected to /dev/null
+        # self.proc = Popen(
+        #     [ENCODER_BIN_PATH, *args],
+        #     stdin=PIPE, stdout=PIPE, stderr=DEVNULL, env=os.environ
+        # )
+
+        self.proc = Popen(
+            [ENCODER_BIN_PATH, self.akconf], env=os.environ
+        )
+        self.proc.communicate()
+
     def terminate(self):
         if self.proc:
             self.proc.terminate()
@@ -56,7 +77,7 @@ class ServerThread(threading.Thread):
 
 def akashi_cli() -> None:
     # [XXX] argument_parse() must be called before configuring signals, or weird bugs occur
-    akconf_jstr = argument_parse()
+    parsed_option = argument_parse()
 
     if 'LD_LIBRARY_PATH' in os.environ.keys():
         os.environ['LD_LIBRARY_PATH'] += os.pathsep + LIBRARY_PATH
@@ -74,7 +95,7 @@ def akashi_cli() -> None:
 
     signal.pthread_sigmask(signal.SIG_BLOCK, sigset)
 
-    th_server = ServerThread(akconf_jstr)
+    th_server = ServerThread(parsed_option)
     th_server.start()
 
     signal.sigwait(sigset)

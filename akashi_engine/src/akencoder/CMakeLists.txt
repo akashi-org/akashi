@@ -1,4 +1,4 @@
-project (akencoder CXX)
+project (akashi_encoder CXX)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -28,7 +28,8 @@ if(NOT glfw_POPULATED)
 endif()
 
 
-add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
+add_executable(${PROJECT_NAME}
+  ./main.cpp
   ./akencoder.cpp
   ./encode_queue.cpp
   ./producer/producer.cpp
@@ -36,13 +37,6 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   ./producer/decoder.cpp
   ./producer/audio_renderer.cpp
   ./consumer/consumer.cpp
-)
-
-file(GLOB INTERFACE_HEADERS
-  akencoder.h
-)
-set_target_properties(${PROJECT_NAME} PROPERTIES 
-  PUBLIC_HEADER "${INTERFACE_HEADERS}" # [XXX] we need double quotes here!
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -72,8 +66,3 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     ./pch.h
   )
 endif()
-
-install(TARGETS ${PROJECT_NAME}
-  PUBLIC_HEADER DESTINATION include/lib${PROJECT_NAME}
-)
-

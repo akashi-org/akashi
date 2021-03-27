@@ -66,9 +66,13 @@ add_subdirectory("./src/libakwatch")
 add_subdirectory("./src/libakserver")
 add_subdirectory("./src/libakstate")
 add_subdirectory("./src/libakevent")
-add_subdirectory("./src/libakencoder")
 
 add_subdirectory("./src/akui")
 set_target_properties(akashi_renderer PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+add_subdirectory("./src/akencoder")
+set_target_properties(akashi_encoder PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )

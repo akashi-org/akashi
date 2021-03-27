@@ -1,4 +1,4 @@
-#include "akui/app.h"
+#include "./akencoder.h"
 
 #include <libakcore/logger.h>
 
@@ -49,11 +49,13 @@ int main(int argc, char** argv) {
 
     create_logger(cap);
 
-    akashi::ui::UILoop ui_loop;
-    ui_loop.run({argc, argv});
+    auto akconf = akashi::core::parse_akconfig(argv[1]);
+    akashi::state::AKState state(akconf);
+    akashi::encoder::EncodeLoop encode_loop;
+    encode_loop.run({akashi::core::borrowed_ptr(&state)});
 
     do_sigwait(ss);
-    ui_loop.terminate();
+    encode_loop.terminate();
 
     destroy_logger();
     return 0;
