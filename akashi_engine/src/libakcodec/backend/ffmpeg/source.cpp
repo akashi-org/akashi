@@ -155,9 +155,9 @@ namespace akashi {
                     av_frame_ref(m_frame, m_proxy_frame);
                 }
 
-                // necessary for the pts calculation, but is it really necessary?
                 if (!dec_stream->is_checked_first_pts) {
                     dec_stream->first_pts = m_frame->pts;
+                    dec_stream->effective_pts = dec_stream->first_pts;
                     dec_stream->is_checked_first_pts = true;
                 }
 
@@ -167,12 +167,16 @@ namespace akashi {
                 if (!pts_set.is_valid()) {
                     AKLOG_INFON("FFLayerSource::transcode_step(): Invalid pts found. Skipped");
                     decode_result.result = DecodeResultCode::DECODE_SKIPPED;
+                    m_input_src->dec_streams[m_pkt->stream_index].effective_pts +=
+                        m_frame->nb_samples;
                     goto exit;
                 }
 
                 if (!pts_set.within_range()) {
                     m_input_src->dec_streams[m_pkt->stream_index].decode_ended = true;
                     decode_result.result = DecodeResultCode::DECODE_STREAM_ENDED;
+                    m_input_src->dec_streams[m_pkt->stream_index].effective_pts +=
+                        m_frame->nb_samples;
                     goto exit;
                 }
 
@@ -189,6 +193,8 @@ namespace akashi {
                 ffbuf_input.start_frame = false; // [TODO] remove this
                 ffbuf_input.pts = pts_set.frame_pts();
                 ffbuf_input.rpts = pts_set.frame_rpts();
+                ffbuf_input.from = m_input_src->from;
+                ffbuf_input.start = m_input_src->start;
                 ffbuf_input.out_audio_spec = out_audio_spec;
                 ffbuf_input.uuid = m_input_src->uuid;
                 ffbuf_input.media_type = to_res_buf_type(dec_stream->dec_ctx->codec_type);
@@ -208,6 +214,7 @@ namespace akashi {
 
                 // update the state
                 m_input_src->dec_streams[m_pkt->stream_index].cur_decode_pts = pts_set.frame_pts();
+                m_input_src->dec_streams[m_pkt->stream_index].effective_pts += m_frame->nb_samples;
                 decode_result.result = DecodeResultCode::OK;
             }
 
@@ -279,6 +286,9 @@ namespace akashi {
 
         bool FFLayerSource::is_streams_end(void) const {
             for (const auto& dec_stream : m_input_src->dec_streams) {
+                if (!dec_stream.is_active) {
+                    continue;
+                }
                 if (!dec_stream.decode_ended) {
                     return false;
                 }

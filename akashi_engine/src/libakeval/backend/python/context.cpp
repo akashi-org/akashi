@@ -94,14 +94,29 @@ namespace akashi {
 
         // [TODO] since this is called from outside the eval thread, maybe we should use GIL?
         void PyEvalContext::exit(void) {
-            for (auto it = m_modules.begin(); it != m_modules.end(); it++) {
-                delete it->second;
-            }
+            if (!m_exited) {
+                for (auto it = m_modules.begin(); it != m_modules.end(); it++) {
+                    delete it->second;
+                }
 
-            if (Py_FinalizeEx() < 0) {
-                AKLOG_ERRORN("PythonVM::exit(): Py_FinalizeEx() failed");
-            } else {
-                AKLOG_INFON("PythonVM::exit(): Successfully exited");
+                // clang-format off
+                // [XXX] take notice of the following points
+                // * m_corelib is managed by owned_ptr(unique_ptr)
+                // * When m_corelib is freed, Py_XDECREF() will be called somewhere in the call graph
+                // * Py_XDECREF() must not be called after Py_FinalizeEx() (really?)
+                // * After PyEvalContext::exit(), the destructor of this class will be called
+                // * m_corelib will be freed in the destructor of this class because of owned_ptr
+                // * So, if m_corelib is not explicitly freed here, Py_XDECREF() can be called after Py_FinalizeEx()
+                // * And that will cause a segmentation fault
+                // clang-format on
+                m_corelib.reset();
+
+                if (Py_FinalizeEx() < 0) {
+                    AKLOG_ERRORN("PythonVM::exit(): Py_FinalizeEx() failed");
+                } else {
+                    AKLOG_INFON("PythonVM::exit(): Successfully exited");
+                }
+                m_exited = true;
             }
         };
 

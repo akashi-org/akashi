@@ -5,6 +5,7 @@
 #include <libakcore/audio.h>
 #include <libakcore/path.h>
 #include <libakcore/hw_accel.h>
+#include <libakcore/config.h>
 
 #include <mutex>
 #include <condition_variable>
@@ -134,6 +135,8 @@ namespace akashi {
 
             std::atomic<core::AKAudioSpec> audio_spec;
 
+            std::atomic<core::AKAudioSpec> encode_audio_spec;
+
             std::atomic<PlayState> audio_play_state{PlayState::STOPPED};
 
             std::atomic<PlayState> icon_play_state{PlayState::STOPPED};
@@ -159,11 +162,17 @@ namespace akashi {
             AK_DEF_SYNC_STATE(video_decode_ready, bool, true)
             AK_DEF_SYNC_STATE(audio_decode_ready, bool, true)
 
+            AK_DEF_SYNC_STATE(producer_finished, bool, false);
+            AK_DEF_SYNC_STATE(consumer_finished, bool, false);
+
           public:
             PlayerProperty m_prop;
             std::mutex m_prop_mtx;
 
             AtomicState m_atomic_state;
+
+            // no need to be synced
+            core::EncodeConf m_encode_conf;
 
           public:
             explicit AKState(const core::AKConf& akconf);

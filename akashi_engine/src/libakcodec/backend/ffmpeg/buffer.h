@@ -31,7 +31,7 @@ namespace akashi {
 
         FFAudioSpec to_ff_audio_spec(const akashi::core::AKAudioSpec& spec, const int nb_samples);
 
-        bool to_audio_payload(uint8_t*& out_buf, size_t* out_buf_size, const FFAudioSpec& out_spec,
+        bool to_audio_payload(uint8_t*& out_buf, size_t* out_buf_size, FFAudioSpec& out_spec,
                               uint8_t* in_buf[AV_NUM_DATA_POINTERS], const FFAudioSpec& in_spec,
                               DecodeStream* dec_stream);
 
@@ -44,6 +44,8 @@ namespace akashi {
                 bool start_frame;
                 akashi::core::Rational pts;
                 akashi::core::Rational rpts;
+                core::Rational from;
+                core::Rational start;
                 akashi::core::AKAudioSpec out_audio_spec;
                 const char* uuid;
                 buffer::AVBufferType media_type = buffer::AVBufferType::UNKNOWN;
@@ -58,9 +60,7 @@ namespace akashi {
 
           private:
             void populate_video(const InputData& input);
-            void populate_audio(const AVFrame* frame,
-                                const akashi::core::AKAudioSpec& out_audio_spec,
-                                DecodeStream* dec_stream);
+            void populate_audio(const InputData& input, DecodeStream* dec_stream);
 
           private:
             int m_linesize[AV_NUM_DATA_POINTERS];

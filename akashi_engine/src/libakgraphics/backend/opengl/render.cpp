@@ -24,79 +24,21 @@ namespace akashi {
         bool RenderScene::render(core::borrowed_ptr<GLGraphicsContext> glx_ctx,
                                  const GLRenderContext& ctx, const RenderParams& params,
                                  const core::FrameContext& frame_ctx) {
-            if (!ctx.fbo) {
-                AKLOG_WARNN("RenderScene:render(): FBO is not yet initialized");
-                return false;
-            }
+            // render layers to fbo
+            CHECK_AK_ERROR2(this->render_layer(glx_ctx, ctx, frame_ctx));
 
-            if (frame_ctx.layer_ctxs.size() == 0 || frame_ctx.layer_ctxs.empty()) {
-                AKLOG_WARNN("RenderScene:render(): Layer length is 0");
-                return false;
-            }
-
-            // be careful about the lifetime of fbo_prop
-            const auto& fbo_prop = ctx.fbo->get_prop();
-            // activate fbo
-            this->render_init(ctx, {fbo_prop.fbo, fbo_prop.width, fbo_prop.height});
-
-            // when new atom comes
-            if (m_current_atom_uuid != frame_ctx.layer_ctxs[0].atom_uuid) {
-                AKLOG_DEBUG("new atom: old: {}, new: {}", m_current_atom_uuid,
-                            frame_ctx.layer_ctxs[0].atom_uuid);
-
-                // clear
-                for (auto&& target : m_targets) {
-                    if (target) {
-                        target->destroy(ctx);
-                    }
-                }
-                m_targets.clear();
-                m_target_map.clear();
-
-                // add
-                for (const auto& layer_ctx : frame_ctx.layer_ctxs) {
-                    this->add_layer(ctx, layer_ctx);
-                }
-                m_current_atom_uuid = frame_ctx.layer_ctxs[0].atom_uuid;
-            }
-            // when exisiting atom comes
-            else {
-                for (const auto& layer_ctx : frame_ctx.layer_ctxs) {
-                    auto it = m_target_map.find(layer_ctx.uuid);
-                    if (it != m_target_map.end()) {
-                        it->second->update_layer(layer_ctx);
-                    }
-                }
-            }
-
-            if (glx_ctx->shader_reload()) {
-                for (auto iter = m_targets.rbegin(), end = m_targets.rend(); iter != end; ++iter) {
-                    const auto& target = *iter;
-                    if (target) {
-                        target->update_shader(ctx, glx_ctx->updated_shader_paths());
-                    }
-                }
-                glx_ctx->set_shader_reload(false);
-            }
-
-            // render
-            // [XXX] do not know why it fails when using for_each
-            for (auto iter = m_targets.rbegin(), end = m_targets.rend(); iter != end; ++iter) {
-                const auto& target = *iter;
-                if (target && target->get_layer_ctx().display) {
-                    CHECK_AK_ERROR2(target->render(glx_ctx, ctx, to_rational(frame_ctx.pts)));
-                }
-            }
-
-            // [TODO] really necessary to call twice?
-            // GET_GLFUNC(ctx, glFinish)();
-
-            // deactivate fbo
+            // render fbo to the provided framebuffer
             this->render_init(ctx, {params.default_fb, params.screen_width, params.screen_height});
             ctx.fbo->render(ctx);
 
-            // GET_GLFUNC(ctx, glFinish)();
+            return true;
+        }
 
+        bool RenderScene::encode_render(core::borrowed_ptr<GLGraphicsContext> glx_ctx,
+                                        const GLRenderContext& ctx,
+                                        const core::FrameContext& frame_ctx) {
+            // render layers to fbo
+            CHECK_AK_ERROR2(this->render_layer(glx_ctx, ctx, frame_ctx));
             return true;
         }
 
@@ -168,5 +110,76 @@ namespace akashi {
             AKLOG_WARN("skip adding the layer: {}", layer_ctx.uuid);
             return false;
         }
+
+        bool RenderScene::render_layer(core::borrowed_ptr<GLGraphicsContext> glx_ctx,
+                                       const GLRenderContext& ctx,
+                                       const core::FrameContext& frame_ctx) {
+            if (!ctx.fbo) {
+                AKLOG_WARNN("FBO is not yet initialized");
+                return false;
+            }
+
+            if (frame_ctx.layer_ctxs.size() == 0 || frame_ctx.layer_ctxs.empty()) {
+                AKLOG_WARNN("Layer length is 0");
+                return false;
+            }
+
+            // be careful about the lifetime of fbo_prop
+            const auto& fbo_prop = ctx.fbo->get_prop();
+            // activate fbo
+            this->render_init(ctx, {fbo_prop.fbo, fbo_prop.width, fbo_prop.height});
+
+            // when new atom comes
+            if (m_current_atom_uuid != frame_ctx.layer_ctxs[0].atom_uuid) {
+                AKLOG_DEBUG("new atom: old: {}, new: {}", m_current_atom_uuid,
+                            frame_ctx.layer_ctxs[0].atom_uuid);
+
+                // clear
+                for (auto&& target : m_targets) {
+                    if (target) {
+                        target->destroy(ctx);
+                    }
+                }
+                m_targets.clear();
+                m_target_map.clear();
+
+                // add
+                for (const auto& layer_ctx : frame_ctx.layer_ctxs) {
+                    this->add_layer(ctx, layer_ctx);
+                }
+                m_current_atom_uuid = frame_ctx.layer_ctxs[0].atom_uuid;
+            }
+            // when exisiting atom comes
+            else {
+                for (const auto& layer_ctx : frame_ctx.layer_ctxs) {
+                    auto it = m_target_map.find(layer_ctx.uuid);
+                    if (it != m_target_map.end()) {
+                        it->second->update_layer(layer_ctx);
+                    }
+                }
+            }
+
+            if (glx_ctx->shader_reload()) {
+                for (auto iter = m_targets.rbegin(), end = m_targets.rend(); iter != end; ++iter) {
+                    const auto& target = *iter;
+                    if (target) {
+                        target->update_shader(ctx, glx_ctx->updated_shader_paths());
+                    }
+                }
+                glx_ctx->set_shader_reload(false);
+            }
+
+            // render
+            // [XXX] do not know why it fails when using for_each
+            for (auto iter = m_targets.rbegin(), end = m_targets.rend(); iter != end; ++iter) {
+                const auto& target = *iter;
+                if (target && target->get_layer_ctx().display) {
+                    CHECK_AK_ERROR2(target->render(glx_ctx, ctx, to_rational(frame_ctx.pts)));
+                }
+            }
+
+            return true;
+        }
+
     }
 }

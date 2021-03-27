@@ -172,6 +172,7 @@ namespace akashi {
                         return -1;
                     }
 
+                    input_src->dec_streams[i].is_active = true;
                     input_src->dec_streams[i].dec_ctx = avcodec_alloc_context3(av_codec);
                     input_src->dec_streams[i].swr_ctx = nullptr;
                     input_src->dec_streams[i].swr_ctx_init_done = false;

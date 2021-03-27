@@ -1,5 +1,6 @@
 #include "./pts.h"
 #include "./input.h"
+#include "./utils.h"
 
 #include <libakcore/rational.h>
 #include <libakcore/logger.h>
@@ -15,8 +16,7 @@ namespace akashi {
     namespace codec {
 
         akashi::core::Rational pts_to_rational(const int64_t pts, const AVRational& time_base) {
-            return akashi::core::Rational(av_rescale_q(pts, time_base, AV_TIME_BASE_Q),
-                                          AV_TIME_BASE);
+            return akashi::core::Rational(pts) * to_rational(time_base);
         }
         akashi::core::Rational rpts_to_pts(const akashi::core::Rational& rpts,
                                            const akashi::core::Rational& from,
@@ -38,7 +38,7 @@ namespace akashi {
 
         bool PTSSet::is_valid(void) const {
             if (m_frame_pts < Rational(0, 1)) {
-                AKLOG_INFON("FramePTS::is_valid(): Negative pts found");
+                AKLOG_INFO("FramePTS::is_valid(): Negative pts found {}", m_frame_pts.to_decimal());
                 return false;
             }
 
@@ -74,7 +74,12 @@ namespace akashi {
             //      }
 
             // [TODO] maybe we should check that the timebase of both values is same
-            return frame->pts - dec_stream->input_start_pts;
+
+            int64_t frame_pts = frame->pts;
+            if (dec_stream->media_type == AVMEDIA_TYPE_AUDIO) {
+                frame_pts = dec_stream->effective_pts;
+            }
+            return frame_pts - dec_stream->input_start_pts;
         }
 
     }

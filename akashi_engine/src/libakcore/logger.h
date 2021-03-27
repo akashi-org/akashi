@@ -137,6 +137,9 @@ namespace akashi {
                 if (contains_char(str, "libakevent") > 0) {
                     return "akevent";
                 }
+                if (contains_char(str, "libakencoder") > 0) {
+                    return "akencoder";
+                }
                 return "???";
             }
 

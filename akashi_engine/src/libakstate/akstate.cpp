@@ -18,6 +18,7 @@ namespace akashi {
 
             m_atomic_state.audio_spec = {akconf.audio.format, akconf.audio.sample_rate,
                                          akconf.audio.channels, akconf.audio.channel_layout};
+            m_atomic_state.encode_audio_spec.store(m_atomic_state.audio_spec);
 
             m_prop.enable_loop = akconf.playback.enable_loop;
             m_atomic_state.volume = akconf.playback.gain;
@@ -25,6 +26,8 @@ namespace akashi {
             m_prop.video_max_queue_size = akconf.playback.video_max_queue_size;
             m_prop.video_max_queue_count = akconf.playback.video_max_queue_count;
             m_prop.audio_max_queue_size = akconf.playback.audio_max_queue_size;
+
+            m_encode_conf = akconf.encode;
         }
 
         AKState::~AKState() {
@@ -36,6 +39,8 @@ namespace akashi {
             // m_state_audio_play_ready.cv.notify_all();
             // m_state_video_decode_ready.cv.notify_all();
             // m_state_audio_decode_ready.cv.notify_all();
+            // m_state_producer_finished.cv.notify_all();
+            // m_state_consumer_finished.cv.notify_all();
         }
 
     }

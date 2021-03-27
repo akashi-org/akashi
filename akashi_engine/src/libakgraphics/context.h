@@ -11,9 +11,6 @@ namespace akashi {
     namespace buffer {
         class AVBuffer;
     }
-    namespace audio {
-        class AKAudio;
-    }
     namespace state {
         class AKState;
     }
@@ -22,19 +19,21 @@ namespace akashi {
         struct GetProcAddress;
         struct EGLGetProcAddress;
         struct RenderParams;
+        struct EncodeRenderParams;
         class GraphicsContext;
         class GraphicsContext {
           public:
             explicit GraphicsContext(core::borrowed_ptr<state::AKState>,
-                                     core::borrowed_ptr<buffer::AVBuffer>,
-                                     core::borrowed_ptr<audio::AKAudio>){};
+                                     core::borrowed_ptr<buffer::AVBuffer>){};
             virtual ~GraphicsContext(){};
 
             virtual bool load_api(const GetProcAddress& get_proc_address,
                                   const EGLGetProcAddress& egl_get_proc_address) = 0;
-            virtual bool load_fbo(const core::RenderProfile& render_prof) = 0;
+            virtual bool load_fbo(const core::RenderProfile& render_prof, bool flip_y = true) = 0;
             virtual void render(const RenderParams& params,
                                 const core::FrameContext& frame_ctx) = 0;
+            virtual void encode_render(EncodeRenderParams& params,
+                                       const core::FrameContext& frame_ctx) = 0;
         };
 
     }

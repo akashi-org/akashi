@@ -36,11 +36,17 @@ namespace akashi {
             bool create(const GLRenderContext& ctx);
             bool render(core::borrowed_ptr<GLGraphicsContext> glx_ctx, const GLRenderContext& ctx,
                         const RenderParams& params, const core::FrameContext& frame_ctx);
+
+            bool encode_render(core::borrowed_ptr<GLGraphicsContext> glx_ctx,
+                               const GLRenderContext& ctx, const core::FrameContext& frame_ctx);
+
             bool destroy(const GLRenderContext& ctx);
 
           private:
             bool render_init(const GLRenderContext& ctx, const RenderInitParams& params) const;
             bool add_layer(const GLRenderContext& ctx, const core::LayerContext& layer_ctx);
+            bool render_layer(core::borrowed_ptr<GLGraphicsContext> glx_ctx,
+                              const GLRenderContext& ctx, const core::FrameContext& frame_ctx);
 
           private:
             std::vector<LayerTarget*> m_targets;

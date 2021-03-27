@@ -82,6 +82,24 @@ class UIConf:
     resolution: Tuple[int, int] = (800, 600)
 
 
+class EncodeCodec(Enum):
+    NONE = -1
+    V_H264 = 100,
+    A_AAC = 200,
+    A_MP3 = 201,
+
+    def to_json(self):
+        return self.value
+
+
+@dataclass(frozen=True)
+class EncodeConf:
+    out_fname: str = ''
+    video_codec: EncodeCodec = EncodeCodec.NONE
+    audio_codec: EncodeCodec = EncodeCodec.NONE
+    encode_max_queue_count: int = 10  # max queue element counts
+
+
 @dataclass(frozen=True)
 class AKConf:
     general: GenerelConf
@@ -89,6 +107,7 @@ class AKConf:
     audio: AudioConf = AudioConf()
     playback: PlaybackConf = PlaybackConf()
     ui: UIConf = UIConf()
+    encode: EncodeConf = EncodeConf()
 
     def to_json(self) -> str:
 

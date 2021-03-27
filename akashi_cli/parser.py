@@ -4,15 +4,27 @@ import sys
 from os import path
 from importlib.machinery import SourceFileLoader
 from typing import Any
+from dataclasses import dataclass
 
 
-def argument_parse() -> str:
+@dataclass(frozen=True)
+class ParsedOption:
+    action: str
+    akconf: str
+
+
+def argument_parse() -> ParsedOption:
 
     parser = argparse.ArgumentParser(
         prog="akashi-cli",
         description="akashi-cli",
         add_help=True,
         formatter_class=RawTextHelpFormatter)
+
+    parser.add_argument(
+        "action",
+        choices=['debug', 'build']
+    )
 
     parser.add_argument(
         "--conf_path",
@@ -28,7 +40,7 @@ def argument_parse() -> str:
         parser.print_help(sys.stderr)
         sys.exit(1)
 
-    return _akconf_parse(args_dict["conf_path"])
+    return ParsedOption(args_dict['action'], _akconf_parse(args_dict["conf_path"]))
 
 
 def _akconf_parse(conf_path: str) -> str:

@@ -25,7 +25,6 @@ target_link_libraries(${PROJECT_NAME}
   PUBLIC akcodec
   PUBLIC akcore
   PUBLIC akbuffer
-  PUBLIC akwatch # [TODO] need this because akbuffer depends on akwatch
 )
 
 include(CTest)

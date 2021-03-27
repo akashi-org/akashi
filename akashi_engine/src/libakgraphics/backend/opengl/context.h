@@ -18,9 +18,6 @@ namespace akashi {
         class AVBuffer;
         class AVBufferData;
     }
-    namespace audio {
-        class AKAudio;
-    }
     namespace state {
         class AKState;
     }
@@ -30,20 +27,23 @@ namespace akashi {
         struct GetProcAddress;
         struct EGLGetProcAddress;
         struct RenderParams;
+        struct EncodeRenderParams;
         class QuadPass;
         class GLGraphicsContext : public GraphicsContext {
           public:
             explicit GLGraphicsContext(core::borrowed_ptr<state::AKState> state,
-                                       core::borrowed_ptr<buffer::AVBuffer> buffer,
-                                       core::borrowed_ptr<audio::AKAudio> audio);
+                                       core::borrowed_ptr<buffer::AVBuffer> buffer);
             virtual ~GLGraphicsContext();
 
             bool load_api(const GetProcAddress& get_proc_address,
                           const EGLGetProcAddress& egl_get_proc_address) override;
 
-            bool load_fbo(const core::RenderProfile& render_prof) override;
+            bool load_fbo(const core::RenderProfile& render_prof, bool flip_y = true) override;
 
             void render(const RenderParams& params, const core::FrameContext& frame_ctx) override;
+
+            void encode_render(EncodeRenderParams& params,
+                               const core::FrameContext& frame_ctx) override;
 
             size_t loop_cnt();
 
@@ -53,8 +53,6 @@ namespace akashi {
 
             std::vector<const char*> updated_shader_paths(void);
 
-            core::Rational current_time() const;
-
             std::array<int, 2> resolution();
 
             std::unique_ptr<buffer::AVBufferData> dequeue(std::string layer_uuid,
@@ -63,7 +61,6 @@ namespace akashi {
           private:
             core::borrowed_ptr<state::AKState> m_state;
             core::borrowed_ptr<buffer::AVBuffer> m_buffer;
-            core::borrowed_ptr<audio::AKAudio> m_audio;
             core::owned_ptr<GLRenderContext> m_render_ctx;
             QuadPass* m_fbo_pass = nullptr;
         };

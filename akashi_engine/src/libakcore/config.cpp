@@ -22,7 +22,9 @@ namespace akashi {
                                            video_max_queue_size, video_max_queue_count,
                                            audio_max_queue_size);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(UIConf, resolution);
-        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AKConf, general, video, audio, playback, ui);
+        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(EncodeConf, out_fname, video_codec, audio_codec,
+                                           encode_max_queue_count);
+        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AKConf, general, video, audio, playback, ui, encode);
 
         AKConf parse_akconfig(const char* json_str) {
             auto j = nlohmann::json::parse(json_str);

@@ -41,6 +41,7 @@ string(CONCAT COMPILER_FLAGS
   #  " -fno-rtti"
   " -fdiagnostics-color=always"
   " -fdiagnostics-show-template-tree"
+  " -fno-strict-aliasing"
 )
 add_definitions(${COMPILER_FLAGS})
 
@@ -68,5 +69,10 @@ add_subdirectory("./src/libakevent")
 
 add_subdirectory("./src/akui")
 set_target_properties(akashi_renderer PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+add_subdirectory("./src/akencoder")
+set_target_properties(akashi_encoder PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )

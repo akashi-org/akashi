@@ -191,14 +191,17 @@ namespace akashi {
                     audio_buf_size = buf_data.prop().data_size;
                 }
 
+                // [XXX] sample format for buf_data.prop().audio_data should always be interleaved
+                // format in this case. So, we can assume that all sample data exists in the first
+                // element of buffer.
                 if (audio_buf_size <= bytes_remaining) {
                     bytes_to_fill = audio_buf_size;
                     if (is_first_layer) {
-                        memcpy(&buffer[buffer_offset], &buf_data.prop().audio_data[rbuf.buf_offset],
-                               bytes_to_fill);
+                        memcpy(&buffer[buffer_offset],
+                               &buf_data.prop().audio_data[0][rbuf.buf_offset], bytes_to_fill);
                     } else {
                         mix_layer(&buffer[buffer_offset], bytes_to_fill,
-                                  &buf_data.prop().audio_data[rbuf.buf_offset], layer);
+                                  &buf_data.prop().audio_data[0][rbuf.buf_offset], layer);
                     }
                     rbuf.buf_offset = 0;
                     rbuf.on_process = false;
@@ -206,11 +209,11 @@ namespace akashi {
                 } else {
                     bytes_to_fill = bytes_remaining;
                     if (is_first_layer) {
-                        memcpy(&buffer[buffer_offset], &buf_data.prop().audio_data[rbuf.buf_offset],
-                               bytes_to_fill);
+                        memcpy(&buffer[buffer_offset],
+                               &buf_data.prop().audio_data[0][rbuf.buf_offset], bytes_to_fill);
                     } else {
                         mix_layer(&buffer[buffer_offset], bytes_to_fill,
-                                  &buf_data.prop().audio_data[rbuf.buf_offset], layer);
+                                  &buf_data.prop().audio_data[0][rbuf.buf_offset], layer);
                     }
                     rbuf.buf_offset += bytes_to_fill;
                     rbuf.on_process = true;

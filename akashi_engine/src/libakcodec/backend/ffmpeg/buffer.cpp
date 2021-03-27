@@ -2,6 +2,8 @@
 
 #include "./input.h"
 #include "./error.h"
+#include "./utils.h"
+#include "./pts.h"
 
 #include <libakbuffer/avbuffer.h>
 #include <libakcore/rational.h>
@@ -10,7 +12,6 @@
 extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/frame.h>
-#include <libavutil/channel_layout.h>
 #include <libavutil/pixdesc.h>
 #include <libavutil/hwcontext.h>
 }
@@ -19,37 +20,6 @@ using namespace akashi::core;
 
 namespace akashi {
     namespace codec {
-
-        static AVSampleFormat to_ff_sample_format(const AKAudioSampleFormat& format) {
-            switch (format) {
-                case AKAudioSampleFormat::U8:
-                    return AV_SAMPLE_FMT_U8;
-                case AKAudioSampleFormat::S16:
-                    return AV_SAMPLE_FMT_S16;
-                case AKAudioSampleFormat::S32:
-                    return AV_SAMPLE_FMT_S32;
-                case AKAudioSampleFormat::FLT:
-                    return AV_SAMPLE_FMT_FLT;
-                case AKAudioSampleFormat::DBL:
-                    return AV_SAMPLE_FMT_DBL;
-                default:
-                    AKLOG_ERROR("to_ff_sample_format() failed. Invalid format {}", format);
-                    return AV_SAMPLE_FMT_NONE;
-            }
-        }
-
-        static int to_ff_channel_layout(const AKAudioChannelLayout& channel_layout) {
-            switch (channel_layout) {
-                case AKAudioChannelLayout::MONO:
-                    return AV_CH_LAYOUT_MONO;
-                case AKAudioChannelLayout::STEREO:
-                    return AV_CH_LAYOUT_STEREO;
-                default: {
-                    AKLOG_ERROR("to_ff_channel_layout() failed. Invalid layout {}", channel_layout);
-                    return -1;
-                }
-            }
-        }
 
         FFAudioSpec to_ff_audio_spec(const AKAudioSpec& spec, const int nb_samples) {
             FFAudioSpec ff_spec;
@@ -63,10 +33,9 @@ namespace akashi {
             return ff_spec;
         }
 
-        bool to_audio_payload(uint8_t*& out_buf, size_t* out_buf_size, const FFAudioSpec& out_spec,
-                              uint8_t* in_buf[AV_NUM_DATA_POINTERS], const FFAudioSpec& in_spec,
-                              DecodeStream* dec_stream) {
-            int MAX_AUDIO_FRAME_SIZE = 192000; /* 1sec, 48khz, 32bit */
+        bool to_audio_payload(uint8_t* out_buf[buffer::MAX_AUDIO_PLANE], size_t* out_buf_size,
+                              FFAudioSpec& out_spec, uint8_t* in_buf[AV_NUM_DATA_POINTERS],
+                              const FFAudioSpec& in_spec, DecodeStream* dec_stream) {
             int64_t in_channel_layout = av_get_default_channel_layout(in_spec.channels);
             uint64_t out_channel_layout = out_spec.channel_layout;
             int out_channels = av_get_channel_layout_nb_channels(out_channel_layout);
@@ -100,15 +69,16 @@ namespace akashi {
                 dec_stream->swr_ctx_init_done = true;
             }
 
-            out_buf = (uint8_t*)av_malloc(static_cast<size_t>(MAX_AUDIO_FRAME_SIZE) * 2);
-            if (!out_buf) {
-                AKLOG_ERRORN("to_audio_payload(): failed to allocate audio buf");
+            if (auto err = av_samples_alloc(out_buf, nullptr, out_channels, out_spec.nb_samples,
+                                            out_sample_fmt, 1);
+                err < 0) {
+                AKLOG_ERROR("av_samples_alloc() failed, {}", av_err2str(err));
                 return false;
             }
 
             if ((converted_nb_samples =
-                     swr_convert(*swr_ctx, &out_buf, MAX_AUDIO_FRAME_SIZE,
-                                 (const uint8_t**)(in_buf), in_spec.nb_samples)) < 0) {
+                     swr_convert(*swr_ctx, out_buf, out_spec.nb_samples, (const uint8_t**)(in_buf),
+                                 in_spec.nb_samples)) < 0) {
                 AKLOG_ERRORN("to_audio_payload(): failed to resample");
                 return false;
             }
@@ -120,6 +90,8 @@ namespace akashi {
                 return false;
             }
             *out_buf_size = temp_payload_buf_size;
+
+            out_spec.nb_samples = converted_nb_samples;
 
             return true;
         }
@@ -148,7 +120,7 @@ namespace akashi {
                     break;
                 }
                 case buffer::AVBufferType::AUDIO: {
-                    this->populate_audio(input.frame, input.out_audio_spec, dec_stream);
+                    this->populate_audio(input, dec_stream);
                     break;
                 }
                 default: {
@@ -168,8 +140,7 @@ namespace akashi {
                     break;
                 }
                 case buffer::AVBufferType::AUDIO: {
-                    av_free(m_prop.audio_data);
-                    m_prop.audio_data = nullptr;
+                    av_freep(&m_prop.audio_data[0]);
                     break;
                 }
                 default: {
@@ -226,12 +197,12 @@ namespace akashi {
             }
         }
 
-        void FFmpegBufferData::populate_audio(const AVFrame* frame,
-                                              const AKAudioSpec& out_audio_spec,
-                                              DecodeStream* dec_stream) {
+        void FFmpegBufferData::populate_audio(const InputData& input, DecodeStream* dec_stream) {
             uint8_t* in_buf[AV_NUM_DATA_POINTERS];
+
+            auto frame = input.frame;
             FFAudioSpec in_spec;
-            FFAudioSpec out_spec = to_ff_audio_spec(out_audio_spec, frame->nb_samples);
+            FFAudioSpec out_spec = to_ff_audio_spec(input.out_audio_spec, frame->nb_samples);
 
             in_spec.channels = frame->channels;
             in_spec.channel_layout = frame->channel_layout;
@@ -279,10 +250,17 @@ namespace akashi {
                 AKLOG_ERRORN("FFmpegBufferData::populate_audio(): Failed to convert audio data");
             }
 
-            m_prop.sample_rate = out_audio_spec.sample_rate;
-            m_prop.sample_format = out_audio_spec.format;
-            m_prop.channels = out_audio_spec.channels;
+            // [XXX] notice that the first arg here is not RPTS in its true sense
+            m_prop.pts = rpts_to_pts(
+                pts_to_rational(dec_stream->conv_effective_pts, {1, out_spec.sample_rate}),
+                input.from, Rational(0l));
+
+            m_prop.sample_rate = input.out_audio_spec.sample_rate;
+            m_prop.sample_format = input.out_audio_spec.format;
+            m_prop.channels = input.out_audio_spec.channels;
             m_prop.nb_samples = out_spec.nb_samples;
+
+            dec_stream->conv_effective_pts += out_spec.nb_samples;
 
             if (in_spec.format < AV_SAMPLE_FMT_U8P) {
                 av_free(in_buf[0]);

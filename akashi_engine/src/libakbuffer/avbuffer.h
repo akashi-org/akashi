@@ -17,6 +17,8 @@ namespace akashi {
 
         enum class AVBufferType { UNKNOWN = -1, VIDEO = 0, AUDIO };
 
+        static constexpr const int MAX_AUDIO_PLANE = 8;
+
         class AVBufferData {
           public:
             struct Property {
@@ -27,11 +29,13 @@ namespace akashi {
 
                 AVBufferType media_type = AVBufferType::UNKNOWN;
                 core::Rational pts = core::Rational(-1, 1);
+                // [XXX] in audio, calculated by the original sample rate
+                // [TODO] we should remove this?
                 core::Rational rpts = core::Rational(-1, 1);
                 bool start_frame = false;
                 const char* uuid = "";
                 VideoEntry video_data[3];
-                uint8_t* audio_data = nullptr;
+                uint8_t* audio_data[MAX_AUDIO_PLANE];
                 size_t data_size = 0;
                 int chroma_width = -1;
                 int chroma_height = -1;
