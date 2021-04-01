@@ -12,55 +12,44 @@ from akashi_core2 import (
     KronArgs,
     Second
 )
-from akashi_core2.kron import LayerReceiver, KronReceiver
 from dataclasses import replace
 
 
 class TestKron(unittest.TestCase):
 
-    # def test1_root(self) -> None:
+    def test1_root(self) -> None:
 
-    #     target_root = root({}, [
-    #         scene({'path': 'path1'}, [
-    #             atom({}, []),
-    #             atom({'duration': Second(12)}, [
-    #                 video(VideoLayerParams(
-    #                     begin=Second(0), end=Second(10), x=0, y=0, src='/to/path/video.mp4'
-    #                 )),
-    #                 text(TextLayerParams(
-    #                     begin=Second(0), end=Second(10), x=0, y=0, text='Hello, World!'
-    #                 )),
-    #             ]),
-    #         ]),
-    #     ])
+        target_root = root({}, [
+            scene({'path': 'path1'}, [
+                atom({}, []),
+                atom({'duration': Second(12)}, [
+                    video(VideoLayerParams(
+                        begin=Second(0), end=Second(10), x=0, y=0, src='/to/path/video.mp4'
+                    )),
+                    text(TextLayerParams(
+                        begin=Second(0), end=Second(10), x=0, y=0, text='Hello, World!'
+                    )),
+                ]),
+            ]),
+        ])
 
-    #     target_root(KronReceiver(
-    #         get_children=lambda children: print(children),
-    #         get_finalized_params=lambda params: print(params),
-    #         get_frame_cnt=lambda frame_cnt: print(frame_cnt),
-    #         get_duration=lambda duration: print(duration, float(duration)),
-    #     ))(KronArgs(Second(5), 30))
+        print(target_root)
 
-    # def test2_scene(self) -> None:
+    def test2_scene(self) -> None:
 
-    #     target_scene = scene({'path': 'path1'}, [
-    #         atom({'duration': Second(5)}, []),
-    #         atom({}, [
-    #             video(VideoLayerParams(
-    #                 begin=Second(0), end=Second(10), x=0, y=0, src='/to/path/video.mp4'
-    #             )),
-    #             text(TextLayerParams(
-    #                 begin=Second(0), end=Second(20), x=0, y=0, text='Hello, World!'
-    #             ))
-    #         ])
-    #     ])
+        target_scene = scene({'path': 'path1'}, [
+            atom({'duration': Second(5)}, []),
+            atom({}, [
+                video(VideoLayerParams(
+                    begin=Second(0), end=Second(10), x=0, y=0, src='/to/path/video.mp4'
+                )),
+                text(TextLayerParams(
+                    begin=Second(0), end=Second(20), x=0, y=0, text='Hello, World!'
+                ))
+            ])
+        ])
 
-    #     target_scene(KronReceiver(
-    #         get_children=lambda children: print(children),
-    #         get_finalized_params=lambda params: print(params),
-    #         get_frame_cnt=lambda frame_cnt: print(frame_cnt),
-    #         get_duration=lambda duration: print(duration, float(duration)),
-    #     ))(KronArgs(Second(5), 30))
+        print(target_scene)
 
     def test3_atom(self) -> None:
 
@@ -73,15 +62,7 @@ class TestKron(unittest.TestCase):
             ))
         ])
 
-        target_atom(KronReceiver(
-            get_children=lambda children: print(children),
-            mod_params=lambda params, children: replace(
-                params, _offset=Second(0)
-            ),
-            get_finalized_params=lambda params: print(params),
-            get_frame_cnt=lambda frame_cnt: print(frame_cnt),
-            get_duration=lambda duration: print(duration),
-        ))(KronArgs(Second(5), 30))
+        print(target_atom)
 
     def test4_layer(self) -> None:
 
@@ -95,12 +76,7 @@ class TestKron(unittest.TestCase):
 
         target_layer = video(init=init(), update=update)
 
-        target_layer(LayerReceiver(
-            mod_params=lambda params: replace(params, begin=params.begin + Second(5)),
-            get_finalized_params=lambda params: print(params),
-            get_frame_cnt=lambda frame_cnt: print(frame_cnt),
-            get_duration=lambda duration: print(duration),
-        ))(KronArgs(Second(5), 30))
+        print(target_layer)
 
 
 if __name__ == "__main__":
