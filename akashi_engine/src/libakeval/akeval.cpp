@@ -3,6 +3,7 @@
 #include "./context.h"
 
 #include "./backend/python.h"
+#include "./backend/ypython.h"
 
 #include <libakcore/memory.h>
 #include <libakcore/logger.h>
@@ -23,7 +24,7 @@ namespace akashi {
     namespace eval {
 
         AKEval::AKEval(core::borrowed_ptr<state::AKState> state) {
-            m_eval_ctx = make_owned<PyEvalContext>(state);
+            m_eval_ctx = make_owned<YPyEvalContext>(state);
             m_tid = std::this_thread::get_id();
         }
 

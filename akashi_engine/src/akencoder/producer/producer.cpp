@@ -134,6 +134,19 @@ namespace akashi {
         }
 
         void ProduceLoop::produce_thread(ProduceLoopContext ctx, ProduceLoop* loop) {
+#if 1
+            AKLOG_WARNN("Dummy Producer init");
+
+            auto eval = make_owned<eval::AKEval>(borrowed_ptr(ctx.state));
+            // eval->render_prof(ctx.state->m_prop.eval_state.config.entry_path.to_abspath().to_str());
+            // eval->eval_kron(ctx.state->m_prop.eval_state.config.entry_path.to_abspath().to_str(),
+            //                 {Rational(1l), 24l});
+
+            loop->m_thread_exited = true;
+            ctx.state->set_producer_finished(true, true);
+            AKLOG_WARNN("Dummy Producer exited");
+#endif
+#if 0
             AKLOG_INFON("Producer init");
 
             auto eval = make_owned<eval::AKEval>(borrowed_ptr(ctx.state));
@@ -218,6 +231,7 @@ namespace akashi {
 
             ProduceLoop::exit_thread(exit_ctx);
             AKLOG_INFON("Producer finished");
+#endif
         }
 
         void ProduceLoop::exit_thread(ExitContext& exit_ctx) {
