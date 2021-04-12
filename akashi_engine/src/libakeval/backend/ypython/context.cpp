@@ -37,15 +37,44 @@ namespace akashi {
             : EvalContext(state), m_state(state) {
             AKLOG_DEBUGN("YPyEvalContext init");
 
-            py::scoped_interpreter guard{}; // start the interpreter and keep it alive
+            py::initialize_interpreter();
 
-            py::print("Hello, World!"); // use the Python API
+            auto config = this->config();
+
+            // Load PYTHONPATH explicitly!
+            auto sys_path = py::module_::import("sys").attr("path");
+
+            sys_path.cast<py::list>().append(config.include_dir.to_abspath().to_cloned_str());
+            if (std::getenv("AK_CORELIB_PATH")) {
+                sys_path.cast<py::list>().insert(
+                    0, core::Path(std::getenv("AK_CORELIB_PATH")).to_abspath().to_cloned_str());
+            }
+
+            // version check
+            auto res = py::module_::import("akashi_core2").attr("utils").attr("version_check")();
+            if (!res.cast<py::tuple>()[0].cast<bool>()) {
+                AKLOG_WARN("{}", res.cast<py::tuple>()[1].cast<std::string>().c_str());
+            }
+
+            // this->load_module(config.entry_path, config.include_dir);
+
+            // this->imported_inner_module_each([this, config](const core::Path& module_path) {
+            //     this->load_module(module_path, config.include_dir);
+            // });
         };
 
         YPyEvalContext::~YPyEvalContext(void) noexcept { this->exit(); };
 
         // [TODO] since this is called from outside the eval thread, maybe we should use GIL?
-        void YPyEvalContext::exit(void){};
+        void YPyEvalContext::exit(void) {
+            if (!m_exited) {
+                // for (auto it = m_modules.begin(); it != m_modules.end(); it++) {
+                //     delete it->second;
+                // }
+                py::finalize_interpreter();
+                m_exited = true;
+            }
+        };
 
         core::FrameContext YPyEvalContext::eval_kron(const char* module_path, const KronArg& arg){};
 
