@@ -138,7 +138,7 @@ namespace akashi {
             AKLOG_WARNN("Dummy Producer init");
 
             auto eval = make_owned<eval::AKEval>(borrowed_ptr(ctx.state));
-            // eval->render_prof(ctx.state->m_prop.eval_state.config.entry_path.to_abspath().to_str());
+            eval->render_prof(ctx.state->m_prop.eval_state.config.entry_path.to_abspath().to_str());
             // eval->eval_kron(ctx.state->m_prop.eval_state.config.entry_path.to_abspath().to_str(),
             //                 {Rational(1l), 24l});
 

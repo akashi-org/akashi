@@ -27,6 +27,7 @@ namespace akashi {
 
         struct KronArg;
         struct PyBind11Module;
+        struct GlobalContext;
 
         class YPyEvalContext final : public EvalContext {
           public:
@@ -55,6 +56,7 @@ namespace akashi {
           private:
             std::unordered_map<std::string, core::owned_ptr<PyBind11Module>> m_modules;
             core::borrowed_ptr<state::AKState> m_state;
+            core::owned_ptr<GlobalContext> m_gctx;
             bool m_exited = false;
         };
 

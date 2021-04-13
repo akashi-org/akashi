@@ -1,6 +1,7 @@
 #include "./context.h"
 
 #include "../../item.h"
+#include "./elem/elem_eval.h"
 
 #include <libakstate/akstate.h>
 #include <libakcore/path.h>
@@ -9,9 +10,7 @@
 #include <libakcore/element.h>
 #include <libakcore/rational.h>
 #include <libakwatch/item.h>
-
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
+#include <libakcore/perf.h>
 
 #include <unordered_map>
 #include <string>
@@ -20,9 +19,6 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
-
-#include <libakcore/perf.h>
-
 #include <stdexcept>
 
 using namespace akashi::core;
@@ -84,7 +80,38 @@ namespace akashi {
                                                                    const core::Rational& duration,
                                                                    const size_t length) {}
 
-        core::RenderProfile YPyEvalContext::render_prof(const char* module_path) {}
+        core::RenderProfile YPyEvalContext::render_prof(const char* module_path) {
+            RenderProfile render_prof;
+            render_prof.atom_profiles = {};
+
+            auto it = m_modules.find(module_path);
+            if (it == m_modules.end()) {
+                AKLOG_ERRORN("Module not found");
+                return render_prof;
+            }
+
+            auto elem = it->second->mod.attr(Path(module_path).to_stem().to_str());
+            assert(!elem.is_none());
+            assert(py::hasattr(elem, "__call__"));
+
+            core::Timer timer;
+            timer.start();
+            AKLOG_DEBUGN("get_render_profile() start");
+
+            m_gctx = global_eval(elem, m_state->m_prop.fps);
+
+            timer.stop();
+            AKLOG_DEBUG("get_render_profile() end, time: {} microseconds",
+                        timer.current_time_micro().to_decimal());
+
+            render_prof.uuid = m_gctx->uuid;
+            render_prof.duration = m_gctx->duration.to_fraction();
+            for (const auto& atom_proxy : m_gctx->atom_proxies) {
+                render_prof.atom_profiles.push_back(atom_proxy->computed_profile());
+            }
+
+            return render_prof;
+        }
 
         void YPyEvalContext::reload(const std::vector<watch::WatchEvent>& events) {}
 

@@ -10,7 +10,7 @@ from typing import (
     TypedDict,
 )
 from .time import Second
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields, replace
 from uuid import uuid4
 
 
@@ -35,6 +35,13 @@ class CommonLayerParams:
     _uuid: str = field(default='', init=False)
     _atom_uuid: str = field(default='')
     _display: bool = field(default=False, init=False)
+
+    def _update(self, _begin: Second, _end: Second):
+        new_params = replace(self, begin=_begin, end=_end)
+        for fld in fields(self):
+            if not fld.init:
+                setattr(new_params, fld.name, getattr(self, fld.name))
+        return new_params
 
 
 @dataclass
