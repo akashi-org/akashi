@@ -72,13 +72,57 @@ namespace akashi {
             }
         };
 
-        core::FrameContext YPyEvalContext::eval_kron(const char* module_path, const KronArg& arg){};
+        core::FrameContext YPyEvalContext::eval_kron(const char* module_path, const KronArg& arg) {
+            FrameContext frame_ctx;
+            frame_ctx.pts = Fraction{-1, 1};
+
+            if (!m_gctx) {
+                AKLOG_ERRORN("GlobalContext is null");
+                return frame_ctx;
+            }
+
+            Timer timer;
+            timer.start();
+            AKLOG_DEBUGN("eval_kron() start");
+
+            frame_ctx = local_eval(*m_gctx, arg);
+
+            timer.stop();
+            AKLOG_DEBUG("eval_kron() end, time: {} microseconds",
+                        timer.current_time_micro().to_decimal());
+
+            return frame_ctx;
+        };
 
         std::vector<core::FrameContext> YPyEvalContext::eval_krons(const char* module_path,
                                                                    const core::Rational& start_time,
                                                                    const int fps,
                                                                    const core::Rational& duration,
-                                                                   const size_t length) {}
+                                                                   const size_t length) {
+            std::vector<FrameContext> frame_ctxs = {};
+
+            if (!m_gctx) {
+                AKLOG_ERRORN("GlobalContext is null");
+                return frame_ctxs;
+            }
+
+            for (size_t i = 0; i < length; i++) {
+                auto frame_ctx =
+                    local_eval(*m_gctx, {start_time + (Rational(i, 1) * Rational(1, fps)), fps});
+                if (to_rational(frame_ctx.pts) <= duration) {
+                    frame_ctxs.push_back(frame_ctx);
+                }
+            }
+
+            auto diff = length - frame_ctxs.size();
+            if (diff <= 0) {
+                return frame_ctxs;
+            } else {
+                auto next_ctxs = this->eval_krons(module_path, Rational(0l), fps, duration, diff);
+                frame_ctxs.insert(frame_ctxs.end(), next_ctxs.begin(), next_ctxs.end());
+                return frame_ctxs;
+            }
+        }
 
         core::RenderProfile YPyEvalContext::render_prof(const char* module_path) {
             RenderProfile render_prof;
