@@ -81,15 +81,15 @@ namespace akashi {
                 return frame_ctx;
             }
 
-            Timer timer;
-            timer.start();
-            AKLOG_DEBUGN("eval_kron() start");
+            // timer timer;
+            // timer.start();
+            // aKLOG_DEBUGN("eval_kron() start");
 
             frame_ctx = local_eval(*m_gctx, arg);
 
-            timer.stop();
-            AKLOG_DEBUG("eval_kron() end, time: {} microseconds",
-                        timer.current_time_micro().to_decimal());
+            // timer.stop();
+            // AKLOG_DEBUG("eval_kron() end, time: {} microseconds",
+            //             timer.current_time_micro().to_decimal());
 
             return frame_ctx;
         };
@@ -138,15 +138,15 @@ namespace akashi {
             assert(!elem.is_none());
             assert(py::hasattr(elem, "__call__"));
 
-            core::Timer timer;
-            timer.start();
-            AKLOG_DEBUGN("get_render_profile() start");
+            // core::Timer timer;
+            // timer.start();
+            // AKLOG_DEBUGN("get_render_profile() start");
 
             m_gctx = global_eval(elem, m_state->m_prop.fps);
 
-            timer.stop();
-            AKLOG_DEBUG("get_render_profile() end, time: {} microseconds",
-                        timer.current_time_micro().to_decimal());
+            // timer.stop();
+            // AKLOG_DEBUG("get_render_profile() end, time: {} microseconds",
+            //             timer.current_time_micro().to_decimal());
 
             render_prof.uuid = m_gctx->uuid;
             render_prof.duration = m_gctx->duration.to_fraction();
@@ -157,7 +157,36 @@ namespace akashi {
             return render_prof;
         }
 
-        void YPyEvalContext::reload(const std::vector<watch::WatchEvent>& events) {}
+        void YPyEvalContext::reload(const std::vector<watch::WatchEvent>& events) {
+            for (const auto& event : events) {
+                switch (event.flag) {
+                    case watch::WatchEventFlag::CREATED: {
+                        auto module_path = Path(event.file_path);
+                        auto it = this->m_modules.find(module_path.to_str());
+                        // check duplication
+                        if (it == this->m_modules.end()) {
+                            this->load_module(module_path, this->config().include_dir);
+                        }
+                        break;
+                    }
+                    case watch::WatchEventFlag::REMOVED: {
+                        auto module_path = Path(event.file_path);
+                        auto it = this->m_modules.find(module_path.to_str());
+                        if (it != this->m_modules.end()) {
+                            this->m_modules.erase(it);
+                        }
+                        break;
+                    }
+                    default: {
+                    }
+                }
+            }
+
+            // reload all modules
+            for (auto it = this->m_modules.begin(); it != this->m_modules.end(); it++) {
+                it->second->mod.reload();
+            }
+        }
 
         const state::EvalConfig& YPyEvalContext::config(void) {
             std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);

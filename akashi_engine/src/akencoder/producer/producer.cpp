@@ -134,7 +134,7 @@ namespace akashi {
         }
 
         void ProduceLoop::produce_thread(ProduceLoopContext ctx, ProduceLoop* loop) {
-#if 1
+#if 0
             AKLOG_WARNN("Dummy Producer init");
 
             auto eval = make_owned<eval::AKEval>(borrowed_ptr(ctx.state));
@@ -146,7 +146,7 @@ namespace akashi {
             ctx.state->set_producer_finished(true, true);
             AKLOG_WARNN("Dummy Producer exited");
 #endif
-#if 0
+#if 1
             AKLOG_INFON("Producer init");
 
             auto eval = make_owned<eval::AKEval>(borrowed_ptr(ctx.state));
