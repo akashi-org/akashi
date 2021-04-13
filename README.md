@@ -82,7 +82,7 @@ After all, the first and top priority of **Akashi** is the maximization of user 
 - [x] Basic Encoder
 - [ ] Deployment by AppImage
 - [ ] Introduce Unit Tests and E2E
-- [ ] Refactor Kron System
+- [x] Refactor Kron System
 - [ ] ASP Editing
 - [ ] Documentation
 - [ ] Qt -> GLFW
