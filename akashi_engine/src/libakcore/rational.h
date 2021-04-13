@@ -24,6 +24,8 @@ namespace akashi {
 
             double to_decimal(void) const;
 
+            Fraction to_fraction(void) const { return Fraction{m_num, m_den}; }
+
             Rational operator+(const Rational& other) const;
             Rational operator+=(const Rational& other);
             Rational operator-(const Rational& other) const;
