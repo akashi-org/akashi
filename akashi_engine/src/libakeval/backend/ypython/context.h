@@ -1,11 +1,5 @@
 #pragma once
 
-// forward declaration
-#ifndef PyObject_HEAD
-struct _object;
-typedef _object PyObject;
-#endif
-
 #include "../../context.h"
 
 #include <libakcore/path.h>
@@ -32,6 +26,7 @@ namespace akashi {
     namespace eval {
 
         struct KronArg;
+        struct PyBind11Module;
 
         class YPyEvalContext final : public EvalContext {
           public:
@@ -53,7 +48,12 @@ namespace akashi {
           private:
             const state::EvalConfig& config(void);
 
+            bool load_module(const core::Path& module_path, const core::Path& include_dir);
+
+            bool register_deps_module(const core::Path& entry_path, const core::Path& include_dir);
+
           private:
+            std::unordered_map<std::string, core::owned_ptr<PyBind11Module>> m_modules;
             core::borrowed_ptr<state::AKState> m_state;
             bool m_exited = false;
         };
