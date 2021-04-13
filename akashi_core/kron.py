@@ -10,7 +10,8 @@ from typing import (
     TypedDict,
 )
 from .time import Second
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields, replace
+from uuid import uuid4
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,13 @@ class CommonLayerParams:
     _uuid: str = field(default='', init=False)
     _atom_uuid: str = field(default='')
     _display: bool = field(default=False, init=False)
+
+    def _update(self, _begin: Second, _end: Second):
+        new_params = replace(self, begin=_begin, end=_end)
+        for fld in fields(self):
+            if not fld.init:
+                setattr(new_params, fld.name, getattr(self, fld.name))
+        return new_params
 
 
 @dataclass
@@ -102,23 +110,11 @@ LayerParams = Union[
     ImageLayerParams
 ]
 
-TLayerParams = TypeVar("TLayerParams", bound=CommonLayerParams)
-
-TLayerParams_contra = TypeVar("TLayerParams_contra", bound=CommonLayerParams, contravariant=True)
-
-TLayerParams_co = TypeVar("TLayerParams_co", bound=CommonLayerParams, covariant=True)
+_TLayerParams = TypeVar("_TLayerParams", bound=CommonLayerParams)
 
 # LayerInitFunc = Callable[[], _TLayerParams]
 
-LayerUpdateFunc = Callable[[KronArgs, TLayerParams], TLayerParams]
-
-
-@dataclass(frozen=True)
-class LayerReceiver(Generic[TLayerParams_contra]):
-    mod_params: Optional[Callable[[TLayerParams_contra], TLayerParams_contra]] = None
-    get_finalized_params: Optional[Callable[[TLayerParams_contra], None]] = None
-    get_frame_cnt: Optional[Callable[[int], None]] = None
-    get_duration: Optional[Callable[[Second], None]] = None
+LayerUpdateFunc = Callable[[KronArgs, _TLayerParams], _TLayerParams]
 
 
 @dataclass(frozen=True)
@@ -128,21 +124,15 @@ class FrameContext:
     layer_ctxs: Sequence[LayerParams]
 
 
-FrameContextGen = Callable[[KronArgs], FrameContext]
+CommonLayerType = Callable[[], Literal['LAYER']]
 
-LayerContext = TLayerParams_co
+VideoLayerType = Callable[[], Literal['VIDEO']]
 
-LayerContextGen = Callable[[KronArgs], LayerContext]
+AudioLayerType = Callable[[], Literal['AUDIO']]
 
-CommonLayerType = Callable[[LayerReceiver[CommonLayerParams]], LayerContextGen[CommonLayerParams]]
+TextLayerType = Callable[[], Literal['TEXT']]
 
-VideoLayerType = Callable[[LayerReceiver[VideoLayerParams]], LayerContextGen[VideoLayerParams]]
-
-AudioLayerType = Callable[[LayerReceiver[AudioLayerParams]], LayerContextGen[AudioLayerParams]]
-
-TextLayerType = Callable[[LayerReceiver[TextLayerParams]], LayerContextGen[TextLayerParams]]
-
-ImageLayerType = Callable[[LayerReceiver[ImageLayerParams]], LayerContextGen[ImageLayerParams]]
+ImageLayerType = Callable[[], Literal['IMAGE']]
 
 LayerType = Union[
     CommonLayerType,
@@ -151,8 +141,6 @@ LayerType = Union[
     TextLayerType,
     ImageLayerType
 ]
-
-TLayerType = TypeVar("TLayerType", bound=CommonLayerType)
 
 
 class RootInputParams(TypedDict, total=False):
@@ -196,41 +184,83 @@ class AtomParams:
     _uuid: str = field(default='', init=False)
 
 
-KronParams = Union[
-    RootParams,
-    SceneParams,
-    AtomParams,
-]
+AtomType = Callable[[], Literal['ATOM']]
+
+SceneType = Callable[[], Literal['SCENE']]
+
+RootType = Callable[[], Literal['ROOT']]
 
 
-_TKronParams = TypeVar('_TKronParams', RootParams, SceneParams, AtomParams)
+def video(
+    init: VideoLayerParams,
+    update: Optional[LayerUpdateFunc[VideoLayerParams]] = None
+) -> VideoLayerType:
+    uuid = str(uuid4())
 
-TKronChild_co = TypeVar('TKronChild_co', covariant=True)
-
-
-@dataclass(frozen=True)
-class KronReceiver(Generic[_TKronParams, TKronChild_co]):
-    get_children: Optional[Callable[[Sequence[TKronChild_co]], None]] = None
-    mod_params: Optional[Callable[[_TKronParams, Sequence[TKronChild_co]], _TKronParams]] = None
-    get_finalized_params: Optional[Callable[[_TKronParams], None]] = None
-    get_frame_cnt: Optional[Callable[[int], None]] = None
-    get_duration: Optional[Callable[[Second], None]] = None
+    def closure() -> Literal['VIDEO']:
+        uuid, init, update
+        return 'VIDEO'
+    return closure
 
 
-AtomReceiver = KronReceiver[AtomParams, LayerType]
+def audio(
+    init: AudioLayerParams,
+    update: Optional[LayerUpdateFunc[AudioLayerParams]] = None
+) -> AudioLayerType:
+    uuid = str(uuid4())
 
-AtomType = Callable[[AtomReceiver], FrameContextGen]
+    def closure() -> Literal['AUDIO']:
+        uuid, init, update
+        return 'AUDIO'
+    return closure
 
-SceneReceiver = KronReceiver[SceneParams, AtomType]
 
-SceneType = Callable[[SceneReceiver], FrameContextGen]
+def text(
+    init: TextLayerParams,
+    update: Optional[LayerUpdateFunc[TextLayerParams]] = None
+) -> TextLayerType:
+    uuid = str(uuid4())
 
-RootReceiver = KronReceiver[RootParams, SceneType]
+    def closure() -> Literal['TEXT']:
+        uuid, init, update
+        return 'TEXT'
+    return closure
 
-RootType = Callable[[RootReceiver], FrameContextGen]
 
-KronType = Union[RootType, SceneType, AtomType]
+def image(
+    init: ImageLayerParams,
+    update: Optional[LayerUpdateFunc[ImageLayerParams]] = None
+) -> ImageLayerType:
+    uuid = str(uuid4())
 
-TKronType = TypeVar("TKronType", RootType, SceneType, AtomType)
+    def closure() -> Literal['IMAGE']:
+        uuid, init, update
+        return 'IMAGE'
+    return closure
 
-KronChildType = Union[SceneType, AtomType, LayerType]
+
+def atom(params: AtomInputParams, children: list[LayerType]) -> AtomType:
+    uuid = str(uuid4())
+
+    def closure() -> Literal['ATOM']:
+        uuid, params, children
+        return 'ATOM'
+    return closure
+
+
+def scene(params: SceneInputParams, children: list[AtomType]) -> SceneType:
+    uuid = str(uuid4())
+
+    def closure() -> Literal['SCENE']:
+        uuid, params, children
+        return 'SCENE'
+    return closure
+
+
+def root(_: RootInputParams, children: list[SceneType]) -> RootType:
+    uuid = str(uuid4())
+
+    def closure() -> Literal['ROOT']:
+        uuid, _, children
+        return 'ROOT'
+    return closure

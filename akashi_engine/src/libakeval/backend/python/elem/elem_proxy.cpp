@@ -16,12 +16,12 @@ namespace akashi {
         namespace detail {
 
             py::object Second(const core::Rational& rat) {
-                auto callable = py::module_::import("akashi_core2").attr("time").attr("Second");
+                auto callable = py::module_::import("akashi_core").attr("time").attr("Second");
                 return callable(rat.num(), rat.den());
             }
 
             py::object KronArgs(const core::Rational& playtime, const long fps) {
-                auto callable = py::module_::import("akashi_core2").attr("kron").attr("KronArgs");
+                auto callable = py::module_::import("akashi_core").attr("kron").attr("KronArgs");
                 return callable(detail::Second(playtime), fps);
             }
 
