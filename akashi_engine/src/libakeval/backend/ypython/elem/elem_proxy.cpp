@@ -110,9 +110,7 @@ namespace akashi {
             std::vector<core::LayerContext> layer_ctxs;
             for (const auto& layer_proxy : m_layer_proxies) {
                 auto layer_ctx = layer_proxy->eval(arg, to_rational(m_profile.from));
-                if (layer_ctx.display) {
-                    layer_ctxs.push_back(layer_ctx);
-                }
+                layer_ctxs.push_back(layer_ctx);
             }
             return layer_ctxs;
         };
