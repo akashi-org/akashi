@@ -1,28 +1,16 @@
 #include "./context.h"
-#include "./parser.h"
 
 #include "../../item.h"
-#include "./utils/pytype.h"
-#include "./core/string.h"
-#include "./core/module.h"
-#include "./core/func.h"
-#include "./core/tuple.h"
-#include "./core/list.h"
-#include "./core/import.h"
-#include "./libraries/akashi_core/init.h"
-#include "./libraries/akashi_core/time.h"
-#include "./libraries/akashi_core/kron.h"
-#include "./libraries/akashi_core/kron_utils.h"
+#include "./elem/elem_eval.h"
 
 #include <libakstate/akstate.h>
 #include <libakcore/path.h>
 #include <libakcore/memory.h>
 #include <libakcore/logger.h>
+#include <libakcore/element.h>
 #include <libakcore/rational.h>
 #include <libakwatch/item.h>
-
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
+#include <libakcore/perf.h>
 
 #include <unordered_map>
 #include <string>
@@ -31,63 +19,46 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
-
-#include "./utils/print.h"
+#include <stdexcept>
 
 using namespace akashi::core;
+
+#include <pybind11/embed.h>
+namespace py = pybind11;
 
 namespace akashi {
     namespace eval {
 
-        static void version_check() {
-            auto module = from_import_module("akashi_core", {"utils"});
-            auto func = module->get_module()->attr("utils")->attr("version_check");
-
-            auto res = make_owned<PythonObject>(PyObject_CallObject(func->get_raw(), nullptr));
-
-            auto status = PythonValue::from(PyTuple_GetItem(res->get_raw(), 0), false).to<bool>();
-            if (!status) {
-                auto msg = PythonValue::from(PyTuple_GetItem(res->get_raw(), 1), false)
-                               .to<PythonString>()
-                               .char_p();
-
-                AKLOG_WARN("{}", msg);
-            }
-        }
+        struct PyBind11Module {
+            pybind11::module_ mod;
+        };
 
         PyEvalContext::PyEvalContext(core::borrowed_ptr<state::AKState> state)
             : EvalContext(state), m_state(state) {
-            // maybe we could use Py_InitializeFromConfig instead.
-            // ref: https://docs.python.org/3/c-api/init_config.html#initialization-with-pyconfig
-            Py_Initialize();
+            AKLOG_DEBUGN("YPyEvalContext init");
+
+            py::initialize_interpreter();
 
             auto config = this->config();
 
-            // Load PYTHONPATH explicitly!
-            auto sysPath = PySys_GetObject("path");
+            // [XXX] When using pybind11, make sure that `__init__.py` does not exist in the
+            // directory where the entry file exists. Otherwise module importing will mess up.
+            auto sys_path = py::module_::import("sys").attr("path");
 
-            auto dir = PyUnicode_DecodeFSDefault(config.include_dir.to_abspath().to_cloned_str());
-            // auto dir = PyUnicode_DecodeFSDefault(m_entry_path.to_dirpath().to_cloned_str());
-            PyList_Append(sysPath, dir);
-            // Do not XDECREF syscore::Path
-            Py_XDECREF(dir);
-
+            sys_path.cast<py::list>().append(config.include_dir.to_abspath().to_cloned_str());
             if (std::getenv("AK_CORELIB_PATH")) {
-                auto corelib_path = PyUnicode_DecodeFSDefault(
-                    core::Path(std::getenv("AK_CORELIB_PATH")).to_abspath().to_cloned_str());
-                PyList_Insert(sysPath, 0, corelib_path);
-                Py_XDECREF(corelib_path);
+                sys_path.cast<py::list>().insert(
+                    0, core::Path(std::getenv("AK_CORELIB_PATH")).to_abspath().to_cloned_str());
             }
 
-            m_corelib = lib::akashi_core::InitModule::from();
-
-            version_check();
+            // version check
+            auto res = py::module_::import("akashi_core").attr("utils").attr("version_check")();
+            if (!res.cast<py::tuple>()[0].cast<bool>()) {
+                AKLOG_WARN("{}", res.cast<py::tuple>()[1].cast<std::string>().c_str());
+            }
 
             this->load_module(config.entry_path, config.include_dir);
-
-            this->imported_inner_module_each([this, config](const core::Path& module_path) {
-                this->load_module(module_path, config.include_dir);
-            });
+            this->register_deps_module(config.entry_path, config.include_dir);
         };
 
         PyEvalContext::~PyEvalContext(void) noexcept { this->exit(); };
@@ -95,27 +66,8 @@ namespace akashi {
         // [TODO] since this is called from outside the eval thread, maybe we should use GIL?
         void PyEvalContext::exit(void) {
             if (!m_exited) {
-                for (auto it = m_modules.begin(); it != m_modules.end(); it++) {
-                    delete it->second;
-                }
-
-                // clang-format off
-                // [XXX] take notice of the following points
-                // * m_corelib is managed by owned_ptr(unique_ptr)
-                // * When m_corelib is freed, Py_XDECREF() will be called somewhere in the call graph
-                // * Py_XDECREF() must not be called after Py_FinalizeEx() (really?)
-                // * After PyEvalContext::exit(), the destructor of this class will be called
-                // * m_corelib will be freed in the destructor of this class because of owned_ptr
-                // * So, if m_corelib is not explicitly freed here, Py_XDECREF() can be called after Py_FinalizeEx()
-                // * And that will cause a segmentation fault
-                // clang-format on
-                m_corelib.reset();
-
-                if (Py_FinalizeEx() < 0) {
-                    AKLOG_ERRORN("PythonVM::exit(): Py_FinalizeEx() failed");
-                } else {
-                    AKLOG_INFON("PythonVM::exit(): Successfully exited");
-                }
+                m_modules.clear();
+                py::finalize_interpreter();
                 m_exited = true;
             }
         };
@@ -124,31 +76,20 @@ namespace akashi {
             FrameContext frame_ctx;
             frame_ctx.pts = Fraction{-1, 1};
 
-            auto it = m_modules.find(module_path);
-            if (it == m_modules.end()) {
-                AKLOG_ERRORN("PyEvalContext::eval_kron() Module not found");
+            if (!m_gctx) {
+                AKLOG_ERRORN("GlobalContext is null");
                 return frame_ctx;
             }
 
-            auto pymod = it->second;
-            auto kron_func_name = Path(module_path).to_stem();
+            // timer timer;
+            // timer.start();
+            // aKLOG_DEBUGN("eval_kron() start");
 
-            auto func = PythonFunc(pymod->get_module(), kron_func_name.to_str());
+            frame_ctx = local_eval(*m_gctx, arg);
 
-            auto comp_args = m_corelib->kron()->KronArgs(arg);
-
-            auto kron = PythonObject(PyObject_CallObject(func.get_func()->get_raw(), nullptr));
-
-            auto frame = make_owned<PythonObject>(PyObject_CallObject(
-                kron.get_raw(), make_tuple(comp_args->inst_obj()->get_raw())->get_raw()));
-
-            if (frame->get_raw() == nullptr) {
-                if (PyErr_Occurred() != nullptr) {
-                    PyErr_Print();
-                }
-                return frame_ctx;
-            }
-            frame_ctx = parse_frameContext(borrowed_ptr(frame));
+            // timer.stop();
+            // AKLOG_DEBUG("eval_kron() end, time: {} microseconds",
+            //             timer.current_time_micro().to_decimal());
 
             return frame_ctx;
         };
@@ -158,57 +99,60 @@ namespace akashi {
                                                                   const int fps,
                                                                   const core::Rational& duration,
                                                                   const size_t length) {
-            std::vector<FrameContext> frame_ctxs;
+            std::vector<FrameContext> frame_ctxs = {};
 
-            auto it = m_modules.find(module_path);
-            if (it == m_modules.end()) {
-                AKLOG_ERRORN("PyEvalContext::eval_krons() Module not found");
+            if (!m_gctx) {
+                AKLOG_ERRORN("GlobalContext is null");
                 return frame_ctxs;
             }
 
-            auto pymod = it->second;
-            auto kron_func_name = Path(module_path).to_stem();
+            for (size_t i = 0; i < length; i++) {
+                auto frame_ctx =
+                    local_eval(*m_gctx, {start_time + (Rational(i, 1) * Rational(1, fps)), fps});
+                if (to_rational(frame_ctx.pts) <= duration) {
+                    frame_ctxs.push_back(frame_ctx);
+                }
+            }
 
-            auto elem = PythonFunc(pymod->get_module(), kron_func_name.to_str());
-
-            // from here, do not refer kron
-            auto frame_ctxs_obj = m_corelib->kron_utils()->get_frame_contexts(
-                make_owned<PythonObject>(elem.get_func()->get_raw(), false), start_time, fps,
-                duration, length);
-
-            // py_print(frame_ctxs_obj->get_raw());
-
-            frame_ctxs = map_list<FrameContext>(
-                frame_ctxs_obj->get_raw(),
-                [](borrowed_ptr<const PythonObject> pyo) { return parse_frameContext(pyo); });
-
-            return frame_ctxs;
+            auto diff = length - frame_ctxs.size();
+            if (diff <= 0) {
+                return frame_ctxs;
+            } else {
+                auto next_ctxs = this->eval_krons(module_path, Rational(0l), fps, duration, diff);
+                frame_ctxs.insert(frame_ctxs.end(), next_ctxs.begin(), next_ctxs.end());
+                return frame_ctxs;
+            }
         }
 
         core::RenderProfile PyEvalContext::render_prof(const char* module_path) {
             RenderProfile render_prof;
+            render_prof.atom_profiles = {};
 
             auto it = m_modules.find(module_path);
             if (it == m_modules.end()) {
-                AKLOG_ERRORN("PyEvalContext::render_prof() Module not found");
+                AKLOG_ERRORN("Module not found");
                 return render_prof;
             }
 
-            auto pymod = it->second;
-            auto kron_func_name = Path(module_path).to_stem();
+            auto elem = it->second->mod.attr(Path(module_path).to_stem().to_str());
+            assert(!elem.is_none());
+            assert(py::hasattr(elem, "__call__"));
 
-            auto kron = PythonFunc(pymod->get_module(), kron_func_name.to_str());
+            // core::Timer timer;
+            // timer.start();
+            // AKLOG_DEBUGN("get_render_profile() start");
 
-            KronArg arg;
-            arg.fps = 24; // [TODO] temporary hack
+            m_gctx = global_eval(elem, m_state->m_prop.fps);
 
-            // from here, do not refer kron
-            auto render_prof_obj = m_corelib->kron_utils()->get_render_profile(
-                make_owned<PythonObject>(kron.get_func()->get_raw(), false), arg);
+            // timer.stop();
+            // AKLOG_DEBUG("get_render_profile() end, time: {} microseconds",
+            //             timer.current_time_micro().to_decimal());
 
-            // py_print(render_prof_obj->get_raw());
-
-            render_prof = parse_renderProfile(borrowed_ptr(render_prof_obj));
+            render_prof.uuid = m_gctx->uuid;
+            render_prof.duration = m_gctx->duration.to_fraction();
+            for (const auto& atom_proxy : m_gctx->atom_proxies) {
+                render_prof.atom_profiles.push_back(atom_proxy->computed_profile());
+            }
 
             return render_prof;
         }
@@ -229,7 +173,6 @@ namespace akashi {
                         auto module_path = Path(event.file_path);
                         auto it = this->m_modules.find(module_path.to_str());
                         if (it != this->m_modules.end()) {
-                            delete it->second;
                             this->m_modules.erase(it);
                         }
                         break;
@@ -241,42 +184,9 @@ namespace akashi {
 
             // reload all modules
             for (auto it = this->m_modules.begin(); it != this->m_modules.end(); it++) {
-                it->second->reload();
+                it->second->mod.reload();
             }
-
-            // [XXX] we can skip reloading for corelib
         }
-
-        const std::vector<std::string>
-        PyEvalContext::loaded_module_paths(bool kron_module_only) const {
-            std::vector<std::string> loaded_module_paths;
-
-            for (auto it = m_modules.begin(); it != m_modules.end(); it++) {
-                // if (!kron_module_only || it->second->has_kron()) {
-                //     loaded_module_paths.push_back(it->first);
-                // }
-                loaded_module_paths.push_back(it->first);
-            }
-
-            return loaded_module_paths;
-        };
-
-        const std::vector<std::string> PyEvalContext::imported_module_paths(void) {
-            std::vector<std::string> imported_module_paths;
-
-            this->imported_module_each([&imported_module_paths](PyObject* module) {
-                if (PyObject_HasAttrString(module, "__file__")) {
-                    auto module_fpath_obj = PyObject_GetAttrString(module, "__file__");
-                    if (PyUnicode_Check(module_fpath_obj)) {
-                        imported_module_paths.push_back(
-                            core::Path(PythonString(module_fpath_obj).char_p()).to_cloned_str());
-                    }
-                    Py_XDECREF(module_fpath_obj);
-                }
-            });
-
-            return imported_module_paths;
-        };
 
         const state::EvalConfig& PyEvalContext::config(void) {
             std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
@@ -285,45 +195,35 @@ namespace akashi {
 
         bool PyEvalContext::load_module(const core::Path& module_path,
                                         const core::Path& include_dir) {
-            m_modules.insert({module_path.to_abspath().to_cloned_str(),
-                              new PythonModule(module_path.to_relpath(include_dir))});
+            auto mod_ptr = core::make_owned<PyBind11Module>();
+            mod_ptr->mod = py::module_::import(
+                module_path.to_relpath(include_dir).to_pymodule_name().to_str());
+            m_modules.insert({module_path.to_abspath().to_cloned_str(), std::move(mod_ptr)});
 
-            AKLOG_DEBUG("PythonVM::load_modules() loaded, {}", module_path.to_str());
+            AKLOG_DEBUG("Loaded Python module: {}", module_path.to_str());
 
             return true;
-        };
+        }
 
-        void PyEvalContext::imported_module_each(const std::function<void(PyObject*)>& callback) {
-            auto module_dict = PyImport_GetModuleDict(); /* borrowed */
-            // auto module_dict = PyModule_GetDict();
-
-            auto modules = PyDict_Values(module_dict);
-            for (int i = 0; i < PyList_GET_SIZE(modules); i++) {
-                auto module = PyList_GetItem(modules, i); /* borrowed */
-                if (!module) {
-                    PyErr_Print();
+        bool PyEvalContext::register_deps_module(const core::Path& entry_path,
+                                                 const core::Path& include_dir) {
+            for (const auto& mod_dict :
+                 py::module_::import("sys").attr("modules").cast<py::dict>()) {
+                auto mod = mod_dict.second;
+                if (!py::hasattr(mod, "__file__")) {
+                    continue;
                 }
-                callback(module);
+                auto mod_fpath = py::str(mod.attr("__file__"));
+                if (!py::isinstance<py::str>(mod_fpath)) {
+                    continue;
+                }
+                auto mod_fpath_str = core::Path(mod_fpath.cast<std::string>());
+                if ((mod_fpath_str != entry_path) && (mod_fpath_str.is_subordinate(include_dir))) {
+                    this->load_module(mod_fpath_str, include_dir);
+                }
             }
-        };
-
-        void PyEvalContext::imported_inner_module_each(
-            const std::function<void(const core::Path&)>& callback) {
-            this->imported_module_each([this, &callback](PyObject* module) {
-                if (PyObject_HasAttrString(module, "__file__")) {
-                    auto module_fpath_obj = PyObject_GetAttrString(module, "__file__");
-                    if (PyUnicode_Check(module_fpath_obj)) {
-                        auto module_fpath = core::Path(PythonString(module_fpath_obj).char_p());
-                        auto config = this->config();
-                        if (module_fpath != config.entry_path &&
-                            module_fpath.is_subordinate(config.include_dir)) {
-                            callback(module_fpath);
-                        }
-                    }
-                    Py_XDECREF(module_fpath_obj);
-                }
-            });
-        };
+            return true;
+        }
 
     }
 }

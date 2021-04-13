@@ -25,26 +25,11 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./akeval.cpp"
 
   "./backend/python/context.cpp"
-  "./backend/python/parser.cpp"
-  "./backend/python/utils/print.cpp"
-  "./backend/python/core/module.cpp"
-  "./backend/python/core/func.cpp"
-  "./backend/python/core/string.cpp"
-  "./backend/python/core/object.cpp"
-  "./backend/python/core/class.cpp"
-  "./backend/python/core/value.cpp"
-  "./backend/python/core/import.cpp"
-  "./backend/python/libraries/akashi_core/init.cpp"
-  "./backend/python/libraries/akashi_core/kron.cpp"
-  "./backend/python/libraries/akashi_core/kron_utils.cpp"
-  "./backend/python/libraries/akashi_core/time.cpp"
-
-  "./backend/ypython/context.cpp"
-  "./backend/ypython/elem/elem.cpp"
-  "./backend/ypython/elem/elem_eval.cpp"
-  "./backend/ypython/elem/elem_tracer.cpp"
-  "./backend/ypython/elem/elem_proxy.cpp"
-  "./backend/ypython/elem/elem_parser.cpp"
+  "./backend/python/elem/elem.cpp"
+  "./backend/python/elem/elem_eval.cpp"
+  "./backend/python/elem/elem_tracer.cpp"
+  "./backend/python/elem/elem_proxy.cpp"
+  "./backend/python/elem/elem_parser.cpp"
 )
 
 file(GLOB INTERFACE_HEADERS
