@@ -22,7 +22,8 @@
 
 #include <csignal>
 #include <unistd.h>
-
+#include <chrono>
+#include <thread>
 #include <mutex>
 
 using namespace akashi::core;
@@ -173,11 +174,11 @@ namespace akashi {
         void EncodeLoop::encode_thread(EncodeLoopContext ctx, EncodeLoop* loop) {
             AKLOG_INFON("Encoder init");
 
-            codec::AKEncoder encoder{ctx.state};
+            auto encoder = core::make_owned<codec::AKEncoder>(ctx.state);
 
             if (ctx.state->m_encode_conf.audio_codec != core::EncodeCodec::NONE) {
                 // [XXX] must be done before decoder initialization
-                auto aformat = encoder.validate_audio_format(
+                auto aformat = encoder->validate_audio_format(
                     ctx.state->m_atomic_state.encode_audio_spec.load().format);
                 if (aformat == AKAudioSampleFormat::NONE) {
                     return early_exit();
@@ -188,11 +189,9 @@ namespace akashi {
                     ctx.state->m_atomic_state.encode_audio_spec.store(decode_spec);
                 }
             }
-            if (!encoder.open()) {
+            if (!encoder->open()) {
                 return early_exit();
             }
-
-            AKLOG_INFON("Producer init");
 
             auto eval = make_owned<eval::AKEval>(borrowed_ptr(ctx.state));
 
@@ -202,7 +201,7 @@ namespace akashi {
                 [](void* ctx_) {
                     auto exit_ctx_ = reinterpret_cast<ExitContext*>(ctx_);
                     EncodeLoop::exit_thread(*exit_ctx_);
-                    AKLOG_INFON("Producer Successfully exited");
+                    AKLOG_INFON("Encoder Successfully exited");
                 },
                 &exit_ctx);
 
@@ -211,7 +210,7 @@ namespace akashi {
             auto encode_ctx = create_encode_context(ctx, borrowed_ptr(eval));
             init_encode_context(ctx, *encode_ctx);
 
-            auto nb_samples_per_frame = encoder.nb_samples_per_frame();
+            auto nb_samples_per_frame = encoder->nb_samples_per_frame();
             // [TODO] maybe we should need an assertion that audio buffer size is grater than or
             // equal to the value of nb_samples_per_frame
 
@@ -274,17 +273,22 @@ namespace akashi {
                 }
 
                 // encode
-                exec_encode(encoder, encode_args);
+                exec_encode(*encoder, encode_args);
             }
 
             // draining
             while (!encode_args.empty()) {
-                // need wait?
-                exec_encode(encoder, encode_args);
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                exec_encode(*encoder, encode_args);
             }
-            encoder.close();
+            encoder->close();
 
             AKLOG_INFON("Encoder finished");
+
+            // release it early to avoid double free problems in shutdown
+            encode_ctx.reset(nullptr);
+
+            encoder.reset(nullptr);
             EncodeLoop::exit_thread(exit_ctx);
         }
 
@@ -295,7 +299,6 @@ namespace akashi {
             if (exit_ctx.loop) {
                 exit_ctx.loop->m_thread_exited = true;
             }
-
             // send SIGTERM to the main thread
             kill(getpid(), SIGTERM);
         }
