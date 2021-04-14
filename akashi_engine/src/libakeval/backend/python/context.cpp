@@ -67,6 +67,7 @@ namespace akashi {
         void PyEvalContext::exit(void) {
             if (!m_exited) {
                 m_modules.clear();
+                m_gctx.reset();
                 py::finalize_interpreter();
                 m_exited = true;
             }
