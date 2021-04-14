@@ -1,8 +1,8 @@
-#include "./producer.h"
+#include "./encode_loop.h"
+
 #include "./window.h"
 #include "./decoder.h"
 #include "./audio_renderer.h"
-#include "../encode_queue.h"
 
 #include <libakcore/logger.h>
 #include <libakcore/element.h>
@@ -15,11 +15,15 @@
 #include <libakbuffer/avbuffer.h>
 #include <libakbuffer/video_queue.h>
 #include <libakbuffer/audio_queue.h>
+#include <libakbuffer/audio_buffer.h>
 #include <libakgraphics/akgraphics.h>
 #include <libakgraphics/item.h>
 #include <libakcodec/encoder.h>
 
-#include <libakbuffer/audio_buffer.h>
+#include <csignal>
+#include <unistd.h>
+
+#include <mutex>
 
 using namespace akashi::core;
 
@@ -27,8 +31,7 @@ namespace akashi {
     namespace encoder {
 
         struct ExitContext {
-            ProduceLoopContext ctx;
-            ProduceLoop* loop;
+            EncodeLoop* loop = nullptr;
             eval::AKEval* eval = nullptr;
         };
 
@@ -54,17 +57,10 @@ namespace akashi {
             core::owned_ptr<Window> window;
 
             bool decode_ended = false;
-
-          public:
-            ~EncodeContext() {
-                // if (this->er_params.buffer) {
-                //     delete this->er_params.buffer;
-                // }
-            }
         };
 
         static core::owned_ptr<EncodeContext>
-        create_encode_context(ProduceLoopContext& ctx, core::borrowed_ptr<eval::AKEval> eval) {
+        create_encode_context(EncodeLoopContext& ctx, core::borrowed_ptr<eval::AKEval> eval) {
             Rational start_pts = Rational(0, 1);
             Rational fps;
             core::Path entry_path{""};
@@ -112,7 +108,7 @@ namespace akashi {
             return encode_ctx;
         }
 
-        static void init_encode_context(ProduceLoopContext& ctx, EncodeContext& encode_ctx) {
+        static void init_encode_context(EncodeLoopContext& ctx, EncodeContext& encode_ctx) {
             encode_ctx.gfx =
                 make_owned<graphics::AKGraphics>(ctx.state, borrowed_ptr(encode_ctx.buffer));
             encode_ctx.gfx->load_api({Window::get_proc_address}, {Window::egl_get_proc_address});
@@ -139,17 +135,73 @@ namespace akashi {
                                     encode_ctx.fps.to_decimal(), encode_ctx.duration, 2);
         }
 
-        void ProduceLoop::produce_thread(ProduceLoopContext ctx, ProduceLoop* loop) {
+        static bool is_valid_type(const buffer::AVBufferType& type) {
+            return buffer::AVBufferType::UNKNOWN <= type && type <= buffer::AVBufferType::AUDIO;
+        }
+
+        static void exec_encode(codec::AKEncoder& encoder,
+                                std::deque<codec::EncodeArg>& encode_args) {
+            // send until EAGAIN or ERROR
+            while (!encode_args.empty()) {
+                const auto& data = encode_args.front();
+                if (!is_valid_type(data.type) || !data.buffer) {
+                    break;
+                }
+                auto send_result = encoder.send(data);
+                if (send_result == codec::EncodeResultCode::OK) {
+                    encode_args.pop_front();
+                    auto write_result = encoder.write({data.type});
+                    if (write_result.result == codec::EncodeResultCode::ERROR) {
+                        AKLOG_ERROR("encode error {}, {}", data.pts.to_decimal(),
+                                    write_result.result);
+                        // [TODO] throw exception?
+                        AKLOG_ERRORN("...skipping this frame");
+                        break;
+                    }
+                } else if (send_result == codec::EncodeResultCode::SEND_EAGAIN) {
+                    AKLOG_DEBUG("SEND_EAGAIN {}", data.pts.to_decimal());
+                    break;
+                } else {
+                    AKLOG_ERROR("encode error {}, {}", data.pts.to_decimal(), send_result);
+                    throw std::runtime_error("Encoding aborted");
+                }
+            }
+        }
+
+        static void early_exit() { kill(getpid(), SIGTERM); }
+
+        void EncodeLoop::encode_thread(EncodeLoopContext ctx, EncodeLoop* loop) {
+            AKLOG_INFON("Encoder init");
+
+            codec::AKEncoder encoder{ctx.state};
+
+            if (ctx.state->m_encode_conf.audio_codec != core::EncodeCodec::NONE) {
+                // [XXX] must be done before decoder initialization
+                auto aformat = encoder.validate_audio_format(
+                    ctx.state->m_atomic_state.encode_audio_spec.load().format);
+                if (aformat == AKAudioSampleFormat::NONE) {
+                    return early_exit();
+                } else {
+                    auto decode_spec = ctx.state->m_atomic_state.audio_spec.load();
+                    decode_spec.format = aformat;
+                    ctx.state->m_atomic_state.audio_spec.store(decode_spec);
+                    ctx.state->m_atomic_state.encode_audio_spec.store(decode_spec);
+                }
+            }
+            if (!encoder.open()) {
+                return early_exit();
+            }
+
             AKLOG_INFON("Producer init");
 
             auto eval = make_owned<eval::AKEval>(borrowed_ptr(ctx.state));
 
-            ExitContext exit_ctx{ctx, loop, eval.get()};
+            ExitContext exit_ctx{loop, eval.get()};
 
             loop->set_on_thread_exit(
                 [](void* ctx_) {
                     auto exit_ctx_ = reinterpret_cast<ExitContext*>(ctx_);
-                    ProduceLoop::exit_thread(*exit_ctx_);
+                    EncodeLoop::exit_thread(*exit_ctx_);
                     AKLOG_INFON("Producer Successfully exited");
                 },
                 &exit_ctx);
@@ -159,7 +211,7 @@ namespace akashi {
             auto encode_ctx = create_encode_context(ctx, borrowed_ptr(eval));
             init_encode_context(ctx, *encode_ctx);
 
-            auto nb_samples_per_frame = ctx.encoder->nb_samples_per_frame();
+            auto nb_samples_per_frame = encoder.nb_samples_per_frame();
             // [TODO] maybe we should need an assertion that audio buffer size is grater than or
             // equal to the value of nb_samples_per_frame
 
@@ -167,9 +219,9 @@ namespace akashi {
                 borrowed_ptr(ctx.state), borrowed_ptr(encode_ctx->decoder),
                 borrowed_ptr(encode_ctx->buffer), borrowed_ptr(encode_ctx->abuffer)};
 
-            for (; can_produce(*encode_ctx); update_encode_context(*encode_ctx)) {
-                ctx.queue->wait_for_not_full();
+            std::deque<codec::EncodeArg> encode_args = {};
 
+            for (; can_produce(*encode_ctx); update_encode_context(*encode_ctx)) {
                 // eval
                 auto frame_ctx = pull_frame_context(borrowed_ptr(eval), *encode_ctx);
                 if (frame_ctx.empty()) {
@@ -200,13 +252,13 @@ namespace akashi {
                     encode_ctx->gfx->encode_render(encode_ctx->er_params, frame_ctx[0]);
                     // glfwSwapBuffers(encode_ctx->window);
 
-                    EncodeQueueData queue_data;
-                    queue_data.pts = encode_ctx->cur_pts;
-                    queue_data.buffer.reset(encode_ctx->er_params.buffer);
-                    queue_data.buf_size = encode_ctx->video_width * encode_ctx->video_height * 3;
-                    queue_data.type = buffer::AVBufferType::VIDEO;
-
-                    ctx.queue->enqueue(std::move(queue_data));
+                    codec::EncodeArg vencode_arg = {};
+                    vencode_arg.pts = encode_ctx->cur_pts;
+                    vencode_arg.buffer.reset(encode_ctx->er_params.buffer);
+                    vencode_arg.buf_size = encode_ctx->video_width * encode_ctx->video_height * 3;
+                    vencode_arg.type = buffer::AVBufferType::VIDEO;
+                    // std::move?
+                    encode_args.push_back(std::move(vencode_arg));
                 }
 
                 // audio render
@@ -217,21 +269,36 @@ namespace akashi {
                                      encode_ctx->cur_pts);
 
                     for (auto&& dataset : datasets) {
-                        ctx.queue->enqueue(std::move(dataset));
+                        encode_args.push_back(std::move(dataset));
                     }
                 }
+
+                // encode
+                exec_encode(encoder, encode_args);
             }
 
-            ProduceLoop::exit_thread(exit_ctx);
-            AKLOG_INFON("Producer finished");
+            // draining
+            while (!encode_args.empty()) {
+                // need wait?
+                exec_encode(encoder, encode_args);
+            }
+            encoder.close();
+
+            AKLOG_INFON("Encoder finished");
+            EncodeLoop::exit_thread(exit_ctx);
         }
 
-        void ProduceLoop::exit_thread(ExitContext& exit_ctx) {
+        void EncodeLoop::exit_thread(ExitContext& exit_ctx) {
             if (exit_ctx.eval) {
                 exit_ctx.eval->exit();
             }
-            exit_ctx.loop->m_thread_exited = true;
-            exit_ctx.ctx.state->set_producer_finished(true, true);
+            if (exit_ctx.loop) {
+                exit_ctx.loop->m_thread_exited = true;
+            }
+
+            // send SIGTERM to the main thread
+            kill(getpid(), SIGTERM);
         }
+
     }
 }

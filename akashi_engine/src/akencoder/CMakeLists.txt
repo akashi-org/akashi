@@ -30,13 +30,10 @@ endif()
 
 add_executable(${PROJECT_NAME}
   ./main.cpp
-  ./akencoder.cpp
-  ./encode_queue.cpp
-  ./producer/producer.cpp
-  ./producer/window_glfw.cpp
-  ./producer/decoder.cpp
-  ./producer/audio_renderer.cpp
-  ./consumer/consumer.cpp
+  ./encode_loop.cpp
+  ./window_glfw.cpp
+  ./decoder.cpp
+  ./audio_renderer.cpp
 )
 
 target_include_directories(${PROJECT_NAME}

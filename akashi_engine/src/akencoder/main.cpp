@@ -1,4 +1,4 @@
-#include "./akencoder.h"
+#include "./encode_loop.h"
 
 #include <libakcore/logger.h>
 
