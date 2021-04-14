@@ -46,8 +46,7 @@ namespace akashi {
             frame_ctx.pts = arg.play_time.to_fraction();
             auto proxy_idx = find_proxy_index(ctx, arg);
             if (proxy_idx < 0) {
-                // [TODO] raise exception?
-                AKLOG_ERROR("Could not find the suitable for pts: {}", arg.play_time.to_decimal());
+                AKLOG_DEBUG("Could not find the suitable pts for: {}", arg.play_time.to_decimal());
                 return frame_ctx;
             }
             frame_ctx.layer_ctxs = ctx.atom_proxies[proxy_idx]->eval(arg);
