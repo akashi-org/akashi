@@ -103,12 +103,22 @@ class EncodeCodec(Enum):
         return self.value
 
 
+class VideoEncodeMethod(Enum):
+    NONE = -1
+    SW = 0  # software decode
+    # VAAPI = auto()  # vaapi
+
+    def to_json(self):
+        return self.value
+
+
 @dataclass(frozen=True)
 class EncodeConf:
     out_fname: str = ''
     video_codec: EncodeCodec = EncodeCodec.NONE
     audio_codec: EncodeCodec = EncodeCodec.NONE
     encode_max_queue_count: int = 10  # max queue element counts
+    encode_method: VideoEncodeMethod = VideoEncodeMethod.SW
 
 
 @dataclass(frozen=True)

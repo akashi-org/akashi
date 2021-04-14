@@ -46,6 +46,7 @@ namespace akashi {
             EncodeCodec video_codec;
             EncodeCodec audio_codec;
             size_t encode_max_queue_count;
+            VideoEncodeMethod encode_method;
         };
 
         struct AKConf {
