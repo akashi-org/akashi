@@ -70,12 +70,10 @@ namespace akashi {
             }
 
             // init streams
-            if (m_state->m_encode_conf.video_codec != EncodeCodec::NONE &&
-                !this->init_video_stream()) {
+            if (m_state->m_encode_conf.video_codec != "" && !this->init_video_stream()) {
                 return false;
             }
-            if (m_state->m_encode_conf.audio_codec != EncodeCodec::NONE &&
-                !this->init_audio_stream()) {
+            if (m_state->m_encode_conf.audio_codec != "" && !this->init_audio_stream()) {
                 return false;
             }
 
@@ -259,10 +257,10 @@ namespace akashi {
         core::AKAudioSampleFormat
         FFFrameSink::validate_audio_format(const core::AKAudioSampleFormat& sample_format) {
             // find codec
-            auto codec_id = to_ff_codec_id(m_state->m_encode_conf.audio_codec);
-            auto codec = avcodec_find_encoder(codec_id);
+            auto codec = avcodec_find_encoder_by_name(m_state->m_encode_conf.audio_codec.c_str());
             if (!codec) {
-                AKLOG_ERROR("avcodec_find_encoder() failed, codec_id: {}", codec_id);
+                AKLOG_ERROR("avcodec_find_encoder_by_name() failed, codec_name: {}",
+                            m_state->m_encode_conf.audio_codec.c_str());
                 return core::AKAudioSampleFormat::NONE;
             }
 
@@ -298,10 +296,10 @@ namespace akashi {
 
         bool FFFrameSink::init_video_stream() {
             // find codec
-            auto codec_id = to_ff_codec_id(m_state->m_encode_conf.video_codec);
-            auto codec = avcodec_find_encoder(codec_id);
+            auto codec = avcodec_find_encoder_by_name(m_state->m_encode_conf.video_codec.c_str());
             if (!codec) {
-                AKLOG_ERROR("avcodec_find_encoder() failed, codec_id: {}", codec_id);
+                AKLOG_ERROR("avcodec_find_encoder_by_name() failed, codec_name: {}",
+                            m_state->m_encode_conf.video_codec.c_str());
                 return false;
             }
 
@@ -373,10 +371,10 @@ namespace akashi {
 
         bool FFFrameSink::init_audio_stream() {
             // find codec
-            auto codec_id = to_ff_codec_id(m_state->m_encode_conf.audio_codec);
-            auto codec = avcodec_find_encoder(codec_id);
+            auto codec = avcodec_find_encoder_by_name(m_state->m_encode_conf.audio_codec.c_str());
             if (!codec) {
-                AKLOG_ERROR("avcodec_find_encoder() failed, codec_id: {}", codec_id);
+                AKLOG_ERROR("avcodec_find_encoder_by_name() failed, codec_name: {}",
+                            m_state->m_encode_conf.audio_codec.c_str());
                 return false;
             }
 

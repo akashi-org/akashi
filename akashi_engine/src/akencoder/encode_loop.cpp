@@ -176,7 +176,7 @@ namespace akashi {
 
             auto encoder = core::make_owned<codec::AKEncoder>(ctx.state);
 
-            if (ctx.state->m_encode_conf.audio_codec != core::EncodeCodec::NONE) {
+            if (ctx.state->m_encode_conf.audio_codec != "") {
                 // [XXX] must be done before decoder initialization
                 auto aformat = encoder->validate_audio_format(
                     ctx.state->m_atomic_state.encode_audio_spec.load().format);
@@ -244,7 +244,7 @@ namespace akashi {
                 }
 
                 // video render
-                if (ctx.state->m_encode_conf.video_codec != core::EncodeCodec::NONE) {
+                if (ctx.state->m_encode_conf.video_codec != "") {
                     // glfwMakeContextCurrent(encode_ctx->window);
                     encode_ctx->er_params.buffer =
                         new uint8_t[encode_ctx->video_width * encode_ctx->video_height * 3];
@@ -261,7 +261,7 @@ namespace akashi {
                 }
 
                 // audio render
-                if (ctx.state->m_encode_conf.audio_codec != core::EncodeCodec::NONE) {
+                if (ctx.state->m_encode_conf.audio_codec != "") {
                     auto datasets =
                         render_audio(&encode_ctx->audio_encode_pts, borrowed_ptr(ctx.state),
                                      borrowed_ptr(encode_ctx->abuffer), nb_samples_per_frame,

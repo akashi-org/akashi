@@ -93,16 +93,6 @@ class UIConf:
     window_mode: WindowMode = WindowMode.SPLIT
 
 
-class EncodeCodec(Enum):
-    NONE = -1
-    V_H264 = 100,
-    A_AAC = 200,
-    A_MP3 = 201,
-
-    def to_json(self):
-        return self.value
-
-
 class VideoEncodeMethod(Enum):
     NONE = -1
     SW = 0  # software decode
@@ -115,8 +105,8 @@ class VideoEncodeMethod(Enum):
 @dataclass(frozen=True)
 class EncodeConf:
     out_fname: str = ''
-    video_codec: EncodeCodec = EncodeCodec.NONE
-    audio_codec: EncodeCodec = EncodeCodec.NONE
+    video_codec: str = ''
+    audio_codec: str = ''
     encode_max_queue_count: int = 10  # max queue element counts
     encode_method: VideoEncodeMethod = VideoEncodeMethod.SW
 
