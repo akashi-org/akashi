@@ -4,6 +4,12 @@
 #include <libakcore/memory.h>
 #include <libakstate/akstate.h>
 
+#include <boost/process.hpp>
+
+#include <iostream>
+
+using namespace boost::process;
+
 #include <string>
 #include <signal.h>
 #include <string.h>
@@ -51,6 +57,16 @@ int main(int argc, char** argv) {
     akashi::state::AKState state(akconf);
 
     AKLOG_INFON("Akashi Kernel Init");
+
+    ipstream pipe_stream;
+    child c("clang++ --version", std_out > pipe_stream);
+
+    std::string line;
+
+    while (pipe_stream && std::getline(pipe_stream, line) && !line.empty())
+        std::cerr << line << std::endl;
+
+    c.wait();
 
     do_sigwait(ss);
 
