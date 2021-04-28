@@ -140,6 +140,9 @@ namespace akashi {
                 if (contains_char(str, "akencoder") > 0) {
                     return "akencoder";
                 }
+                if (contains_char(str, "akkernel") > 0) {
+                    return "akkernel";
+                }
                 return "???";
             }
 

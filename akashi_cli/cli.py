@@ -1,4 +1,4 @@
-from .utils import BIN_PATH, ENCODER_BIN_PATH, LIBRARY_PATH
+from .utils import BIN_PATH, ENCODER_BIN_PATH, KERNEL_BIN_PATH, LIBRARY_PATH
 from .parser import argument_parse, ParsedOption
 
 import signal
@@ -27,6 +27,8 @@ class ServerThread(threading.Thread):
             self.__debug_run()
         elif self.action == 'build':
             self.__build_run()
+        elif self.action == 'kernel':
+            self.__kernel_run()
         else:
             raise Exception(f'invalid action `{self.action}`type found')
 
@@ -67,6 +69,18 @@ class ServerThread(threading.Thread):
 
         self.proc = Popen(
             [ENCODER_BIN_PATH, self.akconf], env=os.environ
+        )
+        self.proc.communicate()
+
+    def __kernel_run(self):
+        # [XXX] To avoid deadlock issues, stderr must be redirected to /dev/null
+        # self.proc = Popen(
+        #     [ENCODER_BIN_PATH, *args],
+        #     stdin=PIPE, stdout=PIPE, stderr=DEVNULL, env=os.environ
+        # )
+
+        self.proc = Popen(
+            [KERNEL_BIN_PATH, self.akconf], env=os.environ
         )
         self.proc.communicate()
 

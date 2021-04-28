@@ -67,6 +67,11 @@ add_subdirectory("./src/libakserver")
 add_subdirectory("./src/libakstate")
 add_subdirectory("./src/libakevent")
 
+add_subdirectory("./src/akkernel")
+set_target_properties(akashi_kernel PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 add_subdirectory("./src/akui")
 set_target_properties(akashi_renderer PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
