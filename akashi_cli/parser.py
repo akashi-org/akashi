@@ -23,7 +23,7 @@ def argument_parse() -> ParsedOption:
 
     parser.add_argument(
         "action",
-        choices=['debug', 'build']
+        choices=['debug', 'build', 'kernel']
     )
 
     parser.add_argument(
