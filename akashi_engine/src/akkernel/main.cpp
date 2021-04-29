@@ -1,26 +1,16 @@
+#include "./kernel.h"
+
 #include <libakcore/logger.h>
 
 #include <libakcore/config.h>
 #include <libakcore/memory.h>
 #include <libakstate/akstate.h>
 
-#include <boost/process.hpp>
-
-#include <iostream>
-
-using namespace boost::process;
-
 #include <string>
 #include <signal.h>
 #include <string.h>
 
 using namespace akashi::core;
-
-void do_sigwait(sigset_t& ss) {
-    int signum;
-    sigwait(&ss, &signum);
-    fprintf(stderr, "signal %s(%d) trapped\n", strsignal(signum), signum);
-}
 
 int main(int argc, char** argv) {
     sigset_t ss;
@@ -31,6 +21,8 @@ int main(int argc, char** argv) {
     sigaddset(&ss, SIGHUP);
     sigaddset(&ss, SIGQUIT);
     sigaddset(&ss, SIGTERM);
+    // sigaddset(&ss, SIGCHLD);
+    // sigaddset(&ss, SIGSEGV);
 
     sigaddset(&ss, SIGPIPE);
 
@@ -58,17 +50,14 @@ int main(int argc, char** argv) {
 
     AKLOG_INFON("Akashi Kernel Init");
 
-    ipstream pipe_stream;
-    child c("clang++ --version", std_out > pipe_stream);
+    akashi::kernel::KernelLoop kernel_loop;
+    kernel_loop.run({argv[1], argv[2], 1234});
 
-    std::string line;
+    int signum;
+    sigwait(&ss, &signum);
+    AKLOG_INFO("signal {}({}) trapped", strsignal(signum), signum);
 
-    while (pipe_stream && std::getline(pipe_stream, line) && !line.empty())
-        std::cerr << line << std::endl;
-
-    c.wait();
-
-    do_sigwait(ss);
+    kernel_loop.terminate();
 
     AKLOG_INFON("Akashi Kernel Terminate");
 

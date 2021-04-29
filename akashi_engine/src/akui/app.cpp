@@ -59,8 +59,7 @@ namespace akashi {
             api_set.general = new ASPGeneralAPIImpl(&window);
             api_set.media = new ASPMediaAPIImpl(&window);
             api_set.gui = new ASPGUIAPIImpl(&window);
-            std::thread asp_thread(init_asp_server, (ASPConfig){"localhost", 1234},
-                                   std::move(api_set));
+            std::thread asp_thread(init_renderer_asp_server, std::move(api_set));
             // [TODO] need to kill this thread properly
             asp_thread.detach();
 

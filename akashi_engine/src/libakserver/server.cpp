@@ -13,11 +13,12 @@
 #include <cassert>
 
 #include <iostream>
+#include <stdexcept>
 
 #define RETURN_RESPONSE(res, rpc_res)                                                              \
     do {                                                                                           \
         res.status = rpc_res.status_code;                                                          \
-        res.set_content(rpc_res.result, "application/json");                                       \
+        res.set_content(rpc_res.response_str, "application/json");                                 \
         return;                                                                                    \
     } while (0)
 
@@ -68,34 +69,57 @@ namespace akashi {
             }
         }
 
-        void init_asp_server(const ASPConfig& config, const ASPAPISet&& api_set) {
-            // std::string input_str;
+        struct NativeServerHandle {
+            core::borrowed_ptr<httplib::Server> svr;
+        };
 
-            // while (true) {
-            //     getline(std::cin, input_str);
-            //     RPCResult rpc_res;
+        void ServerHandle::exit() {
+            if (m_native_handle && m_native_handle->svr) {
+                m_native_handle->svr->stop();
+            } else {
+                AKLOG_WARNN("ServerHandle is null");
+            }
+        }
 
-            //     // if (!is_json_request(req)) {
-            //     //      rpc_res = error_rpc_res("", RPCErrorCode::PARSE_ERROR, "Invalid json
-            //     //      format"); RETURN_RESPONSE(res, rpc_res);
-            //     // }
+        void ServerHandle::set_handle(NativeServerHandle* handle) noexcept(false) {
+            if (m_native_handle) {
+                throw std::runtime_error("ServerHandle already set");
+            }
+            m_native_handle = core::borrowed_ptr(handle);
+        }
 
-            //     try {
-            //         rpc_res = exec_rpc(input_str, api_set);
-            //     } catch (const std::exception& e) {
-            //         rpc_res = error_rpc_res("", RPCErrorCode::SERVER_ERROR, e.what());
-            //     }
-
-            // }
-
-            Server svr;
+        void init_renderer_asp_server(const ASPAPISet&& api_set) {
+            std::string input_str;
 
             assert_api_set(api_set);
 
-            svr.Post("/asp", [&api_set](const Request& req, Response& res) {
+            while (true) {
+                getline(std::cin, input_str);
+                HTTPRPCResponse rpc_res;
+
+                // if (!is_json_request(req)) {
+                //      rpc_res = error_rpc_res("", RPCErrorCode::PARSE_ERROR, "Invalid json
+                //      format"); RETURN_RESPONSE(res, rpc_res);
+                // }
+
+                try {
+                    rpc_res = exec_rpc(input_str, api_set);
+                } catch (const std::exception& e) {
+                    rpc_res = error_rpc_res("", RPCErrorCode::SERVER_ERROR, e.what());
+                }
+                std::cout << rpc_res.response_str << std::endl;
+            }
+        }
+
+        void init_kernel_asp_server(ServerHandle& handle, const ASPConfig& config,
+                                    const OnRequest& on_request) {
+            Server svr;
+
+            svr.Post("/asp", [&on_request](const Request& req, Response& res) {
                 log_recv(req, res);
 
-                RPCResult rpc_res;
+                HTTPRPCResponse rpc_res;
+                RPCRequest rpc_req;
 
                 if (!is_json_request(req)) {
                     rpc_res = error_rpc_res("", RPCErrorCode::PARSE_ERROR, "Invalid json format");
@@ -103,11 +127,13 @@ namespace akashi {
                 }
 
                 try {
-                    rpc_res = exec_rpc(req.body, api_set);
+                    rpc_req = parse_rpc_req(req.body);
                 } catch (const std::exception& e) {
                     rpc_res = error_rpc_res("", RPCErrorCode::SERVER_ERROR, e.what());
                     RETURN_RESPONSE(res, rpc_res);
                 }
+
+                on_request(rpc_res, rpc_req, req.body);
 
                 RETURN_RESPONSE(res, rpc_res);
             });
@@ -115,6 +141,9 @@ namespace akashi {
             svr.set_logger([](const Request& req, const Response& res) { log_send(req, res); });
 
             AKLOG_INFO("...listening {}:{}", config.host, config.port);
+
+            NativeServerHandle native_handle{core::borrowed_ptr(&svr)};
+            handle.set_handle(&native_handle);
 
             svr.listen(config.host, config.port);
         }

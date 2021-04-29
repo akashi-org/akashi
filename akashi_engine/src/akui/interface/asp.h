@@ -47,6 +47,7 @@ namespace akashi {
             explicit ASPGeneralAPIImpl(QWidget* root) : m_root(root){};
             virtual ~ASPGeneralAPIImpl() = default;
 
+            bool eval(const std::string&, const size_t) override { return true; };
             bool terminate(void) override;
 
           private:

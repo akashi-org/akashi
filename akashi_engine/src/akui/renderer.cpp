@@ -15,7 +15,7 @@ using namespace akashi::core;
 void do_sigwait(sigset_t& ss) {
     int signum;
     sigwait(&ss, &signum);
-    fprintf(stderr, "signal %s(%d) trapped\n", strsignal(signum), signum);
+    AKLOG_INFO("signal {}({}) trapped", strsignal(signum), signum);
 }
 
 int main(int argc, char** argv) {
@@ -27,6 +27,8 @@ int main(int argc, char** argv) {
     sigaddset(&ss, SIGHUP);
     sigaddset(&ss, SIGQUIT);
     sigaddset(&ss, SIGTERM);
+    sigaddset(&ss, SIGKILL);
+    sigaddset(&ss, SIGSEGV);
 
     sigaddset(&ss, SIGPIPE);
 

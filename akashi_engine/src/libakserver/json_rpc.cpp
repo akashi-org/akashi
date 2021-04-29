@@ -1,6 +1,7 @@
 #include "./json_rpc.h"
 #include "./api.h"
 
+#include <libakcore/logger.h>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 
@@ -21,15 +22,18 @@
 
 #define EXEC_METHOD(res_j, api_set, method, params)                                                \
     try {                                                                                          \
-        (res_j)["result"] =                                                                        \
-            std::apply([&api_set](auto&... args) { return method(args...); }, (params));           \
+        auto value = std::apply([&api_set](auto&... args) { return method(args...); }, (params));  \
+        (res_j)["result"]["type_id"] = static_cast<RPCResultTypes>(value).index();                 \
+        (res_j)["result"]["value"] = value;                                                        \
     } catch (const std::exception& e) {                                                            \
         return error_rpc_res((res_j)["id"], RPCErrorCode::INTERNAL_ERROR, e.what());               \
     }
 
 #define EXEC_METHOD_NO_PARAMS(res_j, api_set, method)                                              \
     try {                                                                                          \
-        (res_j)["result"] = method();                                                              \
+        auto value = method();                                                                     \
+        (res_j)["result"]["type_id"] = static_cast<RPCResultTypes>(value).index();                 \
+        (res_j)["result"]["value"] = value;                                                        \
     } catch (const std::exception& e) {                                                            \
         return error_rpc_res((res_j)["id"], RPCErrorCode::INTERNAL_ERROR, e.what());               \
     }
@@ -37,17 +41,58 @@
 namespace akashi {
     namespace server {
 
+        // clang-format off
+        NLOHMANN_JSON_SERIALIZE_ENUM(ASPMethod, {
+            {INVALID, nullptr},
+            {GENERAL_EVAL, "general/eval"},
+            {GENERAL_TERMINATE, "general/terminate"},
+            {MEDIA_TAKE_SNAPSHOT, "media/take_snapshot"},
+            {MEDIA_SEEK, "media/seek"},
+            {MEDIA_RELATIVE_SEEK, "media/relative_seek"},
+            {MEDIA_FRAME_STEP, "media/frame_step"},
+            {MEDIA_FRAME_BACK_STEP, "media/frame_back_step"},
+            {GUI_GET_WIDGETS, "gui/get_widgets"},
+            {GUI_CLICK, "gui/click"}
+        })
+        // clang-format on
+
         template <typename T>
         void parse_rpc_request_params(const nlohmann::json& j, T& params) noexcept(false) {
             params = j.at("params").get<T>();
         }
 
-        RPCResult error_rpc_res(const std::string& id, const RPCErrorCode& e_code,
-                                const std::string& e_msg) {
+        HTTPRPCResponse success_rpc_res(const std::string& id,
+                                        const RPCResultTypes& result) noexcept(false) {
+            HTTPRPCResponse rpc_res;
+
+            nlohmann::json j;
+            j["jsonrpc"] = "2.0";
+            j["id"] = id;
+
+            j["result"]["type_id"] = result.index();
+            if (auto v = std::get_if<bool>(&result)) {
+                j["result"]["value"] = *v;
+            } else if (auto v = std::get_if<std::string>(&result)) {
+                j["result"]["value"] = *v;
+            } else if (auto v = std::get_if<std::vector<std::string>>(&result)) {
+                j["result"]["value"] = *v;
+            } else {
+                AKLOG_ERROR("Invalid RPCResultType found: {}", result.index());
+                throw std::runtime_error("Invalid RPCResultType found");
+            }
+
+            rpc_res.status_code = 200;
+            rpc_res.response_str = j.dump();
+
+            return rpc_res;
+        }
+
+        HTTPRPCResponse error_rpc_res(const std::string& id, const RPCErrorCode& e_code,
+                                      const std::string& e_msg) {
             // @ref: https://www.jsonrpc.org/specification
             // @ref: https://www.jsonrpc.org/historical/json-rpc-over-http.html
 
-            RPCResult rpc_res;
+            HTTPRPCResponse rpc_res;
 
             nlohmann::json j;
             j["jsonrpc"] = "2.0";
@@ -93,12 +138,12 @@ namespace akashi {
                 }
             }
 
-            rpc_res.result = j.dump();
+            rpc_res.response_str = j.dump();
             return rpc_res;
         }
 
-        RPCResult exec_rpc(const std::string& body, const ASPAPISet& api_set) {
-            RPCResult rpc_res;
+        HTTPRPCResponse exec_rpc(const std::string& body, const ASPAPISet& api_set) {
+            HTTPRPCResponse rpc_res;
             rpc_res.status_code = 200;
 
             nlohmann::json res_j;
@@ -122,6 +167,11 @@ namespace akashi {
             res_j["id"] = id;
 
             switch (req_j.at("method").get<ASPMethod>()) {
+                case ASPMethod::GENERAL_EVAL: {
+                    PARSE_PARAMS(req_j, res_j, params, std::string, size_t)
+                    EXEC_METHOD(res_j, api_set, api_set.general->eval, params)
+                    break;
+                }
                 case ASPMethod::GENERAL_TERMINATE: {
                     EXEC_METHOD_NO_PARAMS(res_j, api_set, api_set.general->terminate)
                     break;
@@ -164,9 +214,94 @@ namespace akashi {
                 default: {
                 }
             }
-            rpc_res.result = res_j.dump();
+            rpc_res.response_str = res_j.dump();
             return rpc_res;
         }
 
+        RPCRequest parse_rpc_req(const std::string& body) noexcept(false) {
+            // This function does not validate the request fully.
+            // Such Validation is responsible for the caller.
+            RPCRequest req;
+
+            auto req_j = nlohmann::json::parse(body);
+
+            req.jsonrpc = req_j.at("jsonrpc").get<std::string>();
+            req.id = req_j.at("id").get<std::string>();
+            req.method = req_j.at("method").get<ASPMethod>();
+
+            switch (req.method) {
+                case ASPMethod::GENERAL_EVAL: {
+                    auto params = req_j.at("params").get<std::tuple<std::string, size_t>>();
+                    req.params = RPCRequestParams<ASPMethod::GENERAL_EVAL>{std::get<0>(params),
+                                                                           std::get<1>(params)};
+                    break;
+                }
+                case ASPMethod::MEDIA_SEEK: {
+                    auto params = req_j.at("params").get<std::tuple<int, int>>();
+                    req.params = RPCRequestParams<ASPMethod::MEDIA_SEEK>{std::get<0>(params),
+                                                                         std::get<1>(params)};
+                    break;
+                }
+                case ASPMethod::MEDIA_RELATIVE_SEEK: {
+                    auto params = req_j.at("params").get<std::tuple<int, int>>();
+                    req.params = RPCRequestParams<ASPMethod::MEDIA_RELATIVE_SEEK>{
+                        std::get<0>(params), std::get<1>(params)};
+                    break;
+                }
+                case ASPMethod::GUI_CLICK: {
+                    auto params = req_j.at("params").get<std::tuple<std::string>>();
+                    req.params = RPCRequestParams<ASPMethod::GUI_CLICK>{std::get<0>(params)};
+                    break;
+                }
+                default: {
+                }
+            }
+
+            return req;
+        }
+
+        RPCResponse parse_rpc_res(const std::string& body) noexcept(false) {
+            RPCResponse res;
+
+            auto res_j = nlohmann::json::parse(body);
+
+            res.jsonrpc = res_j.at("jsonrpc").get<std::string>();
+            res.id = res_j.at("id").get<std::string>();
+
+            if (res_j.contains("result")) {
+                RPCResultObject res_obj;
+                res_obj.type_id = res_j["result"]["type_id"].get<int>();
+                switch (res_obj.type_id) {
+                    case 0: {
+                        res_obj.value = res_j["result"]["value"].get<bool>();
+                        break;
+                    }
+                    case 1: {
+                        res_obj.value = res_j["result"]["value"].get<std::string>();
+                        break;
+                    }
+                    case 2: {
+                        res_obj.value = res_j["result"]["value"].get<std::vector<std::string>>();
+                        break;
+                    }
+                    default: {
+                        throw std::runtime_error("Invalid type_id found");
+                    }
+                }
+                res.payload = res_obj;
+            } else if (res_j.contains("error")) {
+                RPCErrorObject err_obj;
+                err_obj.code = res_j["error"]["code"].get<RPCErrorCode>();
+                err_obj.message = res_j["error"]["message"].get<std::string>();
+                if (res_j["error"].contains("data")) {
+                    err_obj.data = res_j["error"]["data"].get<std::string>();
+                }
+                res.payload = err_obj;
+            } else {
+                throw std::runtime_error("Invalid body found");
+            }
+
+            return res;
+        }
     }
 }

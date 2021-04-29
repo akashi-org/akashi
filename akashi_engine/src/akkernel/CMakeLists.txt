@@ -5,6 +5,11 @@ find_package(Threads REQUIRED)
 
 add_executable(${PROJECT_NAME}
   ./main.cpp
+  ./kernel.cpp
+  ./kernel_event.cpp
+  ./kernel_handler.cpp
+  ./workers/transport.cpp
+  ./workers/process.cpp
 )
 
 target_compile_definitions(${PROJECT_NAME}
@@ -23,6 +28,7 @@ target_link_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   PRIVATE akcore
   PRIVATE akstate
+  PRIVATE akserver # for asp
   PRIVATE Threads::Threads
   PRIVATE atomic
 )
