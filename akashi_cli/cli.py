@@ -80,7 +80,7 @@ class ServerThread(threading.Thread):
         # )
 
         self.proc = Popen(
-            [KERNEL_BIN_PATH, self.akconf], env=os.environ
+            [KERNEL_BIN_PATH, self.akconf, BIN_PATH], env=os.environ
         )
         self.proc.communicate()
 
