@@ -42,9 +42,9 @@ endif()
 include(ExternalProject)
 ExternalProject_Add(
   boost_filesystem
-  # URL https://boostorg.jfrog.io/artifactory/main/release/1.74.0/source/boost_1_74_0.tar.gz
-  # TIMEOUT 600
-  URL ${CMAKE_CURRENT_SOURCE_DIR}/../../shared/boost_1_74_0.tar.gz
+  URL https://boostorg.jfrog.io/artifactory/main/release/1.74.0/source/boost_1_74_0.tar.gz
+  TIMEOUT 600
+  # URL ${CMAKE_CURRENT_SOURCE_DIR}/../../shared/boost_1_74_0.tar.gz
   URL_MD5 3c8fb92ce08b9ad5a5f0b35731ac2c8e
   
   SOURCE_DIR ${CMAKE_BINARY_DIR}/.ext/boost/
