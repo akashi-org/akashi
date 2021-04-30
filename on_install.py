@@ -7,6 +7,7 @@ _T = TypeVar('_T', bound=install)
 
 BIN_NAME = 'akashi_renderer'
 ENCODER_BIN_NAME = 'akashi_encoder'
+KERNEL_BIN_NAME = 'akashi_kernel'
 SDIST_TEMP = 'sdist_temp'
 
 
@@ -25,6 +26,7 @@ def _exec_install(install_cmd: _T):
     install_cmd.copy_tree(path.join(SDIST_TEMP, 'credits'), inst_credits_dir)
     install_cmd.copy_file(path.join(SDIST_TEMP, BIN_NAME), install_prefix)
     install_cmd.copy_file(path.join(SDIST_TEMP, ENCODER_BIN_NAME), install_prefix)
+    install_cmd.copy_file(path.join(SDIST_TEMP, KERNEL_BIN_NAME), install_prefix)
 
     inst_lib_dir = path.join(install_prefix, 'lib')
     mkpath(inst_lib_dir)

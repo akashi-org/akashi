@@ -11,6 +11,7 @@ SDIST_TEMP = 'sdist_temp'
 CLI_DIRNAME = 'akashi_cli'
 BIN_NAME = 'akashi_renderer'
 ENCODER_BIN_NAME = 'akashi_encoder'
+KERNEL_BIN_NAME = 'akashi_kernel'
 
 
 def _get_package_name(sdist_cmd: _T) -> str:
@@ -43,6 +44,7 @@ def _exec_cmake_build(sdist_cmd: _T):
 
     sdist_cmd.copy_file(path.join(cmake_build_dir, BIN_NAME), SDIST_TEMP)
     sdist_cmd.copy_file(path.join(cmake_build_dir, ENCODER_BIN_NAME), SDIST_TEMP)
+    sdist_cmd.copy_file(path.join(cmake_build_dir, KERNEL_BIN_NAME), SDIST_TEMP)
 
     sdist_credits_dir = path.join(SDIST_TEMP, 'credits')
     mkpath(sdist_credits_dir)
