@@ -5,13 +5,11 @@
 #include <libakcore/logger.h>
 
 #include <httplib.h>
+#include <nlohmann/json.hpp>
+
 #include <cstdio>
-#include <chrono>
-#include <ctime>
-#include <string_view>
 #include <exception>
 #include <cassert>
-
 #include <iostream>
 #include <stdexcept>
 
@@ -24,34 +22,10 @@
 
 using namespace akashi::core;
 using namespace httplib;
-using namespace std::chrono;
 
 namespace akashi {
 
     namespace server {
-
-        static const std::string get_system_clock() {
-            auto now_t = system_clock::to_time_t(system_clock::now());
-            char mbstr[100];
-            std::strftime(mbstr, sizeof(mbstr), "%c", std::localtime(&now_t));
-            return std::string(mbstr);
-        }
-
-        static void log_recv(const Request& req, const Response&) {
-            // clang-format off
-            AKLOG_INFO("[{}] {} => {} {} {}", 
-                get_system_clock().c_str(), 
-                req.remote_addr.c_str(), req.method.c_str(), req.path.c_str(), req.version.c_str());
-            // clang-format on
-        }
-
-        static void log_send(const Request&, const Response& res) {
-            // clang-format off
-            AKLOG_INFO("[{}] self => {} {}", 
-                get_system_clock().c_str(),
-                res.status, res.version.c_str());
-            // clang-format on
-        }
 
         static void assert_api_set(const ASPAPISet& api_set) {
             assert(api_set.gui != nullptr);
@@ -67,6 +41,10 @@ namespace akashi {
             } else {
                 return true;
             }
+        }
+
+        static bool is_json_request(const std::string& req_str) {
+            return nlohmann::json::accept(req_str);
         }
 
         struct NativeServerHandle {
@@ -95,18 +73,24 @@ namespace akashi {
 
             while (true) {
                 getline(std::cin, input_str);
+
+                AKLOG_DEBUG("(kernel_asp@pipe) => {}", input_str);
+
                 HTTPRPCResponse rpc_res;
 
-                // if (!is_json_request(req)) {
-                //      rpc_res = error_rpc_res("", RPCErrorCode::PARSE_ERROR, "Invalid json
-                //      format"); RETURN_RESPONSE(res, rpc_res);
-                // }
-
-                try {
-                    rpc_res = exec_rpc(input_str, api_set);
-                } catch (const std::exception& e) {
-                    rpc_res = error_rpc_res("", RPCErrorCode::SERVER_ERROR, e.what());
+                if (!is_json_request(input_str)) {
+                    // usually not reachable
+                    rpc_res = error_rpc_res("", RPCErrorCode::PARSE_ERROR, "Invalid json format");
+                } else {
+                    try {
+                        rpc_res = exec_rpc(input_str, api_set);
+                    } catch (const std::exception& e) {
+                        rpc_res = error_rpc_res("", RPCErrorCode::SERVER_ERROR, e.what());
+                    }
                 }
+
+                AKLOG_DEBUG("(renderer_asp@pipe) => {}", rpc_res.response_str.c_str());
+
                 std::cout << rpc_res.response_str << std::endl;
             }
         }
@@ -115,11 +99,12 @@ namespace akashi {
                                     const OnRequest& on_request) {
             Server svr;
 
-            svr.Post("/asp", [&on_request](const Request& req, Response& res) {
-                log_recv(req, res);
-
+            svr.Post("/asp", [&on_request, config](const Request& req, Response& res) {
                 HTTPRPCResponse rpc_res;
                 RPCRequest rpc_req;
+
+                AKLOG_INFO("(user@{}:{}) => {}", req.remote_addr.c_str(), req.remote_port,
+                           req.body);
 
                 if (!is_json_request(req)) {
                     rpc_res = error_rpc_res("", RPCErrorCode::PARSE_ERROR, "Invalid json format");
@@ -135,10 +120,11 @@ namespace akashi {
 
                 on_request(rpc_res, rpc_req, req.body);
 
+                AKLOG_INFO("(kernel_asp@{}:{}) => {}", config.host, config.port,
+                           rpc_res.response_str.c_str());
+
                 RETURN_RESPONSE(res, rpc_res);
             });
-
-            svr.set_logger([](const Request& req, const Response& res) { log_send(req, res); });
 
             AKLOG_INFO("...listening {}:{}", config.host, config.port);
 
