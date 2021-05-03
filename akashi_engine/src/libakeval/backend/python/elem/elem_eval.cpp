@@ -8,6 +8,7 @@
 #include <libakcore/memory.h>
 #include <libakcore/element.h>
 #include <libakcore/logger.h>
+#include <libakcore/uuid.h>
 
 #include <pybind11/embed.h>
 
@@ -22,6 +23,7 @@ namespace akashi {
             auto ctx = core::make_owned<GlobalContext>();
             ctx->interval = core::Rational(1l) / fps;
             ctx->duration = core::Rational(0l);
+            ctx->uuid = core::uuid();
             assert(ctx->atom_proxies.empty());
 
             switch (etype) {
