@@ -17,14 +17,35 @@ namespace akashi {
         core::owned_ptr<GlobalContext> global_eval(const pybind11::object& elem,
                                                    const core::Rational& fps) {
             auto etype = elem_type(elem);
-            assert(etype == ElementType::ROOT); // accept only root for a while
+            // assert(etype == ElementType::ROOT); // accept only root for a while
 
             auto ctx = core::make_owned<GlobalContext>();
             ctx->interval = core::Rational(1l) / fps;
             ctx->duration = core::Rational(0l);
             assert(ctx->atom_proxies.empty());
 
-            trace_root(elem, *ctx);
+            switch (etype) {
+                case ElementType::ROOT: {
+                    trace_root(elem, *ctx);
+                    break;
+                }
+                case ElementType::SCENE: {
+                    trace_scene(elem, *ctx);
+                    break;
+                }
+                case ElementType::ATOM: {
+                    trace_atom(elem, *ctx);
+                    break;
+                }
+                case ElementType::LAYER: {
+                    AKLOG_ERRORN("Currently Layer type is not supported");
+                    break;
+                }
+                default: {
+                    AKLOG_ERROR("Invalid Layer type found, {}", etype);
+                    break;
+                }
+            }
 
             return ctx;
         }
