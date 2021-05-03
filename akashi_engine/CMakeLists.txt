@@ -14,6 +14,10 @@ endif()
 
 option(AKASHI_BUILD_LFSWATCH "If set, build libfswatch and install it to this project" ON)
 
+set(AKASHI_BOOST_TAR_PATH "" CACHE STRING "If non-null string provided, use it as the destination url of boost's tarball")
+
+# private options
+
 set(AKASHI_PRIV_BOOST_TARGET_NAME "akashi_priv_boost_target")
 set(AKASHI_PRIV_BOOST_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shared_temp/boost/)
 set(AKASHI_PRIV_BOOST_INCLUDE_DIR ${AKASHI_PRIV_BOOST_ROOT_DIR}/include)
@@ -89,13 +93,20 @@ set_target_properties(akashi_encoder PROPERTIES
 
 add_library(${AKASHI_PRIV_BOOST_TARGET_NAME} INTERFACE)
 include(ExternalProject)
+
+if(${AKASHI_BOOST_TAR_PATH} STREQUAL "")
+  set(AKASHI_BOOST_REAL_TAR_PATH "https://boostorg.jfrog.io/artifactory/main/release/1.74.0/source/boost_1_74_0.tar.gz")
+else()
+  set(AKASHI_BOOST_REAL_TAR_PATH ${AKASHI_BOOST_TAR_PATH})
+  message("-- Using Custom Boost File Path: " ${AKASHI_BOOST_REAL_TAR_PATH})
+endif()
+
 ExternalProject_Add(
   boost_akashi
-  URL https://boostorg.jfrog.io/artifactory/main/release/1.74.0/source/boost_1_74_0.tar.gz
+  URL ${AKASHI_BOOST_REAL_TAR_PATH}
   TIMEOUT 600
-  # URL ${CMAKE_CURRENT_SOURCE_DIR}/shared/boost_1_74_0.tar.gz
   URL_MD5 3c8fb92ce08b9ad5a5f0b35731ac2c8e
-  
+
   SOURCE_DIR ${CMAKE_BINARY_DIR}/.ext/boost/
   INSTALL_DIR ${AKASHI_PRIV_BOOST_ROOT_DIR}
 
