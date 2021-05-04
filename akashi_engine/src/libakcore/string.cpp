@@ -28,6 +28,8 @@ namespace akashi {
 
         const char* owned_string::to_str() const { return m_str; }
 
+        char* owned_string::to_cloned_str() const { return this->clone(std::string(m_str)); }
+
         char* owned_string::clone(const std::string& str) const {
             char* res_str = static_cast<char*>(malloc(str.length() + 1));
             if (res_str == nullptr) {

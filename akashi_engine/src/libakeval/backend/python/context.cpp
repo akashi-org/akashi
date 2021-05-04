@@ -125,7 +125,8 @@ namespace akashi {
             }
         }
 
-        core::RenderProfile PyEvalContext::render_prof(const char* module_path) {
+        core::RenderProfile PyEvalContext::render_prof(const std::string& module_path,
+                                                       const std::string& elem_name) {
             RenderProfile render_prof;
             render_prof.atom_profiles = {};
 
@@ -135,7 +136,25 @@ namespace akashi {
                 return render_prof;
             }
 
-            auto elem = it->second->mod.attr(Path(module_path).to_stem().to_str());
+            py::object elem;
+            if (elem_name.empty()) {
+                elem = it->second->mod.attr(Path(module_path).to_stem().to_str());
+            } else {
+                std::string ret_sig;
+                try {
+                    elem = it->second->mod.attr(elem_name.c_str());
+                    ret_sig = elem.attr("__annotations__")["return"].cast<std::string>();
+                } catch (const std::exception& e) {
+                    AKLOG_ERROR("{}", e.what());
+                    return render_prof;
+                }
+                // sanity check
+                if (!(ret_sig == "Literal['ROOT']" || ret_sig == "Literal['SCENE']" ||
+                      ret_sig == "Literal['ATOM']")) {
+                    AKLOG_ERRORN("Elem not found");
+                    return render_prof;
+                }
+            }
             assert(!elem.is_none());
             assert(py::hasattr(elem, "__call__"));
 

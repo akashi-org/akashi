@@ -28,7 +28,7 @@ namespace akashi {
         template <>
         struct RPCRequestParams<ASPMethod::GENERAL_EVAL> {
             std::string fpath;
-            size_t lineno;
+            std::string elem_name;
         };
 
         template <>

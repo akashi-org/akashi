@@ -38,6 +38,7 @@ namespace akashi {
             void relative_seek(const akashi::core::Rational& rel_pos);
             void frame_step(void);
             void frame_back_step(void);
+            void inline_eval(const std::string& file_path, const std::string& elem_name);
 
           Q_SIGNALS:
             void closed(void);

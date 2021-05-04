@@ -168,7 +168,7 @@ namespace akashi {
 
             switch (req_j.at("method").get<ASPMethod>()) {
                 case ASPMethod::GENERAL_EVAL: {
-                    PARSE_PARAMS(req_j, res_j, params, std::string, size_t)
+                    PARSE_PARAMS(req_j, res_j, params, std::string, std::string)
                     EXEC_METHOD(res_j, api_set, api_set.general->eval, params)
                     break;
                 }
@@ -231,7 +231,7 @@ namespace akashi {
 
             switch (req.method) {
                 case ASPMethod::GENERAL_EVAL: {
-                    auto params = req_j.at("params").get<std::tuple<std::string, size_t>>();
+                    auto params = req_j.at("params").get<std::tuple<std::string, std::string>>();
                     req.params = RPCRequestParams<ASPMethod::GENERAL_EVAL>{std::get<0>(params),
                                                                            std::get<1>(params)};
                     break;

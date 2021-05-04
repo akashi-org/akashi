@@ -6,6 +6,7 @@
 #include <libakcore/element.h>
 #include <libakcore/memory.h>
 #include <libakcore/rational.h>
+#include <libakcore/string.h>
 #include <libakcore/logger.h>
 #include <libakeval/akeval.h>
 #include <libakwatch/item.h>
@@ -91,6 +92,18 @@ namespace akashi {
 
             evt.ctx = static_cast<void*>(event_list_);
 
+            m_evt_loop->emit_inner_event(evt);
+        }
+
+        void PlayerEvent::emit_inline_eval(const std::string& fpath, const std::string& elem_name) {
+            InnerEvent evt;
+            evt.name = InnerEventName::INLINE_EVAL;
+
+            auto evt_ctx_ = static_cast<InnerEventInlineEvalContext*>(
+                malloc(sizeof(InnerEventInlineEvalContext)));
+            evt_ctx_->file_path = core::owned_string(fpath).to_cloned_str();
+            evt_ctx_->elem_name = core::owned_string(elem_name).to_cloned_str();
+            evt.ctx = evt_ctx_;
             m_evt_loop->emit_inner_event(evt);
         }
 

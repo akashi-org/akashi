@@ -63,6 +63,7 @@ namespace akashi {
         struct EvalConfig {
             core::Path include_dir = core::Path("");
             core::Path entry_path = core::Path("");
+            std::string elem_name = "";
         };
 
         struct EvalState {

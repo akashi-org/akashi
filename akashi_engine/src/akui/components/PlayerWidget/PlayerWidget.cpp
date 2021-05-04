@@ -73,6 +73,10 @@ namespace akashi {
 
         void PlayerWidget::frame_back_step(void) { m_player->frame_back_step(); }
 
+        void PlayerWidget::inline_eval(const std::string& file_path, const std::string& elem_name) {
+            m_player->inline_eval(file_path, elem_name);
+        }
+
         void PlayerWidget::initializeGL() {
             m_player->init({PlayerWidget::on_event}, this, {get_proc_address},
                            {egl_get_proc_address});

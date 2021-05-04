@@ -12,7 +12,7 @@ namespace akashi {
         class ASPGeneralAPI {
           public:
             virtual ~ASPGeneralAPI(){};
-            virtual bool eval(const std::string& fpath, const size_t lineno) = 0;
+            virtual bool eval(const std::string& fpath, const std::string& elem_name) = 0;
             virtual bool terminate(void) = 0;
         };
 

@@ -160,6 +160,10 @@ namespace akashi {
             m_gfx->load_fbo(render_prof);
         }
 
+        void AKPlayer::inline_eval(const std::string& fpath, const std::string& elem_name) {
+            m_event->emit_inline_eval(fpath, elem_name);
+        }
+
         core::Rational AKPlayer::current_time() const { return m_audio->current_time(); }
 
         bool AKPlayer::evalbuf_dequeue_ready() { return m_state->get_evalbuf_dequeue_ready(); }

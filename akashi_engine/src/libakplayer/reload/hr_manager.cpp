@@ -2,6 +2,7 @@
 
 #include "../eval_buffer.h"
 #include "../event.h"
+#include "../loop/event_loop.h"
 
 #include <libakcore/memory.h>
 #include <libakcore/logger.h>
@@ -107,10 +108,12 @@ namespace akashi {
 
             Rational current_time;
             core::Path entry_path{""};
+            std::string elem_name{""};
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 current_time = m_state->m_prop.current_time;
                 entry_path = m_state->m_prop.eval_state.config.entry_path;
+                elem_name = m_state->m_prop.eval_state.config.elem_name;
             }
 
             // start seek
@@ -128,7 +131,7 @@ namespace akashi {
             // kron_reload
             m_eval->reload(events);
 
-            auto profile = m_eval->render_prof(entry_path.to_abspath().to_str());
+            auto profile = m_eval->render_prof(entry_path.to_abspath().to_str(), elem_name);
 
             // [XXX] render_prof is updated in emit_set_render_prof,
             // but for the first time call of pull_eval_buffer, update render_prof here also
@@ -178,6 +181,76 @@ namespace akashi {
                 }
             }
             m_event->emit_update();
+        }
+
+        bool HRManager::reload_inline(const InnerEventInlineEvalContext& inline_eval_ctx) {
+            auto profile =
+                m_eval->render_prof(inline_eval_ctx.file_path, inline_eval_ctx.elem_name);
+            if (profile.atom_profiles.size() == 0) {
+                return false;
+            }
+
+            m_event->emit_change_play_state(state::PlayState::PAUSED);
+            m_state->wait_for_not_play_ready();
+
+            Rational seek_time = core::Rational(0, 1);
+
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+                m_state->m_prop.current_time = seek_time;
+                m_state->m_prop.elapsed_time = seek_time;
+                m_state->m_prop.eval_state.config.entry_path = Path(inline_eval_ctx.file_path);
+                m_state->m_prop.eval_state.config.elem_name = inline_eval_ctx.elem_name;
+                // [XXX] reset loop_cnt here
+                m_state->m_prop.loop_cnt = 0;
+            }
+
+            // start seek
+            m_state->set_seek_completed(false);
+            m_state->set_evalbuf_dequeue_ready(false);
+            // m_state->set_play_ready(false);
+            // m_audio->pause();
+
+            update_current_atom_index(seek_time, m_state);
+            m_event->emit_time_update(seek_time);
+
+            m_state->m_atomic_state.start_time.store(
+                {.num = seek_time.num(), .den = seek_time.den()});
+            m_state->m_atomic_state.bytes_played.store(0);
+
+            // avbuffer update
+            m_buffer->vq->clear(true);
+            m_buffer->aq->clear(true);
+
+            // [XXX] render_prof is updated in emit_set_render_prof,
+            // but for the first time call of pull_eval_buffer, update render_prof here also
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+                m_state->m_prop.render_prof = profile;
+            }
+
+            m_event->emit_set_render_prof(profile); // be careful that decode_ready is called
+
+            m_eval_buf->clear();
+            // m_event->emit_pull_eval_buffer(50);
+            // m_state->wait_for_evalbuf_dequeue_ready();
+            auto ebufs = eval_krons(seek_time, 50, m_state, m_eval);
+            m_eval_buf->push(ebufs);
+            m_eval_buf->pop();
+            m_eval_buf->set_render_buf(ebufs[0]);
+            // m_state->set_evalbuf_dequeue_ready(true);
+            //
+
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+                m_state->m_prop.need_first_render = true;
+            }
+
+            // end seek
+            m_state->set_evalbuf_dequeue_ready(true);
+            m_state->set_seek_completed(true);
+
+            return true;
         }
     }
 

@@ -46,9 +46,10 @@ namespace akashi {
             return m_eval_ctx->eval_krons(module_path, start_time, fps, duration, length);
         }
 
-        core::RenderProfile AKEval::render_prof(const char* module_path) {
+        core::RenderProfile AKEval::render_prof(const std::string& module_path,
+                                                const std::string& elem_name) {
             ASSERT();
-            return m_eval_ctx->render_prof(module_path);
+            return m_eval_ctx->render_prof(module_path, elem_name);
         }
 
         void AKEval::reload(const std::vector<watch::WatchEvent>& events) {
