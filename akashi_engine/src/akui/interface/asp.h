@@ -29,6 +29,8 @@ namespace akashi {
 
             std::string take_snapshot(void) override;
 
+            bool toggle_fullscreen(void) override;
+
             bool seek(const int num, const int den) override;
 
             bool relative_seek(const int num, const int den) override;

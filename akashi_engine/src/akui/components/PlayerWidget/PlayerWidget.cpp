@@ -11,6 +11,7 @@
 #include <QOpenGLContext>
 #include <QApplication>
 #include <QTimer>
+#include <QMouseEvent>
 
 #include <EGL/egl.h>
 
@@ -90,13 +91,14 @@ namespace akashi {
             m_player->render(params);
         }
 
-        void PlayerWidget::mouseMoveEvent(QMouseEvent*) {
+        void PlayerWidget::mouseMoveEvent(QMouseEvent* event) {
             if (m_enable_smart_cursor) {
                 QApplication::restoreOverrideCursor();
                 if (m_cursor_timer) {
                     m_cursor_timer->start();
                 }
             }
+            event->ignore();
         }
 
         void PlayerWidget::enterEvent(QEvent*) { m_enable_smart_cursor = true; }

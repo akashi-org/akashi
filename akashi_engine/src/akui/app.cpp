@@ -3,6 +3,7 @@
 #include "./window.h"
 #include "./interface/asp.h"
 #include "./utils/widget.h"
+#include "./utils/xutils.h"
 
 #include <libakserver/akserver.h>
 #include <libakstate/akstate.h>
@@ -14,6 +15,8 @@
 #include <QTextCodec>
 #include <thread>
 #include <QSurfaceFormat>
+#include <QScreen>
+#include <QFontDatabase>
 
 #include <csignal>
 #include <unistd.h>
@@ -44,12 +47,35 @@ namespace akashi {
                 kill(getpid(), SIGTERM);
             });
 
+            if (QFontDatabase::addApplicationFont(":/FontAwesome-solid.otf") < 0) {
+                AKLOG_ERRORN("Failed to load font: FontAwesome-solid.otf\n");
+            }
+
             auto akconf = core::parse_akconfig(ctx.argv[1]);
             akashi::state::AKState state(akconf);
 
             Window window{borrowed_ptr(&state)};
+            // disable auto focus on startup
+            window.setAttribute(Qt::WA_ShowWithoutActivating);
+            window.setWindowFlags(window.windowFlags() | Qt::FramelessWindowHint);
             window.resize(akconf.ui.resolution.first, akconf.ui.resolution.second);
+
+            auto screen_geom = QApplication::primaryScreen()->geometry();
+            auto padding = screen_geom.height() * 0.02;
+            window.move((screen_geom.width() - akconf.ui.resolution.first) - padding, padding);
             window.show();
+
+            auto disp = get_x_display();
+            auto parent_win = get_current_active_window(disp);
+            if (parent_win) {
+                // call it after window.show()
+                set_transient(disp, parent_win, &window);
+            }
+            // free_x_display_wrapper(disp);
+            // free_x_window_wrapper(parent_win);
+
+            QObject::connect(&window, &Window::window_activated,
+                             [disp, parent_win]() { raise_window(disp, parent_win); });
 
 #ifndef NDEBUG
             walk_widgets(&window, ensure_widget_name);

@@ -1,5 +1,6 @@
 #include "./asp.h"
 #include "../utils/widget.h"
+#include "../window.h"
 #include "../components/PlayerWidget/PlayerWidget.h"
 
 #include <libakserver/akserver.h>
@@ -34,6 +35,12 @@ namespace akashi {
             QString b64str = buffer.buffer().toBase64();
             return b64str.toUtf8().constData();
         };
+
+        bool ASPMediaAPIImpl::toggle_fullscreen(void) {
+            return QMetaObject::invokeMethod(
+                m_root, [&]() { static_cast<Window*>(m_root)->toggleFullScreen(); },
+                Qt::BlockingQueuedConnection);
+        }
 
         bool ASPMediaAPIImpl::seek(const int num, const int den) {
             return QMetaObject::invokeMethod(

@@ -47,6 +47,7 @@ namespace akashi {
             {GENERAL_EVAL, "general/eval"},
             {GENERAL_TERMINATE, "general/terminate"},
             {MEDIA_TAKE_SNAPSHOT, "media/take_snapshot"},
+            {MEDIA_TOGGLE_FULLSCREEN, "media/toggle_fullscreen"},
             {MEDIA_SEEK, "media/seek"},
             {MEDIA_RELATIVE_SEEK, "media/relative_seek"},
             {MEDIA_FRAME_STEP, "media/frame_step"},
@@ -178,6 +179,10 @@ namespace akashi {
                 }
                 case ASPMethod::MEDIA_TAKE_SNAPSHOT: {
                     EXEC_METHOD_NO_PARAMS(res_j, api_set, api_set.media->take_snapshot)
+                    break;
+                }
+                case ASPMethod::MEDIA_TOGGLE_FULLSCREEN: {
+                    EXEC_METHOD_NO_PARAMS(res_j, api_set, api_set.media->toggle_fullscreen)
                     break;
                 }
                 case ASPMethod::MEDIA_SEEK: {

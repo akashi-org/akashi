@@ -14,6 +14,7 @@ namespace akashi {
             GENERAL_EVAL = 101,
             GENERAL_TERMINATE,
             MEDIA_TAKE_SNAPSHOT = 201,
+            MEDIA_TOGGLE_FULLSCREEN,
             MEDIA_SEEK,
             MEDIA_RELATIVE_SEEK,
             MEDIA_FRAME_STEP,
