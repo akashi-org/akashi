@@ -56,12 +56,25 @@ namespace akashi {
             // this->setStyleSheet("#window {border: 1px solid #091F2B; }");
             // this->setFrameShadow(QFrame::Raised);
 
-            this->setTransparent(true);
             this->m_monitorArea = new MonitorArea(borrowed_ptr(m_state), this);
             this->m_controlArea = new ControlArea(borrowed_ptr(m_state), this);
 
-            if (m_state->m_ui_conf.window_mode == core::WindowMode::IMMERSIVE) {
-                this->m_controlArea->hide();
+            switch (m_state->m_ui_conf.window_mode) {
+                case core::WindowMode::SPLIT: {
+                    this->setTransparent(true);
+                    break;
+                }
+                case core::WindowMode::IMMERSIVE: {
+                    this->setTransparent(true);
+                    this->m_controlArea->hide();
+                    break;
+                }
+                case core::WindowMode::INDEPENDENT: {
+                    break;
+                }
+                default: {
+                    break;
+                }
             }
 
             m_sizeGrip = new QSizeGrip{this};
@@ -88,7 +101,8 @@ namespace akashi {
 
         void Window::toggleFullScreen(void) {
             switch (m_state->m_ui_conf.window_mode) {
-                case core::WindowMode::SPLIT: {
+                case core::WindowMode::SPLIT:
+                case core::WindowMode::INDEPENDENT: {
                     if (this->isFullScreen()) {
                         this->showNormal();
                     } else {
@@ -115,12 +129,13 @@ namespace akashi {
         void Window::setTransparent(bool transparent) {
             if (transparent) {
                 switch (m_state->m_ui_conf.window_mode) {
-                    case core::WindowMode::SPLIT: {
+                    case core::WindowMode::SPLIT:
+                    case core::WindowMode::INDEPENDENT: {
                         this->setWindowOpacity(0.75);
                         break;
                     }
                     case core::WindowMode::IMMERSIVE: {
-                        this->setWindowOpacity(0.4);
+                        this->setWindowOpacity(0.2);
                         break;
                     }
                     default: {
@@ -147,7 +162,9 @@ namespace akashi {
                     }
                     Q_EMIT this->m_controlArea->hide_control();
                 } else {
-                    this->setTransparent(true);
+                    if (m_state->m_ui_conf.window_mode != core::WindowMode::INDEPENDENT) {
+                        this->setTransparent(true);
+                    }
                     Q_EMIT this->m_controlArea->show_control();
                 }
             }

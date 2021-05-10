@@ -56,16 +56,18 @@ namespace akashi {
 
             Window window{borrowed_ptr(&state)};
             // disable auto focus on startup
-            window.setAttribute(Qt::WA_ShowWithoutActivating);
-            window.setWindowFlags(window.windowFlags() | Qt::FramelessWindowHint);
+            if (state.m_ui_conf.window_mode != core::WindowMode::INDEPENDENT) {
+                window.setAttribute(Qt::WA_ShowWithoutActivating);
+                window.setWindowFlags(window.windowFlags() | Qt::FramelessWindowHint);
+            }
 
-            if (state.m_ui_conf.window_mode == core::WindowMode::SPLIT) {
+            if (state.m_ui_conf.window_mode != core::WindowMode::IMMERSIVE) {
                 window.resize(akconf.ui.resolution.first, akconf.ui.resolution.second);
                 auto screen_geom = QApplication::primaryScreen()->geometry();
                 auto padding = screen_geom.height() * 0.02;
                 window.move((screen_geom.width() - akconf.ui.resolution.first) - padding, padding);
                 window.show();
-            } else if (state.m_ui_conf.window_mode == core::WindowMode::IMMERSIVE) {
+            } else {
                 window.showFullScreen();
             }
 
