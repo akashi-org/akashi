@@ -49,6 +49,7 @@ namespace akashi {
                             QWidget* parent = 0);
             virtual ~Window();
             void toggleFullScreen();
+            void setTransparent(bool transparent);
 
           protected:
             virtual void showEvent(QShowEvent* event) override;

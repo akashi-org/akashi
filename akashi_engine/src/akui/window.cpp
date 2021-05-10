@@ -56,7 +56,7 @@ namespace akashi {
             // this->setStyleSheet("#window {border: 1px solid #091F2B; }");
             // this->setFrameShadow(QFrame::Raised);
 
-            this->setWindowOpacity(0.75);
+            this->setTransparent(true);
             this->m_monitorArea = new MonitorArea(borrowed_ptr(m_state), this);
             this->m_controlArea = new ControlArea(borrowed_ptr(m_state), this);
 
@@ -90,6 +90,14 @@ namespace akashi {
             }
         }
 
+        void Window::setTransparent(bool transparent) {
+            if (transparent) {
+                this->setWindowOpacity(0.75);
+            } else {
+                this->setWindowOpacity(1.0);
+            }
+        }
+
         void Window::showEvent(QShowEvent*) { m_origSize = this->size(); }
 
         void Window::changeEvent(QEvent* event) {
@@ -100,10 +108,10 @@ namespace akashi {
             }
             if (event->type() == QEvent::WindowStateChange) {
                 if (this->isFullScreen()) {
-                    this->setWindowOpacity(1.0);
+                    this->setTransparent(false);
                     Q_EMIT this->m_controlArea->hide_control();
                 } else {
-                    this->setWindowOpacity(0.75);
+                    this->setTransparent(true);
                     Q_EMIT this->m_controlArea->show_control();
                 }
             }
