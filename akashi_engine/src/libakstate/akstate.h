@@ -175,6 +175,9 @@ namespace akashi {
             // no need to be synced
             core::EncodeConf m_encode_conf;
 
+            // no need to be synced?
+            core::UIConf m_ui_conf;
+
           public:
             explicit AKState(const core::AKConf& akconf);
             virtual ~AKState();

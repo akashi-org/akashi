@@ -28,6 +28,7 @@ namespace akashi {
             m_prop.audio_max_queue_size = akconf.playback.audio_max_queue_size;
 
             m_encode_conf = akconf.encode;
+            m_ui_conf = akconf.ui;
         }
 
         AKState::~AKState() {

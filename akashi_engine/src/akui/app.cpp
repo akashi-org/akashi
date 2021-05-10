@@ -58,24 +58,29 @@ namespace akashi {
             // disable auto focus on startup
             window.setAttribute(Qt::WA_ShowWithoutActivating);
             window.setWindowFlags(window.windowFlags() | Qt::FramelessWindowHint);
-            window.resize(akconf.ui.resolution.first, akconf.ui.resolution.second);
 
-            auto screen_geom = QApplication::primaryScreen()->geometry();
-            auto padding = screen_geom.height() * 0.02;
-            window.move((screen_geom.width() - akconf.ui.resolution.first) - padding, padding);
-            window.show();
-
-            auto disp = get_x_display();
-            auto parent_win = get_current_active_window(disp);
-            if (parent_win) {
-                // call it after window.show()
-                set_transient(disp, parent_win, &window);
+            if (state.m_ui_conf.window_mode == core::WindowMode::SPLIT) {
+                window.resize(akconf.ui.resolution.first, akconf.ui.resolution.second);
+                auto screen_geom = QApplication::primaryScreen()->geometry();
+                auto padding = screen_geom.height() * 0.02;
+                window.move((screen_geom.width() - akconf.ui.resolution.first) - padding, padding);
+                window.show();
+            } else if (state.m_ui_conf.window_mode == core::WindowMode::IMMERSIVE) {
+                window.showFullScreen();
             }
-            // free_x_display_wrapper(disp);
-            // free_x_window_wrapper(parent_win);
 
-            QObject::connect(&window, &Window::window_activated,
-                             [disp, parent_win]() { raise_window(disp, parent_win); });
+            if (state.m_ui_conf.window_mode != core::WindowMode::INDEPENDENT) {
+                auto disp = get_x_display();
+                auto parent_win = get_current_active_window(disp);
+                if (parent_win) {
+                    // call it after window.show()
+                    set_transient(disp, parent_win, &window);
+                }
+                // free_x_display_wrapper(disp);
+                // free_x_window_wrapper(parent_win);
+                QObject::connect(&window, &Window::window_activated,
+                                 [disp, parent_win]() { raise_window(disp, parent_win); });
+            }
 
 #ifndef NDEBUG
             walk_widgets(&window, ensure_widget_name);
