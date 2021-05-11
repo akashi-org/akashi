@@ -52,6 +52,7 @@ namespace akashi {
             {MEDIA_RELATIVE_SEEK, "media/relative_seek"},
             {MEDIA_FRAME_STEP, "media/frame_step"},
             {MEDIA_FRAME_BACK_STEP, "media/frame_back_step"},
+            {MEDIA_CURRENT_TIME, "media/current_time"},
             {GUI_GET_WIDGETS, "gui/get_widgets"},
             {GUI_CLICK, "gui/click"}
         })
@@ -76,6 +77,8 @@ namespace akashi {
             } else if (auto v = std::get_if<std::string>(&result)) {
                 j["result"]["value"] = *v;
             } else if (auto v = std::get_if<std::vector<std::string>>(&result)) {
+                j["result"]["value"] = *v;
+            } else if (auto v = std::get_if<std::vector<int64_t>>(&result)) {
                 j["result"]["value"] = *v;
             } else {
                 AKLOG_ERROR("Invalid RPCResultType found: {}", result.index());
@@ -203,6 +206,10 @@ namespace akashi {
                     EXEC_METHOD_NO_PARAMS(res_j, api_set, api_set.media->frame_back_step)
                     break;
                 }
+                case ASPMethod::MEDIA_CURRENT_TIME: {
+                    EXEC_METHOD_NO_PARAMS(res_j, api_set, api_set.media->current_time)
+                    break;
+                }
                 case ASPMethod::GUI_GET_WIDGETS: {
                     EXEC_METHOD_NO_PARAMS(res_j, api_set, api_set.gui->get_widgets)
                     break;
@@ -287,6 +294,10 @@ namespace akashi {
                     }
                     case 2: {
                         res_obj.value = res_j["result"]["value"].get<std::vector<std::string>>();
+                        break;
+                    }
+                    case 3: {
+                        res_obj.value = res_j["result"]["value"].get<std::vector<int64_t>>();
                         break;
                     }
                     default: {

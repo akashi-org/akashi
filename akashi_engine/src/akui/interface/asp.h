@@ -39,6 +39,8 @@ namespace akashi {
 
             bool frame_back_step(void) override;
 
+            std::vector<int64_t> current_time(void) override;
+
           private:
             QWidget* m_root;
             PlayerWidget* m_player;

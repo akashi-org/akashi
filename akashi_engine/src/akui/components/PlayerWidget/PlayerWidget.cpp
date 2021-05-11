@@ -74,6 +74,8 @@ namespace akashi {
 
         void PlayerWidget::frame_back_step(void) { m_player->frame_back_step(); }
 
+        core::Rational PlayerWidget::current_time(void) { return m_player->current_frame_time(); }
+
         void PlayerWidget::inline_eval(const std::string& file_path, const std::string& elem_name) {
             m_player->inline_eval(file_path, elem_name);
         }

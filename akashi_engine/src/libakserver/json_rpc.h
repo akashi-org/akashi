@@ -19,6 +19,7 @@ namespace akashi {
             MEDIA_RELATIVE_SEEK,
             MEDIA_FRAME_STEP,
             MEDIA_FRAME_BACK_STEP,
+            MEDIA_CURRENT_TIME,
             GUI_GET_WIDGETS = 301,
             GUI_CLICK,
         };
@@ -70,7 +71,8 @@ namespace akashi {
             SERVER_ERROR = -32000
         };
 
-        using RPCResultTypes = std::variant<bool, std::string, std::vector<std::string>>;
+        using RPCResultTypes =
+            std::variant<bool, std::string, std::vector<std::string>, std::vector<int64_t>>;
 
         struct RPCResultObject {
             int type_id; // variant index for RPCRequestParamsTypes

@@ -166,6 +166,13 @@ namespace akashi {
 
         core::Rational AKPlayer::current_time() const { return m_audio->current_time(); }
 
+        core::Rational AKPlayer::current_frame_time(void) {
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+                return m_state->m_prop.current_time;
+            }
+        }
+
         bool AKPlayer::evalbuf_dequeue_ready() { return m_state->get_evalbuf_dequeue_ready(); }
 
     }

@@ -64,5 +64,13 @@ namespace akashi {
                 m_player, [&]() { m_player->frame_back_step(); }, Qt::BlockingQueuedConnection);
         }
 
+        std::vector<int64_t> ASPMediaAPIImpl::current_time(void) {
+            core::Rational current_time;
+            QMetaObject::invokeMethod(
+                m_player, [&]() { current_time = m_player->current_time(); },
+                Qt::BlockingQueuedConnection);
+            return {current_time.num(), current_time.den()};
+        }
+
     }
 }

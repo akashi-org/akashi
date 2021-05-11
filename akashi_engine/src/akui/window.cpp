@@ -135,7 +135,7 @@ namespace akashi {
                         break;
                     }
                     case core::WindowMode::IMMERSIVE: {
-                        this->setWindowOpacity(0.2);
+                        this->setWindowOpacity(0.4);
                         break;
                     }
                     default: {
