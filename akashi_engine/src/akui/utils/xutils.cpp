@@ -79,11 +79,7 @@ namespace akashi {
         }
 
         void set_transient(AKXDisplay* disp, AKXWindow* parent_win, const QWidget* widget) {
-            auto status = ::XSetTransientForHint(disp->native_disp, widget->winId(),
-                                                 parent_win->native_winid);
-            if (status == BadAlloc || status == BadWindow) {
-                AKLOG_ERROR("{}", detail::get_x_error_text(disp, status).c_str());
-            }
+            ::XSetTransientForHint(disp->native_disp, widget->winId(), parent_win->native_winid);
         }
 
         void raise_window(AKXDisplay* disp, AKXWindow* win) {
@@ -91,7 +87,7 @@ namespace akashi {
             x_evt.xclient.type = ClientMessage;
             x_evt.xclient.window = win->native_winid;
             x_evt.xclient.message_type =
-                XInternAtom(disp->native_disp, "_NET_ACTIVE_WINDOW", False);
+                ::XInternAtom(disp->native_disp, "_NET_ACTIVE_WINDOW", False);
             x_evt.xclient.format = 32;
             x_evt.xclient.data.l[0] = 1;
             // Specify timestamp
@@ -101,9 +97,9 @@ namespace akashi {
             x_evt.xclient.data.l[3] = 0;
             x_evt.xclient.data.l[4] = 0;
 
-            XSendEvent(disp->native_disp, DefaultRootWindow(disp->native_disp), False,
-                       SubstructureRedirectMask, &x_evt);
-            XMapRaised(disp->native_disp, win->native_winid);
+            ::XSendEvent(disp->native_disp, DefaultRootWindow(disp->native_disp), False,
+                         SubstructureRedirectMask, &x_evt);
+            ::XMapRaised(disp->native_disp, win->native_winid);
         }
 
     }
