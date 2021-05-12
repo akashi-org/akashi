@@ -16,6 +16,8 @@ namespace akashi {
 
         void free_x_window_wrapper(AKXWindow* win);
 
+        bool is_active_window(AKXDisplay* disp, AKXWindow* win);
+
         void set_transient(AKXDisplay* disp, AKXWindow* parent_win, const QWidget* widget);
 
         void raise_window(AKXDisplay* disp, AKXWindow* win);

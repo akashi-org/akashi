@@ -78,6 +78,13 @@ namespace akashi {
             }
         }
 
+        bool is_active_window(AKXDisplay* disp, AKXWindow* win) {
+            auto cur_active_window = get_current_active_window(disp);
+            auto res = cur_active_window->native_winid == win->native_winid;
+            free_x_window_wrapper(cur_active_window);
+            return res;
+        }
+
         void set_transient(AKXDisplay* disp, AKXWindow* parent_win, const QWidget* widget) {
             ::XSetTransientForHint(disp->native_disp, widget->winId(), parent_win->native_winid);
         }

@@ -18,6 +18,8 @@
 #include <QScreen>
 #include <QFontDatabase>
 
+#include <QTimer>
+
 #include <csignal>
 #include <unistd.h>
 
@@ -78,10 +80,33 @@ namespace akashi {
                     // call it after window.show()
                     set_transient(disp, parent_win, &window);
                 }
+
                 // free_x_display_wrapper(disp);
                 // free_x_window_wrapper(parent_win);
-                QObject::connect(&window, &Window::window_activated,
-                                 [disp, parent_win]() { raise_window(disp, parent_win); });
+                QObject::connect(&window, &Window::window_activated, [disp, parent_win]() {
+                    QSharedPointer<QTimer> timer = QSharedPointer<QTimer>::create();
+                    QSharedPointer<int> rest_count = QSharedPointer<int>::create();
+                    *rest_count = 10;
+                    timer->setInterval(100);
+                    QObject::connect(
+                        timer.data(), &QTimer::timeout, [rest_count, timer, disp, parent_win]() {
+                            if (is_active_window(disp, parent_win)) {
+                                AKLOG_INFON("Editor window successfully raised!");
+                                timer->stop();
+                            }
+                            if (*rest_count < 1) {
+                                AKLOG_ERRORN("TIMEOUT");
+                                // [TODO] need clear()?
+                                timer->stop();
+                            } else {
+                                raise_window(disp, parent_win);
+                                (*rest_count)--;
+                                AKLOG_INFO("...raising editor window: {}", *rest_count);
+                            }
+                        });
+                    raise_window(disp, parent_win);
+                    timer->start();
+                });
             }
 
 #ifndef NDEBUG
