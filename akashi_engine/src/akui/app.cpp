@@ -3,6 +3,7 @@
 #include "./window.h"
 #include "./interface/asp.h"
 #include "./utils/widget.h"
+#include "./utils/xutils.h"
 
 #include <libakserver/akserver.h>
 #include <libakstate/akstate.h>
@@ -14,6 +15,10 @@
 #include <QTextCodec>
 #include <thread>
 #include <QSurfaceFormat>
+#include <QScreen>
+#include <QFontDatabase>
+
+#include <QTimer>
 
 #include <csignal>
 #include <unistd.h>
@@ -44,12 +49,65 @@ namespace akashi {
                 kill(getpid(), SIGTERM);
             });
 
+            if (QFontDatabase::addApplicationFont(":/FontAwesome-solid.otf") < 0) {
+                AKLOG_ERRORN("Failed to load font: FontAwesome-solid.otf\n");
+            }
+
             auto akconf = core::parse_akconfig(ctx.argv[1]);
             akashi::state::AKState state(akconf);
 
             Window window{borrowed_ptr(&state)};
-            window.resize(akconf.ui.resolution.first, akconf.ui.resolution.second);
-            window.show();
+            // disable auto focus on startup
+            if (state.m_ui_conf.window_mode != core::WindowMode::INDEPENDENT) {
+                window.setAttribute(Qt::WA_ShowWithoutActivating);
+                window.setWindowFlags(window.windowFlags() | Qt::FramelessWindowHint);
+            }
+
+            if (state.m_ui_conf.window_mode != core::WindowMode::IMMERSIVE) {
+                window.resize(akconf.ui.resolution.first, akconf.ui.resolution.second);
+                auto screen_geom = QApplication::primaryScreen()->geometry();
+                auto padding = screen_geom.height() * 0.02;
+                window.move((screen_geom.width() - akconf.ui.resolution.first) - padding, padding);
+                window.show();
+            } else {
+                window.showFullScreen();
+            }
+
+            if (state.m_ui_conf.window_mode != core::WindowMode::INDEPENDENT) {
+                auto disp = get_x_display();
+                auto parent_win = get_current_active_window(disp);
+                if (parent_win) {
+                    // call it after window.show()
+                    set_transient(disp, parent_win, &window);
+                }
+
+                // free_x_display_wrapper(disp);
+                // free_x_window_wrapper(parent_win);
+                QObject::connect(&window, &Window::window_activated, [disp, parent_win]() {
+                    QSharedPointer<QTimer> timer = QSharedPointer<QTimer>::create();
+                    QSharedPointer<int> rest_count = QSharedPointer<int>::create();
+                    *rest_count = 10;
+                    timer->setInterval(100);
+                    QObject::connect(
+                        timer.data(), &QTimer::timeout, [rest_count, timer, disp, parent_win]() {
+                            if (is_active_window(disp, parent_win)) {
+                                AKLOG_INFON("Editor window successfully raised!");
+                                timer->stop();
+                            }
+                            if (*rest_count < 1) {
+                                AKLOG_ERRORN("TIMEOUT");
+                                // [TODO] need clear()?
+                                timer->stop();
+                            } else {
+                                raise_window(disp, parent_win);
+                                (*rest_count)--;
+                                AKLOG_INFO("...raising editor window: {}", *rest_count);
+                            }
+                        });
+                    raise_window(disp, parent_win);
+                    timer->start();
+                });
+            }
 
 #ifndef NDEBUG
             walk_widgets(&window, ensure_widget_name);

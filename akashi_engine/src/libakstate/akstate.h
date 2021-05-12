@@ -63,6 +63,7 @@ namespace akashi {
         struct EvalConfig {
             core::Path include_dir = core::Path("");
             core::Path entry_path = core::Path("");
+            std::string elem_name = "";
         };
 
         struct EvalState {
@@ -173,6 +174,9 @@ namespace akashi {
 
             // no need to be synced
             core::EncodeConf m_encode_conf;
+
+            // no need to be synced?
+            core::UIConf m_ui_conf;
 
           public:
             explicit AKState(const core::AKConf& akconf);

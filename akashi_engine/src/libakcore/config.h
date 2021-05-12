@@ -34,8 +34,11 @@ namespace akashi {
             size_t audio_max_queue_size;
         };
 
+        enum class WindowMode { NONE = -1, SPLIT = 0, IMMERSIVE, INDEPENDENT };
+
         struct UIConf {
             std::pair<int, int> resolution;
+            WindowMode window_mode;
         };
 
         struct EncodeConf {

@@ -77,9 +77,20 @@ class PlaybackConf:
     audio_max_queue_size: int = 1024 * 1024 * 10  # 10mb
 
 
+class WindowMode(Enum):
+    NONE = -1
+    SPLIT = 0
+    IMMERSIVE = auto()
+    INDEPENDENT = auto()
+
+    def to_json(self):
+        return self.value
+
+
 @dataclass(frozen=True)
 class UIConf:
     resolution: Tuple[int, int] = (800, 600)
+    window_mode: WindowMode = WindowMode.SPLIT
 
 
 class EncodeCodec(Enum):

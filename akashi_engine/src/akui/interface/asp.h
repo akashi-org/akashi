@@ -29,6 +29,8 @@ namespace akashi {
 
             std::string take_snapshot(void) override;
 
+            bool toggle_fullscreen(void) override;
+
             bool seek(const int num, const int den) override;
 
             bool relative_seek(const int num, const int den) override;
@@ -37,6 +39,8 @@ namespace akashi {
 
             bool frame_back_step(void) override;
 
+            std::vector<int64_t> current_time(void) override;
+
           private:
             QWidget* m_root;
             PlayerWidget* m_player;
@@ -44,14 +48,15 @@ namespace akashi {
 
         class ASPGeneralAPIImpl : public akashi::server::ASPGeneralAPI {
           public:
-            explicit ASPGeneralAPIImpl(QWidget* root) : m_root(root){};
+            explicit ASPGeneralAPIImpl(QWidget* root);
             virtual ~ASPGeneralAPIImpl() = default;
 
-            bool eval(const std::string&, const size_t) override { return true; };
+            bool eval(const std::string& file_path, const std::string& elem_name) override;
             bool terminate(void) override;
 
           private:
             QWidget* m_root;
+            PlayerWidget* m_player;
         };
 
     }

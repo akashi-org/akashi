@@ -12,17 +12,16 @@ add_executable(${PROJECT_NAME}
   ./workers/process.cpp
 )
 
-target_compile_definitions(${PROJECT_NAME}
-  PRIVATE "BOOST_CHRONO_HEADER_ONLY"
-)
+# target_compile_definitions(${PROJECT_NAME}
+# )
 
 target_include_directories(${PROJECT_NAME}
   PRIVATE "../../src"
-  PRIVATE "../../shared/boost_1_74_0/include"
+  PRIVATE ${AKASHI_PRIV_BOOST_INCLUDE_DIR}
 )
 
 target_link_directories(${PROJECT_NAME}
-  PRIVATE "../../shared_temp/boost_filesystem/lib"
+  PRIVATE ${AKASHI_PRIV_BOOST_LIBRARY_DIR}
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -31,6 +30,7 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE akserver # for asp
   PRIVATE Threads::Threads
   PRIVATE atomic
+  PRIVATE ${AKASHI_PRIV_BOOST_TARGET_NAME}
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -38,20 +38,3 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     ./pch.h
   )
 endif()
-
-include(ExternalProject)
-ExternalProject_Add(
-  boost_filesystem
-  URL https://boostorg.jfrog.io/artifactory/main/release/1.74.0/source/boost_1_74_0.tar.gz
-  TIMEOUT 600
-  # URL ${CMAKE_CURRENT_SOURCE_DIR}/../../shared/boost_1_74_0.tar.gz
-  URL_MD5 3c8fb92ce08b9ad5a5f0b35731ac2c8e
-  
-  SOURCE_DIR ${CMAKE_BINARY_DIR}/.ext/boost/
-  INSTALL_DIR ${CMAKE_BINARY_DIR}/../shared_temp/boost_filesystem/
-
-  CONFIGURE_COMMAND ""
-  BUILD_COMMAND cd <SOURCE_DIR> && ./bootstrap.sh && ./b2 install -j4 --with-filesystem --prefix=<INSTALL_DIR> link=static threading=multi variant=release
-  INSTALL_COMMAND ""
-)
-add_dependencies(${PROJECT_NAME} boost_filesystem)

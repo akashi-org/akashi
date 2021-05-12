@@ -41,6 +41,7 @@ namespace akashi {
             int video_width;
             int video_height;
             core::Path entry_path{""};
+            std::string elem_name{""};
             core::owned_ptr<codec::AKDecoder> decoder;
             core::owned_ptr<buffer::AVBuffer> buffer;
 
@@ -67,6 +68,7 @@ namespace akashi {
             Rational start_pts = Rational(0, 1);
             Rational fps;
             core::Path entry_path{""};
+            std::string elem_name{""};
             RenderProfile profile;
             int video_width = -1;
             int video_height = -1;
@@ -75,8 +77,9 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
                 entry_path = ctx.state->m_prop.eval_state.config.entry_path;
+                elem_name = ctx.state->m_prop.eval_state.config.elem_name;
                 fps = ctx.state->m_prop.fps;
-                profile = eval->render_prof(entry_path.to_abspath().to_str());
+                profile = eval->render_prof(entry_path.to_abspath().to_str(), elem_name);
                 video_width = ctx.state->m_prop.video_width;
                 video_height = ctx.state->m_prop.video_height;
 
@@ -96,6 +99,7 @@ namespace akashi {
             encode_ctx->video_width = video_width;
             encode_ctx->video_height = video_height;
             encode_ctx->entry_path = entry_path;
+            encode_ctx->elem_name = elem_name;
             encode_ctx->decoder = make_owned<codec::AKDecoder>(profile.atom_profiles, start_pts);
             encode_ctx->buffer = make_owned<buffer::AVBuffer>(borrowed_ptr(ctx.state));
             encode_ctx->abuffer =

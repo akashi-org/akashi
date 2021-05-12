@@ -40,7 +40,8 @@ namespace akashi {
             eval_krons(const char* module_path, const core::Rational& start_time, const int fps,
                        const core::Rational& duration, const size_t length) override;
 
-            core::RenderProfile render_prof(const char* module_path) override;
+            core::RenderProfile render_prof(const std::string& module_path,
+                                            const std::string& elem_name) override;
 
             void reload(const std::vector<watch::WatchEvent>& events) override;
 

@@ -57,6 +57,10 @@ namespace akashi {
 
             void set_render_prof(core::RenderProfile& render_prof);
 
+            void inline_eval(const std::string& fpath, const std::string& elem_name);
+
+            core::Rational current_frame_time();
+
             // audio current time
             core::Rational current_time() const;
 

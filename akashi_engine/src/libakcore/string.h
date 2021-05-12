@@ -23,6 +23,8 @@ namespace akashi {
 
             const char* to_str() const;
 
+            char* to_cloned_str() const;
+
           private:
             char* clone(const std::string& str) const;
 

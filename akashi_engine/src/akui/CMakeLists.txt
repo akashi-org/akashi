@@ -11,7 +11,7 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-find_package(Qt5 COMPONENTS Widgets Gui REQUIRED)
+find_package(Qt5 COMPONENTS Widgets Gui X11Extras REQUIRED)
 # [TODO] prepare an option
 find_package(Qt5 COMPONENTS Test REQUIRED)
 
@@ -25,6 +25,7 @@ add_executable(${PROJECT_NAME}
   interface/asp_media.cpp
   interface/asp_gui.cpp
   utils/widget.cpp
+  utils/xutils.cpp
   container/ControlArea.cpp
   container/MonitorArea.cpp
   components/PlayerWidget/PlayerWidget.cpp
@@ -52,6 +53,7 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE Qt5::Widgets
   PRIVATE Qt5::Gui
   PRIVATE Qt5::Test # for asp
+  PRIVATE Qt5::X11Extras
   PRIVATE akcore
   PRIVATE akplayer
   PRIVATE akstate
@@ -59,6 +61,7 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE akgraphics # [TODO] RenderParams, GetProcAddress
   PRIVATE akserver # for asp
   PRIVATE EGL
+  PRIVATE X11
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")

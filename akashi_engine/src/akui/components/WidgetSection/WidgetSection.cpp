@@ -22,10 +22,6 @@ namespace akashi {
     namespace ui {
         WidgetSection::WidgetSection(QWidget* parent) : QWidget(parent) {
             this->setObjectName("widget_section");
-            // [TODO] can it be possible to make sure this process called only once in a session
-            if (QFontDatabase::addApplicationFont(":/FontAwesome-solid.otf") < 0) {
-                AKLOG_ERRORN("Failed to load font: FontAwesome-solid.otf\n");
-            }
 
             QFont font;
             font.setFamily("FontAwesome");

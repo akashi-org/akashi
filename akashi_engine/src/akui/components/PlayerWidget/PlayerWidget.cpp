@@ -11,6 +11,7 @@
 #include <QOpenGLContext>
 #include <QApplication>
 #include <QTimer>
+#include <QMouseEvent>
 
 #include <EGL/egl.h>
 
@@ -73,6 +74,12 @@ namespace akashi {
 
         void PlayerWidget::frame_back_step(void) { m_player->frame_back_step(); }
 
+        core::Rational PlayerWidget::current_time(void) { return m_player->current_frame_time(); }
+
+        void PlayerWidget::inline_eval(const std::string& file_path, const std::string& elem_name) {
+            m_player->inline_eval(file_path, elem_name);
+        }
+
         void PlayerWidget::initializeGL() {
             m_player->init({PlayerWidget::on_event}, this, {get_proc_address},
                            {egl_get_proc_address});
@@ -86,13 +93,14 @@ namespace akashi {
             m_player->render(params);
         }
 
-        void PlayerWidget::mouseMoveEvent(QMouseEvent*) {
+        void PlayerWidget::mouseMoveEvent(QMouseEvent* event) {
             if (m_enable_smart_cursor) {
                 QApplication::restoreOverrideCursor();
                 if (m_cursor_timer) {
                     m_cursor_timer->start();
                 }
             }
+            event->ignore();
         }
 
         void PlayerWidget::enterEvent(QEvent*) { m_enable_smart_cursor = true; }

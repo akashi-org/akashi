@@ -47,10 +47,12 @@ namespace akashi {
             {GENERAL_EVAL, "general/eval"},
             {GENERAL_TERMINATE, "general/terminate"},
             {MEDIA_TAKE_SNAPSHOT, "media/take_snapshot"},
+            {MEDIA_TOGGLE_FULLSCREEN, "media/toggle_fullscreen"},
             {MEDIA_SEEK, "media/seek"},
             {MEDIA_RELATIVE_SEEK, "media/relative_seek"},
             {MEDIA_FRAME_STEP, "media/frame_step"},
             {MEDIA_FRAME_BACK_STEP, "media/frame_back_step"},
+            {MEDIA_CURRENT_TIME, "media/current_time"},
             {GUI_GET_WIDGETS, "gui/get_widgets"},
             {GUI_CLICK, "gui/click"}
         })
@@ -75,6 +77,8 @@ namespace akashi {
             } else if (auto v = std::get_if<std::string>(&result)) {
                 j["result"]["value"] = *v;
             } else if (auto v = std::get_if<std::vector<std::string>>(&result)) {
+                j["result"]["value"] = *v;
+            } else if (auto v = std::get_if<std::vector<int64_t>>(&result)) {
                 j["result"]["value"] = *v;
             } else {
                 AKLOG_ERROR("Invalid RPCResultType found: {}", result.index());
@@ -168,7 +172,7 @@ namespace akashi {
 
             switch (req_j.at("method").get<ASPMethod>()) {
                 case ASPMethod::GENERAL_EVAL: {
-                    PARSE_PARAMS(req_j, res_j, params, std::string, size_t)
+                    PARSE_PARAMS(req_j, res_j, params, std::string, std::string)
                     EXEC_METHOD(res_j, api_set, api_set.general->eval, params)
                     break;
                 }
@@ -178,6 +182,10 @@ namespace akashi {
                 }
                 case ASPMethod::MEDIA_TAKE_SNAPSHOT: {
                     EXEC_METHOD_NO_PARAMS(res_j, api_set, api_set.media->take_snapshot)
+                    break;
+                }
+                case ASPMethod::MEDIA_TOGGLE_FULLSCREEN: {
+                    EXEC_METHOD_NO_PARAMS(res_j, api_set, api_set.media->toggle_fullscreen)
                     break;
                 }
                 case ASPMethod::MEDIA_SEEK: {
@@ -196,6 +204,10 @@ namespace akashi {
                 }
                 case ASPMethod::MEDIA_FRAME_BACK_STEP: {
                     EXEC_METHOD_NO_PARAMS(res_j, api_set, api_set.media->frame_back_step)
+                    break;
+                }
+                case ASPMethod::MEDIA_CURRENT_TIME: {
+                    EXEC_METHOD_NO_PARAMS(res_j, api_set, api_set.media->current_time)
                     break;
                 }
                 case ASPMethod::GUI_GET_WIDGETS: {
@@ -231,7 +243,7 @@ namespace akashi {
 
             switch (req.method) {
                 case ASPMethod::GENERAL_EVAL: {
-                    auto params = req_j.at("params").get<std::tuple<std::string, size_t>>();
+                    auto params = req_j.at("params").get<std::tuple<std::string, std::string>>();
                     req.params = RPCRequestParams<ASPMethod::GENERAL_EVAL>{std::get<0>(params),
                                                                            std::get<1>(params)};
                     break;
@@ -282,6 +294,10 @@ namespace akashi {
                     }
                     case 2: {
                         res_obj.value = res_j["result"]["value"].get<std::vector<std::string>>();
+                        break;
+                    }
+                    case 3: {
+                        res_obj.value = res_j["result"]["value"].get<std::vector<int64_t>>();
                         break;
                     }
                     default: {

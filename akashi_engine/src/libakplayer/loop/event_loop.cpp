@@ -119,6 +119,14 @@ namespace akashi {
                         EventLoop::hot_reload(hr_mgr, *event_list);
                         break;
                     }
+                    case InnerEventName::INLINE_EVAL: {
+                        AKLOG_INFON("INLINE_EVAL");
+                        // [TODO] need to be freed somewhere else
+                        auto inline_eval_ctx =
+                            reinterpret_cast<InnerEventInlineEvalContext*>(evt.ctx);
+                        EventLoop::inline_eval(ctx, hr_mgr, *inline_eval_ctx);
+                        break;
+                    }
                     default: {
                         AKLOG_ERROR("EventLoop::event_thread() invalid event name found, {}",
                                     evt.name);
@@ -131,11 +139,13 @@ namespace akashi {
         void EventLoop::pull_render_profile(EventLoopContext& ctx,
                                             core::borrowed_ptr<eval::AKEval> eval) {
             core::Path entry_path{""};
+            std::string elem_name{""};
             {
                 std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
                 entry_path = ctx.state->m_prop.eval_state.config.entry_path;
+                elem_name = ctx.state->m_prop.eval_state.config.elem_name;
             }
-            auto profile = eval->render_prof(entry_path.to_abspath().to_str());
+            auto profile = eval->render_prof(entry_path.to_abspath().to_str(), elem_name);
 
             // [XXX] render_prof is updated in emit_set_render_prof,
             // but for the first time call of pull_eval_buffer, update render_prof here also
@@ -192,6 +202,12 @@ namespace akashi {
         void EventLoop::hot_reload(HRManager& hr_mgr, const watch::WatchEventList& event_list) {
             AKLOG_INFON("HOT Reload !!!");
             hr_mgr.reload(event_list);
+        }
+
+        void EventLoop::inline_eval(EventLoopContext& ctx, HRManager& hr_mgr,
+                                    const InnerEventInlineEvalContext& inline_eval_ctx) {
+            AKLOG_INFON("HOT Reload (inline eval)");
+            hr_mgr.reload_inline(inline_eval_ctx);
         }
 
     }

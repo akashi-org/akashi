@@ -3,8 +3,6 @@ project (akcore CXX)
 include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
 
-file(COPY "../../shared/boost_1_74_0/LICENSE_1_0.txt" DESTINATION ${CMAKE_BINARY_DIR}/../vendor/credits/boost/)
-
 FetchContent_Declare(nlohmann_json
   # GIT_REPOSITORY https://github.com/nlohmann/json
   GIT_REPOSITORY https://github.com/ArthurSonzogni/nlohmann_json_cmake_fetchcontent
@@ -69,6 +67,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./path.cpp"
   "./config.cpp"
   "./string.cpp"
+  "./uuid.cpp"
 )
 
 file(GLOB INTERFACE_HEADERS
@@ -85,6 +84,7 @@ file(GLOB INTERFACE_HEADERS
   rational.h
   string.h
   hw_accel.h
+  uuid.h
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES 
   PUBLIC_HEADER "${INTERFACE_HEADERS}" # [XXX] we need double quotes here!
@@ -97,17 +97,18 @@ target_compile_definitions(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME}
   PUBLIC ${spdlog_SOURCE_DIR}/include/
   PUBLIC ${nlohmann_json_SOURCE_DIR}/include
-  PUBLIC "../../shared/boost_1_74_0/include"
+  PUBLIC ${AKASHI_PRIV_BOOST_INCLUDE_DIR}
 )
 
 target_link_directories(${PROJECT_NAME}
   PUBLIC ${spdlog_BINARY_DIR}
-  PUBLIC "../../shared/boost_1_74_0/libs"
+  PUBLIC ${AKASHI_PRIV_BOOST_LIBRARY_DIR} 
 )
 
 target_link_libraries(${PROJECT_NAME}
   PUBLIC spdlog::spdlog
   PRIVATE nlohmann_json::nlohmann_json
+  PRIVATE ${AKASHI_PRIV_BOOST_TARGET_NAME} 
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")

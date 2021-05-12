@@ -96,6 +96,8 @@ namespace akashi {
 
             void emit_hot_reload(const watch::WatchEventList& event_list);
 
+            void emit_inline_eval(const std::string& fpath, const std::string& elem_name);
+
           private:
             struct {
                 event::EventCallback evt_cb = {};

@@ -19,7 +19,7 @@ namespace akashi {
             server::HTTPRPCResponse handle_asp_request_inner(
                 HandlerContext& ctx,
                 const KernelEventParams<KernelEvent::ASP_REQUEST_RECEIVED>& params) {
-                if (!ctx.process_worker->alive()) {
+                if (!ctx.process_worker->get_thread_alive()) {
                     return server::error_rpc_res(params.request.id,
                                                  server::RPCErrorCode::INVALID_REQUEST,
                                                  "No renderer process found");
@@ -40,13 +40,12 @@ namespace akashi {
             server::HTTPRPCResponse handle_asp_request_inner<server::ASPMethod::GENERAL_EVAL>(
                 HandlerContext& ctx,
                 const KernelEventParams<KernelEvent::ASP_REQUEST_RECEIVED>& params) {
-                if (ctx.process_worker->alive()) {
-                    return server::error_rpc_res(params.request.id,
-                                                 server::RPCErrorCode::INVALID_REQUEST,
-                                                 "Renderer process already exists");
+                if (!ctx.process_worker->get_thread_alive()) {
+                    ctx.process_worker->run({ctx.state, ctx.event_queue});
+                    ctx.process_worker->wait_for_thread_alive();
                 }
-                ctx.process_worker->run({ctx.state, ctx.event_queue});
-                return server::success_rpc_res(params.request.id, true);
+                // pass through
+                return detail::handle_asp_request_inner(ctx, params);
             }
 
             template <>
@@ -90,7 +89,7 @@ namespace akashi {
                 ctx.state->prop().seq_process_error_exit < 3) {
                 ctx.state->transform_prop(
                     [](auto& new_prop) { new_prop.seq_process_error_exit += 1; });
-                if (ctx.process_worker->alive()) {
+                if (ctx.process_worker->get_thread_alive()) {
                     ctx.process_worker->terminate();
                 }
                 ctx.process_worker->run({ctx.state, ctx.event_queue});

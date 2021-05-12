@@ -39,6 +39,12 @@ namespace akashi {
             PULL_RENDER_PROFILE,
             SEEK,
             HOT_RELOAD,
+            INLINE_EVAL
+        };
+
+        struct InnerEventInlineEvalContext {
+            const char* file_path = nullptr;
+            const char* elem_name = nullptr;
         };
 
         struct InnerEvent {
@@ -161,6 +167,9 @@ namespace akashi {
             static void seek(SeekManager& seek_mgr, const core::Rational& seek_time);
 
             static void hot_reload(HRManager& hr_mgr, const watch::WatchEventList& event_list);
+
+            static void inline_eval(EventLoopContext& ctx, HRManager& hr_mgr,
+                                    const InnerEventInlineEvalContext& inline_eval_ctx);
 
           private:
             std::thread* m_th = nullptr;

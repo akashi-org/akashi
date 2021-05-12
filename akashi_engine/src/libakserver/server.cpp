@@ -71,6 +71,8 @@ namespace akashi {
 
             assert_api_set(api_set);
 
+            std::cout << "RENDERER_ASP_READY" << std::endl;
+
             while (true) {
                 getline(std::cin, input_str);
 

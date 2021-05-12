@@ -34,9 +34,7 @@ namespace akashi {
                 auto cell_contents = handle.attr("cell_contents");
                 // uuid
                 if (py::isinstance<py::str>(cell_contents)) {
-                    auto uuid = cell_contents.cast<std::string>();
-                    // [TODO] temporarily use this as a GlobalContext's UUID
-                    ctx.uuid = uuid;
+                    // auto uuid = cell_contents.cast<std::string>();
                     // AKLOG_DEBUG("root: {}", uuid);
                 }
                 // children

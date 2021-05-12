@@ -17,17 +17,28 @@ namespace akashi {
             ConsumeLoop* loop;
         };
 
+        static bool is_valid_type(const buffer::AVBufferType& type) {
+            return buffer::AVBufferType::UNKNOWN <= type && type <= buffer::AVBufferType::AUDIO;
+        }
+
         static void exec_encode(ConsumeLoopContext& ctx) {
             // send until EAGAIN or ERROR
             while (true) {
                 const auto& data = ctx.queue->top();
-                if (!data.buffer) {
+                if (!is_valid_type(data.type) || !data.buffer) {
                     break;
                 }
                 auto send_result = ctx.encoder->send(data);
                 if (send_result == codec::EncodeResultCode::OK) {
                     ctx.queue->dequeue();
-                    ctx.encoder->write({data.type});
+                    auto write_result = ctx.encoder->write({data.type});
+                    if (write_result.result == codec::EncodeResultCode::ERROR) {
+                        AKLOG_ERROR("encode error {}, {}", data.pts.to_decimal(),
+                                    write_result.result);
+                        // [TODO] throw exception?
+                        AKLOG_ERRORN("...skipping this frame");
+                        break;
+                    }
                 } else if (send_result == codec::EncodeResultCode::SEND_EAGAIN) {
                     AKLOG_DEBUG("SEND_EAGAIN {}", data.pts.to_decimal());
                     break;

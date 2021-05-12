@@ -7,9 +7,13 @@
 #include <libakcore/config.h>
 
 #include <boost/process.hpp>
-#include <iostream>
-using namespace boost::process;
 
+#include <iostream>
+#include <chrono>
+#include <thread>
+#include <stdexcept>
+
+using namespace boost::process;
 using namespace akashi::core;
 
 namespace akashi {
@@ -66,7 +70,25 @@ namespace akashi {
             std::string cmd_str =
                 ctx.state->prop().renderer_path + " " + "\"" + ctx.state->prop().config_jstr + "\"";
             auto c = new boost::process::child{cmd_str, std_out > out, std_in < in};
+
+            int rest_wait_ms = ctx.state->prop().max_wait_ms_renderer_wakeup;
+            std::string line;
+            while (true) {
+                if (rest_wait_ms < 0) {
+                    throw std::runtime_error("renderer wakeup timeout");
+                }
+                std::getline(out, line);
+                if (line == "RENDERER_ASP_READY") {
+                    break;
+                }
+                int wait_ms = 100;
+                AKLOG_INFON("...waiting for renderer wakeup");
+                std::this_thread::sleep_for(std::chrono::milliseconds(wait_ms));
+                rest_wait_ms -= wait_ms;
+            }
+
             exit_ctx.child_process = c;
+            exit_ctx.worker->set_thread_alive(true);
 
             {
                 std::lock_guard<std::mutex> lock(worker->m_priv_process.mtx);
@@ -94,7 +116,7 @@ namespace akashi {
 
         void ProcessWorker::exit_thread(ExitContext& exit_ctx) {
             if (exit_ctx.worker) {
-                exit_ctx.worker->m_thread_alive = false;
+                exit_ctx.worker->set_thread_alive(false);
                 {
                     std::lock_guard<std::mutex> lock(exit_ctx.worker->m_priv_process.mtx);
                     delete exit_ctx.worker->m_priv_process.value;
