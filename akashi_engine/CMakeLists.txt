@@ -94,7 +94,7 @@ set_target_properties(akashi_encoder PROPERTIES
 add_library(${AKASHI_PRIV_BOOST_TARGET_NAME} INTERFACE)
 include(ExternalProject)
 
-if(${AKASHI_BOOST_TAR_PATH} STREQUAL "")
+if(AKASHI_BOOST_TAR_PATH STREQUAL "")
   set(AKASHI_BOOST_REAL_TAR_PATH "https://boostorg.jfrog.io/artifactory/main/release/1.74.0/source/boost_1_74_0.tar.gz")
 else()
   set(AKASHI_BOOST_REAL_TAR_PATH ${AKASHI_BOOST_TAR_PATH})
