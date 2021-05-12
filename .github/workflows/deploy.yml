@@ -14,7 +14,7 @@ jobs:
   build-sdist:
     runs-on: ubuntu-latest
     container: 
-      image: ghcr.io/crux14/akashi-engine/build-sdist:0.1.7-a
+      image: ghcr.io/crux14/akashi-engine/build-sdist:0.1.7
       credentials:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.CR_PAT }}
@@ -33,7 +33,7 @@ jobs:
 
       - name: Build sdist
         run: |
-          python3 setup.py sdist
+          CUSTOM_BOOST_TAR_PATH=${CUSTOM_BOOST_TAR_PATH} python3 setup.py sdist
           SDIST_TRUEPATH_TEMP=$(find ./dist -iname '*.tar.gz')
           echo "SDIST_TRUEPATH=$SDIST_TRUEPATH_TEMP" >> $GITHUB_ENV
           echo "SDIST_TRUEPATH=$SDIST_TRUEPATH_TEMP"

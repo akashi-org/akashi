@@ -29,6 +29,9 @@ def _exec_cmake_build(sdist_cmd: _T):
         '-DAKASHI_BUILD_TESTS=OFF',
     ]
 
+    if 'CUSTOM_BOOST_TAR_PATH' in os.environ.keys():
+        cmake_args.append('-DAKASHI_BOOST_TAR_PATH=' + os.environ['CUSTOM_BOOST_TAR_PATH'])
+
     build_concurrency = 4 if os.cpu_count() is None else cast(int, os.cpu_count()) * 2
     build_args = [
         '--', f'-j{build_concurrency}'
