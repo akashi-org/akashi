@@ -5,6 +5,9 @@
 #include <vector>
 
 namespace akashi {
+    namespace state {
+        enum class PlayState;
+    }
     namespace server {
 
         /* all methods must have a return value */
@@ -26,6 +29,7 @@ namespace akashi {
             virtual bool frame_step(void) = 0;
             virtual bool frame_back_step(void) = 0;
             virtual std::vector<int64_t> current_time(void) = 0;
+            virtual bool change_playstate(const state::PlayState& play_state) = 0;
         };
 
         class ASPGUIAPI {

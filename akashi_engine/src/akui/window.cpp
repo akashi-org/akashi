@@ -147,6 +147,43 @@ namespace akashi {
             }
         }
 
+        void Window::changePlayState(const state::PlayState& new_state) {
+            if (m_state->m_atomic_state.icon_play_state == new_state) {
+                return;
+            }
+            switch (new_state) {
+                case akashi::state::PlayState::STOPPED:
+                case akashi::state::PlayState::PAUSED: {
+                    m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
+                    if (m_state->m_ui_conf.window_mode == core::WindowMode::IMMERSIVE) {
+                        this->setTransparent(true);
+                        this->m_controlArea->hide();
+                    }
+                    this->m_monitorArea->pause();
+                    break;
+                }
+                case akashi::state::PlayState::PLAYING: {
+                    if (!m_state->get_evalbuf_dequeue_ready()) {
+                        AKLOG_WARNN("kron not ready");
+                        return;
+                    }
+
+                    m_state->m_atomic_state.icon_play_state.store(
+                        akashi::state::PlayState::PLAYING);
+
+                    if (m_state->m_ui_conf.window_mode == core::WindowMode::IMMERSIVE) {
+                        this->setTransparent(false);
+                        this->m_controlArea->show();
+                    }
+                    this->m_monitorArea->play();
+                    break;
+                }
+                default: {
+                }
+            }
+            Q_EMIT this->state_changed(new_state);
+        }
+
         void Window::showEvent(QShowEvent*) { m_origSize = this->size(); }
 
         void Window::changeEvent(QEvent* event) {
@@ -261,34 +298,16 @@ namespace akashi {
             switch (m_state->m_atomic_state.icon_play_state.load()) {
                 case akashi::state::PlayState::STOPPED:
                 case akashi::state::PlayState::PAUSED: {
-                    if (!m_state->get_evalbuf_dequeue_ready()) {
-                        AKLOG_WARNN("Window::on_state_toggle(): kron not ready");
-                        return;
-                    }
-
-                    m_state->m_atomic_state.icon_play_state.store(
-                        akashi::state::PlayState::PLAYING);
-
-                    if (m_state->m_ui_conf.window_mode == core::WindowMode::IMMERSIVE) {
-                        this->setTransparent(false);
-                        this->m_controlArea->show();
-                    }
-                    this->m_monitorArea->play();
+                    this->changePlayState(akashi::state::PlayState::PLAYING);
                     break;
                 }
                 case akashi::state::PlayState::PLAYING: {
-                    m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
-                    if (m_state->m_ui_conf.window_mode == core::WindowMode::IMMERSIVE) {
-                        this->setTransparent(true);
-                        this->m_controlArea->hide();
-                    }
-                    this->m_monitorArea->pause();
+                    this->changePlayState(akashi::state::PlayState::PAUSED);
                     break;
                 }
                 default: {
                 }
             }
-            Q_EMIT this->state_changed(m_state->m_atomic_state.icon_play_state.load());
         }
 
         void Window::on_time_change(akashi::core::Fraction& time_frac) {

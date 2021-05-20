@@ -5,6 +5,7 @@
 
 #include <libakserver/akserver.h>
 #include <libakcore/rational.h>
+#include <libakstate/akstate.h>
 
 #include <QWidget>
 #include <QImage>
@@ -70,6 +71,12 @@ namespace akashi {
                 m_player, [&]() { current_time = m_player->current_time(); },
                 Qt::BlockingQueuedConnection);
             return {current_time.num(), current_time.den()};
+        }
+
+        bool ASPMediaAPIImpl::change_playstate(const state::PlayState& play_state) {
+            return QMetaObject::invokeMethod(
+                m_root, [&]() { static_cast<ui::Window*>(m_root)->changePlayState(play_state); },
+                Qt::BlockingQueuedConnection);
         }
 
     }

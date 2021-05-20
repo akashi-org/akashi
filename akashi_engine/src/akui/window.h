@@ -50,6 +50,7 @@ namespace akashi {
             virtual ~Window();
             void toggleFullScreen();
             void setTransparent(bool transparent);
+            void changePlayState(const state::PlayState& new_state);
 
           protected:
             virtual void showEvent(QShowEvent* event) override;

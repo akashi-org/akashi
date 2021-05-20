@@ -7,6 +7,9 @@
 class QWidget;
 
 namespace akashi {
+    namespace state {
+        enum class PlayState;
+    }
     namespace ui {
 
         class PlayerWidget;
@@ -40,6 +43,8 @@ namespace akashi {
             bool frame_back_step(void) override;
 
             std::vector<int64_t> current_time(void) override;
+
+            bool change_playstate(const state::PlayState& play_state) override;
 
           private:
             QWidget* m_root;
