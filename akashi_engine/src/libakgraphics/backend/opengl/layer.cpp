@@ -38,6 +38,7 @@ namespace akashi {
                     break;
                 }
                 case LayerType::IMAGE: {
+                    update_translate(ctx, layer_ctx, new_mvp);
                     update_scale(ctx, mesh_prop.tex, new_mvp, layer_ctx.image_layer_ctx.scale);
                     break;
                 }
