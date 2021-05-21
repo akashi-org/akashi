@@ -83,6 +83,7 @@ namespace akashi {
             void on_backward_jump(const akashi::core::Rational&);
             void on_state_change(const akashi::state::PlayState&);
             void on_state_toggle(void);
+            void on_state_update(const akashi::state::PlayState&);
             void on_time_change(akashi::core::Fraction&);
             void on_render_prof_updated(akashi::core::RenderProfile&);
             void on_seek_completed(void);

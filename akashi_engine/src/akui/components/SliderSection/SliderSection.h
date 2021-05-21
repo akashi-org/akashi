@@ -3,6 +3,7 @@
 #include <libakcore/rational.h>
 #include <libakcore/element.h>
 #include <libakcore/memory.h>
+#include <libakstate/akstate.h>
 
 #include <QKeyEvent>
 #include <QSlider>
@@ -65,6 +66,7 @@ namespace akashi {
             akashi::core::Rational m_unit = akashi::core::Rational(1, 30);
           Q_SIGNALS:
             void slider_moved(const akashi::core::Rational&);
+            void slider_pressed(const akashi::state::PlayState&);
             void frame_step(void);
             void frame_back_step(void);
             void forward_jump(const akashi::core::Rational&);

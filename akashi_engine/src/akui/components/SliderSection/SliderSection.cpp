@@ -106,6 +106,10 @@ namespace akashi {
                 Q_EMIT this->slider_moved(Rational(pos, 1) * m_unit);
             });
 
+            QObject::connect(this->slider, &AKVideoSlider::sliderPressed, [=]() {
+                Q_EMIT this->slider_pressed(akashi::state::PlayState::PAUSED);
+            });
+
             QObject::connect(this->slider, &AKVideoSlider::ctrlRightKeyPressed,
                              [=]() { Q_EMIT this->frame_step(); });
 

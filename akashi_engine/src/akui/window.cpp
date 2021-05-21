@@ -310,6 +310,10 @@ namespace akashi {
             }
         }
 
+        void Window::on_state_update(const akashi::state::PlayState& new_state) {
+            this->changePlayState(new_state);
+        }
+
         void Window::on_time_change(akashi::core::Fraction& time_frac) {
             Q_EMIT this->time_changed(to_rational(time_frac));
         }
