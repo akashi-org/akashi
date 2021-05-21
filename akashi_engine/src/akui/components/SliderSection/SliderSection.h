@@ -64,9 +64,11 @@ namespace akashi {
             const int short_jump_value = 1; // sec
             const int long_jump_value = 10; // sec
             akashi::core::Rational m_unit = akashi::core::Rational(1, 30);
+            core::borrowed_ptr<akashi::state::AKState> m_state;
           Q_SIGNALS:
             void slider_moved(const akashi::core::Rational&);
             void slider_pressed(const akashi::state::PlayState&);
+            void slider_released(const akashi::state::PlayState&);
             void frame_step(void);
             void frame_back_step(void);
             void forward_jump(const akashi::core::Rational&);

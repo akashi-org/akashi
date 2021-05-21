@@ -142,6 +142,8 @@ namespace akashi {
 
             std::atomic<PlayState> icon_play_state{PlayState::STOPPED};
 
+            std::atomic<PlayState> last_play_state{PlayState::STOPPED};
+
             std::atomic<double> volume = 0.5;
 
             std::atomic<bool> ui_can_seek = true;
