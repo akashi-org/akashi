@@ -30,6 +30,7 @@ namespace akashi {
             virtual bool frame_back_step(void) = 0;
             virtual std::vector<int64_t> current_time(void) = 0;
             virtual bool change_playstate(const state::PlayState& play_state) = 0;
+            virtual bool change_playvolume(const double volume) = 0;
         };
 
         class ASPGUIAPI {

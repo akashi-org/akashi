@@ -46,6 +46,8 @@ namespace akashi {
 
             bool change_playstate(const state::PlayState& play_state) override;
 
+            bool change_playvolume(const double volume) override;
+
           private:
             QWidget* m_root;
             PlayerWidget* m_player;

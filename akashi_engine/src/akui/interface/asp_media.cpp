@@ -79,5 +79,10 @@ namespace akashi {
                 Qt::BlockingQueuedConnection);
         }
 
+        bool ASPMediaAPIImpl::change_playvolume(const double volume) {
+            return QMetaObject::invokeMethod(
+                m_player, [&]() { m_player->set_volume(volume); }, Qt::BlockingQueuedConnection);
+        }
+
     }
 }

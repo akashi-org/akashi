@@ -23,6 +23,7 @@ namespace akashi {
             MEDIA_FRAME_BACK_STEP,
             MEDIA_CURRENT_TIME,
             MEDIA_CHANGE_PLAYSTATE,
+            MEDIA_CHANGE_PLAYVOLUME,
             GUI_GET_WIDGETS = 301,
             GUI_CLICK,
         };
@@ -54,6 +55,11 @@ namespace akashi {
         };
 
         template <>
+        struct RPCRequestParams<ASPMethod::MEDIA_CHANGE_PLAYVOLUME> {
+            double volume;
+        };
+
+        template <>
         struct RPCRequestParams<ASPMethod::GUI_CLICK> {
             std::string widget_name;
         };
@@ -61,7 +67,8 @@ namespace akashi {
         using RPCRequestParamsTypes =
             std::variant<RPCRequestParams<>, RPCRequestParams<GENERAL_EVAL>,
                          RPCRequestParams<MEDIA_SEEK>, RPCRequestParams<MEDIA_RELATIVE_SEEK>,
-                         RPCRequestParams<MEDIA_CHANGE_PLAYSTATE>, RPCRequestParams<GUI_CLICK>>;
+                         RPCRequestParams<MEDIA_CHANGE_PLAYSTATE>,
+                         RPCRequestParams<MEDIA_CHANGE_PLAYVOLUME>, RPCRequestParams<GUI_CLICK>>;
 
         struct RPCRequest {
             std::string jsonrpc;

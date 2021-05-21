@@ -80,6 +80,8 @@ namespace akashi {
             m_player->inline_eval(file_path, elem_name);
         }
 
+        void PlayerWidget::set_volume(const double volume) { m_player->set_volume(volume); }
+
         void PlayerWidget::initializeGL() {
             m_player->init({PlayerWidget::on_event}, this, {get_proc_address},
                            {egl_get_proc_address});

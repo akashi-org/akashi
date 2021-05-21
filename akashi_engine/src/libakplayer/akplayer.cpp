@@ -164,6 +164,8 @@ namespace akashi {
             m_event->emit_inline_eval(fpath, elem_name);
         }
 
+        void AKPlayer::set_volume(const double volume) { m_state->m_atomic_state.volume = volume; }
+
         core::Rational AKPlayer::current_time() const { return m_audio->current_time(); }
 
         core::Rational AKPlayer::current_frame_time(void) {

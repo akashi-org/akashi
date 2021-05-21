@@ -40,6 +40,7 @@ namespace akashi {
             void frame_back_step(void);
             core::Rational current_time(void);
             void inline_eval(const std::string& file_path, const std::string& elem_name);
+            void set_volume(const double volume);
 
           Q_SIGNALS:
             void closed(void);

@@ -59,6 +59,8 @@ namespace akashi {
 
             void inline_eval(const std::string& fpath, const std::string& elem_name);
 
+            void set_volume(const double volume);
+
             core::Rational current_frame_time();
 
             // audio current time

@@ -64,6 +64,7 @@ namespace akashi {
             {MEDIA_FRAME_BACK_STEP, "media/frame_back_step"},
             {MEDIA_CURRENT_TIME, "media/current_time"},
             {MEDIA_CHANGE_PLAYSTATE, "media/change_playstate"},
+            {MEDIA_CHANGE_PLAYVOLUME, "media/change_playvolume"},
             {GUI_GET_WIDGETS, "gui/get_widgets"},
             {GUI_CLICK, "gui/click"}
         })
@@ -226,6 +227,11 @@ namespace akashi {
                     EXEC_METHOD(res_j, api_set, api_set.media->change_playstate, params)
                     break;
                 }
+                case ASPMethod::MEDIA_CHANGE_PLAYVOLUME: {
+                    PARSE_PARAMS(req_j, res_j, params, double)
+                    EXEC_METHOD(res_j, api_set, api_set.media->change_playvolume, params)
+                    break;
+                }
                 case ASPMethod::GUI_GET_WIDGETS: {
                     EXEC_METHOD_NO_PARAMS(res_j, api_set, api_set.gui->get_widgets)
                     break;
@@ -280,6 +286,12 @@ namespace akashi {
                     auto params = req_j.at("params").get<std::tuple<state::PlayState>>();
                     req.params =
                         RPCRequestParams<ASPMethod::MEDIA_CHANGE_PLAYSTATE>{std::get<0>(params)};
+                    break;
+                }
+                case ASPMethod::MEDIA_CHANGE_PLAYVOLUME: {
+                    auto params = req_j.at("params").get<std::tuple<double>>();
+                    req.params =
+                        RPCRequestParams<ASPMethod::MEDIA_CHANGE_PLAYVOLUME>{std::get<0>(params)};
                     break;
                 }
                 case ASPMethod::GUI_CLICK: {
