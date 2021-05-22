@@ -4,10 +4,8 @@ from akashi_core import (
     scene,
     atom,
     video,
-    audio,
     text,
     VideoLayerParams,
-    AudioLayerParams,
     TextLayerParams,
     KronArgs,
     Second

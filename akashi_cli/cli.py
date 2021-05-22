@@ -103,7 +103,7 @@ def akashi_cli() -> None:
 
     os.environ['QT_XCB_GL_INTEGRATION'] = 'xcb_egl'
 
-    sigset = []
+    sigset: list[signal.Signals] = []
     sigset += [signal.SIGINT, signal.SIGHUP, signal.SIGQUIT, signal.SIGTERM]
     sigset += [signal.SIGPIPE, signal.SIGCHLD]
 
