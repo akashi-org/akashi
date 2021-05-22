@@ -162,6 +162,7 @@ namespace akashi {
             // [TODO] atomic?
             AK_DEF_SYNC_STATE(audio_play_ready, bool, false)
 
+            AK_DEF_SYNC_STATE(decode_layers_not_empty, bool, false)
             AK_DEF_SYNC_STATE(video_decode_ready, bool, true)
             AK_DEF_SYNC_STATE(audio_decode_ready, bool, true)
 

@@ -89,6 +89,8 @@ namespace akashi {
                 audio_max_queue_size = ctx.state->m_prop.audio_max_queue_size;
             }
 
+            ctx.state->set_decode_layers_not_empty(core::has_layers(profile), true);
+
             core::owned_ptr<EncodeContext> encode_ctx{new EncodeContext};
 
             encode_ctx->render_profile = profile;

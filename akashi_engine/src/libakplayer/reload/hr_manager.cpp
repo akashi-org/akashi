@@ -142,6 +142,8 @@ namespace akashi {
 
             m_event->emit_set_render_prof(profile); // be careful that decode_ready is called
 
+            m_state->set_decode_layers_not_empty(core::has_layers(profile), true);
+
             m_eval_buf->clear();
             // m_event->emit_pull_eval_buffer(50);
             // m_state->wait_for_evalbuf_dequeue_ready();
@@ -161,7 +163,7 @@ namespace akashi {
             m_state->set_evalbuf_dequeue_ready(true);
             m_state->set_seek_completed(true);
 
-            // m_event->emit_update();
+            m_event->emit_update();
             // m_state->set_play_ready(true);
             // {
             //     std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
@@ -231,6 +233,8 @@ namespace akashi {
 
             m_event->emit_set_render_prof(profile); // be careful that decode_ready is called
 
+            m_state->set_decode_layers_not_empty(core::has_layers(profile), true);
+
             m_eval_buf->clear();
             // m_event->emit_pull_eval_buffer(50);
             // m_state->wait_for_evalbuf_dequeue_ready();
@@ -249,6 +253,8 @@ namespace akashi {
             // end seek
             m_state->set_evalbuf_dequeue_ready(true);
             m_state->set_seek_completed(true);
+
+            m_event->emit_update();
 
             return true;
         }

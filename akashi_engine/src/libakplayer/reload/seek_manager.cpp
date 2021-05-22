@@ -158,6 +158,7 @@ namespace akashi {
                     std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                     m_state->m_prop.need_first_render = true;
                 }
+                m_event->emit_update();
             }
 
             // end seek

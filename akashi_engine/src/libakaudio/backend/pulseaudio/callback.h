@@ -60,7 +60,7 @@ namespace akashi {
 
             const std::vector<core::AtomProfile>& atom_profiles(void) const;
 
-            const core::AtomProfile& select_current_atom(const size_t requested_bytes);
+            core::AtomProfile select_current_atom(const size_t requested_bytes);
 
             state::PlayState state(void) const;
 

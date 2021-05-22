@@ -95,6 +95,15 @@ namespace akashi {
             std::vector<AtomProfile> atom_profiles;
         };
 
+        inline bool has_layers(const RenderProfile& render_prof) {
+            for (const auto& atom_prof : render_prof.atom_profiles) {
+                if (!atom_prof.layers.empty()) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
         struct RenderContext {
             std::vector<FrameContext> frame_ctxs;
         };

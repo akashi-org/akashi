@@ -54,6 +54,7 @@ namespace akashi {
             AKLOG_INFON("Decoder thread start");
 
             ctx.state->wait_for_evalbuf_dequeue_ready();
+            ctx.state->wait_for_decode_layers_not_empty();
 
             AKLOG_INFON("Decoder loop start");
 
@@ -68,6 +69,7 @@ namespace akashi {
                 ctx.state->wait_for_video_decode_ready();
                 ctx.state->wait_for_audio_decode_ready();
                 ctx.state->wait_for_seek_completed();
+                ctx.state->wait_for_decode_layers_not_empty();
 
                 if (DecodeLoop::seek_detected(ctx.state, decode_state)) {
                     AKLOG_INFON("Decode State updated by seek");

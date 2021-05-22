@@ -155,6 +155,8 @@ namespace akashi {
             }
 
             ctx.event->emit_set_render_prof(profile); // be careful that the decode_ready is called
+
+            ctx.state->set_decode_layers_not_empty(core::has_layers(profile), true);
         }
 
         void EventLoop::pull_eval_buffer(const EventLoopContext& ctx,
