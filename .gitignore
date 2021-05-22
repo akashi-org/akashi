@@ -9,6 +9,7 @@ assets/
 !scripts/
 !scripts/*
 1
+!**/examples/basic/assets/
 
 #cpp
 compile_commands.json
