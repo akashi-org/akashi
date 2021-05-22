@@ -35,7 +35,7 @@ namespace akashi {
 
         PyEvalContext::PyEvalContext(core::borrowed_ptr<state::AKState> state)
             : EvalContext(state), m_state(state) {
-            AKLOG_DEBUGN("YPyEvalContext init");
+            AKLOG_DEBUGN("PyEvalContext init");
 
             py::initialize_interpreter();
 
