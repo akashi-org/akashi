@@ -183,7 +183,7 @@ namespace akashi {
                 encode_ctx->next_pts = to_rational(frame_ctx[1].pts);
 
                 // decode
-                if (!encode_ctx->decode_ended) {
+                if (!encode_ctx->decode_ended && ctx.state->get_decode_layers_not_empty()) {
                     auto decode_result = exec_decode(decode_params);
                     if (decode_result == DecodeResult::ERR) {
                         break;
