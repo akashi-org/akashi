@@ -11,6 +11,7 @@ from dataclasses import dataclass
 class ParsedOption:
     action: str
     akconf: str
+    conf_path: str
 
 
 def argument_parse() -> ParsedOption:
@@ -40,7 +41,11 @@ def argument_parse() -> ParsedOption:
         parser.print_help(sys.stderr)
         sys.exit(1)
 
-    return ParsedOption(args_dict['action'], _akconf_parse(args_dict["conf_path"]))
+    return ParsedOption(
+        args_dict['action'],
+        _akconf_parse(args_dict["conf_path"]),
+        path.abspath(args_dict["conf_path"])
+    )
 
 
 def _akconf_parse(conf_path: str) -> str:

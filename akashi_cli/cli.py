@@ -19,6 +19,7 @@ class ServerThread(threading.Thread):
         self.daemon = True
         self.action = option.action
         self.akconf = option.akconf
+        self.conf_path = option.conf_path
         self.proc = None
 
     def run(self):
@@ -41,7 +42,7 @@ class ServerThread(threading.Thread):
         # )
 
         self.proc = Popen(
-            [BIN_PATH, self.akconf], env=os.environ
+            [BIN_PATH, self.akconf, self.conf_path], env=os.environ
         )
 
         while True:
@@ -68,7 +69,7 @@ class ServerThread(threading.Thread):
         # )
 
         self.proc = Popen(
-            [ENCODER_BIN_PATH, self.akconf], env=os.environ
+            [ENCODER_BIN_PATH, self.akconf, self.conf_path], env=os.environ
         )
         self.proc.communicate()
 
@@ -80,7 +81,7 @@ class ServerThread(threading.Thread):
         # )
 
         self.proc = Popen(
-            [KERNEL_BIN_PATH, self.akconf, BIN_PATH], env=os.environ
+            [KERNEL_BIN_PATH, self.akconf, BIN_PATH, self.conf_path], env=os.environ
         )
         self.proc.communicate()
 

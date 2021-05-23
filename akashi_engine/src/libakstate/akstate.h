@@ -181,8 +181,10 @@ namespace akashi {
             // no need to be synced?
             core::UIConf m_ui_conf;
 
+            core::Path m_conf_path;
+
           public:
-            explicit AKState(const core::AKConf& akconf);
+            explicit AKState(const core::AKConf& akconf, const std::string& conf_path);
             virtual ~AKState();
         };
 

@@ -7,7 +7,8 @@
 namespace akashi {
     namespace state {
 
-        AKState::AKState(const core::AKConf& akconf) {
+        AKState::AKState(const core::AKConf& akconf, const std::string& conf_path)
+            : m_conf_path(core::Path(conf_path).to_abspath()) {
             m_prop.eval_state.config.entry_path = core::Path(akconf.general.entry_file);
             m_prop.eval_state.config.include_dir = core::Path(akconf.general.include_dir);
 

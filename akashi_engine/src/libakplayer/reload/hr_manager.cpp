@@ -84,6 +84,11 @@ namespace akashi {
             std::vector<watch::WatchEvent> shader_events;
             for (size_t i = 0; i < event_list.size; i++) {
                 std::cmatch m;
+                // skip reloading for config file
+                if (std::string(event_list.events[i].file_path) ==
+                    std::string(m_state->m_conf_path.to_str())) {
+                    continue;
+                }
                 if (std::regex_match(event_list.events[i].file_path, m, std::regex(".*\\.py$"))) {
                     python_events.push_back(event_list.events[i]);
                 }
