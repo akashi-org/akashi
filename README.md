@@ -26,10 +26,11 @@ The current requirements are as follows.
 
 * Linux (tested on Debian 11) 
 * X11
-* Major desktop environments like Gnome
+* Major desktop environments like GNOME
 * Vim8
 * OpenGL core profile 4.2 or later
 * Python 3.9 or later
+* PulseAudio
 
 ### Runtime Dependencies
 
