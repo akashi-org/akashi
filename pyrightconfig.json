@@ -1,5 +1,13 @@
 {
   "include": ["akashi_cli", "akashi_core", "akashi_core", "tests"],
+  "executionEnvironments": [
+     {
+       "root": "examples/basic"
+     },
+     {
+       "root": "."
+     }
+  ],
   "verboseOutput": true,
   "typeCheckingMode": "strict",
   "strictListInference": true,
