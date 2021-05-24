@@ -26,15 +26,19 @@ If you use pyenv, you can resolve this issue. Please see the documentation for m
         return (True, '')
 
 
-def akexport_elem():
-    def inner(fn: Callable[[], Union[RootType, SceneType, AtomType]]):
+ElemFn = Callable[[], Union[RootType, SceneType, AtomType]]
+ConfFn = Callable[[], AKConf]
+
+
+def akexport_elem() -> Callable[[ElemFn], ElemFn]:
+    def inner(fn: ElemFn):
         sys.modules[fn.__module__].__akashi_export_elem_fn = fn  # type: ignore
         return fn
     return inner
 
 
-def akexport_config():
-    def inner(fn: Callable[[], AKConf]):
+def akexport_config() -> Callable[[ConfFn], ConfFn]:
+    def inner(fn: ConfFn):
         sys.modules[fn.__module__].__akashi_export_config_fn = fn  # type: ignore
         return fn
     return inner
