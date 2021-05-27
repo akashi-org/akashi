@@ -100,12 +100,15 @@ namespace akashi {
 
         void AKPlayer::seek(const core::Rational& seek_time) {
             bool on_seeking = false;
+            Rational real_seek_time;
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 on_seeking = !m_state->get_seek_completed();
+                Rational tpf = (Rational(1, 1) / m_state->m_prop.fps);
+                real_seek_time = Rational((int64_t)((seek_time / tpf).to_decimal()), 1) * tpf;
             }
             if (!on_seeking) {
-                m_event->emit_seek(seek_time);
+                m_event->emit_seek(real_seek_time);
             }
         }
 
@@ -115,9 +118,7 @@ namespace akashi {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 Rational incr_time =
                     Rational(ratio) * to_rational(m_state->m_prop.render_prof.duration);
-                Rational tpf = (Rational(1, 1) / m_state->m_prop.fps);
-                auto real_incr_time = Rational((int64_t)((incr_time / tpf).to_decimal()), 1) * tpf;
-                seek_time = m_state->m_prop.current_time + real_incr_time;
+                seek_time = m_state->m_prop.current_time + incr_time;
             }
             this->seek(seek_time);
         }
