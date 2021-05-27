@@ -105,7 +105,11 @@ namespace akashi {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 on_seeking = !m_state->get_seek_completed();
                 Rational tpf = (Rational(1, 1) / m_state->m_prop.fps);
+                Rational seek_max = to_rational(m_state->m_prop.render_prof.duration) - tpf;
                 real_seek_time = Rational((int64_t)((seek_time / tpf).to_decimal()), 1) * tpf;
+                real_seek_time = real_seek_time < Rational(0, 1) ? Rational(0, 1)
+                                 : real_seek_time > seek_max     ? seek_max
+                                                                 : real_seek_time;
             }
             if (!on_seeking) {
                 m_event->emit_seek(real_seek_time);
