@@ -9,7 +9,6 @@ assets/
 !scripts/
 !scripts/*
 1
-#!**/examples/basic/assets/
 
 #cpp
 compile_commands.json
@@ -37,6 +36,10 @@ vendor/
 *.pgm
 *.ppm
 *.pcm
+
+# example
+!**/examples/basic/assets/
+!**/examples/basic/assets/river.mp4
 
 # python
 dist/
