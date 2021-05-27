@@ -45,21 +45,14 @@ namespace akashi {
             // [TODO] lock-free?
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
-                m_state->m_prop.loop_cnt += 1;
                 m_state->m_prop.trigger_video_reset = true;
             }
+            m_state->m_atomic_state.play_loop_cnt += 1;
             return;
         };
 
         size_t CallbackContext::loop_cnt(void) const {
-            // [TODO] lock?
-            return m_state->m_prop.loop_cnt;
-
-            // [TODO] lock-free?
-            // {
-            //     std::lock_guard<std::mutex> lock(m_player_ctx->m_prop_mtx);
-            //     return m_player_ctx->m_prop.loop_cnt;
-            // }
+            return m_state->m_atomic_state.play_loop_cnt;
         };
 
         void CallbackContext::incr_bytes_played(int64_t bytes) {

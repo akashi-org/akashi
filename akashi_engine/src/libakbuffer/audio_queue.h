@@ -53,6 +53,10 @@ namespace akashi {
 
             void clear(bool notify = true);
 
+            void clear_by_id(uuid_t layer_uuid);
+
+            void clear_by_loop_cnt(const std::string& loop_cnt);
+
           private:
             core::borrowed_ptr<state::AKState> m_state;
             std::unordered_map<std::string, AudioQueueData> m_qmap;

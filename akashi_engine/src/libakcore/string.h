@@ -34,5 +34,7 @@ namespace akashi {
             char* m_str = nullptr;
         };
 
+        bool ends_with(const std::string& str, const std::string& pat);
+
     }
 }

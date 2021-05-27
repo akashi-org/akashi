@@ -3,6 +3,7 @@
 
 #include <libakcore/rational.h>
 #include <libakcore/logger.h>
+#include <libakcore/string.h>
 #include <libakcore/memory.h>
 #include <libakstate/akstate.h>
 
@@ -136,7 +137,7 @@ namespace akashi {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 auto atom_profiles = m_state->m_prop.render_prof.atom_profiles;
                 auto current_atom_index = m_state->m_atomic_state.current_atom_index.load();
-                auto loop_cnt = m_state->m_prop.loop_cnt;
+                auto loop_cnt = m_state->m_atomic_state.play_loop_cnt.load();
                 for (const auto& layer : atom_profiles[current_atom_index].layers) {
                     layer_uuids.push_back(layer.uuid + std::to_string(loop_cnt));
                 }
@@ -190,6 +191,37 @@ namespace akashi {
                 m_state->set_video_decode_ready(true);
             }
         };
+
+        void VideoQueue::clear_by_id(uuid_t layer_uuid) {
+            bool not_full = true;
+            {
+                std::lock_guard<std::mutex> lock(m_qmap_mtx);
+                bool contains = m_qmap.find(layer_uuid) != m_qmap.end();
+                while (contains && !m_qmap[layer_uuid].buf.empty()) {
+                    auto temp = std::move(m_qmap[layer_uuid].buf.front());
+                    m_queue_size -= temp->prop().data_size;
+                    m_queue_count -= 1;
+                    m_qmap[layer_uuid].buf.pop_front();
+                }
+                not_full = this->is_not_full();
+            }
+            m_state->set_video_decode_ready(not_full);
+        }
+
+        void VideoQueue::clear_by_loop_cnt(const std::string& loop_cnt) {
+            std::vector<uuid_t> ids;
+            {
+                std::lock_guard<std::mutex> lock(m_qmap_mtx);
+                for (const auto& [key, value] : m_qmap) {
+                    if (core::ends_with(key, loop_cnt)) {
+                        ids.push_back(key);
+                    }
+                }
+            }
+            for (const auto& layer_id : ids) {
+                this->clear_by_id(layer_id);
+            }
+        }
 
         bool VideoQueue::is_not_full(void) const {
             switch (m_decode_method) {

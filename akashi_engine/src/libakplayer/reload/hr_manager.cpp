@@ -209,7 +209,8 @@ namespace akashi {
                 m_state->m_prop.eval_state.config.entry_path = Path(inline_eval_ctx.file_path);
                 m_state->m_prop.eval_state.config.elem_name = inline_eval_ctx.elem_name;
                 // [XXX] reset loop_cnt here
-                m_state->m_prop.loop_cnt = 0;
+                m_state->m_atomic_state.decode_loop_cnt = 0;
+                m_state->m_atomic_state.play_loop_cnt = 0;
             }
 
             // start seek

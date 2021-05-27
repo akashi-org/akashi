@@ -2,6 +2,8 @@
 
 #include "./logger.h"
 
+#include <boost/algorithm/string/predicate.hpp>
+
 #include <string>
 #include <cstdlib>
 
@@ -47,6 +49,10 @@ namespace akashi {
             if (m_str) {
                 free(m_str);
             }
+        }
+
+        bool ends_with(const std::string& str, const std::string& pat) {
+            return boost::algorithm::ends_with(str, pat);
         }
 
     }

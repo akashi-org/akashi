@@ -31,7 +31,7 @@ namespace akashi {
 
             void hr_update(void);
 
-            void loop_update(void);
+            void loop_incr(void);
 
           public:
             core::Rational fps;
