@@ -49,7 +49,7 @@ namespace akashi {
 
             void seek(const core::Rational& seek_time);
 
-            void relative_seek(const core::Rational& rel_seek_time);
+            void relative_seek(const double ratio);
 
             void frame_step(void);
 

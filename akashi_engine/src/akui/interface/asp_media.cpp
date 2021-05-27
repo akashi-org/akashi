@@ -49,10 +49,9 @@ namespace akashi {
                 Qt::BlockingQueuedConnection);
         }
 
-        bool ASPMediaAPIImpl::relative_seek(const int num, const int den) {
+        bool ASPMediaAPIImpl::relative_seek(const double ratio) {
             return QMetaObject::invokeMethod(
-                m_player, [&]() { m_player->relative_seek(Rational(num, den)); },
-                Qt::BlockingQueuedConnection);
+                m_player, [&]() { m_player->relative_seek(ratio); }, Qt::BlockingQueuedConnection);
         }
 
         bool ASPMediaAPIImpl::frame_step(void) {

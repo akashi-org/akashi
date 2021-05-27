@@ -37,12 +37,10 @@ namespace akashi {
                              SLOT(on_frame_step(void)));
             QObject::connect(this->m_slider_section, SIGNAL(frame_back_step(void)), this->window(),
                              SLOT(on_frame_back_step(void)));
-            QObject::connect(this->m_slider_section,
-                             SIGNAL(forward_jump(const akashi::core::Rational&)), this->window(),
-                             SLOT(on_forward_jump(const akashi::core::Rational&)));
-            QObject::connect(this->m_slider_section,
-                             SIGNAL(backward_jump(const akashi::core::Rational&)), this->window(),
-                             SLOT(on_backward_jump(const akashi::core::Rational&)));
+            QObject::connect(this->m_slider_section, SIGNAL(forward_jump(const double)),
+                             this->window(), SLOT(on_forward_jump(const double)));
+            QObject::connect(this->m_slider_section, SIGNAL(backward_jump(const double)),
+                             this->window(), SLOT(on_backward_jump(const double)));
 
             // parent -> m_widget_section
             QObject::connect(this->window(), SIGNAL(state_changed(const akashi::state::PlayState&)),

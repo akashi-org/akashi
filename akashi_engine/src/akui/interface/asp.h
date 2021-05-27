@@ -36,7 +36,7 @@ namespace akashi {
 
             bool seek(const int num, const int den) override;
 
-            bool relative_seek(const int num, const int den) override;
+            bool relative_seek(const double ratio) override;
 
             bool frame_step(void) override;
 

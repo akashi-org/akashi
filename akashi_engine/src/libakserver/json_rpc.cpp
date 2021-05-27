@@ -206,7 +206,7 @@ namespace akashi {
                     break;
                 }
                 case ASPMethod::MEDIA_RELATIVE_SEEK: {
-                    PARSE_PARAMS(req_j, res_j, params, int, int)
+                    PARSE_PARAMS(req_j, res_j, params, double)
                     EXEC_METHOD(res_j, api_set, api_set.media->relative_seek, params)
                     break;
                 }
@@ -277,9 +277,9 @@ namespace akashi {
                     break;
                 }
                 case ASPMethod::MEDIA_RELATIVE_SEEK: {
-                    auto params = req_j.at("params").get<std::tuple<int, int>>();
-                    req.params = RPCRequestParams<ASPMethod::MEDIA_RELATIVE_SEEK>{
-                        std::get<0>(params), std::get<1>(params)};
+                    auto params = req_j.at("params").get<std::tuple<double>>();
+                    req.params =
+                        RPCRequestParams<ASPMethod::MEDIA_RELATIVE_SEEK>{std::get<0>(params)};
                     break;
                 }
                 case ASPMethod::MEDIA_CHANGE_PLAYSTATE: {

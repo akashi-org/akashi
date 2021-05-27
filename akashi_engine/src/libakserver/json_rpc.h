@@ -45,8 +45,7 @@ namespace akashi {
 
         template <>
         struct RPCRequestParams<ASPMethod::MEDIA_RELATIVE_SEEK> {
-            int num;
-            int den;
+            double ratio;
         };
 
         template <>

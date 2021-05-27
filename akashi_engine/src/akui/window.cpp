@@ -253,21 +253,21 @@ namespace akashi {
             }
         }
 
-        void Window::on_forward_jump(const akashi::core::Rational& rel_pos) {
+        void Window::on_forward_jump(const double ratio) {
             if (can_seek(m_state)) {
                 m_state->m_atomic_state.ui_can_seek.store(false);
                 this->m_controlArea->set_slider_movable(false);
-                this->m_monitorArea->relative_seek(rel_pos);
+                this->m_monitorArea->relative_seek(ratio);
                 m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
                 Q_EMIT this->state_changed(m_state->m_atomic_state.icon_play_state.load());
             }
         }
 
-        void Window::on_backward_jump(const akashi::core::Rational& rel_pos) {
+        void Window::on_backward_jump(const double ratio) {
             if (can_seek(m_state)) {
                 m_state->m_atomic_state.ui_can_seek.store(false);
                 this->m_controlArea->set_slider_movable(false);
-                this->m_monitorArea->relative_seek(Rational(-1, 1) * rel_pos);
+                this->m_monitorArea->relative_seek(-1 * ratio);
                 m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
                 Q_EMIT this->state_changed(m_state->m_atomic_state.icon_play_state.load());
             }

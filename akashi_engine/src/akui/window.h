@@ -79,8 +79,8 @@ namespace akashi {
             void on_seek(const akashi::core::Rational&);
             void on_frame_step(void);
             void on_frame_back_step(void);
-            void on_forward_jump(const akashi::core::Rational&);
-            void on_backward_jump(const akashi::core::Rational&);
+            void on_forward_jump(const double);
+            void on_backward_jump(const double);
             void on_state_change(const akashi::state::PlayState&);
             void on_state_toggle(void);
             void on_state_update(const akashi::state::PlayState&);
