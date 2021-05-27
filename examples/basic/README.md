@@ -37,7 +37,7 @@ First off, you will need to install `akashi-engine`.
 Since `akashi-engine` is distributed in PyPI, you can install it by the command:
 
 ```bash
-pip install akashi-engine
+pip install akashi-engine --pre
 ```
 
 Akashi is a tool that uses a text editor to edit videos, so you will need a text editor. Akashi introduces **ASP** (*Akashi Server Protocol*), which is an LSP-like protocol to enable seamless integration between text editors and the engine. Like LSP, **ASP** itself is **technically independent of text editors**, but it requires a client plugin for actual use. As for now, the only client implemented is for Vim, so if you want to try this example, you will need to install `akashi.vim`. 
