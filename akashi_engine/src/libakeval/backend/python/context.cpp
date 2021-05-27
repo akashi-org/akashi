@@ -52,10 +52,10 @@ namespace akashi {
             }
 
             // version check
-            auto res = py::module_::import("akashi_core").attr("utils").attr("version_check")();
-            if (!res.cast<py::tuple>()[0].cast<bool>()) {
-                AKLOG_WARN("{}", res.cast<py::tuple>()[1].cast<std::string>().c_str());
-            }
+            // auto res = py::module_::import("akashi_core").attr("utils").attr("version_check")();
+            // if (!res.cast<py::tuple>()[0].cast<bool>()) {
+            //     AKLOG_WARN("{}", res.cast<py::tuple>()[1].cast<std::string>().c_str());
+            // }
 
             this->load_module(config.entry_path, config.include_dir);
             this->register_deps_module(config.entry_path, config.include_dir);
