@@ -17,8 +17,8 @@ class ParsedOption:
 def argument_parse() -> ParsedOption:
 
     parser = argparse.ArgumentParser(
-        prog="akashi-cli",
-        description="akashi-cli",
+        prog="akashi",
+        description="akashi",
         add_help=True,
         formatter_class=RawTextHelpFormatter)
 

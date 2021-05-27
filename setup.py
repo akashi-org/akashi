@@ -75,7 +75,7 @@ setup(
     python_requires='>=3.9,<3.10',
     entry_points={
         'console_scripts': [
-            'akashi-cli = akashi_cli:akashi_cli'
+            'akashi = akashi_cli:akashi_cli'
         ],
     },
 )

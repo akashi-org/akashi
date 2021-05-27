@@ -332,11 +332,11 @@ V..... vp8_vaapi            VP8 (VAAPI) (codec vp8)
 
 In this case, the codec strings are `libvpx` or `vp8_v4l2m2m` or`vp8_vaapi`. Usually you should choose `libvpx`.
 
-Encoding itself is done by the CLI tool `akashi-cli`, which is automatically installed when you install `akashi-engine`.  
+Encoding itself is done by the CLI tool `akashi`, which is automatically installed when you install `akashi-engine`.  
 The encoding process is started by the command:
 
 ```bash
-akashi-cli build -c akconf.py
+akashi build -c akconf.py
 ```
 
 
