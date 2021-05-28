@@ -1,5 +1,5 @@
 {
-  "include": ["akashi_cli", "akashi_core", "akashi_core", "tests"],
+  "include": ["akashi_cli", "akashi_core", "tests"],
   "executionEnvironments": [
      {
        "root": "examples/basic"
