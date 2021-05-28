@@ -1,3 +1,4 @@
+# pyright: reportIncompatibleMethodOverride=false
 from __future__ import annotations
 from typing import Union
 from fractions import Fraction
@@ -7,7 +8,7 @@ from math import trunc
 
 class Second(Fraction):
 
-    def __new__(cls, num: Union[int, float, Fraction], den: Union[int, None] = None) -> Fraction:
+    def __new__(cls, num: Union[int, float, Fraction], den: Union[int, None] = None) -> Second:
         if isinstance(num, int):
             return super().__new__(cls, num, den)
         elif isinstance(num, float):

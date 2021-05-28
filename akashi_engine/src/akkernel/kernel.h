@@ -14,6 +14,7 @@ namespace akashi {
             std::string config_jstr;
             std::string renderer_path;
             uint32_t port = DEFAULT_ASP_PORT;
+            std::string config_path;
         };
 
         class KernelLoop final {

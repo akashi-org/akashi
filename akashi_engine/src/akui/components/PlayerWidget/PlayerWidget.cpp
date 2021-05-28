@@ -66,9 +66,7 @@ namespace akashi {
 
         void PlayerWidget::seek(const akashi::core::Rational& pos) { m_player->seek(pos); }
 
-        void PlayerWidget::relative_seek(const akashi::core::Rational& rel_pos) {
-            m_player->relative_seek(rel_pos);
-        }
+        void PlayerWidget::relative_seek(const double ratio) { m_player->relative_seek(ratio); }
 
         void PlayerWidget::frame_step(void) { m_player->frame_step(); }
 
@@ -79,6 +77,8 @@ namespace akashi {
         void PlayerWidget::inline_eval(const std::string& file_path, const std::string& elem_name) {
             m_player->inline_eval(file_path, elem_name);
         }
+
+        void PlayerWidget::set_volume(const double volume) { m_player->set_volume(volume); }
 
         void PlayerWidget::initializeGL() {
             m_player->init({PlayerWidget::on_event}, this, {get_proc_address},

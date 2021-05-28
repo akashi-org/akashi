@@ -30,9 +30,10 @@ def readme():
 
 setup(
     name='akashi-engine',
-    version='0.1.0a1',
+    version='0.1.0',
     description='A next-generation video editor',
     long_description=readme(),
+    long_description_content_type='text/markdown',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: Apache Software License',
@@ -75,7 +76,7 @@ setup(
     python_requires='>=3.9,<3.10',
     entry_points={
         'console_scripts': [
-            'akashi-cli = akashi_cli:akashi_cli'
+            'akashi = akashi_cli:akashi_cli'
         ],
     },
 )

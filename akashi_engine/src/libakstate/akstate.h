@@ -94,9 +94,6 @@ namespace akashi {
 
             size_t audio_max_queue_size = 1024 * 1024 * 100; // 100mb
 
-            // used for dequeueing
-            size_t loop_cnt = 0;
-
             // [TODO] any other ways to handle this?
             // set to true when play over is detected in akaudio
             // set to false when handled properly in player loop
@@ -142,11 +139,17 @@ namespace akashi {
 
             std::atomic<PlayState> icon_play_state{PlayState::STOPPED};
 
+            std::atomic<PlayState> last_play_state{PlayState::STOPPED};
+
             std::atomic<double> volume = 0.5;
 
             std::atomic<bool> ui_can_seek = true;
 
             std::atomic<core::VideoDecodeMethod> decode_method = core::VideoDecodeMethod::NONE;
+
+            std::atomic<size_t> play_loop_cnt = 0;
+
+            std::atomic<size_t> decode_loop_cnt = 0;
         };
 
         class AKState final {
@@ -160,6 +163,7 @@ namespace akashi {
             // [TODO] atomic?
             AK_DEF_SYNC_STATE(audio_play_ready, bool, false)
 
+            AK_DEF_SYNC_STATE(decode_layers_not_empty, bool, false)
             AK_DEF_SYNC_STATE(video_decode_ready, bool, true)
             AK_DEF_SYNC_STATE(audio_decode_ready, bool, true)
 
@@ -178,8 +182,10 @@ namespace akashi {
             // no need to be synced?
             core::UIConf m_ui_conf;
 
+            core::Path m_conf_path;
+
           public:
-            explicit AKState(const core::AKConf& akconf);
+            explicit AKState(const core::AKConf& akconf, const std::string& conf_path);
             virtual ~AKState();
         };
 

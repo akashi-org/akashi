@@ -39,6 +39,16 @@
     }
 
 namespace akashi {
+    namespace state {
+        // clang-format off
+        NLOHMANN_JSON_SERIALIZE_ENUM(PlayState, {
+            {PlayState::NONE, nullptr},
+            {PlayState::STOPPED, "stopped"},
+            {PlayState::PAUSED, "paused"},
+            {PlayState::PLAYING, "playing"}
+        })
+        // clang-format on
+    }
     namespace server {
 
         // clang-format off
@@ -53,6 +63,8 @@ namespace akashi {
             {MEDIA_FRAME_STEP, "media/frame_step"},
             {MEDIA_FRAME_BACK_STEP, "media/frame_back_step"},
             {MEDIA_CURRENT_TIME, "media/current_time"},
+            {MEDIA_CHANGE_PLAYSTATE, "media/change_playstate"},
+            {MEDIA_CHANGE_PLAYVOLUME, "media/change_playvolume"},
             {GUI_GET_WIDGETS, "gui/get_widgets"},
             {GUI_CLICK, "gui/click"}
         })
@@ -194,7 +206,7 @@ namespace akashi {
                     break;
                 }
                 case ASPMethod::MEDIA_RELATIVE_SEEK: {
-                    PARSE_PARAMS(req_j, res_j, params, int, int)
+                    PARSE_PARAMS(req_j, res_j, params, double)
                     EXEC_METHOD(res_j, api_set, api_set.media->relative_seek, params)
                     break;
                 }
@@ -208,6 +220,16 @@ namespace akashi {
                 }
                 case ASPMethod::MEDIA_CURRENT_TIME: {
                     EXEC_METHOD_NO_PARAMS(res_j, api_set, api_set.media->current_time)
+                    break;
+                }
+                case ASPMethod::MEDIA_CHANGE_PLAYSTATE: {
+                    PARSE_PARAMS(req_j, res_j, params, state::PlayState)
+                    EXEC_METHOD(res_j, api_set, api_set.media->change_playstate, params)
+                    break;
+                }
+                case ASPMethod::MEDIA_CHANGE_PLAYVOLUME: {
+                    PARSE_PARAMS(req_j, res_j, params, double)
+                    EXEC_METHOD(res_j, api_set, api_set.media->change_playvolume, params)
                     break;
                 }
                 case ASPMethod::GUI_GET_WIDGETS: {
@@ -255,9 +277,21 @@ namespace akashi {
                     break;
                 }
                 case ASPMethod::MEDIA_RELATIVE_SEEK: {
-                    auto params = req_j.at("params").get<std::tuple<int, int>>();
-                    req.params = RPCRequestParams<ASPMethod::MEDIA_RELATIVE_SEEK>{
-                        std::get<0>(params), std::get<1>(params)};
+                    auto params = req_j.at("params").get<std::tuple<double>>();
+                    req.params =
+                        RPCRequestParams<ASPMethod::MEDIA_RELATIVE_SEEK>{std::get<0>(params)};
+                    break;
+                }
+                case ASPMethod::MEDIA_CHANGE_PLAYSTATE: {
+                    auto params = req_j.at("params").get<std::tuple<state::PlayState>>();
+                    req.params =
+                        RPCRequestParams<ASPMethod::MEDIA_CHANGE_PLAYSTATE>{std::get<0>(params)};
+                    break;
+                }
+                case ASPMethod::MEDIA_CHANGE_PLAYVOLUME: {
+                    auto params = req_j.at("params").get<std::tuple<double>>();
+                    req.params =
+                        RPCRequestParams<ASPMethod::MEDIA_CHANGE_PLAYVOLUME>{std::get<0>(params)};
                     break;
                 }
                 case ASPMethod::GUI_CLICK: {

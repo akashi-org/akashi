@@ -50,6 +50,7 @@ namespace akashi {
             virtual ~Window();
             void toggleFullScreen();
             void setTransparent(bool transparent);
+            void changePlayState(const state::PlayState& new_state);
 
           protected:
             virtual void showEvent(QShowEvent* event) override;
@@ -78,10 +79,11 @@ namespace akashi {
             void on_seek(const akashi::core::Rational&);
             void on_frame_step(void);
             void on_frame_back_step(void);
-            void on_forward_jump(const akashi::core::Rational&);
-            void on_backward_jump(const akashi::core::Rational&);
+            void on_forward_jump(const double);
+            void on_backward_jump(const double);
             void on_state_change(const akashi::state::PlayState&);
             void on_state_toggle(void);
+            void on_state_update(const akashi::state::PlayState&);
             void on_time_change(akashi::core::Fraction&);
             void on_render_prof_updated(akashi::core::RenderProfile&);
             void on_seek_completed(void);

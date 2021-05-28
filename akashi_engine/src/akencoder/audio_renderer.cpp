@@ -1,10 +1,9 @@
 #include "./audio_renderer.h"
-#include "../encode_queue.h"
 
 #include <libakcore/logger.h>
 #include <libakcore/rational.h>
 #include <libakcore/memory.h>
-
+#include <libakcodec/encode_item.h>
 #include <libakstate/akstate.h>
 #include <libakbuffer/avbuffer.h>
 #include <libakbuffer/audio_buffer.h>
@@ -14,12 +13,12 @@ using namespace akashi::core;
 namespace akashi {
     namespace encoder {
 
-        std::vector<EncodeQueueData> render_audio(core::Rational* audio_encode_pts,
-                                                  const core::borrowed_ptr<state::AKState> state,
-                                                  core::borrowed_ptr<buffer::AudioBuffer> abuffer,
-                                                  const size_t nb_samples_per_frame,
-                                                  const core::Rational& max_pts) {
-            std::vector<EncodeQueueData> datasets;
+        std::vector<codec::EncodeArg> render_audio(core::Rational* audio_encode_pts,
+                                                   const core::borrowed_ptr<state::AKState> state,
+                                                   core::borrowed_ptr<buffer::AudioBuffer> abuffer,
+                                                   const size_t nb_samples_per_frame,
+                                                   const core::Rational& max_pts) {
+            std::vector<codec::EncodeArg> datasets;
 
             auto audio_spec = state->m_atomic_state.audio_spec.load();
             auto audio_buf_size =
@@ -32,7 +31,7 @@ namespace akashi {
                 if (frame_pts > max_pts) {
                     break;
                 }
-                EncodeQueueData queue_data;
+                codec::EncodeArg queue_data;
                 queue_data.pts = frame_pts;
                 queue_data.buf_size = audio_buf_size;
                 queue_data.buffer.reset(new uint8_t[queue_data.buf_size]());
@@ -61,11 +60,11 @@ namespace akashi {
             return datasets;
         }
 
-        std::vector<EncodeQueueData>
+        std::vector<codec::EncodeArg>
         render_null_audio(core::Rational* audio_encode_pts,
                           const core::borrowed_ptr<state::AKState> state,
                           const size_t nb_samples_per_frame, const core::Rational& max_pts) {
-            std::vector<EncodeQueueData> datasets;
+            std::vector<codec::EncodeArg> datasets;
 
             auto audio_spec = state->m_atomic_state.audio_spec.load();
             auto audio_buf_size =
@@ -78,7 +77,7 @@ namespace akashi {
                 if (frame_pts > max_pts) {
                     break;
                 }
-                EncodeQueueData queue_data;
+                codec::EncodeArg queue_data;
                 queue_data.pts = frame_pts;
                 queue_data.buf_size = audio_buf_size;
                 queue_data.buffer.reset(new uint8_t[queue_data.buf_size]());

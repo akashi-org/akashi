@@ -45,21 +45,14 @@ namespace akashi {
             // [TODO] lock-free?
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
-                m_state->m_prop.loop_cnt += 1;
                 m_state->m_prop.trigger_video_reset = true;
             }
+            m_state->m_atomic_state.play_loop_cnt += 1;
             return;
         };
 
         size_t CallbackContext::loop_cnt(void) const {
-            // [TODO] lock?
-            return m_state->m_prop.loop_cnt;
-
-            // [TODO] lock-free?
-            // {
-            //     std::lock_guard<std::mutex> lock(m_player_ctx->m_prop_mtx);
-            //     return m_player_ctx->m_prop.loop_cnt;
-            // }
+            return m_state->m_atomic_state.play_loop_cnt;
         };
 
         void CallbackContext::incr_bytes_played(int64_t bytes) {
@@ -71,14 +64,18 @@ namespace akashi {
             return m_state->m_prop.render_prof.atom_profiles;
         };
 
-        const core::AtomProfile&
-        CallbackContext::select_current_atom(const size_t requested_bytes) {
-            const auto cur_atom_to = to_rational(
-                this->atom_profiles()[m_state->m_atomic_state.current_atom_index.load()].to);
+        core::AtomProfile CallbackContext::select_current_atom(const size_t requested_bytes) {
+            auto atom_profiles = this->atom_profiles();
+            if (atom_profiles.empty()) {
+                return {};
+            }
+
+            const auto cur_atom_to =
+                to_rational(atom_profiles[m_state->m_atomic_state.current_atom_index.load()].to);
             Rational next_pts = this->current_time() + this->to_pts(requested_bytes);
 
             if (next_pts <= cur_atom_to) {
-                return this->atom_profiles()[m_state->m_atomic_state.current_atom_index.load()];
+                return atom_profiles[m_state->m_atomic_state.current_atom_index.load()];
             } else {
                 if (this->is_play_over()) {
                     m_state->m_atomic_state.current_atom_index.store(0);
@@ -88,7 +85,7 @@ namespace akashi {
                 } else {
                     m_state->m_atomic_state.current_atom_index.fetch_add(1);
                 }
-                return this->atom_profiles()[m_state->m_atomic_state.current_atom_index.load()];
+                return atom_profiles[m_state->m_atomic_state.current_atom_index.load()];
             }
         }
 
@@ -234,7 +231,13 @@ namespace akashi {
         void stream_write_cb(pa_stream* stream, size_t requested_bytes, void* userdata) {
             auto cb_ctx = (CallbackContext*)userdata;
 
-            if (cb_ctx->state() != state::PlayState::PLAYING) {
+            // [TODO] select_current_atom has sideeffects!!
+            // loop_cnt,cur_pts,next_pts must be calculated after select_current_atom is called
+            // clearly we need some refactoring for this
+            const auto cur_atom = cb_ctx->select_current_atom(requested_bytes);
+            const auto cur_layers = cur_atom.layers;
+
+            if ((cb_ctx->state() != state::PlayState::PLAYING) || cur_layers.empty()) {
                 // [TODO] we want just do a return, but in that case, callback will not be called
                 // from then
                 memset(s_mask_buf.buf, 0, requested_bytes);
@@ -242,13 +245,10 @@ namespace akashi {
                                     PA_SEEK_RELATIVE) < 0) {
                     AKLOG_ERROR("stream_write_cb() failed: {}", cb_ctx->get_pa_error());
                 }
+                cb_ctx->incr_bytes_played(requested_bytes);
+                s_mask_buf.buf_size = 0;
                 return;
             }
-
-            // [TODO] select_current_atom has sideeffects!!
-            // loop_cnt,cur_pts,next_pts must be calculated after select_current_atom is called
-            // clearly we need some refactoring for this
-            const auto cur_layers = cb_ctx->select_current_atom(requested_bytes).layers;
 
             Rational cur_pts = cb_ctx->current_time();
             Rational next_pts = cur_pts + cb_ctx->to_pts(requested_bytes);

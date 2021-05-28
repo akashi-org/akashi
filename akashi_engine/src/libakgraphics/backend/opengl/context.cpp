@@ -129,14 +129,7 @@ namespace akashi {
             }
         }
 
-        size_t GLGraphicsContext::loop_cnt() {
-            size_t loop_cnt = 0;
-            {
-                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
-                loop_cnt = m_state->m_prop.loop_cnt;
-            }
-            return loop_cnt;
-        }
+        size_t GLGraphicsContext::loop_cnt() { return m_state->m_atomic_state.play_loop_cnt; }
 
         bool GLGraphicsContext::shader_reload() {
             bool shader_reload = false;

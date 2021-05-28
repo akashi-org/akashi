@@ -1,6 +1,5 @@
 #include "./utils.h"
 
-#include <libakcore/codec.h>
 #include <libakbuffer/avbuffer.h>
 #include <libakcore/rational.h>
 #include <libakcore/logger.h>
@@ -47,20 +46,6 @@ namespace akashi {
                 default:
                     AKLOG_ERROR("Invalid type {}", media_type);
                     return buffer::AVBufferType::UNKNOWN;
-            }
-        }
-
-        AVCodecID to_ff_codec_id(const core::EncodeCodec& codec) {
-            switch (codec) {
-                case EncodeCodec::V_H264:
-                    return AV_CODEC_ID_H264;
-                case EncodeCodec::A_AAC:
-                    return AV_CODEC_ID_AAC;
-                case EncodeCodec::A_MP3:
-                    return AV_CODEC_ID_MP3;
-                default: {
-                    return AV_CODEC_ID_NONE;
-                }
             }
         }
 

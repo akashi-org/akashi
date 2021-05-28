@@ -5,6 +5,7 @@
 
 #include <libakserver/akserver.h>
 #include <libakcore/rational.h>
+#include <libakstate/akstate.h>
 
 #include <QWidget>
 #include <QImage>
@@ -48,10 +49,9 @@ namespace akashi {
                 Qt::BlockingQueuedConnection);
         }
 
-        bool ASPMediaAPIImpl::relative_seek(const int num, const int den) {
+        bool ASPMediaAPIImpl::relative_seek(const double ratio) {
             return QMetaObject::invokeMethod(
-                m_player, [&]() { m_player->relative_seek(Rational(num, den)); },
-                Qt::BlockingQueuedConnection);
+                m_player, [&]() { m_player->relative_seek(ratio); }, Qt::BlockingQueuedConnection);
         }
 
         bool ASPMediaAPIImpl::frame_step(void) {
@@ -70,6 +70,17 @@ namespace akashi {
                 m_player, [&]() { current_time = m_player->current_time(); },
                 Qt::BlockingQueuedConnection);
             return {current_time.num(), current_time.den()};
+        }
+
+        bool ASPMediaAPIImpl::change_playstate(const state::PlayState& play_state) {
+            return QMetaObject::invokeMethod(
+                m_root, [&]() { static_cast<ui::Window*>(m_root)->changePlayState(play_state); },
+                Qt::BlockingQueuedConnection);
+        }
+
+        bool ASPMediaAPIImpl::change_playvolume(const double volume) {
+            return QMetaObject::invokeMethod(
+                m_player, [&]() { m_player->set_volume(volume); }, Qt::BlockingQueuedConnection);
         }
 
     }

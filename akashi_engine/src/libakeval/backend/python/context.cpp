@@ -35,7 +35,7 @@ namespace akashi {
 
         PyEvalContext::PyEvalContext(core::borrowed_ptr<state::AKState> state)
             : EvalContext(state), m_state(state) {
-            AKLOG_DEBUGN("YPyEvalContext init");
+            AKLOG_DEBUGN("PyEvalContext init");
 
             py::initialize_interpreter();
 
@@ -52,10 +52,10 @@ namespace akashi {
             }
 
             // version check
-            auto res = py::module_::import("akashi_core").attr("utils").attr("version_check")();
-            if (!res.cast<py::tuple>()[0].cast<bool>()) {
-                AKLOG_WARN("{}", res.cast<py::tuple>()[1].cast<std::string>().c_str());
-            }
+            // auto res = py::module_::import("akashi_core").attr("utils").attr("version_check")();
+            // if (!res.cast<py::tuple>()[0].cast<bool>()) {
+            //     AKLOG_WARN("{}", res.cast<py::tuple>()[1].cast<std::string>().c_str());
+            // }
 
             this->load_module(config.entry_path, config.include_dir);
             this->register_deps_module(config.entry_path, config.include_dir);
@@ -138,11 +138,13 @@ namespace akashi {
 
             py::object elem;
             if (elem_name.empty()) {
-                elem = it->second->mod.attr(Path(module_path).to_stem().to_str());
+                if (py::hasattr(it->second->mod, "__akashi_export_elem_fn")) {
+                    elem = it->second->mod.attr("__akashi_export_elem_fn")();
+                }
             } else {
                 std::string ret_sig;
                 try {
-                    elem = it->second->mod.attr(elem_name.c_str());
+                    elem = it->second->mod.attr(elem_name.c_str())();
                     ret_sig = elem.attr("__annotations__")["return"].cast<std::string>();
                 } catch (const std::exception& e) {
                     AKLOG_ERROR("{}", e.what());

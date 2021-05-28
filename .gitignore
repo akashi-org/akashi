@@ -37,6 +37,10 @@ vendor/
 *.ppm
 *.pcm
 
+# example
+!**/examples/basic/assets/
+!**/examples/basic/assets/river.mp4
+
 # python
 dist/
 .venv/

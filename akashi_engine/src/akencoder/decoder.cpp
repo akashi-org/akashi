@@ -57,7 +57,7 @@ namespace akashi {
                     case codec::DecodeResultCode::OK: {
                         switch (decode_res.buffer->prop().media_type) {
                             case buffer::AVBufferType::VIDEO: {
-                                if (state->m_encode_conf.video_codec != core::EncodeCodec::NONE) {
+                                if (state->m_encode_conf.video_codec != "") {
                                     const auto comp_layer_uuid =
                                         decode_res.layer_uuid + std::to_string(0);
                                     buffer->vq->enqueue(comp_layer_uuid,
@@ -66,7 +66,7 @@ namespace akashi {
                                 break;
                             }
                             case buffer::AVBufferType::AUDIO: {
-                                if (state->m_encode_conf.audio_codec != core::EncodeCodec::NONE) {
+                                if (state->m_encode_conf.audio_codec != "") {
                                     const auto comp_layer_uuid =
                                         decode_res.layer_uuid + std::to_string(0);
                                     auto pts = decode_res.buffer->prop().pts;

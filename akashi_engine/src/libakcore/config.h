@@ -3,7 +3,6 @@
 #include "./rational.h"
 #include "./audio.h"
 #include "./hw_accel.h"
-#include "./codec.h"
 
 #include <string>
 #include <vector>
@@ -43,9 +42,10 @@ namespace akashi {
 
         struct EncodeConf {
             std::string out_fname;
-            EncodeCodec video_codec;
-            EncodeCodec audio_codec;
+            std::string video_codec;
+            std::string audio_codec;
             size_t encode_max_queue_count;
+            VideoEncodeMethod encode_method;
         };
 
         struct AKConf {

@@ -84,6 +84,11 @@ namespace akashi {
             std::vector<watch::WatchEvent> shader_events;
             for (size_t i = 0; i < event_list.size; i++) {
                 std::cmatch m;
+                // skip reloading for config file
+                if (std::string(event_list.events[i].file_path) ==
+                    std::string(m_state->m_conf_path.to_str())) {
+                    continue;
+                }
                 if (std::regex_match(event_list.events[i].file_path, m, std::regex(".*\\.py$"))) {
                     python_events.push_back(event_list.events[i]);
                 }
@@ -142,6 +147,8 @@ namespace akashi {
 
             m_event->emit_set_render_prof(profile); // be careful that decode_ready is called
 
+            m_state->set_decode_layers_not_empty(core::has_layers(profile), true);
+
             m_eval_buf->clear();
             // m_event->emit_pull_eval_buffer(50);
             // m_state->wait_for_evalbuf_dequeue_ready();
@@ -161,7 +168,7 @@ namespace akashi {
             m_state->set_evalbuf_dequeue_ready(true);
             m_state->set_seek_completed(true);
 
-            // m_event->emit_update();
+            m_event->emit_update();
             // m_state->set_play_ready(true);
             // {
             //     std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
@@ -202,7 +209,8 @@ namespace akashi {
                 m_state->m_prop.eval_state.config.entry_path = Path(inline_eval_ctx.file_path);
                 m_state->m_prop.eval_state.config.elem_name = inline_eval_ctx.elem_name;
                 // [XXX] reset loop_cnt here
-                m_state->m_prop.loop_cnt = 0;
+                m_state->m_atomic_state.decode_loop_cnt = 0;
+                m_state->m_atomic_state.play_loop_cnt = 0;
             }
 
             // start seek
@@ -231,6 +239,8 @@ namespace akashi {
 
             m_event->emit_set_render_prof(profile); // be careful that decode_ready is called
 
+            m_state->set_decode_layers_not_empty(core::has_layers(profile), true);
+
             m_eval_buf->clear();
             // m_event->emit_pull_eval_buffer(50);
             // m_state->wait_for_evalbuf_dequeue_ready();
@@ -249,6 +259,8 @@ namespace akashi {
             // end seek
             m_state->set_evalbuf_dequeue_ready(true);
             m_state->set_seek_completed(true);
+
+            m_event->emit_update();
 
             return true;
         }

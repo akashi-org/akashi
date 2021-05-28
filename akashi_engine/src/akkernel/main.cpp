@@ -46,12 +46,12 @@ int main(int argc, char** argv) {
     create_logger(cap);
 
     auto akconf = akashi::core::parse_akconfig(argv[1]);
-    akashi::state::AKState state(akconf);
+    akashi::state::AKState state(akconf, argv[3]);
 
     AKLOG_INFON("Akashi Kernel Init");
 
     akashi::kernel::KernelLoop kernel_loop;
-    kernel_loop.run({argv[1], argv[2], 1234});
+    kernel_loop.run({argv[1], argv[2], 1234, argv[3]});
 
     int signum;
     sigwait(&ss, &signum);

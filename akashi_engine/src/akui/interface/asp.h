@@ -7,6 +7,9 @@
 class QWidget;
 
 namespace akashi {
+    namespace state {
+        enum class PlayState;
+    }
     namespace ui {
 
         class PlayerWidget;
@@ -33,13 +36,17 @@ namespace akashi {
 
             bool seek(const int num, const int den) override;
 
-            bool relative_seek(const int num, const int den) override;
+            bool relative_seek(const double ratio) override;
 
             bool frame_step(void) override;
 
             bool frame_back_step(void) override;
 
             std::vector<int64_t> current_time(void) override;
+
+            bool change_playstate(const state::PlayState& play_state) override;
+
+            bool change_playvolume(const double volume) override;
 
           private:
             QWidget* m_root;

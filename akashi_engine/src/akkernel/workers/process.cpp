@@ -67,8 +67,9 @@ namespace akashi {
             boost::process::ipstream out;
             boost::process::opstream in;
 
-            std::string cmd_str =
-                ctx.state->prop().renderer_path + " " + "\"" + ctx.state->prop().config_jstr + "\"";
+            std::string cmd_str = ctx.state->prop().renderer_path + " " + "\"" +
+                                  ctx.state->prop().config_jstr + "\"" + " " +
+                                  ctx.state->prop().config_path;
             auto c = new boost::process::child{cmd_str, std_out > out, std_in < in};
 
             int rest_wait_ms = ctx.state->prop().max_wait_ms_renderer_wakeup;

@@ -14,6 +14,7 @@ namespace akashi {
                 std::string config_jstr;
                 std::string renderer_path;
                 uint32_t port = 0;
+                std::string config_path;
                 int max_wait_ms_renderer_wakeup = 5000;
             };
             using Transformer = std::function<void(Prop& new_prop)>;

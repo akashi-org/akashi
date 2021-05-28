@@ -38,6 +38,7 @@ namespace akashi {
                     break;
                 }
                 case LayerType::IMAGE: {
+                    update_translate(ctx, layer_ctx, new_mvp);
                     update_scale(ctx, mesh_prop.tex, new_mvp, layer_ctx.image_layer_ctx.scale);
                     break;
                 }
@@ -338,7 +339,7 @@ namespace akashi {
             tex.width = surface->w;
             tex.height = surface->h;
             tex.effective_width = surface->w;
-            tex.effective_height = surface->w;
+            tex.effective_height = surface->h;
             tex.format = (surface->format->BytesPerPixel == 3) ? GL_RGB : GL_RGBA;
             tex.surface = surface;
 

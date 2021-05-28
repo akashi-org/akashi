@@ -35,11 +35,12 @@ namespace akashi {
             void play(void);
             void pause(void);
             void seek(const akashi::core::Rational& pos);
-            void relative_seek(const akashi::core::Rational& rel_pos);
+            void relative_seek(const double ratio);
             void frame_step(void);
             void frame_back_step(void);
             core::Rational current_time(void);
             void inline_eval(const std::string& file_path, const std::string& elem_name);
+            void set_volume(const double volume);
 
           Q_SIGNALS:
             void closed(void);

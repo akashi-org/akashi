@@ -100,20 +100,29 @@ namespace akashi {
 
         void AKPlayer::seek(const core::Rational& seek_time) {
             bool on_seeking = false;
+            Rational real_seek_time;
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 on_seeking = !m_state->get_seek_completed();
+                Rational tpf = (Rational(1, 1) / m_state->m_prop.fps);
+                Rational seek_max = to_rational(m_state->m_prop.render_prof.duration) - tpf;
+                real_seek_time = Rational((int64_t)((seek_time / tpf).to_decimal()), 1) * tpf;
+                real_seek_time = real_seek_time < Rational(0, 1) ? Rational(0, 1)
+                                 : real_seek_time > seek_max     ? seek_max
+                                                                 : real_seek_time;
             }
             if (!on_seeking) {
-                m_event->emit_seek(seek_time);
+                m_event->emit_seek(real_seek_time);
             }
         }
 
-        void AKPlayer::relative_seek(const core::Rational& rel_seek_time) {
+        void AKPlayer::relative_seek(const double ratio) {
             Rational seek_time;
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
-                seek_time = m_state->m_prop.current_time + rel_seek_time;
+                Rational incr_time =
+                    Rational(ratio) * to_rational(m_state->m_prop.render_prof.duration);
+                seek_time = m_state->m_prop.current_time + incr_time;
             }
             this->seek(seek_time);
         }
@@ -163,6 +172,8 @@ namespace akashi {
         void AKPlayer::inline_eval(const std::string& fpath, const std::string& elem_name) {
             m_event->emit_inline_eval(fpath, elem_name);
         }
+
+        void AKPlayer::set_volume(const double volume) { m_state->m_atomic_state.volume = volume; }
 
         core::Rational AKPlayer::current_time() const { return m_audio->current_time(); }
 

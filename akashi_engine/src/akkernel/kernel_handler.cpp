@@ -85,18 +85,18 @@ namespace akashi {
             // [XXX] exit_code may not be usable on Windows
             // https://www.boost.org/doc/libs/1_74_0/doc/html/boost_process/concepts.html#boost_process.concepts.process.exit_code
             // segv
-            if ((params.exit_code == SIGSEGV || params.exit_code == SIGABRT) &&
-                ctx.state->prop().seq_process_error_exit < 3) {
-                ctx.state->transform_prop(
-                    [](auto& new_prop) { new_prop.seq_process_error_exit += 1; });
-                if (ctx.process_worker->get_thread_alive()) {
-                    ctx.process_worker->terminate();
-                }
-                ctx.process_worker->run({ctx.state, ctx.event_queue});
-            } else {
-                ctx.state->transform_prop(
-                    [](auto& new_prop) { new_prop.seq_process_error_exit = 0; });
-            }
+            // if ((params.exit_code == SIGSEGV || params.exit_code == SIGABRT) &&
+            //     ctx.state->prop().seq_process_error_exit < 3) {
+            //     ctx.state->transform_prop(
+            //         [](auto& new_prop) { new_prop.seq_process_error_exit += 1; });
+            //     if (ctx.process_worker->get_thread_alive()) {
+            //         ctx.process_worker->terminate();
+            //     }
+            //     ctx.process_worker->run({ctx.state, ctx.event_queue});
+            // } else {
+            //     ctx.state->transform_prop(
+            //         [](auto& new_prop) { new_prop.seq_process_error_exit = 0; });
+            // }
         }
 
     }

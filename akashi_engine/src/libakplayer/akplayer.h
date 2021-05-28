@@ -49,7 +49,7 @@ namespace akashi {
 
             void seek(const core::Rational& seek_time);
 
-            void relative_seek(const core::Rational& rel_seek_time);
+            void relative_seek(const double ratio);
 
             void frame_step(void);
 
@@ -58,6 +58,8 @@ namespace akashi {
             void set_render_prof(core::RenderProfile& render_prof);
 
             void inline_eval(const std::string& fpath, const std::string& elem_name);
+
+            void set_volume(const double volume);
 
             core::Rational current_frame_time();
 

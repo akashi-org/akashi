@@ -28,7 +28,7 @@ namespace akashi {
                 render_prof_uuid = m_state->m_prop.render_prof.uuid;
                 seek_id = m_state->m_prop.seek_id;
             }
-            loop_cnt = 0;
+            loop_cnt = m_state->m_atomic_state.decode_loop_cnt;
         }
 
         void DecodeState::seek_update(void) {
@@ -47,13 +47,20 @@ namespace akashi {
                 atom_profiles = m_state->m_prop.render_prof.atom_profiles;
                 render_prof_uuid = m_state->m_prop.render_prof.uuid;
             }
-            loop_cnt = 0;
+            m_state->m_atomic_state.decode_loop_cnt = 0;
+            loop_cnt = m_state->m_atomic_state.decode_loop_cnt;
+        }
+
+        void DecodeState::loop_incr(void) {
+            m_state->m_atomic_state.decode_loop_cnt += 1;
+            loop_cnt = m_state->m_atomic_state.decode_loop_cnt;
         }
 
         void DecodeLoop::decode_thread(DecodeLoopContext ctx, DecodeLoop* loop) {
             AKLOG_INFON("Decoder thread start");
 
             ctx.state->wait_for_evalbuf_dequeue_ready();
+            ctx.state->wait_for_decode_layers_not_empty();
 
             AKLOG_INFON("Decoder loop start");
 
@@ -68,10 +75,23 @@ namespace akashi {
                 ctx.state->wait_for_video_decode_ready();
                 ctx.state->wait_for_audio_decode_ready();
                 ctx.state->wait_for_seek_completed();
+                ctx.state->wait_for_decode_layers_not_empty();
 
                 if (DecodeLoop::seek_detected(ctx.state, decode_state)) {
                     AKLOG_INFON("Decode State updated by seek");
                     decode_state.seek_update();
+
+                    if (ctx.state->m_atomic_state.decode_loop_cnt !=
+                        ctx.state->m_atomic_state.play_loop_cnt) {
+                        auto str_loop_cnt =
+                            std::to_string(ctx.state->m_atomic_state.decode_loop_cnt);
+                        ctx.buffer->vq->clear_by_loop_cnt(str_loop_cnt);
+                        ctx.buffer->aq->clear_by_loop_cnt(str_loop_cnt);
+
+                        ctx.state->m_atomic_state.decode_loop_cnt =
+                            ctx.state->m_atomic_state.play_loop_cnt.load();
+                        decode_state.loop_cnt = ctx.state->m_atomic_state.play_loop_cnt.load();
+                    }
 
                     bool seek_success = true;
                     {
@@ -114,7 +134,7 @@ namespace akashi {
                                    decode_res.result);
                         if (enable_loop) {
                             delete decoder;
-                            decode_state.loop_cnt += 1;
+                            decode_state.loop_incr();
                             decode_state.decode_pts = Rational(0, 1);
                             decoder = new codec::AKDecoder(decode_state.atom_profiles,
                                                            decode_state.decode_pts);

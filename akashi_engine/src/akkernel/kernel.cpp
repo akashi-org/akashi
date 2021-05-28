@@ -43,6 +43,7 @@ namespace akashi {
                 new_prop.config_jstr = ctx.config_jstr;
                 new_prop.renderer_path = ctx.renderer_path;
                 new_prop.port = ctx.port;
+                new_prop.config_path = ctx.config_path;
                 new_prop.seq_process_error_exit = 0;
             });
 

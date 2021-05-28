@@ -77,7 +77,7 @@ namespace akashi {
 
         SliderSection::SliderSection(core::borrowed_ptr<akashi::state::AKState> state,
                                      QWidget* parent)
-            : QWidget(parent) {
+            : QWidget(parent), m_state(state) {
             {
                 std::lock_guard<std::mutex> lock(state->m_prop_mtx);
                 m_unit = Rational(1, 1) / state->m_prop.fps;
@@ -104,6 +104,18 @@ namespace akashi {
 
             QObject::connect(this->slider, &AKVideoSlider::sliderMoved, [=](int pos) {
                 Q_EMIT this->slider_moved(Rational(pos, 1) * m_unit);
+            });
+
+            QObject::connect(this->slider, &AKVideoSlider::sliderPressed, [=]() {
+                m_state->m_atomic_state.last_play_state.store(
+                    m_state->m_atomic_state.icon_play_state.load());
+                Q_EMIT this->slider_pressed(akashi::state::PlayState::PAUSED);
+            });
+
+            QObject::connect(this->slider, &AKVideoSlider::sliderReleased, [=]() {
+                if (m_state->m_atomic_state.last_play_state == state::PlayState::PLAYING) {
+                    Q_EMIT this->slider_released(akashi::state::PlayState::PLAYING);
+                }
             });
 
             QObject::connect(this->slider, &AKVideoSlider::ctrlRightKeyPressed,

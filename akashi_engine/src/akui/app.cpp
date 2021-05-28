@@ -54,7 +54,7 @@ namespace akashi {
             }
 
             auto akconf = core::parse_akconfig(ctx.argv[1]);
-            akashi::state::AKState state(akconf);
+            akashi::state::AKState state(akconf, ctx.argv[2]);
 
             Window window{borrowed_ptr(&state)};
             // disable auto focus on startup
