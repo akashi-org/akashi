@@ -42,7 +42,7 @@ If you use Debian, you can install these dependencies by the command below.
 
 `apt install ffmpeg qtbase5-dev libsdl2-2.0-0 libsdl2-image-2.0-0 libsdl2-ttf-2.0-0 `
 
-If your system satisfies the requirements, go to [Basic Example](https://github.com/akashi-org/akashi/examples/basic/) and follow the instructions there.
+If your system satisfies the requirements, go to [Basic Example](https://github.com/akashi-org/akashi/tree/master/examples/basic) and follow the instructions there.
 If you have any questions, please feel free to ask in issues page.
 
 ## Screenshots
