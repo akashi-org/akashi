@@ -1,11 +1,11 @@
 from __future__ import annotations
 from typing import (
     Tuple,
-    Any
+    Any,
+    Literal
 )
 from .time import Second
 from dataclasses import dataclass, asdict
-from enum import Enum, auto
 from os import path
 import json
 
@@ -28,79 +28,44 @@ class VideoConf:
     default_font_path: str = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
 
 
-class AudioSampleFormat(Enum):
-    NONE = -1
-    U8 = 0
-    S16 = auto()
-    S32 = auto()
-    FLT = auto()
-    DBL = auto()
-
-    def to_json(self):
-        return self.value
+AudioSampleFormat = Literal['', 'u8', 's16', 's32', 'flt', 'dbl']
 
 
-class AudioChannelLayout(Enum):
-    NONE = -1
-    MONO = 0
-    STEREO = auto()
-
-    def to_json(self):
-        return self.value
+AudioChannelLayout = Literal['', 'mono', 'stereo']
 
 
 @dataclass(frozen=True)
 class AudioConf:
-    format: AudioSampleFormat = AudioSampleFormat.FLT
+    format: AudioSampleFormat = 'flt'
     sample_rate: int = 44100
     channels: int = 2
-    channel_layout: AudioChannelLayout = AudioChannelLayout.STEREO
+    channel_layout: AudioChannelLayout = 'stereo'
 
 
-class VideoDecodeMethod(Enum):
-    NONE = -1
-    SW = 0  # software decode
-    VAAPI = auto()  # vaapi
-    VAAPI_COPY = auto()  # vaapi-copy
-
-    def to_json(self):
-        return self.value
+VideoDecodeMethod = Literal['', 'sw', 'vaapi', 'vaapi_copy']
 
 
 @dataclass(frozen=True)
 class PlaybackConf:
     enable_loop: bool = True
     gain: float = 0.5  # 0 ~ 1.0
-    decode_method: VideoDecodeMethod = VideoDecodeMethod.SW
+    decode_method: VideoDecodeMethod = 'sw'
     video_max_queue_size: int = 1024 * 1024 * 300  # 300mb
     video_max_queue_count: int = 64  # max frame counts (applicable for hwdec)
     audio_max_queue_size: int = 1024 * 1024 * 10  # 10mb
 
 
-class WindowMode(Enum):
-    NONE = -1
-    SPLIT = 0
-    IMMERSIVE = auto()
-    INDEPENDENT = auto()
-
-    def to_json(self):
-        return self.value
+WindowMode = Literal['', 'split', 'immersive', 'independent']
 
 
 @dataclass(frozen=True)
 class UIConf:
     resolution: Tuple[int, int] = (800, 600)
-    window_mode: WindowMode = WindowMode.SPLIT
+    window_mode: WindowMode = 'split'
     smart_immersive: bool = False
 
 
-class VideoEncodeMethod(Enum):
-    NONE = -1
-    SW = 0  # software decode
-    # VAAPI = auto()  # vaapi
-
-    def to_json(self):
-        return self.value
+VideoEncodeMethod = Literal['', 'sw']
 
 
 @dataclass(frozen=True)
@@ -109,7 +74,7 @@ class EncodeConf:
     video_codec: str = ''
     audio_codec: str = ''
     encode_max_queue_count: int = 10  # max queue element counts
-    encode_method: VideoEncodeMethod = VideoEncodeMethod.SW
+    encode_method: VideoEncodeMethod = 'sw'
 
 
 @dataclass(frozen=True)
