@@ -12,6 +12,7 @@ class ParsedOption:
     action: str
     akconf: str
     conf_path: str
+    asp_port: int
 
 
 def argument_parse() -> ParsedOption:
@@ -36,6 +37,15 @@ def argument_parse() -> ParsedOption:
         required=False
     )
 
+    if sys.argv[1] == 'kernel':
+        parser.add_argument(
+            "-p", "--port",
+            help="port number used for akashi-server",
+            type=int,
+            default='1234',
+            required=False
+        )
+
     args_dict = vars(parser.parse_args())
     if len(args_dict) == 0:
         parser.print_help(sys.stderr)
@@ -44,7 +54,8 @@ def argument_parse() -> ParsedOption:
     return ParsedOption(
         args_dict['action'],
         _akconf_parse(args_dict["conf_path"]),
-        path.abspath(args_dict["conf_path"])
+        path.abspath(args_dict["conf_path"]),
+        args_dict['port'] if 'port' in args_dict else 1234
     )
 
 
