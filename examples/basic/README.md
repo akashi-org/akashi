@@ -55,7 +55,7 @@ Then run the command `:source %`, and `:PlugInstall` in Vim.
 
 Before getting into the specifics, let's briefly review the basics of scripting in Akashi.
 
-To represent the structures of video, existing video editors use a timeline GUI, on the other hand, Akashi does not rely on GUI and uses scripts with four elements; `root`, `scene`, `atom`, and `layer`. `root` represents the entire video that will eventually be built, and is composed of smaller units of it, `scene`. `scene` is further divided into smaller chunks, `atom`. As for now, only these elements are the units which can be played back stand-alone. These three elements represent the logical structures of video, while `layer`, which belongs to `atom`, represents the graphical structures of video. Currently, there are three types of `layer` implemented: `video`, `image`, and `text`.
+To represent the structures of video, existing video editors use a timeline GUI, on the other hand, Akashi does not rely on GUI and uses scripts with four elements: `root`, `scene`, `atom`, and `layer`. `root` represents the entire video that will eventually be built, and is composed of smaller units of it, `scene`. `scene` is further divided into smaller chunks, `atom`. As for now, only these elements are the units which can be played back stand-alone. These three elements represent the logical structures of video, while `layer`, which belongs to `atom`, represents the graphical structures of video. Currently, there are three types of `layer` implemented: `video`, `image`, and `text`.
 
 In the actual implementation, these four elements are functions, and are used in combination as follows. 
 
@@ -506,7 +506,7 @@ As for its monitor's behavior, `akashi-player` has three window modes, `Split mo
 #### Immersive mode
 
 `Immersive mode` is also best for working with a single display. Like `Split mode`, the monitor in this mode is set to be transient, and `Focus passing` feature is enabled for this. The difference is that fullscreen mode is always enabled for `Immersive mode`.
-So There are two looks for this mode: transparent fullscreen and opaque fullscreen. In this mode, `ASPToggleFullscreen` is to toggle these two looks. **There are some risks to occur cybersickness in this mode. If you feel sick, please stop using immediately.**
+So There are two looks for this mode: transparent fullscreen and opaque fullscreen. In this mode, `ASPToggleFullscreen` is to toggle these two looks. **This mode can potentially induce cybersickness. If you feel sick, please stop using immediately.**
 
 #### Independent mode
 
