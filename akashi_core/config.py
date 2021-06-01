@@ -91,6 +91,7 @@ class WindowMode(Enum):
 class UIConf:
     resolution: Tuple[int, int] = (800, 600)
     window_mode: WindowMode = WindowMode.SPLIT
+    smart_immersive: bool = False
 
 
 class VideoEncodeMethod(Enum):
