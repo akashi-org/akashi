@@ -145,14 +145,14 @@ def config():
         # Video settings for the video which is supposed to be built
         video=VideoConf(
             fps=Second(24),
-            resolution=(1920, 1080)
+            resolution=(640, 360)
         ),
         # Audio settings for the video which is supposed to be built
         audio=AudioConf(
-            format=AudioSampleFormat.FLT,
+            format='flt',
             sample_rate=44100,
             channels=2,
-            channel_layout=AudioChannelLayout.STEREO
+            channel_layout='stereo'
         ),
         # Playback settings
         # This settings except for decode_method do not affect the encoding process.
@@ -160,14 +160,14 @@ def config():
             gain=0.5,   # playback gain
             video_max_queue_size=1024 * 1024 * 100,  # 🚧
             audio_max_queue_size=1024 * 1024 * 30,  # 🚧
-            decode_method=VideoDecodeMethod.VAAPI,  # if you prefer software decoding, set VideoDecodeMethod.SW
+            decode_method='vaapi',  # if you prefer software decoding, set VideoDecodeMethod.SW
             video_max_queue_count=64  # 🚧
         ),
         # Player settings
         # This settings do not affect the encoding process.
         ui=UIConf(
-            resolution=(960, 540),  # initial resolution of the player
-            window_mode=WindowMode.SPLIT,
+            resolution=(640, 360),  # initial resolution of the monitor
+            window_mode='split',
         ),
         # Encode settings
         # For the details, see the docs.
@@ -186,7 +186,7 @@ Here we take a look on several related topics on this.
 
 #### Hardware Decoding
 
-Akashi supports VA-API hardware decoding. If your GPU supports VA-API, you can enable it by setting `decode_method` in `PlayBackConf` to `VideoDecodeMethod.VAAPI`.
+Akashi supports VA-API hardware decoding. If your GPU supports VA-API, you can enable it by setting `decode_method` in `PlayBackConf` to `'vaapi'`.
 
 #### Window mode
 

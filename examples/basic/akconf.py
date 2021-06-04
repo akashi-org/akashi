@@ -5,12 +5,8 @@ from akashi_core import (
     PlaybackConf,
     UIConf,
     EncodeConf,
-    AudioSampleFormat,
-    AudioChannelLayout,
     AKConf,
-    VideoDecodeMethod,
     from_relpath,
-    WindowMode,
     Second,
     akexport_config
 )
@@ -38,10 +34,10 @@ def config():
         ),
         # Audio settings for the video which is supposed to be built
         audio=AudioConf(
-            format=AudioSampleFormat.FLT,
+            format='flt',
             sample_rate=44100,
             channels=2,
-            channel_layout=AudioChannelLayout.STEREO
+            channel_layout='stereo'
         ),
         # Playback settings
         # This settings except for decode_method do not affect the encoding process.
@@ -49,14 +45,14 @@ def config():
             gain=0.5,   # playback gain
             video_max_queue_size=1024 * 1024 * 100,  # 🚧
             audio_max_queue_size=1024 * 1024 * 30,  # 🚧
-            decode_method=VideoDecodeMethod.VAAPI,  # if you prefer software decoding, set VideoDecodeMethod.SW
+            decode_method='vaapi',  # if you prefer software decoding, set VideoDecodeMethod.SW
             video_max_queue_count=64  # 🚧
         ),
         # Monitor settings
         # This settings do not affect the encoding process.
         ui=UIConf(
             resolution=(640, 360),  # initial resolution of the monitor
-            window_mode=WindowMode.SPLIT,
+            window_mode='split',
         ),
         # Encode settings
         # For the details, see the docs.
