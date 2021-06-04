@@ -35,6 +35,7 @@ namespace akashi {
                                  const core::VideoDecodeMethod& decode_method,
                                  const size_t video_max_queue_count) {
             m_done_init = true;
+            m_layer_profile = layer_profile;
 
             if (read_inputsrc(m_input_src, layer_profile.src.c_str(), decode_method,
                               video_max_queue_count) < 0) {
@@ -195,6 +196,7 @@ namespace akashi {
                 ffbuf_input.rpts = pts_set.frame_rpts();
                 ffbuf_input.from = m_input_src->from;
                 ffbuf_input.start = m_input_src->start;
+                ffbuf_input.gain = m_layer_profile.gain;
                 ffbuf_input.out_audio_spec = out_audio_spec;
                 ffbuf_input.uuid = m_input_src->uuid;
                 ffbuf_input.media_type = to_res_buf_type(dec_stream->dec_ctx->codec_type);

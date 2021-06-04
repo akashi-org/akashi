@@ -22,6 +22,7 @@ namespace akashi {
             std::string src;
             Fraction start;
             double scale;
+            double gain;
             json::optional::type<std::string> frag_path;
             json::optional::type<std::string> geom_path;
         };
@@ -79,6 +80,7 @@ namespace akashi {
             std::string uuid;
             std::string src;
             Fraction start;
+            double gain;
         };
 
         struct AtomProfile {

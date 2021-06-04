@@ -85,6 +85,7 @@ namespace akashi {
                 case core::LayerType::VIDEO: {
                     computed.src = m_layer_ctx.video_layer_ctx.src;
                     computed.start = m_layer_ctx.video_layer_ctx.start;
+                    computed.gain = m_layer_ctx.video_layer_ctx.gain;
                     break;
                 }
                 case core::LayerType::AUDIO: {

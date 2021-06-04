@@ -1,6 +1,7 @@
 #include "./mixer.h"
 
 #include <libakcore/logger.h>
+#include <libakcore/element.h>
 
 #include <pulse/pulseaudio.h>
 
@@ -10,11 +11,10 @@ namespace akashi {
     namespace audio {
 
         void mix_layer(uint8_t* buffer, const size_t bytes_to_fill, uint8_t* audio_data,
-                       const core::LayerProfile&) {
+                       const core::LayerProfile& layer) {
             for (size_t i = 0; i < bytes_to_fill; i += 4) {
                 float old_v = *(float*)(&buffer[i]);
-                // float new_v = *(float*)(&audio_data[i]) * layer.gain;
-                float new_v = *(float*)(&audio_data[i]) * 1;
+                float new_v = *(float*)(&audio_data[i]) * layer.gain;
                 float mix_gain = 1.0;
                 float res = old_v + (mix_gain * new_v);
 

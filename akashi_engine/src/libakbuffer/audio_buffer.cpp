@@ -33,7 +33,7 @@ namespace akashi {
             virtual ~AudioSequence() {}
 
             bool write(const uint8_t* w_buf, const size_t w_buf_length, const core::Rational& w_pts,
-                       bool mix = false) {
+                       double gain, bool mix = false) {
                 if (!this->within_range(w_buf_length, w_pts)) {
                     return false;
                 }
@@ -50,7 +50,7 @@ namespace akashi {
                         m_buffer[(write_idx + i) % m_buf_length] = w_buf[i];
                     }
                 } else {
-                    this->mix_layer(write_idx, w_buf, w_buf_length);
+                    this->mix_layer(write_idx, w_buf, w_buf_length, gain);
                 }
                 return true;
             }
@@ -127,16 +127,15 @@ namespace akashi {
                 return spec.sample_rate * size_table(spec.format);
             }
 
-            void mix_layer(const size_t write_idx, const uint8_t* w_buf,
-                           const size_t w_buf_length) {
+            void mix_layer(const size_t write_idx, const uint8_t* w_buf, const size_t w_buf_length,
+                           double gain) {
                 alignas(float) uint8_t temp_buf[sizeof(float)] = {0};
                 for (size_t i = 0; i < w_buf_length; i += sizeof(float)) {
                     for (size_t d = 0; d < sizeof(float); d++) {
                         temp_buf[d] = m_buffer[(i + d + write_idx) % m_buf_length];
                     }
                     float old_v = *(float*)(temp_buf);
-                    // float new_v = *(float*)(&audio_data[i]) * layer.gain;
-                    float new_v = *(float*)(&w_buf[i]) * 1;
+                    float new_v = *(float*)(&w_buf[i]) * gain;
                     float mix_gain = 1.0;
                     float res = old_v + (mix_gain * new_v);
 
@@ -186,7 +185,8 @@ namespace akashi {
             auto wbufs = this->to_buffers(*buf_data);
 
             for (size_t i = 0; i < wbufs.size(); i++) {
-                if (!m_buffers[i]->write(wbufs[i].buf, wbufs[i].len, buf_data->prop().pts, true)) {
+                if (!m_buffers[i]->write(wbufs[i].buf, wbufs[i].len, buf_data->prop().pts,
+                                         buf_data->prop().gain, true)) {
                     m_back_buffer = std::move(buf_data);
                     return AudioBuffer::Result::OUT_OF_RANGE;
                 }
