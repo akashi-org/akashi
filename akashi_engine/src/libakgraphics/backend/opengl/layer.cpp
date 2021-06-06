@@ -51,7 +51,9 @@ namespace akashi {
             (pass_prop.mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 
             GET_GLFUNC(ctx, glUniform1f)(pass_prop.flipY_loc, mesh_prop.flip_y);
-            GET_GLFUNC(ctx, glUniform1f)(pass_prop.time_loc, pts.to_decimal());
+
+            auto local_pts = pts - to_rational(layer_ctx.from);
+            GET_GLFUNC(ctx, glUniform1f)(pass_prop.time_loc, local_pts.to_decimal());
 
             GET_GLFUNC(ctx, glUniform2f)(pass_prop.resolution_loc, resolution[0], resolution[1]);
 
@@ -91,7 +93,9 @@ namespace akashi {
             (pass_prop.mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 
             GET_GLFUNC(ctx, glUniform1f)(pass_prop.flipY_loc, mesh_prop.flip_y());
-            GET_GLFUNC(ctx, glUniform1f)(pass_prop.time_loc, pts.to_decimal());
+
+            auto local_pts = pts - to_rational(layer_ctx.from);
+            GET_GLFUNC(ctx, glUniform1f)(pass_prop.time_loc, local_pts.to_decimal());
 
             GET_GLFUNC(ctx, glUniform2f)(pass_prop.resolution_loc, resolution[0], resolution[1]);
 
