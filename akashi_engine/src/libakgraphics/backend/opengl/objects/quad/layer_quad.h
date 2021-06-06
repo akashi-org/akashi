@@ -34,6 +34,8 @@ namespace akashi {
 
             GLuint local_duration_loc;
 
+            GLuint fps_loc;
+
             GLuint resolution_loc;
         };
 

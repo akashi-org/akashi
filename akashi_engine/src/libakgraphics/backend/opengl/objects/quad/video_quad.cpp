@@ -55,6 +55,7 @@ static constexpr const char* fshader_src = u8R"(
     uniform float time;
     uniform float global_time;
     uniform float local_duration;
+    uniform float fps;
     uniform vec2 resolution;
 
     in GS_OUT {
@@ -188,6 +189,7 @@ namespace akashi {
                 GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "global_time");
             m_prop.local_duration_loc =
                 GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "local_duration");
+            m_prop.fps_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "fps");
             m_prop.resolution_loc =
                 GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "resolution");
 

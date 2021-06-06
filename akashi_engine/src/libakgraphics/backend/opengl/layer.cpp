@@ -25,7 +25,8 @@ namespace akashi {
 
         static bool layer_render(const GLRenderContext& ctx, const LayerQuadPassProp& pass_prop,
                                  const LayerQuadMesh& mesh_prop, const LayerContext& layer_ctx,
-                                 const core::Rational& pts, const std::array<int, 2>& resolution) {
+                                 const core::Rational& pts, const std::array<int, 2>& resolution,
+                                 const core::Rational& fps) {
             GET_GLFUNC(ctx, glUseProgram)(pass_prop.prog);
 
             use_texture(ctx, mesh_prop.tex, pass_prop.tex_loc);
@@ -59,6 +60,8 @@ namespace akashi {
             auto local_duration = to_rational(layer_ctx.to) - to_rational(layer_ctx.from);
             GET_GLFUNC(ctx, glUniform1f)(pass_prop.local_duration_loc, local_duration.to_decimal());
 
+            GET_GLFUNC(ctx, glUniform1f)(pass_prop.fps_loc, fps.to_decimal());
+
             GET_GLFUNC(ctx, glUniform2f)(pass_prop.resolution_loc, resolution[0], resolution[1]);
 
             GET_GLFUNC(ctx, glBindVertexArray)(pass_prop.vao);
@@ -77,7 +80,8 @@ namespace akashi {
                                        const VideoQuadPassProp& pass_prop,
                                        const VideoQuadMesh& mesh_prop,
                                        const LayerContext& layer_ctx, const core::Rational& pts,
-                                       const std::array<int, 2>& resolution) {
+                                       const std::array<int, 2>& resolution,
+                                       const core::Rational& fps) {
             GET_GLFUNC(ctx, glUseProgram)(pass_prop.prog);
 
             use_texture(ctx, mesh_prop.textures()[0], pass_prop.texY_loc);
@@ -104,6 +108,8 @@ namespace akashi {
 
             auto local_duration = to_rational(layer_ctx.to) - to_rational(layer_ctx.from);
             GET_GLFUNC(ctx, glUniform1f)(pass_prop.local_duration_loc, local_duration.to_decimal());
+
+            GET_GLFUNC(ctx, glUniform1f)(pass_prop.fps_loc, fps.to_decimal());
 
             GET_GLFUNC(ctx, glUniform2f)(pass_prop.resolution_loc, resolution[0], resolution[1]);
 
@@ -137,7 +143,7 @@ namespace akashi {
                     const auto& pass_prop = obj_prop.pass.get_prop();
                     const auto& mesh_prop = obj_prop.mesh;
                     CHECK_AK_ERROR2(video_layer_render(ctx, pass_prop, mesh_prop, m_layer_ctx, pts,
-                                                       glx_ctx->resolution()));
+                                                       glx_ctx->resolution(), glx_ctx->fps()));
 
                     AKLOG_INFON("VideoLayerTarget::render(): rendered by using the last frame");
                 }
@@ -157,7 +163,7 @@ namespace akashi {
                     const auto& pass_prop = obj_prop.pass.get_prop();
                     const auto& mesh_prop = obj_prop.mesh;
                     CHECK_AK_ERROR2(video_layer_render(ctx, pass_prop, mesh_prop, m_layer_ctx, pts,
-                                                       glx_ctx->resolution()));
+                                                       glx_ctx->resolution(), glx_ctx->fps()));
                     AKLOG_INFON("VideoLayerTarget::render(): rendered by using the last frame");
                 }
                 return true;
@@ -186,7 +192,7 @@ namespace akashi {
             const auto& mesh_prop = obj_prop.mesh;
 
             CHECK_AK_ERROR2(video_layer_render(ctx, pass_prop, mesh_prop, m_layer_ctx, pts,
-                                               glx_ctx->resolution()));
+                                               glx_ctx->resolution(), glx_ctx->fps()));
 
             m_current_pts = pts;
             return true;
@@ -228,8 +234,8 @@ namespace akashi {
             const auto& obj_prop = m_quad_obj.get_prop();
             const auto& pass_prop = obj_prop.pass.get_prop();
             const auto& mesh_prop = obj_prop.mesh;
-            CHECK_AK_ERROR2(
-                layer_render(ctx, pass_prop, mesh_prop, m_layer_ctx, pts, glx_ctx->resolution()));
+            CHECK_AK_ERROR2(layer_render(ctx, pass_prop, mesh_prop, m_layer_ctx, pts,
+                                         glx_ctx->resolution(), glx_ctx->fps()));
             return true;
         }
 
@@ -316,8 +322,8 @@ namespace akashi {
             const auto& obj_prop = m_quad_obj.get_prop();
             const auto& pass_prop = obj_prop.pass.get_prop();
             const auto& mesh_prop = obj_prop.mesh;
-            CHECK_AK_ERROR2(
-                layer_render(ctx, pass_prop, mesh_prop, m_layer_ctx, pts, glx_ctx->resolution()));
+            CHECK_AK_ERROR2(layer_render(ctx, pass_prop, mesh_prop, m_layer_ctx, pts,
+                                         glx_ctx->resolution(), glx_ctx->fps()));
             return true;
         }
 
