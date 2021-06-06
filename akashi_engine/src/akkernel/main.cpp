@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
     AKLOG_INFON("Akashi Kernel Init");
 
     akashi::kernel::KernelLoop kernel_loop;
-    kernel_loop.run({argv[1], argv[2], 1234, argv[3]});
+    kernel_loop.run({argv[1], argv[2], static_cast<uint32_t>(std::stol(argv[4])), argv[3]});
 
     int signum;
     sigwait(&ss, &signum);

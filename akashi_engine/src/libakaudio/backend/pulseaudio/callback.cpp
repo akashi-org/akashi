@@ -156,11 +156,9 @@ namespace akashi {
         } s_mask_buf;
 
         static void fill_layer(uint8_t* buffer, const size_t buf_size, CallbackContext* cb_ctx,
-                               const LayerProfile& layer, const size_t layer_idx,
-                               const size_t loop_cnt) {
+                               const LayerProfile& layer, const size_t loop_cnt) {
             auto bytes_remaining = buf_size;
             auto buffer_offset = 0;
-            bool is_first_layer = layer_idx == 0;
             const auto comp_layer_uuid = layer.uuid + std::to_string(loop_cnt);
 
             // seek in advance?
@@ -193,25 +191,15 @@ namespace akashi {
                 // element of buffer.
                 if (audio_buf_size <= bytes_remaining) {
                     bytes_to_fill = audio_buf_size;
-                    if (is_first_layer) {
-                        memcpy(&buffer[buffer_offset],
-                               &buf_data.prop().audio_data[0][rbuf.buf_offset], bytes_to_fill);
-                    } else {
-                        mix_layer(&buffer[buffer_offset], bytes_to_fill,
-                                  &buf_data.prop().audio_data[0][rbuf.buf_offset], layer);
-                    }
+                    mix_layer(&buffer[buffer_offset], bytes_to_fill,
+                              &buf_data.prop().audio_data[0][rbuf.buf_offset], layer);
                     rbuf.buf_offset = 0;
                     rbuf.on_process = false;
                     cb_ctx->pop_front_buf(comp_layer_uuid);
                 } else {
                     bytes_to_fill = bytes_remaining;
-                    if (is_first_layer) {
-                        memcpy(&buffer[buffer_offset],
-                               &buf_data.prop().audio_data[0][rbuf.buf_offset], bytes_to_fill);
-                    } else {
-                        mix_layer(&buffer[buffer_offset], bytes_to_fill,
-                                  &buf_data.prop().audio_data[0][rbuf.buf_offset], layer);
-                    }
+                    mix_layer(&buffer[buffer_offset], bytes_to_fill,
+                              &buf_data.prop().audio_data[0][rbuf.buf_offset], layer);
                     rbuf.buf_offset += bytes_to_fill;
                     rbuf.on_process = true;
                 }
@@ -271,7 +259,7 @@ namespace akashi {
                     size_t offset_bytes = (offset_pts * cb_ctx->bytes_per_second()).to_decimal();
 
                     fill_layer(&s_mask_buf.buf[offset_bytes], requested_bytes - offset_bytes,
-                               cb_ctx, cur_layers[i], i, loop_cnt);
+                               cb_ctx, cur_layers[i], loop_cnt);
                 }
             }
 

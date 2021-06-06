@@ -3,6 +3,7 @@
 #include "../../source.h"
 #include "../../decode_item.h"
 
+#include <libakcore/element.h>
 #include <libakcore/class.h>
 
 struct AVPacket;
@@ -13,7 +14,6 @@ namespace akashi {
         class AVBufferData;
     }
     namespace core {
-        struct LayerProfile;
         class Rational;
         enum class VideoDecodeMethod;
     }
@@ -54,6 +54,7 @@ namespace akashi {
             AVFrame* m_proxy_frame = nullptr;
             AVFrame* m_frame = nullptr;
             bool m_done_init = false;
+            core::LayerProfile m_layer_profile;
         };
     }
 }

@@ -38,6 +38,7 @@ namespace akashi {
         struct UIConf {
             std::pair<int, int> resolution;
             WindowMode window_mode;
+            bool smart_immersive;
         };
 
         struct EncodeConf {

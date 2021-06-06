@@ -53,6 +53,7 @@ namespace akashi {
                 layer_ctx.video_layer_ctx.start =
                     to_rational(layer_params.attr("start")).to_fraction();
                 layer_ctx.video_layer_ctx.scale = layer_params.attr("scale").cast<double>();
+                layer_ctx.video_layer_ctx.gain = layer_params.attr("gain").cast<double>();
                 layer_ctx.video_layer_ctx.frag_path[core::json::optional::attr_name] =
                     layer_params.attr("frag_path").cast<std::string>();
                 layer_ctx.video_layer_ctx.geom_path[core::json::optional::attr_name] =

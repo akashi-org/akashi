@@ -46,6 +46,7 @@ namespace akashi {
                 akashi::core::Rational rpts;
                 core::Rational from;
                 core::Rational start;
+                double gain;
                 akashi::core::AKAudioSpec out_audio_spec;
                 const char* uuid;
                 buffer::AVBufferType media_type = buffer::AVBufferType::UNKNOWN;

@@ -36,6 +36,7 @@ namespace akashi {
                 const char* uuid = "";
                 VideoEntry video_data[3];
                 uint8_t* audio_data[MAX_AUDIO_PLANE];
+                double gain = 1.0;
                 size_t data_size = 0;
                 int chroma_width = -1;
                 int chroma_height = -1;

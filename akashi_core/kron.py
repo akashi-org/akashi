@@ -54,6 +54,7 @@ class VideoLayerParams(CommonLayerParams, _VideoLayerRequiredParams):
     _type: Literal['VIDEO'] = field(default='VIDEO', init=False)
     start: Second = field(default=Second(0))
     scale: float = field(default=1.0)
+    gain: float = field(default=1.0)
     frag_path: str = field(default="")
     geom_path: str = field(default="")
 
@@ -67,6 +68,7 @@ class _AudioLayerRequiredParams:
 class AudioLayerParams(CommonLayerParams, _AudioLayerRequiredParams):
     _type: Literal['AUDIO'] = field(default='AUDIO', init=False)
     start: Second = field(default=Second(0))
+    gain: float = field(default=1.0)
 
 
 class TextLayerStyle(TypedDict, total=False):

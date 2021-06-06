@@ -20,6 +20,7 @@ class ServerThread(threading.Thread):
         self.action = option.action
         self.akconf = option.akconf
         self.conf_path = option.conf_path
+        self.asp_port = str(option.asp_port)
         self.proc = None
 
     def run(self):
@@ -81,7 +82,7 @@ class ServerThread(threading.Thread):
         # )
 
         self.proc = Popen(
-            [KERNEL_BIN_PATH, self.akconf, BIN_PATH, self.conf_path], env=os.environ
+            [KERNEL_BIN_PATH, self.akconf, BIN_PATH, self.conf_path, self.asp_port], env=os.environ
         )
         self.proc.communicate()
 

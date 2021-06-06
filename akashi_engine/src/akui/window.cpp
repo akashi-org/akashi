@@ -155,7 +155,8 @@ namespace akashi {
                 case akashi::state::PlayState::STOPPED:
                 case akashi::state::PlayState::PAUSED: {
                     m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
-                    if (m_state->m_ui_conf.window_mode == core::WindowMode::IMMERSIVE) {
+                    if (m_state->m_ui_conf.window_mode == core::WindowMode::IMMERSIVE &&
+                        m_state->m_ui_conf.smart_immersive) {
                         this->setTransparent(true);
                         this->m_controlArea->hide();
                     }
@@ -171,7 +172,8 @@ namespace akashi {
                     m_state->m_atomic_state.icon_play_state.store(
                         akashi::state::PlayState::PLAYING);
 
-                    if (m_state->m_ui_conf.window_mode == core::WindowMode::IMMERSIVE) {
+                    if (m_state->m_ui_conf.window_mode == core::WindowMode::IMMERSIVE &&
+                        m_state->m_ui_conf.smart_immersive) {
                         this->setTransparent(false);
                         this->m_controlArea->show();
                     }

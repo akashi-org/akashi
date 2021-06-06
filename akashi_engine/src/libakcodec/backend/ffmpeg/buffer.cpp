@@ -103,6 +103,7 @@ namespace akashi {
             prop.pts = input.pts;
             prop.rpts = input.rpts;
             prop.uuid = input.uuid;
+            prop.gain = input.gain;
             prop.start_frame = input.start_frame;
             prop.decode_method = input.decode_method;
 
