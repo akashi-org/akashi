@@ -30,6 +30,10 @@ namespace akashi {
 
             GLuint time_loc;
 
+            GLuint global_time_loc;
+
+            GLuint local_duration_loc;
+
             GLuint resolution_loc;
         };
 

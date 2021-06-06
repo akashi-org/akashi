@@ -54,6 +54,8 @@ static constexpr const char* fshader_src = u8R"(
 static constexpr const char* default_user_fshader_src = u8R"(
     #version 420 core
     uniform float time;
+    uniform float global_time;
+    uniform float local_duration;
     uniform vec2 resolution;
     void frag_main(inout vec4 _fragColor){
     }
@@ -100,6 +102,10 @@ namespace akashi {
             m_prop.flipY_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "flipY");
             m_prop.tex_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "texture0");
             m_prop.time_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "time");
+            m_prop.global_time_loc =
+                GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "global_time");
+            m_prop.local_duration_loc =
+                GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "local_duration");
             m_prop.resolution_loc =
                 GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "resolution");
 

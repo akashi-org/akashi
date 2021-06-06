@@ -53,6 +53,8 @@ static constexpr const char* fshader_src = u8R"(
     uniform sampler2D textureCb;
     uniform sampler2D textureCr;
     uniform float time;
+    uniform float global_time;
+    uniform float local_duration;
     uniform vec2 resolution;
 
     in GS_OUT {
@@ -182,6 +184,10 @@ namespace akashi {
             m_prop.texCb_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "textureCb");
             m_prop.texCr_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "textureCr");
             m_prop.time_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "time");
+            m_prop.global_time_loc =
+                GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "global_time");
+            m_prop.local_duration_loc =
+                GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "local_duration");
             m_prop.resolution_loc =
                 GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "resolution");
 
