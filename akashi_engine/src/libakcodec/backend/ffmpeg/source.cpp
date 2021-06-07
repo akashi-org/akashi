@@ -45,6 +45,7 @@ namespace akashi {
             for (auto&& dec_stream : m_input_src->dec_streams) {
                 dec_stream.cur_decode_pts = std::max(m_input_src->from, decode_start);
             }
+            m_dts = std::max(m_input_src->from, decode_start);
 
             auto seek_pts = m_input_src->start + (decode_start - m_input_src->from);
             // auto seek_pts = m_input_src->start + m_input_src->cur_decode_pts;
@@ -214,6 +215,7 @@ namespace akashi {
 
                 // update the state
                 m_input_src->dec_streams[m_pkt->stream_index].cur_decode_pts = pts_set.frame_pts();
+                m_dts = pts_set.frame_pts();
                 m_input_src->dec_streams[m_pkt->stream_index].effective_pts += m_frame->nb_samples;
                 decode_result.result = DecodeResultCode::OK;
             }

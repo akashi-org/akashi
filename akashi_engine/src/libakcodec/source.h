@@ -33,6 +33,8 @@ namespace akashi {
             virtual bool can_decode(void) const = 0;
 
             virtual bool done_init(void) const = 0;
+
+            virtual core::Rational dts(void) const = 0;
         };
 
         class AtomSource final {
@@ -60,6 +62,7 @@ namespace akashi {
             size_t m_max_layer_idx = 0;
             bool m_can_decode = true;
             bool m_done_init = false;
+            core::Rational m_dts_avg = core::Rational(0, 1);
         };
 
     }
