@@ -26,6 +26,7 @@ namespace akashi {
             input_src->input_path = input_path;
             input_src->ifmt_ctx = nullptr;
             input_src->uuid = "";
+            input_src->layer_profile = core::LayerProfile{};
         }
 
         void free_input_src(InputSource*& input_src) {
@@ -60,13 +61,19 @@ namespace akashi {
             }
         };
 
-        int read_inputsrc(InputSource*& input_src, const char* input_path,
+        int read_inputsrc(InputSource*& input_src, const core::LayerProfile& layer_profile,
                           const core::VideoDecodeMethod& decode_method,
                           const size_t video_max_queue_count) {
             int ret_code = 0;
 
             input_src = new InputSource;
-            init_input_src(input_src, input_path);
+            init_input_src(input_src, layer_profile.src.c_str());
+
+            input_src->from = to_rational(layer_profile.from);
+            input_src->to = to_rational(layer_profile.to);
+            input_src->start = to_rational(layer_profile.start);
+            input_src->uuid = layer_profile.uuid.c_str();
+            input_src->layer_profile = layer_profile;
 
             input_src->decode_method = decode_method;
             input_src->video_max_queue_count = video_max_queue_count;
@@ -165,6 +172,14 @@ namespace akashi {
                 input_src->dec_streams[i].media_type = media_type;
                 if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO ||
                     media_type == AVMediaType::AVMEDIA_TYPE_AUDIO) {
+                    // skip a video stream if audio only
+                    if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO) {
+                        if (input_src->layer_profile.type == core::LayerType::AUDIO) {
+                            input_src->dec_streams[i].is_active = false;
+                            continue;
+                        }
+                    }
+
                     AVCodecID codec_id = format_ctx->streams[i]->codecpar->codec_id;
                     AVCodec* av_codec = avcodec_find_decoder(codec_id);
                     if (av_codec == nullptr) {

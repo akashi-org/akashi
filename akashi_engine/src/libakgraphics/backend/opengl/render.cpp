@@ -80,7 +80,7 @@ namespace akashi {
                     return true;
                 }
                 case LayerType::AUDIO: {
-                    AKLOG_WARNN("audio layer not implemented!");
+                    // skip
                     break;
                 }
                 case LayerType::TEXT: {

@@ -89,9 +89,9 @@ namespace akashi {
                     break;
                 }
                 case core::LayerType::AUDIO: {
-                    // [TODO] impl this
-                    // computed.start = m_layer_ctx.audio_layer_ctx.start;
-                    AKLOG_WARNN("LayerType::AUDIO not implemented!");
+                    computed.src = m_layer_ctx.audio_layer_ctx.src;
+                    computed.start = m_layer_ctx.audio_layer_ctx.start;
+                    computed.gain = m_layer_ctx.audio_layer_ctx.gain;
                     break;
                 }
                 default: {

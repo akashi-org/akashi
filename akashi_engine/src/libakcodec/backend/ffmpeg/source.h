@@ -54,7 +54,6 @@ namespace akashi {
             AVFrame* m_proxy_frame = nullptr;
             AVFrame* m_frame = nullptr;
             bool m_done_init = false;
-            core::LayerProfile m_layer_profile;
         };
     }
 }
