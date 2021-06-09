@@ -157,7 +157,11 @@ namespace akashi {
 
                 if (!dec_stream->is_checked_first_pts) {
                     dec_stream->first_pts = m_frame->pts;
-                    dec_stream->effective_pts = dec_stream->first_pts;
+                    dec_stream->effective_pts =
+                        av_rescale_q(dec_stream->first_pts,
+                                     m_input_src->ifmt_ctx->streams[m_pkt->stream_index]->time_base,
+                                     {1, m_frame->sample_rate});
+
                     dec_stream->is_checked_first_pts = true;
                 }
 
