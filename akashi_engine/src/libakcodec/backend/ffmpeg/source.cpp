@@ -237,7 +237,7 @@ namespace akashi {
 
                 if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO ||
                     media_type == AVMediaType::AVMEDIA_TYPE_AUDIO) {
-                    auto stream_time_base = m_input_src->dec_streams[stream_idx].dec_ctx->time_base;
+                    auto stream_time_base = m_input_src->ifmt_ctx->streams[stream_idx]->time_base;
 
                     auto dst_pts = av_rescale_q(seek_pts.num(),
                                                 (AVRational){1, static_cast<int>(seek_pts.den())},
