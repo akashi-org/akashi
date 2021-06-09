@@ -32,7 +32,19 @@ namespace akashi {
             auto frame_time_base = input_src->ifmt_ctx->streams[stream_index]->time_base;
             auto adjusted_pts = this->calc_adjusted_pts_time(frame, dec_stream);
 
-            m_frame_rpts = pts_to_rational(adjusted_pts, frame_time_base);
+            switch (dec_stream->media_type) {
+                case AVMEDIA_TYPE_VIDEO: {
+                    m_frame_rpts = pts_to_rational(adjusted_pts, frame_time_base);
+                    break;
+                }
+                case AVMEDIA_TYPE_AUDIO: {
+                    m_frame_rpts = pts_to_rational(adjusted_pts, {1, frame->sample_rate});
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
             m_frame_pts = rpts_to_pts(m_frame_rpts, m_input_src->from, m_input_src->start);
         }
 
@@ -79,6 +91,7 @@ namespace akashi {
             if (dec_stream->media_type == AVMEDIA_TYPE_AUDIO) {
                 frame_pts = dec_stream->effective_pts;
             }
+
             return frame_pts - dec_stream->input_start_pts;
         }
 
