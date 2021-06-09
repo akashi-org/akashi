@@ -29,8 +29,8 @@ LayerKind = Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE']
 class CommonLayerParams:
     begin: Second
     end: Second
-    x: int
-    y: int
+    x: int = 0
+    y: int = 0
     _type: Literal['LAYER'] = field(default='LAYER', init=False)
     _uuid: str = field(default='', init=False)
     _atom_uuid: str = field(default='')
