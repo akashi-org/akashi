@@ -371,10 +371,6 @@ def update(kronArgs: KronArgs, params: TextLayerParams) -> TextLayerParams:
     return params
 ```
 
-### *Do not use `__init__.py` in akashi projects*
-
-Currently, there is a bug that hot reload does not work properly when `__init__.py` exists in a project directory tree.
-
 ### *Keep your codebase fully typed as much as possible as you can*
 
 Akashi makes use of the power of type hints in Python for maximizing the developer experience.
