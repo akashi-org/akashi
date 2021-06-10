@@ -131,6 +131,15 @@ namespace akashi {
 
         size_t GLGraphicsContext::loop_cnt() { return m_state->m_atomic_state.play_loop_cnt; }
 
+        core::Rational GLGraphicsContext::fps() {
+            Rational fps;
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+                fps = m_state->m_prop.fps;
+            }
+            return fps;
+        }
+
         bool GLGraphicsContext::shader_reload() {
             bool shader_reload = false;
             {

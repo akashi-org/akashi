@@ -27,6 +27,12 @@ namespace akashi {
             json::optional::type<std::string> geom_path;
         };
 
+        struct AudioLayerContext {
+            std::string src;
+            Fraction start;
+            double gain;
+        };
+
         struct TextLayerContext {
             std::string text;
             double scale;
@@ -56,6 +62,11 @@ namespace akashi {
              * exists iff type == LayerType::VIDEO
              */
             VideoLayerContext video_layer_ctx;
+
+            /**
+             * exists iff type == LayerType::AUDIO
+             */
+            AudioLayerContext audio_layer_ctx;
 
             /**
              * exists iff type == LayerType::TEXT

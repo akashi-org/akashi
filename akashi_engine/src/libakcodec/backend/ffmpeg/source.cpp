@@ -35,22 +35,17 @@ namespace akashi {
                                  const core::VideoDecodeMethod& decode_method,
                                  const size_t video_max_queue_count) {
             m_done_init = true;
-            m_layer_profile = layer_profile;
 
-            if (read_inputsrc(m_input_src, layer_profile.src.c_str(), decode_method,
-                              video_max_queue_count) < 0) {
+            if (read_inputsrc(m_input_src, layer_profile, decode_method, video_max_queue_count) <
+                0) {
                 AKLOG_ERRORN("FFLayerSource::init(): Failed to parse input from argument");
                 return false;
             }
 
-            m_input_src->from = to_rational(layer_profile.from);
-            m_input_src->to = to_rational(layer_profile.to);
-            m_input_src->start = to_rational(layer_profile.start);
-            m_input_src->uuid = layer_profile.uuid.c_str();
-
             for (auto&& dec_stream : m_input_src->dec_streams) {
                 dec_stream.cur_decode_pts = std::max(m_input_src->from, decode_start);
             }
+            m_dts = std::max(m_input_src->from, decode_start);
 
             auto seek_pts = m_input_src->start + (decode_start - m_input_src->from);
             // auto seek_pts = m_input_src->start + m_input_src->cur_decode_pts;
@@ -129,6 +124,10 @@ namespace akashi {
                 }
 
                 DecodeStream* dec_stream = &m_input_src->dec_streams[m_pkt->stream_index];
+                if (!dec_stream->is_active) {
+                    decode_result.result = DecodeResultCode::DECODE_SKIPPED;
+                    goto exit;
+                }
 
                 // get a frame
                 ret_tmp = decode_packet(m_pkt, m_proxy_frame, dec_stream->dec_ctx);
@@ -158,7 +157,11 @@ namespace akashi {
 
                 if (!dec_stream->is_checked_first_pts) {
                     dec_stream->first_pts = m_frame->pts;
-                    dec_stream->effective_pts = dec_stream->first_pts;
+                    dec_stream->effective_pts =
+                        av_rescale_q(dec_stream->first_pts,
+                                     m_input_src->ifmt_ctx->streams[m_pkt->stream_index]->time_base,
+                                     {1, m_frame->sample_rate});
+
                     dec_stream->is_checked_first_pts = true;
                 }
 
@@ -196,7 +199,7 @@ namespace akashi {
                 ffbuf_input.rpts = pts_set.frame_rpts();
                 ffbuf_input.from = m_input_src->from;
                 ffbuf_input.start = m_input_src->start;
-                ffbuf_input.gain = m_layer_profile.gain;
+                ffbuf_input.gain = m_input_src->layer_profile.gain;
                 ffbuf_input.out_audio_spec = out_audio_spec;
                 ffbuf_input.uuid = m_input_src->uuid;
                 ffbuf_input.media_type = to_res_buf_type(dec_stream->dec_ctx->codec_type);
@@ -216,6 +219,7 @@ namespace akashi {
 
                 // update the state
                 m_input_src->dec_streams[m_pkt->stream_index].cur_decode_pts = pts_set.frame_pts();
+                m_dts = pts_set.frame_pts();
                 m_input_src->dec_streams[m_pkt->stream_index].effective_pts += m_frame->nb_samples;
                 decode_result.result = DecodeResultCode::OK;
             }
@@ -230,10 +234,14 @@ namespace akashi {
         bool FFLayerSource::seek(const core::Rational& seek_pts) {
             for (size_t stream_idx = 0; stream_idx < m_input_src->ifmt_ctx->nb_streams;
                  stream_idx++) {
+                if (!m_input_src->dec_streams[stream_idx].is_active) {
+                    continue;
+                }
                 auto media_type = m_input_src->dec_streams[stream_idx].media_type;
+
                 if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO ||
                     media_type == AVMediaType::AVMEDIA_TYPE_AUDIO) {
-                    auto stream_time_base = m_input_src->dec_streams[stream_idx].dec_ctx->time_base;
+                    auto stream_time_base = m_input_src->ifmt_ctx->streams[stream_idx]->time_base;
 
                     auto dst_pts = av_rescale_q(seek_pts.num(),
                                                 (AVRational){1, static_cast<int>(seek_pts.den())},

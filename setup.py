@@ -30,7 +30,7 @@ def readme():
 
 setup(
     name='akashi-engine',
-    version='0.1.2',
+    version='0.1.3',
     description='A next-generation video editor',
     long_description=readme(),
     long_description_content_type='text/markdown',

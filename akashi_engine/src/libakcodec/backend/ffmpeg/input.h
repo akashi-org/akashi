@@ -1,6 +1,7 @@
 #pragma once
 
 #include <libakcore/rational.h>
+#include <libakcore/element.h>
 #include <libakcore/hw_accel.h>
 
 extern "C" {
@@ -63,13 +64,16 @@ namespace akashi {
 
             // [TODO] if changed to std::string, liftime issues will occur
             const char* uuid;
+
+            // [TODO] need to merge
+            core::LayerProfile layer_profile;
         };
 
         void init_input_src(InputSource* input_src, const char* input_path);
 
         void free_input_src(InputSource*& input_src);
 
-        int read_inputsrc(InputSource*& input_src, const char* input_path,
+        int read_inputsrc(InputSource*& input_src, const core::LayerProfile& layer_profile,
                           const core::VideoDecodeMethod& decode_method,
                           const size_t video_max_queue_count);
 

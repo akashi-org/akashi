@@ -3,6 +3,7 @@
 #include "../../context.h"
 
 #include <libakcore/memory.h>
+#include <libakcore/rational.h>
 
 #include <memory>
 #include <array>
@@ -12,7 +13,6 @@ namespace akashi {
     namespace core {
         struct RenderProfile;
         struct FrameContext;
-        class Rational;
     }
     namespace buffer {
         class AVBuffer;
@@ -46,6 +46,8 @@ namespace akashi {
                                const core::FrameContext& frame_ctx) override;
 
             size_t loop_cnt();
+
+            core::Rational fps();
 
             bool shader_reload();
 
