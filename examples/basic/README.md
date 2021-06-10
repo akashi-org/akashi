@@ -375,6 +375,10 @@ def update(kronArgs: KronArgs, params: TextLayerParams) -> TextLayerParams:
 
 Akashi makes use of the power of type hints in Python for maximizing the developer experience.
 
+### *Keep your `akashi-engine` and `akashi.vim` as latest as possible*
+
+Basically, newer is better in the current state of Akashi.
+
 ### *Seeking is basically unstable*
 
 After seeking, you might see that the player is not updated properly. In that case, seeking again will fix the problem.
