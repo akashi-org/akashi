@@ -53,8 +53,6 @@ namespace akashi {
 
             void set_shader_reload(bool reloaded);
 
-            std::vector<const char*> updated_shader_paths(void);
-
             std::array<int, 2> resolution();
 
             std::unique_ptr<buffer::AVBufferData> dequeue(std::string layer_uuid,

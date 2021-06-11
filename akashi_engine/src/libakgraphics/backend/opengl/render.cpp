@@ -163,7 +163,7 @@ namespace akashi {
                 for (auto iter = m_targets.rbegin(), end = m_targets.rend(); iter != end; ++iter) {
                     const auto& target = *iter;
                     if (target) {
-                        target->update_shader(ctx, glx_ctx->updated_shader_paths());
+                        target->update_shader(ctx);
                     }
                 }
                 glx_ctx->set_shader_reload(false);

@@ -50,17 +50,16 @@ namespace akashi {
             const LayerQuadPassProp& get_prop() const;
 
             void shader_reload(const GLRenderContext& ctx, const core::LayerContext& layer,
-                               const core::LayerType& type, const std::vector<const char*> paths);
+                               const core::LayerType& type);
 
           private:
             bool load_shader(const GLRenderContext& ctx, const GLuint prog,
-                             const UserShaderSet& shader_set) const;
+                             const core::LayerContext& layer, const core::LayerType& type) const;
             bool load_vao(const GLRenderContext& ctx, const GLuint prog, GLuint& vao) const;
             bool load_ibo(const GLRenderContext& ctx, GLuint& ibo) const;
 
           private:
             LayerQuadPassProp m_prop;
-            UserShaderSet m_shader_set;
         };
 
         struct LayerQuadMesh {

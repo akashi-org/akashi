@@ -120,8 +120,6 @@ namespace akashi {
             bool need_first_render = false;
 
             bool shader_reload = false; // temporary
-
-            std::vector<const char*> updated_shader_paths;
         };
 
         struct AtomicState {

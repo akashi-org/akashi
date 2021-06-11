@@ -203,10 +203,9 @@ namespace akashi {
             return true;
         }
 
-        void VideoLayerTarget::update_shader(const GLRenderContext& ctx,
-                                             const std::vector<const char*> paths) {
+        void VideoLayerTarget::update_shader(const GLRenderContext& ctx) {
             if (m_quad_obj.created()) {
-                m_quad_obj.get_prop_mut().pass.shader_reload(ctx, m_layer_ctx, paths);
+                m_quad_obj.get_prop_mut().pass.shader_reload(ctx, m_layer_ctx);
             }
         };
 
@@ -244,9 +243,8 @@ namespace akashi {
             return true;
         }
 
-        void TextLayerTarget::update_shader(const GLRenderContext& ctx,
-                                            const std::vector<const char*> paths) {
-            m_quad_obj.get_prop_mut().pass.shader_reload(ctx, m_layer_ctx, m_layer_type, paths);
+        void TextLayerTarget::update_shader(const GLRenderContext& ctx) {
+            m_quad_obj.get_prop_mut().pass.shader_reload(ctx, m_layer_ctx, m_layer_type);
         };
 
         bool TextLayerTarget::load_mesh(const GLRenderContext& ctx, LayerQuadMesh& mesh,
@@ -332,9 +330,8 @@ namespace akashi {
             return true;
         }
 
-        void ImageLayerTarget::update_shader(const GLRenderContext& ctx,
-                                             const std::vector<const char*> paths) {
-            m_quad_obj.get_prop_mut().pass.shader_reload(ctx, m_layer_ctx, m_layer_type, paths);
+        void ImageLayerTarget::update_shader(const GLRenderContext& ctx) {
+            m_quad_obj.get_prop_mut().pass.shader_reload(ctx, m_layer_ctx, m_layer_type);
         };
 
         bool ImageLayerTarget::load_mesh(const GLRenderContext& ctx, LayerQuadMesh& mesh,

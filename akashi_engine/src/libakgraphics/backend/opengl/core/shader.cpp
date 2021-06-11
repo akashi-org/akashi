@@ -5,29 +5,8 @@
 #include <libakcore/logger.h>
 
 #include <string>
-#include <fstream>
-#include <sstream>
 
 using namespace akashi::core;
-
-#define GET_SHADER_PATH(shader_type, layer, layer_type)                                            \
-    [](const akashi::core::LayerContext& layer_, const akashi::core::LayerType& type_) {           \
-        switch (type_) {                                                                           \
-            case LayerType::VIDEO: {                                                               \
-                return layer_.video_layer_ctx.shader_type##_path;                                  \
-            }                                                                                      \
-            case LayerType::TEXT: {                                                                \
-                return layer_.text_layer_ctx.shader_type##_path;                                   \
-            }                                                                                      \
-            case LayerType::IMAGE: {                                                               \
-                return layer_.image_layer_ctx.shader_type##_path;                                  \
-            }                                                                                      \
-            default: {                                                                             \
-                AKLOG_ERROR("Not implemented Error for the type: {}", type_);                      \
-                throw std::runtime_error("Not implemented Error");                                 \
-            }                                                                                      \
-        }                                                                                          \
-    }((layer), (layer_type))
 
 namespace akashi {
     namespace graphics {
@@ -89,56 +68,6 @@ namespace akashi {
                 return false;
             } else {
                 return true;
-            }
-        }
-
-        namespace detail {
-
-            template <GLenum shader_type>
-            core::json::optional::type<std::string>
-            get_shader_path(const akashi::core::LayerContext& layer,
-                            const akashi::core::LayerType& layer_type) {
-                switch (shader_type) {
-                    case GL_FRAGMENT_SHADER: {
-                        return GET_SHADER_PATH(frag, layer, layer_type);
-                    }
-                    case GL_GEOMETRY_SHADER: {
-                        return GET_SHADER_PATH(geom, layer, layer_type);
-                    }
-                    default: {
-                        return core::json::optional::none<std::string>;
-                    }
-                }
-            }
-
-        }
-
-        void UserShaderSet::load(const core::LayerContext& layer, const core::LayerType& type) {
-            this->read_shader<GL_FRAGMENT_SHADER>(m_frag, layer, type);
-            this->read_shader<GL_GEOMETRY_SHADER>(m_geom, layer, type);
-        }
-
-        UserShaderSet::~UserShaderSet(void) {}
-
-        bool UserShaderSet::contains(const std::string& path) {
-            return path == m_frag.path || path == m_geom.path;
-        }
-
-        template <GLenum shader_type>
-        void UserShaderSet::read_shader(UserShader& user_shader, const core::LayerContext& layer,
-                                        const core::LayerType& layer_type) {
-            auto shader_path_opt = detail::get_shader_path<shader_type>(layer, layer_type);
-            if (!json::optional::is_none(shader_path_opt)) {
-                user_shader.path =
-                    json::optional::unwrap(detail::get_shader_path<shader_type>(layer, layer_type));
-                if (!user_shader.path.empty()) {
-                    std::ifstream ist(user_shader.path);
-                    std::stringstream sbuf;
-                    sbuf << ist.rdbuf();
-                    // [XXX] std::stringstream::str() returns a copy of the underlying
-                    // string object
-                    user_shader.body = sbuf.str();
-                }
             }
         }
 

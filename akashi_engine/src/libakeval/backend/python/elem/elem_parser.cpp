@@ -34,6 +34,32 @@ namespace akashi {
             return style;
         }
 
+        static bool is_shader_module(const pybind11::object& shader_fn) {
+            // [TODO] a bit sloppy?
+            return shader_fn.attr("__class__").attr("__name__").cast<std::string>() ==
+                   "ShaderModule";
+        }
+
+        static std::vector<std::string> parse_shader(const pybind11::object& layer_params,
+                                                     const std::string& shader_type) {
+            std::vector<std::string> res_shaders;
+            if (auto shader_fn = layer_params.attr(shader_type.c_str()); !shader_fn.is_none()) {
+                auto d = pybind11::type::of(shader_fn);
+                if (shader_type == "geom" || !is_shader_module(shader_fn)) {
+                    res_shaders.push_back(layer_params.attr(shader_type.c_str())
+                                              .attr("_assemble")()
+                                              .cast<std::string>());
+                } else {
+                    for (const auto& shader : layer_params.attr(shader_type.c_str())
+                                                  .attr("_assemble")()
+                                                  .cast<pybind11::list>()) {
+                        res_shaders.push_back(shader.cast<std::string>());
+                    }
+                }
+            }
+            return res_shaders;
+        }
+
         core::LayerContext parse_layer_context(const pybind11::object& layer_params) {
             core::LayerContext layer_ctx;
 
@@ -54,10 +80,8 @@ namespace akashi {
                     to_rational(layer_params.attr("start")).to_fraction();
                 layer_ctx.video_layer_ctx.scale = layer_params.attr("scale").cast<double>();
                 layer_ctx.video_layer_ctx.gain = layer_params.attr("gain").cast<double>();
-                layer_ctx.video_layer_ctx.frag_path[core::json::optional::attr_name] =
-                    layer_params.attr("frag_path").cast<std::string>();
-                layer_ctx.video_layer_ctx.geom_path[core::json::optional::attr_name] =
-                    layer_params.attr("geom_path").cast<std::string>();
+                layer_ctx.video_layer_ctx.frag = parse_shader(layer_params, "frag");
+                layer_ctx.video_layer_ctx.geom = parse_shader(layer_params, "geom");
             } else if (type_str == "AUDIO") {
                 layer_ctx.type = static_cast<int>(core::LayerType::AUDIO);
                 layer_ctx.audio_layer_ctx.src = layer_params.attr("src").cast<std::string>();
@@ -68,20 +92,16 @@ namespace akashi {
                 layer_ctx.type = static_cast<int>(core::LayerType::IMAGE);
                 layer_ctx.image_layer_ctx.src = layer_params.attr("src").cast<std::string>();
                 layer_ctx.image_layer_ctx.scale = layer_params.attr("scale").cast<double>();
-                layer_ctx.image_layer_ctx.frag_path[core::json::optional::attr_name] =
-                    layer_params.attr("frag_path").cast<std::string>();
-                layer_ctx.image_layer_ctx.geom_path[core::json::optional::attr_name] =
-                    layer_params.attr("geom_path").cast<std::string>();
+                layer_ctx.image_layer_ctx.frag = parse_shader(layer_params, "frag");
+                layer_ctx.image_layer_ctx.geom = parse_shader(layer_params, "geom");
             } else if (type_str == "TEXT") {
                 layer_ctx.type = static_cast<int>(core::LayerType::TEXT);
                 layer_ctx.text_layer_ctx.text = layer_params.attr("text").cast<std::string>();
                 layer_ctx.text_layer_ctx.style[core::json::optional::attr_name] =
                     parse_style(layer_params.attr("style"));
                 layer_ctx.text_layer_ctx.scale = layer_params.attr("scale").cast<double>();
-                layer_ctx.text_layer_ctx.frag_path[core::json::optional::attr_name] =
-                    layer_params.attr("frag_path").cast<std::string>();
-                layer_ctx.text_layer_ctx.geom_path[core::json::optional::attr_name] =
-                    layer_params.attr("geom_path").cast<std::string>();
+                layer_ctx.text_layer_ctx.frag = parse_shader(layer_params, "frag");
+                layer_ctx.text_layer_ctx.geom = parse_shader(layer_params, "geom");
             } else {
                 AKLOG_ERROR("Invalid type '{}' found", type_str.c_str());
                 layer_ctx.type = -1;

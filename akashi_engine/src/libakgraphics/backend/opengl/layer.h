@@ -38,7 +38,7 @@ namespace akashi {
 
             virtual void update_layer(core::LayerContext layer_ctx) { m_layer_ctx = layer_ctx; };
 
-            virtual void update_shader(const GLRenderContext&, const std::vector<const char*>) {}
+            virtual void update_shader(const GLRenderContext&) {}
 
           protected:
             akashi::core::LayerContext m_layer_ctx;
@@ -56,8 +56,7 @@ namespace akashi {
                         const akashi::core::Rational& pts) override;
             bool destroy(const GLRenderContext& ctx) override;
 
-            void update_shader(const GLRenderContext& ctx,
-                               const std::vector<const char*> paths) override;
+            void update_shader(const GLRenderContext& ctx) override;
 
           private:
             VideoQuadObject m_quad_obj;
@@ -75,8 +74,7 @@ namespace akashi {
                         const core::Rational& pts) override;
             bool destroy(const GLRenderContext& ctx) override;
 
-            void update_shader(const GLRenderContext& ctx,
-                               const std::vector<const char*> paths) override;
+            void update_shader(const GLRenderContext& ctx) override;
 
           private:
             bool load_mesh(const GLRenderContext& ctx, LayerQuadMesh& mesh,
@@ -99,8 +97,7 @@ namespace akashi {
                         const core::Rational& pts) override;
             bool destroy(const GLRenderContext& ctx) override;
 
-            void update_shader(const GLRenderContext& ctx,
-                               const std::vector<const char*> paths) override;
+            void update_shader(const GLRenderContext& ctx) override;
 
           private:
             bool load_mesh(const GLRenderContext& ctx, LayerQuadMesh& mesh,

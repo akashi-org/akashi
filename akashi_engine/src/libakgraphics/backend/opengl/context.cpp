@@ -156,15 +156,6 @@ namespace akashi {
             }
         }
 
-        std::vector<const char*> GLGraphicsContext::updated_shader_paths(void) {
-            std::vector<const char*> paths;
-            {
-                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
-                paths = m_state->m_prop.updated_shader_paths;
-            }
-            return paths;
-        }
-
         std::array<int, 2> GLGraphicsContext::resolution() {
             std::array<int, 2> res{0, 0};
             {
