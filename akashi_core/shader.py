@@ -1,71 +1,69 @@
 from __future__ import annotations
-from typing import Literal, Generic, TypeVar, cast
+from typing import Literal, Generic, TypeVar, Union
 from dataclasses import dataclass, field
 
 
-_TShader = TypeVar('_TShader')
+_TShaderType = TypeVar('_TShaderType', Literal['frag'], Literal['geom'], Literal['any'])
+_TShaderLayerType = TypeVar('_TShaderLayerType', Literal['video'], Literal['novideo'])
 
 
 @dataclass(frozen=True)
-class AnyShader:
-    src: str
-
-
-@dataclass(frozen=True)
-class _Shader:
-    entry: str
-    includes: list[AnyShader] = field(default_factory=list)
+class LibShader(Generic[_TShaderType]):
+    type: _TShaderType
+    includes: tuple[Union[LibShader[_TShaderType], LibShader[Literal['any']]], ...] = field(default_factory=tuple)
     src: str = ''
 
-
-@dataclass(frozen=True)
-class FragShader(_Shader):
-
-    type: Literal['frag'] = field(default='frag', init=False)
-
-    def __rshift__(self, other: 'FragShader') -> 'ShaderModule[FragShader]':
-        return ShaderModule(self.type, (self, other))
-
-    def _assemble(self, cur_entry: str = 'frag_main', next_entry: str = '') -> str:
-        meta_header = '#version 420'
-        chain_header = '' if len(next_entry) < 1 else f'void {next_entry}(inout vec4);\n'
-        chain_call = '' if len(next_entry) < 1 else f'{next_entry}(_fragColor);\n'
-        comp_entry = f'{chain_header} void {cur_entry}(inout vec4 _fragColor){{ {self.entry}; {chain_call} }}'
+    def _assemble(self) -> str:
         return "\n".join(
-            [meta_header] + [i.src for i in self.includes] + [self.src] + [comp_entry]
+            [inc._assemble() for inc in self.includes] + [self.src]
         )
 
 
 @dataclass(frozen=True)
-class GeomShader(_Shader):
-
-    type: Literal['geom'] = field(default='geom', init=False)
+class EntryShader(Generic[_TShaderType, _TShaderLayerType]):
+    type: _TShaderType
+    layer_type: _TShaderLayerType
+    includes: tuple[Union[LibShader[_TShaderType], LibShader[Literal['any']]], ...] = field(default_factory=tuple)
+    src: str = ''
 
     def _assemble(self) -> str:
-        meta_header = '#version 420'
-        comp_entry = f'void main(){{ {self.entry}; }}'
+        meta_header = '#version 420 core'
+
+        uniform_header = '''
+            uniform float time;
+            uniform float global_time;
+            uniform float local_duration;
+            uniform float fps;
+            uniform vec2 resolution;
+        '''
+
+        if self.layer_type == 'video':
+            uniform_header += '''
+                uniform sampler2D textureY;
+                uniform sampler2D textureCb;
+                uniform sampler2D textureCr;
+            '''
+        else:
+            uniform_header += '''
+                uniform sampler2D texture0;
+            '''
+
+        inout_header = ''
+        if self.type == 'frag':
+            if self.layer_type == 'video':
+                inout_header += '''
+                    in GS_OUT {
+                        vec2 vLumaUvs;
+                        vec2 vChromaUvs;
+                    } fs_in;
+                '''
+            else:
+                inout_header += '''
+                    in GS_OUT {
+                        vec2 vUvs;
+                    } fs_in;
+                '''
+
         return "\n".join(
-            [meta_header] + [i.src for i in self.includes] + [self.src] + [comp_entry]
+            [meta_header, uniform_header, inout_header] + [inc._assemble() for inc in self.includes] + [self.src]
         )
-
-
-@dataclass(frozen=True)
-class ShaderModule(Generic[_TShader]):
-    type: Literal['frag']
-    shaders: tuple[_TShader, ...] = field(default_factory=tuple)
-
-    def __rshift__(self, other: _TShader) -> 'ShaderModule[_TShader]':
-        return ShaderModule(self.type, (*self.shaders, other))
-
-    def _assemble(self) -> list[str]:
-        # Normally this always returns false, but for just in case.
-        if self.type != 'frag':
-            raise NotImplementedError()
-
-        _shaders = cast(tuple['FragShader', ...], self.shaders)
-        comp_srcs: list[str] = []
-        for idx, shader in enumerate(_shaders):
-            cur_entry = 'frag_main' if idx == 0 else f'frag_main{idx}'
-            next_entry = '' if idx == len(_shaders) - 1 else f'frag_main{idx+1}'
-            comp_srcs.append(shader._assemble(cur_entry, next_entry))
-        return comp_srcs

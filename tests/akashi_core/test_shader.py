@@ -1,8 +1,7 @@
 import unittest
 from akashi_core import (
-    FragShader,
-    GeomShader,
-    AnyShader
+    EntryShader,
+    LibShader
 )
 
 
@@ -10,57 +9,51 @@ class TestShader(unittest.TestCase):
 
     def test_frag(self) -> None:
 
-        s1 = FragShader(
-            entry='''
-                _fragColor = invert_filter(_fragColor);
-            ''',
+        s1 = EntryShader(
+            type='frag',
+            layer_type='video',
             src='''
                 vec4 invert_filter(in vec4 base) { return vec4(vec3(1.0 - base), base.a); }
+                void frag_main(inout vec4 _fragColor){
+                    _fragColor = invert_filter(_fragColor);
+                }
             '''
         )
 
         print(s1._assemble())
 
-    def test_frag_module(self) -> None:
+    def test_frag_include(self) -> None:
 
-        s1 = FragShader(
-            entry='''
-                {
-                  _fragColor = invert_filter(_fragColor);
-                }
-            ''',
+        la1 = LibShader(
+            type='any',
+            src='''
+                float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453); }
+        ''')
+
+        lf1 = LibShader(
+            type='frag',
+            src='''
+                vec4 edge_filter(in vec4 base) { return vec4(vec3(fwidth(length(base.rgb))), base.a); }
+        ''')
+
+        s1 = EntryShader(
+            type='frag',
+            layer_type='video',
+            includes=(la1, lf1),
             src='''
                 vec4 invert_filter(in vec4 base) { return vec4(vec3(1.0 - base), base.a); }
-            '''
-        )
-
-        a1 = AnyShader('''
-            float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453); }
-        '''
-                       )
-
-        s2 = FragShader(
-            entry='''
-                _fragColor = edge_filter(_fragColor);
-            ''',
-            includes=[a1],
-            src='''
-                vec4 edge_filter(in vec4 base) {
-                    return vec4(vec3(fwidth(length(base.rgb))), base.a);
+                void frag_main(inout vec4 _fragColor){
+                    _fragColor = invert_filter(_fragColor);
                 }
             '''
         )
-
-        for mod_src in (s1 >> s2)._assemble():
-            print(mod_src)
-            print('-' * 20)
+        print(s1._assemble())
 
     def test_geom(self) -> None:
 
-        s1 = GeomShader(
-            entry='''
-                pass_through();
-            ''',
+        s1 = EntryShader(
+            layer_type='video',
+            type='geom',
             src='''
                 layout(triangles) in;
                 layout(triangle_strip, max_vertices = 3) out;
@@ -85,11 +78,28 @@ class TestShader(unittest.TestCase):
                     }
                     EndPrimitive();
                 }
-
+                void main() { pass_through(); }
             '''
         )
 
         print(s1._assemble())
+
+    def test_lib_include(self) -> None:
+
+        la1 = LibShader(
+            type='any',
+            src='''
+                float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453); }
+        ''')
+
+        lf1 = LibShader(
+            type='frag',
+            includes=(la1,),
+            src='''
+                vec4 edge_filter(in vec4 base) { return vec4(vec3(fwidth(length(base.rgb))), base.a); }
+        ''')
+
+        print(lf1._assemble())
 
 
 if __name__ == "__main__":

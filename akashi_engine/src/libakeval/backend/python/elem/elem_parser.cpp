@@ -34,28 +34,12 @@ namespace akashi {
             return style;
         }
 
-        static bool is_shader_module(const pybind11::object& shader_fn) {
-            // [TODO] a bit sloppy?
-            return shader_fn.attr("__class__").attr("__name__").cast<std::string>() ==
-                   "ShaderModule";
-        }
-
         static std::vector<std::string> parse_shader(const pybind11::object& layer_params,
                                                      const std::string& shader_type) {
             std::vector<std::string> res_shaders;
             if (auto shader_fn = layer_params.attr(shader_type.c_str()); !shader_fn.is_none()) {
-                auto d = pybind11::type::of(shader_fn);
-                if (shader_type == "geom" || !is_shader_module(shader_fn)) {
-                    res_shaders.push_back(layer_params.attr(shader_type.c_str())
-                                              .attr("_assemble")()
-                                              .cast<std::string>());
-                } else {
-                    for (const auto& shader : layer_params.attr(shader_type.c_str())
-                                                  .attr("_assemble")()
-                                                  .cast<pybind11::list>()) {
-                        res_shaders.push_back(shader.cast<std::string>());
-                    }
-                }
+                res_shaders.push_back(
+                    layer_params.attr(shader_type.c_str()).attr("_assemble")().cast<std::string>());
             }
             return res_shaders;
         }

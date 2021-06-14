@@ -10,7 +10,7 @@ from typing import (
     TypedDict,
 )
 from .time import Second
-from .shader import ShaderModule, FragShader, GeomShader
+from .shader import EntryShader
 from dataclasses import dataclass, field, fields, replace
 from uuid import uuid4
 
@@ -56,8 +56,8 @@ class VideoLayerParams(CommonLayerParams, _VideoLayerRequiredParams):
     start: Second = field(default=Second(0))
     scale: float = field(default=1.0)
     gain: float = field(default=1.0)
-    frag: Optional[Union[FragShader, ShaderModule[Literal['frag']]]] = field(default=None)
-    geom: Optional[GeomShader] = field(default=None)
+    frag: Optional[EntryShader[Literal['frag'], Literal['video']]] = field(default=None)
+    geom: Optional[EntryShader[Literal['geom'], Literal['video']]] = field(default=None)
 
 
 @dataclass
@@ -88,8 +88,8 @@ class TextLayerParams(CommonLayerParams, _TextLayerRequiredParams):
     scale: float = field(default=1.0)
     _type: Literal['TEXT'] = field(default='TEXT', init=False)
     style: TextLayerStyle = field(default_factory=TextLayerStyle)
-    frag: Optional[Union[FragShader, ShaderModule[Literal['frag']]]] = field(default=None)
-    geom: Optional[GeomShader] = field(default=None)
+    frag: Optional[EntryShader[Literal['frag'], Literal['novideo']]] = field(default=None)
+    geom: Optional[EntryShader[Literal['geom'], Literal['novideo']]] = field(default=None)
 
 
 @dataclass
@@ -101,8 +101,8 @@ class _ImageLayerRequiredParams:
 class ImageLayerParams(CommonLayerParams, _ImageLayerRequiredParams):
     _type: Literal['IMAGE'] = field(default='IMAGE', init=False)
     scale: float = field(default=1.0)
-    frag: Optional[Union[FragShader, ShaderModule[Literal['frag']]]] = field(default=None)
-    geom: Optional[GeomShader] = field(default=None)
+    frag: Optional[EntryShader[Literal['frag'], Literal['novideo']]] = field(default=None)
+    geom: Optional[EntryShader[Literal['geom'], Literal['novideo']]] = field(default=None)
 
 
 LayerParams = Union[
