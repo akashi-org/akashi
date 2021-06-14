@@ -23,8 +23,8 @@ namespace akashi {
             Fraction start;
             double scale;
             double gain;
-            json::optional::type<std::string> frag_path;
-            json::optional::type<std::string> geom_path;
+            std::vector<std::string> frag;
+            std::vector<std::string> geom;
         };
 
         struct AudioLayerContext {
@@ -37,15 +37,15 @@ namespace akashi {
             std::string text;
             double scale;
             json::optional::type<Style> style;
-            json::optional::type<std::string> frag_path;
-            json::optional::type<std::string> geom_path;
+            std::vector<std::string> frag;
+            std::vector<std::string> geom;
         };
 
         struct ImageLayerContext {
             std::string src;
             double scale;
-            json::optional::type<std::string> frag_path;
-            json::optional::type<std::string> geom_path;
+            std::vector<std::string> frag;
+            std::vector<std::string> geom;
         };
 
         struct LayerContext {

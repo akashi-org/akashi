@@ -42,8 +42,6 @@ namespace akashi {
 
             void reload_python(const std::vector<watch::WatchEvent>& events);
 
-            void reload_shader(const std::vector<watch::WatchEvent>& events);
-
             bool reload_inline(const InnerEventInlineEvalContext& inline_eval_ctx);
 
           private:

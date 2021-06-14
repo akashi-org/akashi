@@ -81,12 +81,9 @@ namespace akashi {
             bool destroy(const GLRenderContext& ctx);
             const VideoQuadPassProp& get_prop() const;
 
-            void shader_reload(const GLRenderContext& ctx, const core::LayerContext& layer,
-                               const std::vector<const char*>& paths);
-
           private:
             bool load_shader(const GLRenderContext& ctx, const GLuint prog,
-                             const UserShaderSet& shader_set,
+                             const core::LayerContext& layer,
                              const core::VideoDecodeMethod& decode_method) const;
             bool load_vao(const GLRenderContext& ctx, const VTexSizeFormat& format,
                           const GLuint prog, GLuint& vao) const;
@@ -95,7 +92,6 @@ namespace akashi {
           private:
             VideoQuadPassProp m_prop;
             VTexSizeFormat m_size_format;
-            UserShaderSet m_shader_set;
             core::VideoDecodeMethod m_decode_method;
         };
 

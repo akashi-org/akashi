@@ -15,6 +15,25 @@ using namespace akashi::core;
 #include <fstream>
 #include <sstream>
 
+#define GET_SHADER(shader_type, layer, layer_type)                                                 \
+    [](const akashi::core::LayerContext& layer_, const akashi::core::LayerType& type_) {           \
+        switch (type_) {                                                                           \
+            case LayerType::VIDEO: {                                                               \
+                return layer_.video_layer_ctx.shader_type;                                         \
+            }                                                                                      \
+            case LayerType::TEXT: {                                                                \
+                return layer_.text_layer_ctx.shader_type;                                          \
+            }                                                                                      \
+            case LayerType::IMAGE: {                                                               \
+                return layer_.image_layer_ctx.shader_type;                                         \
+            }                                                                                      \
+            default: {                                                                             \
+                AKLOG_ERROR("Not implemented Error for the type: {}", type_);                      \
+                throw std::runtime_error("Not implemented Error");                                 \
+            }                                                                                      \
+        }                                                                                          \
+    }((layer), (layer_type))
+
 static constexpr const char* vshader_src = u8R"(
     #version 420 core
     uniform mat4 mvpMatrix;
@@ -95,8 +114,7 @@ namespace akashi {
             m_prop.prog = GET_GLFUNC(ctx, glCreateProgram)();
 
             // loading shader
-            m_shader_set.load(layer, type);
-            this->load_shader(ctx, m_prop.prog, m_shader_set);
+            this->load_shader(ctx, m_prop.prog, layer, type);
 
             // uniform location
             m_prop.mvp_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "mvpMatrix");
@@ -128,31 +146,28 @@ namespace akashi {
 
         const LayerQuadPassProp& LayerQuadPass::get_prop(void) const { return m_prop; }
 
-        void LayerQuadPass::shader_reload(const GLRenderContext& ctx,
-                                          const core::LayerContext& layer,
-                                          const core::LayerType& type,
-                                          const std::vector<const char*> paths) {
-            for (const auto& path : paths) {
-                if (m_shader_set.contains(path)) {
-                    this->destroy(ctx);
-                    this->create(ctx, layer, type);
-                    break;
-                }
-            }
-        }
-
         bool LayerQuadPass::load_shader(const GLRenderContext& ctx, const GLuint prog,
-                                        const UserShaderSet& shader_set) const {
+                                        const core::LayerContext& layer,
+                                        const core::LayerType& type) const {
             CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_VERTEX_SHADER, vshader_src));
             CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_FRAGMENT_SHADER, fshader_src));
-            CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_FRAGMENT_SHADER,
-                                                  shader_set.frag().path.empty()
-                                                      ? default_user_fshader_src
-                                                      : shader_set.frag().body.c_str()));
+
+            auto frag_shaders = GET_SHADER(frag, layer, type);
+            if (frag_shaders.empty()) {
+                CHECK_AK_ERROR2(
+                    compile_attach_shader(ctx, prog, GL_FRAGMENT_SHADER, default_user_fshader_src));
+            } else {
+                for (const auto& frag_shader : frag_shaders) {
+                    CHECK_AK_ERROR2(
+                        compile_attach_shader(ctx, prog, GL_FRAGMENT_SHADER, frag_shader.c_str()));
+                }
+            }
+
+            auto geom_shader = GET_SHADER(geom, layer, type);
             CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_GEOMETRY_SHADER,
-                                                  shader_set.geom().path.empty()
-                                                      ? default_user_gshader_src
-                                                      : shader_set.geom().body.c_str()));
+                                                  geom_shader.empty() ? default_user_gshader_src
+                                                                      : geom_shader[0].c_str()));
+
             CHECK_AK_ERROR2(link_shader(ctx, prog));
             return true;
         }

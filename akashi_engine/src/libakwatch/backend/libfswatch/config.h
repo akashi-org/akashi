@@ -60,12 +60,7 @@ namespace akashi {
                     {.text = "\\.py$",
                      .type = fsw_filter_type::filter_include,
                      .case_sensitive = true,
-                     .extended = true},
-                    {.text = "\\.(vert|tesc|tese|geom|frag|comp)$",
-                     .type = fsw_filter_type::filter_include,
-                     .case_sensitive = true,
-                     .extended = true},
-                };
+                     .extended = true}};
 
                 self.event_filters = {
                     {fsw_event_flag::Created},
