@@ -146,13 +146,6 @@ namespace akashi {
 
         const LayerQuadPassProp& LayerQuadPass::get_prop(void) const { return m_prop; }
 
-        void LayerQuadPass::shader_reload(const GLRenderContext& ctx,
-                                          const core::LayerContext& layer,
-                                          const core::LayerType& type) {
-            this->destroy(ctx);
-            this->create(ctx, layer, type);
-        }
-
         bool LayerQuadPass::load_shader(const GLRenderContext& ctx, const GLuint prog,
                                         const core::LayerContext& layer,
                                         const core::LayerType& type) const {

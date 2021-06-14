@@ -118,8 +118,6 @@ namespace akashi {
             bool seek_success = true; // for checking whether seek succeeded in seek manager
 
             bool need_first_render = false;
-
-            bool shader_reload = false; // temporary
         };
 
         struct AtomicState {

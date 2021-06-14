@@ -49,9 +49,6 @@ namespace akashi {
             bool destroy(const GLRenderContext& ctx);
             const LayerQuadPassProp& get_prop() const;
 
-            void shader_reload(const GLRenderContext& ctx, const core::LayerContext& layer,
-                               const core::LayerType& type);
-
           private:
             bool load_shader(const GLRenderContext& ctx, const GLuint prog,
                              const core::LayerContext& layer, const core::LayerType& type) const;

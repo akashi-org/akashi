@@ -227,12 +227,6 @@ namespace akashi {
 
         const VideoQuadPassProp& VideoQuadPass::get_prop(void) const { return m_prop; }
 
-        void VideoQuadPass::shader_reload(const GLRenderContext& ctx,
-                                          const core::LayerContext& layer) {
-            this->destroy(ctx);
-            this->create(ctx, m_size_format, layer, m_decode_method);
-        }
-
         bool VideoQuadPass::load_shader(const GLRenderContext& ctx, const GLuint prog,
                                         const core::LayerContext& layer,
                                         const core::VideoDecodeMethod& decode_method) const {

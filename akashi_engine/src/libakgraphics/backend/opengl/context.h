@@ -49,10 +49,6 @@ namespace akashi {
 
             core::Rational fps();
 
-            bool shader_reload();
-
-            void set_shader_reload(bool reloaded);
-
             std::array<int, 2> resolution();
 
             std::unique_ptr<buffer::AVBufferData> dequeue(std::string layer_uuid,

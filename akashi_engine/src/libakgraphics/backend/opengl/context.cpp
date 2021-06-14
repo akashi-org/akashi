@@ -140,22 +140,6 @@ namespace akashi {
             return fps;
         }
 
-        bool GLGraphicsContext::shader_reload() {
-            bool shader_reload = false;
-            {
-                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
-                shader_reload = m_state->m_prop.shader_reload;
-            }
-            return shader_reload;
-        }
-
-        void GLGraphicsContext::set_shader_reload(bool reloaded) {
-            {
-                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
-                m_state->m_prop.shader_reload = reloaded;
-            }
-        }
-
         std::array<int, 2> GLGraphicsContext::resolution() {
             std::array<int, 2> res{0, 0};
             {

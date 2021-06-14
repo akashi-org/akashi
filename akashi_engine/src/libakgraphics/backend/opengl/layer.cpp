@@ -203,12 +203,6 @@ namespace akashi {
             return true;
         }
 
-        void VideoLayerTarget::update_shader(const GLRenderContext& ctx) {
-            if (m_quad_obj.created()) {
-                m_quad_obj.get_prop_mut().pass.shader_reload(ctx, m_layer_ctx);
-            }
-        };
-
         /* --- TextLayerTarget --- */
 
         bool TextLayerTarget::create(const GLRenderContext& ctx, core::LayerContext layer_ctx) {
@@ -242,10 +236,6 @@ namespace akashi {
             m_quad_obj.destroy(ctx);
             return true;
         }
-
-        void TextLayerTarget::update_shader(const GLRenderContext& ctx) {
-            m_quad_obj.get_prop_mut().pass.shader_reload(ctx, m_layer_ctx, m_layer_type);
-        };
 
         bool TextLayerTarget::load_mesh(const GLRenderContext& ctx, LayerQuadMesh& mesh,
                                         core::LayerContext& layer_ctx) const {
@@ -329,10 +319,6 @@ namespace akashi {
             m_quad_obj.destroy(ctx);
             return true;
         }
-
-        void ImageLayerTarget::update_shader(const GLRenderContext& ctx) {
-            m_quad_obj.get_prop_mut().pass.shader_reload(ctx, m_layer_ctx, m_layer_type);
-        };
 
         bool ImageLayerTarget::load_mesh(const GLRenderContext& ctx, LayerQuadMesh& mesh,
                                          core::LayerContext& layer_ctx) const {
