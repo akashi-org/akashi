@@ -6,12 +6,34 @@ from akashi_core import (
     VideoLayerParams,
     Second,
     akexport_elem,
-    from_relpath
+    from_relpath,
+    EntryShader,
+    LibShader
 )
 from akconf import config
 from layers.message_layer import message_layer
 
 (WIDTH, HEIGHT) = config().video.resolution
+
+
+def invert_filter():
+    return LibShader(
+        type='frag',
+        src='''
+            vec4 invert_filter(in vec4 base) { return vec4(vec3(1.0 - base), base.a); }
+        '''
+    )
+
+
+def edge_filter():
+    return LibShader(
+        type='frag',
+        src='''
+            vec4 edge_filter(in vec4 base) {
+                return vec4(vec3(fwidth(length(base.rgb))), base.a);
+            }
+        '''
+    )
 
 
 @akexport_elem()
@@ -26,7 +48,17 @@ def main():
                     y=int(HEIGHT / 2),
                     begin=Second(0),
                     end=Second(10),
-                    frag_path=from_relpath(__file__, './video.frag')
+                    frag=EntryShader(
+                        type='frag',
+                        layer_type='video',
+                        includes=(invert_filter(), edge_filter()),
+                        src='''
+                            void frag_main(inout vec4 _fragColor) {
+                                // _fragColor = invert_filter(_fragColor);
+                                // _fragColor = edge_filter(_fragColor);
+                            }
+                        '''
+                    )
                 ))
             ])
         ])

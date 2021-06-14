@@ -109,7 +109,17 @@ def main():
                     y=int(HEIGHT / 2),
                     begin=Second(0),
                     end=Second(10),
-                    frag_path=from_relpath(__file__, './video.frag')
+                    frag=EntryShader(
+                        type='frag',
+                        layer_type='video',
+                        includes=(invert_filter(), edge_filter()),
+                        src='''
+                            void frag_main(inout vec4 _fragColor) {
+                                // _fragColor = invert_filter(_fragColor);
+                                // _fragColor = edge_filter(_fragColor);
+                            }
+                        '''
+                    )
                 ))
             ])
         ])
@@ -271,25 +281,6 @@ style={'fill': '#FF0000', 'font_size': 30, 'font_path': '/path/to/font.ttf`}
 
 As the second argument of `layer`, you can optionally pass an update function. The update function is executed every frame. This function accepts `KronArgs`, which contains the PTS (Presentation timestamp) of the frame, and the initial layer parameters as its arguments, and returns the new layer parameters used for rendering for that turn. This function must be pure: you must not perform side effects in this function. This function is useful when you want to change the layer's location with time. [This example](https://github.com/akashi-org/akashi/blob/master/examples/basic/layers/message_layer.py) is a good example for this.
 
-#### Shader
-
-You can also customize layers with GLSL (OpenGL Shading Language). GLSL is a really powerful tool for Akashi. Unlike layer updates, code changes for shaders can be applied immediately even during the playback. And since it runs on the GPU, the performance is way better than that of layer updates. To see what you can do with GLSL in detail, see [this example](https://github.com/akashi-org/akashi/blob/master/examples/basic/video.frag).
-
-Akashi now supports two types of shaders: geometry and fragment shader.
-
-```python
-video(init=VideoLayerParams(
-    src=from_relpath(__file__, 'assets/river.mp4'),
-    x=int(WIDTH / 2),
-    y=int(HEIGHT / 2),
-    begin=Second(0),
-    end=Second(10),
-    frag_path=from_relpath(__file__, './video.frag')
-))
-```
-
-When using, specify the shader file path like above. Make sure to install shader files within the directory where `akconf.py` exists. If not, hot reloading is not working.
-
 
 ### Step6: Encoding (Build)
 
@@ -346,7 +337,7 @@ akashi build -c akconf.py
 
 ### *Do not invoke HR for Python when playing*
 
-Unlike GLSL, hot reload on python sources during playback is unstable. Before hot reloading, please make sure to pause the player.  
+Hot reload on python sources during playback is unstable. Before hot reloading, please make sure to pause the player.  
 Currently, if a hot reload detected for python sources, engine will pause the player automatically.  
 
 ### *Do not use `dataclasses.replace` in layer update*
