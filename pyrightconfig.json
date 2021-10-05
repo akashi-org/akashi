@@ -13,6 +13,5 @@
   "reportImportCycles": "none",
   "strictListInference": true,
   "strictDictionaryInference": true,
-  "strictParameterNoneValue": true,
-  "reportPrivateUsage": false
+  "strictParameterNoneValue": true
 }
