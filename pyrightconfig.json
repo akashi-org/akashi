@@ -9,7 +9,8 @@
      }
   ],
   "verboseOutput": true,
-  "typeCheckingMode": "strict",
+  "typeCheckingMode": "basic",
+  "reportImportCycles": "none",
   "strictListInference": true,
   "strictDictionaryInference": true,
   "strictParameterNoneValue": true,
