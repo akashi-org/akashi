@@ -27,6 +27,57 @@ namespace akashi {
             core::owned_ptr<pybind11::object> update_func = nullptr;
         };
 
+        void trace_kron_context(const pybind11::object& elem, GlobalContext& ctx) {
+            // [TODO]
+            // parse atom proxies
+            // parse layer proxies
+            //
+
+            for (const auto& atom : elem.attr("atoms").cast<py::list>()) {
+                AtomTracerContext atom_ctx;
+                atom_ctx.atom_profile = {};
+                atom_ctx.atom_duration = core::Rational(0l);
+                atom_ctx.atom_duration_fixed = false;
+
+                atom_ctx.atom_profile.uuid = atom.attr("uuid").cast<std::string>();
+
+                for (const auto& layer_idx : atom.attr("layer_indices").cast<py::list>()) {
+                    LayerTracerContext layer_trace_ctx = {
+                        .layer_ctx = {}, .params_obj = nullptr, .update_func = nullptr};
+
+                    auto layer = elem.attr("layers")[layer_idx];
+                    layer_trace_ctx.layer_ctx = parse_layer_context(layer);
+                    layer_trace_ctx.params_obj = core::make_owned<pybind11::object>(layer);
+                    if (auto layer_end = to_rational(layer_trace_ctx.layer_ctx.to);
+                        !atom_ctx.atom_duration_fixed && atom_ctx.atom_duration <= layer_end) {
+                        atom_ctx.atom_duration = layer_end;
+                    }
+
+                    atom_ctx.layer_proxies.push_back(core::make_owned<LayerProxy>(
+                        layer_trace_ctx.layer_ctx, std::move(layer_trace_ctx.params_obj),
+                        std::move(layer_trace_ctx.update_func)));
+                }
+
+                if (atom_ctx.atom_duration < ctx.interval) {
+                    atom_ctx.atom_duration = ctx.interval;
+                }
+                atom_ctx.atom_profile.from = ctx.duration.to_fraction();
+                atom_ctx.atom_profile.to = (ctx.duration + atom_ctx.atom_duration).to_fraction();
+                atom_ctx.atom_profile.duration = atom_ctx.atom_duration.to_fraction();
+
+                for (auto&& layer_proxy : atom_ctx.layer_proxies) {
+                    auto& layer_ctx = layer_proxy->layer_ctx_mut();
+                    layer_ctx.atom_uuid = atom_ctx.atom_profile.uuid;
+                }
+
+                ctx.atom_proxies.push_back(core::make_owned<AtomProxy>(
+                    atom_ctx.atom_profile, std::move(atom_ctx.layer_proxies)));
+                ctx.duration += (atom_ctx.atom_duration + ctx.interval);
+            }
+
+            // assert(false);
+        }
+
         void trace_root(const pybind11::object& elem, GlobalContext& ctx) {
             auto elem_cl = elem.attr("__closure__");
 

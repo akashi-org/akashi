@@ -9,9 +9,11 @@
      }
   ],
   "verboseOutput": true,
-  "typeCheckingMode": "strict",
+  "typeCheckingMode": "basic",
   "reportImportCycles": "none",
   "strictListInference": true,
   "strictDictionaryInference": true,
-  "strictParameterNoneValue": true
+  "strictParameterNoneValue": true,
+  "reportPrivateUsage": "error",
+  "reportIncompatibleMethodOverride": true
 }

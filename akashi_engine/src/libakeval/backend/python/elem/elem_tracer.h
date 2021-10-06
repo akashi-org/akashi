@@ -10,6 +10,8 @@ namespace akashi {
         struct GlobalContext;
         struct AtomTracerContext;
 
+        void trace_kron_context(const pybind11::object& elem, GlobalContext& ctx);
+
         void trace_root(const pybind11::object& elem, GlobalContext& ctx);
 
         void trace_scene(const pybind11::object& elem, GlobalContext& ctx);

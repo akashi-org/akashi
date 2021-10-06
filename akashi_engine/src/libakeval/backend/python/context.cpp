@@ -137,28 +137,32 @@ namespace akashi {
             }
 
             py::object elem;
-            if (elem_name.empty()) {
-                if (py::hasattr(it->second->mod, "__akashi_export_elem_fn")) {
-                    elem = it->second->mod.attr("__akashi_export_elem_fn")();
-                }
-            } else {
-                std::string ret_sig;
-                try {
-                    elem = it->second->mod.attr(elem_name.c_str())();
-                    ret_sig = elem.attr("__annotations__")["return"].cast<std::string>();
-                } catch (const std::exception& e) {
-                    AKLOG_ERROR("{}", e.what());
-                    return render_prof;
-                }
-                // sanity check
-                if (!(ret_sig == "Literal['ROOT']" || ret_sig == "Literal['SCENE']" ||
-                      ret_sig == "Literal['ATOM']")) {
-                    AKLOG_ERRORN("Elem not found");
-                    return render_prof;
-                }
+            if (py::hasattr(it->second->mod, "__akashi_export_elem_fn")) {
+                elem = it->second->mod.attr("__akashi_export_elem_fn")();
             }
-            assert(!elem.is_none());
-            assert(py::hasattr(elem, "__call__"));
+
+            // if (elem_name.empty()) {
+            //     if (py::hasattr(it->second->mod, "__akashi_export_elem_fn")) {
+            //         elem = it->second->mod.attr("__akashi_export_elem_fn")();
+            //     }
+            // } else {
+            //     // std::string ret_sig;
+            //     // try {
+            //     //     elem = it->second->mod.attr(elem_name.c_str())();
+            //     //     ret_sig = elem.attr("__annotations__")["return"].cast<std::string>();
+            //     // } catch (const std::exception& e) {
+            //     //     AKLOG_ERROR("{}", e.what());
+            //     //     return render_prof;
+            //     // }
+            //     // // sanity check
+            //     // if (!(ret_sig == "Literal['ROOT']" || ret_sig == "Literal['SCENE']" ||
+            //     //       ret_sig == "Literal['ATOM']")) {
+            //     //     AKLOG_ERRORN("Elem not found");
+            //     //     return render_prof;
+            //     // }
+            // }
+            // assert(!elem.is_none());
+            // assert(py::hasattr(elem, "__call__"));
 
             // core::Timer timer;
             // timer.start();

@@ -63,5 +63,5 @@ def _akconf_parse(conf_path: str) -> str:
 
     akconf: Any = SourceFileLoader("akconf", path.abspath(conf_path)).load_module()  # type: ignore
     if not hasattr(akconf, '__akashi_export_config_fn'):
-        raise Exception('No config funtion found. Perhaps you forget to add the export decorator?')
+        raise Exception('No config function found. Perhaps you forget to add the export decorator?')
     return getattr(akconf, '__akashi_export_config_fn')().to_json()
