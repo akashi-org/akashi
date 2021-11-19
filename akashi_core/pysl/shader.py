@@ -47,7 +47,7 @@ class FragShader(ShaderModule):
 
     @_gl.method
     @abstractmethod
-    def frag_main(self, _fragColor: _gl.inout_p[_gl.vec4]) -> None: ...
+    def frag_main(self, color: _gl.inout_p[_gl.vec4]) -> None: ...
 
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
@@ -74,7 +74,7 @@ class VideoFragShader(ShaderModule):
 
     @_gl.method
     @abstractmethod
-    def frag_main(self, _fragColor: _gl.inout_p[_gl.vec4]) -> None: ...
+    def frag_main(self, color: _gl.inout_p[_gl.vec4]) -> None: ...
 
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
