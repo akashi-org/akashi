@@ -549,7 +549,7 @@ class transformer:
     def from_Expr(node: ast.Expr, ctx: CompilerContext) -> ExprOut:
 
         out = compile_expr(node.value, ctx)
-        content = get_stmt_indent(node, ctx) + out.content
+        content = get_stmt_indent(node, ctx) + out.content + ';'
 
         return transformer.ExprOut(node, content)
 
