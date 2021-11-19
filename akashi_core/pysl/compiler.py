@@ -98,6 +98,11 @@ def mangle_shader_func(shmod_name: str, func_name: str) -> str:
         return shmod_name + '_' + func_name
 
 
+def is_shader_module(obj: tp.Any) -> bool:
+    # [TODO] issubclass()?
+    return hasattr(obj, '__glsl_version__')
+
+
 def has_params_qualifier(tp_name: str) -> bool:
     return tp_name.startswith('in ') or tp_name.startswith('out ') or tp_name.startswith('inout ')
 
@@ -252,6 +257,10 @@ class CompilerContext:
     config: CompilerConfig.Config
     symbol: dict = field(default_factory=dict)
     cls_symbol: dict = field(default_factory=dict)
+    global_symbol: dict = field(default_factory=dict)
+    imported: set = field(default_factory=set)
+    imported_current: dict = field(default_factory=dict)
+    on_import_resolution: bool = False
     top_indent: int = field(default=0, init=False)
     shmod_name: str = field(default='', init=False)
 
@@ -324,6 +333,12 @@ class transformer:
 
         content = f'{returns_str} {func_name}({args_str}){body_str}'
 
+        imported_strs = []
+        for imp in ctx.imported_current.values():
+            imported_strs.append(compile_shader_staticmethod(imp[0], imp[1], True, ctx.config))
+
+        content = "".join(imported_strs) + content
+
         return transformer.FunctionDefOut(node, content)
 
     @dataclass
@@ -340,6 +355,7 @@ class transformer:
                 out = transformer.from_FunctionDef(stmt, ctx, node.name)
                 if out.is_shader_func:
                     body_strs.append(out.content)
+                ctx.imported_current.clear()
 
         body_joiner = '\n\n' if ctx.config['pretty_compile'] else ''
         body_str = body_joiner.join(body_strs)
@@ -386,12 +402,12 @@ class transformer:
 
         At least on the AST, multiple assignments have two forms: normal multiple assignment, and unpacking.
         Normal multiple assignment, for example, is such statements like `a = b = 1`, and unpacking is like
-        `a, b = (1, 2)`. Unpacking is clearly not compilable in GLSL, and we'd like to avoid that one. However,
+        `a, b = (1, 2)`. Unpacking is clearly not compilable in GLSL, so we need to avoid that one. However,
         both assignments are hard to be distinguished on AST. Perhaps, you may think that we can do it depending
         on whether `ast.Assign.value` is tuple/list or not. But, think about an expression like `a, b = func()`.
         In such cases where the `ast.Assign.value` is `ast.Call`, we will immediately lose our basis for judgment.
         We cannot determine the return type of `ast.Call` on the AST. In order to solve these issues, we have to
-        tackle on numerous messy stuff like symbol resolution, and so on. That must be a relatively arduous task for us.
+        tackle on numerous messy stuffs like symbol resolution. That must be a relatively arduous task for us.
 
         2. Not so much profit, and besides we have another option
 
@@ -549,7 +565,8 @@ class transformer:
     def from_Expr(node: ast.Expr, ctx: CompilerContext) -> ExprOut:
 
         out = compile_expr(node.value, ctx)
-        content = get_stmt_indent(node, ctx) + out.content + ';'
+        last_str = ';' if out.content != '...' else ''
+        content = get_stmt_indent(node, ctx) + out.content + last_str
 
         return transformer.ExprOut(node, content)
 
@@ -727,6 +744,30 @@ class transformer:
         value_str = compile_expr(node.value, ctx).content
         attr_str = str(node.attr)
 
+        # module global
+        if value_str in ctx.global_symbol:
+
+            # [TODO] maybe we need to refactor these lines
+            if inspect.ismodule(ctx.global_symbol[value_str]):
+                if (m := getattr(ctx.global_symbol[value_str], attr_str)) and is_shader_module(m):
+                    ctx.global_symbol[attr_str] = m
+                content = f'{attr_str}'
+                return transformer.AttributeOut(node, content)
+
+            skip_global_resolution = not(ctx.on_import_resolution) and value_str == ctx.shmod_name
+            if not(skip_global_resolution) and is_shader_module(ctx.global_symbol[value_str]):
+                shader_func = getattr(ctx.global_symbol[value_str], attr_str)
+                if shader_func not in ctx.imported:
+                    ctx.imported.add(shader_func)
+                    ctx.imported_current[shader_func] = (ctx.global_symbol[value_str], shader_func)
+                content = mangle_shader_func(value_str, attr_str)
+                return transformer.AttributeOut(node, content)
+            elif value_str == 'gl':
+                if hasattr(_gl, attr_str):
+                    content = f'{attr_str}'
+                    return transformer.AttributeOut(node, content)
+
+        # method/class global
         if value_str in ctx.symbol:
             value_tpname: str = ctx.symbol[value_str]
             if has_params_qualifier(value_tpname):
@@ -735,10 +776,6 @@ class transformer:
                     attr_str = ''
                     content = f'{value_str}'
                     return transformer.AttributeOut(node, content)
-        if value_str == 'gl':
-            if hasattr(_gl, attr_str):
-                content = f'{attr_str}'
-                return transformer.AttributeOut(node, content)
         if value_str == 'self':
             if attr_str in ctx.cls_symbol and ctx.cls_symbol[attr_str][0] == 'instancemethod' and ctx.shmod_name:
                 content = mangle_shader_func(ctx.shmod_name, attr_str)
@@ -1047,7 +1084,7 @@ def __compile_shader_func2(func_def: ast.FunctionDef, ctx: CompilerContext) -> _
     return out.content
 
 
-def class_symbol_analysis(sh_mod: ShaderModule, ctx: CompilerContext) -> None:
+def instance_symbol_analysis(sh_mod: ShaderModule, ctx: CompilerContext) -> None:
 
     # collect annotated instance variables
     for fld_name, fld_type in sh_mod.__class__.__annotations__.items():
@@ -1062,6 +1099,26 @@ def class_symbol_analysis(sh_mod: ShaderModule, ctx: CompilerContext) -> None:
         ctx.cls_symbol[method_name] = ('instancemethod', method)
 
 
+def class_symbol_analysis(shmod_klass: tp.Type[ShaderModule], ctx: CompilerContext) -> None:
+
+    # collect annotated variables
+    for fld_name, fld_type in shmod_klass.__annotations__.items():
+        if isinstance(fld_type, tp._GenericAlias):  # type: ignore
+            basic_tpname: str = str(fld_type.__origin__.__name__)  # type:ignore
+            ctx.cls_symbol[fld_name] = (basic_tpname, fld_type)
+        else:
+            ctx.cls_symbol[fld_name] = (str(type(fld_type).__name__), fld_type)
+
+    # collect static method
+    for method_name, method in inspect.getmembers(shmod_klass, inspect.ismethod):
+        ctx.cls_symbol[method_name] = ('instancemethod', method)
+
+
+def global_symbol_analysis(shmod_klass: tp.Type[ShaderModule], ctx: CompilerContext) -> None:
+
+    ctx.global_symbol = vars(sys.modules[shmod_klass.__module__])
+
+
 def compile_shader_module(
         sh_mod: ShaderModule,
         config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
@@ -1074,8 +1131,31 @@ def compile_shader_module(
     ctx = CompilerContext(config)
 
     ctx.shmod_name = klass.__name__
-    class_symbol_analysis(sh_mod, ctx)
+    global_symbol_analysis(klass, ctx)
+    instance_symbol_analysis(sh_mod, ctx)
 
     out = transformer.from_ClassDef(class_def, ctx)
+
+    return out.content
+
+
+def compile_shader_staticmethod(
+        klass: tp.Type[ShaderModule],
+        method: Callable,
+        on_import_resolution: bool,
+        config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
+
+    py_src = __priv.get_source(method)
+    root = ast.parse(py_src)
+    func_def = get_function_def(root)
+
+    ctx = CompilerContext(config)
+    ctx.on_import_resolution = on_import_resolution
+
+    ctx.shmod_name = klass.__name__
+    global_symbol_analysis(klass, ctx)
+    class_symbol_analysis(klass, ctx)
+
+    out = transformer.from_FunctionDef(func_def, ctx, ctx.shmod_name)
 
     return out.content

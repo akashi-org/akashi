@@ -1,6 +1,7 @@
 import unittest
 from akashi_core.pysl.compiler import compile_shader_func, compile_shader_module, CompileError
 from akashi_core import gl, ak
+from . import compiler_fixtures
 
 
 class TestFunctionCompiler(unittest.TestCase):
@@ -115,6 +116,38 @@ class TestFunctionCompiler(unittest.TestCase):
             compile_shader_func(vec_attr2)
 
 
+class Sub2Mod(ak.FragShader):
+    # For TestShaderModuleCompiler
+
+    @gl.func
+    def boost(a: int) -> int:
+        return a * 1000
+
+    @gl.method
+    def frag_main(self, color: gl.inout_p[gl.vec4]) -> None:
+        return None
+
+
+class SubMod(ak.FragShader):
+    # For TestShaderModuleCompiler
+
+    @gl.func
+    def add(a: int, b: int) -> int:
+        return a + b
+
+    @gl.func
+    def boost_add(a: int, b: int) -> int:
+        return a + Sub2Mod.boost(b)
+
+    @gl.func
+    def boost_add2(a: int, b: int) -> int:
+        return SubMod.add(a, Sub2Mod.boost(b))
+
+    @gl.method
+    def frag_main(self, color: gl.inout_p[gl.vec4]) -> None:
+        return None
+
+
 class TestShaderModuleCompiler(unittest.TestCase):
 
     def test_basic(self):
@@ -126,10 +159,10 @@ class TestShaderModuleCompiler(unittest.TestCase):
                 return a + b
 
             @gl.method
-            def frag_main(self, _fragColor: gl.inout_p[gl.vec4]) -> None:
+            def frag_main(self, color: gl.inout_p[gl.vec4]) -> None:
                 return None
 
-        expected = 'int SMod_add(int a, int b){return (a) + (b);}void frag_main(inout vec4 _fragColor){return;}'
+        expected = 'int SMod_add(int a, int b){return (a) + (b);}void frag_main(inout vec4 color){return;}'
 
         self.assertEqual(compile_shader_module(SMod()), expected)
 
@@ -139,10 +172,76 @@ class TestShaderModuleCompiler(unittest.TestCase):
                 return a + b
 
             @gl.method
-            def frag_main(self, _fragColor: gl.inout_p[gl.vec4]) -> None:
+            def frag_main(self, color: gl.inout_p[gl.vec4]) -> None:
                 return None
 
-        self.assertEqual(compile_shader_module(UndecoMod()), 'void frag_main(inout vec4 _fragColor){return;}')
+        self.assertEqual(compile_shader_module(UndecoMod()), 'void frag_main(inout vec4 color){return;}')
+
+    def test_import(self):
+
+        class MainMod(ak.FragShader):
+
+            @gl.method
+            def frag_main(self, color: gl.inout_p[gl.vec4]) -> None:
+                c: int = SubMod.add(1, 2)  # noqa: F841
+
+        expected = ''.join([
+            'int SubMod_add(int a, int b){return (a) + (b);}',
+            'void frag_main(inout vec4 color){int c = SubMod_add(1, 2);}'
+        ])
+
+        self.assertEqual(compile_shader_module(MainMod()), expected)
+
+    def test_recursive_import(self):
+
+        class MainMod(ak.FragShader):
+
+            @gl.method
+            def frag_main(self, color: gl.inout_p[gl.vec4]) -> None:
+                c: int = SubMod.boost_add(1, 2)  # noqa: F841
+
+        expected = ''.join([
+            'int Sub2Mod_boost(int a){return (a) * (1000);}',
+            'int SubMod_boost_add(int a, int b){return (a) + (Sub2Mod_boost(b));}',
+            'void frag_main(inout vec4 color){int c = SubMod_boost_add(1, 2);}'
+        ])
+
+        self.assertEqual(compile_shader_module(MainMod()), expected)
+
+    def test_recursive_and_self_import(self):
+
+        class MainMod(ak.FragShader):
+
+            @gl.method
+            def frag_main(self, color: gl.inout_p[gl.vec4]) -> None:
+                c: int = SubMod.boost_add2(1, 2)  # noqa: F841
+
+        expected = ''.join([
+            'int SubMod_add(int a, int b){return (a) + (b);}'
+            'int Sub2Mod_boost(int a){return (a) * (1000);}',
+            'int SubMod_boost_add2(int a, int b){return SubMod_add(a, Sub2Mod_boost(b));}',
+            'void frag_main(inout vec4 color){int c = SubMod_boost_add2(1, 2);}'
+        ])
+
+        self.maxDiff = None
+
+        self.assertEqual(compile_shader_module(MainMod()), expected)
+
+    def test_module_import(self):
+
+        class MainMod(ak.FragShader):
+
+            @gl.method
+            def frag_main(self, color: gl.inout_p[gl.vec4]) -> None:
+                c: int = compiler_fixtures.OuterMod.boost_sub(1, 2)  # noqa: F841
+
+        expected = ''.join([
+            'int OuterMod_sub(int a, int b){return (a) - (b);}',
+            'int OuterMod_boost_sub(int a, int b){return OuterMod_sub(a, (b) * (10));}',
+            'void frag_main(inout vec4 color){int c = OuterMod_boost_sub(1, 2);}'
+        ])
+
+        self.assertEqual(compile_shader_module(MainMod()), expected)
 
 
 class TestControlCompiler(unittest.TestCase):
