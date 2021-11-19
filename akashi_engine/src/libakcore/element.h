@@ -24,7 +24,7 @@ namespace akashi {
             double scale;
             double gain;
             std::vector<std::string> frag;
-            std::vector<std::string> geom;
+            std::vector<std::string> poly;
         };
 
         struct AudioLayerContext {
@@ -38,14 +38,14 @@ namespace akashi {
             double scale;
             json::optional::type<Style> style;
             std::vector<std::string> frag;
-            std::vector<std::string> geom;
+            std::vector<std::string> poly;
         };
 
         struct ImageLayerContext {
             std::string src;
             double scale;
             std::vector<std::string> frag;
-            std::vector<std::string> geom;
+            std::vector<std::string> poly;
         };
 
         struct LayerContext {

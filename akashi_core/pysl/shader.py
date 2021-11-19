@@ -47,7 +47,7 @@ class FragShader(ShaderModule):
 
     @_gl.method
     @abstractmethod
-    def frag_main(_fragColor: _gl.inout_p[_gl.vec4]) -> None: ...
+    def frag_main(self, _fragColor: _gl.inout_p[_gl.vec4]) -> None: ...
 
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
@@ -74,7 +74,27 @@ class VideoFragShader(ShaderModule):
 
     @_gl.method
     @abstractmethod
-    def frag_main(_fragColor: _gl.inout_p[_gl.vec4]) -> None: ...
+    def frag_main(self, _fragColor: _gl.inout_p[_gl.vec4]) -> None: ...
+
+    def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
+        if not self._assemble_cache:
+            self._assemble_cache = self._preamble(config) + self._header(config) + compile_shader_module(self, config)
+        return self._assemble_cache
+
+
+class PolygonShader(ShaderModule):
+
+    __header__ = [
+        'uniform float time;',
+        'uniform float global_time;',
+        'uniform float local_duration;',
+        'uniform float fps;',
+        'uniform vec2 resolution;'
+    ]
+
+    @_gl.method
+    @abstractmethod
+    def poly_main(self, position: _gl.inout_p[_gl.vec4]) -> None: ...
 
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
@@ -97,7 +117,7 @@ class GeomShader(ShaderModule):
 
     @_gl.method
     @abstractmethod
-    def main() -> None: ...
+    def main(self) -> None: ...
 
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
@@ -130,7 +150,7 @@ class VideoGeomShader(ShaderModule):
 
     @_gl.method
     @abstractmethod
-    def main() -> None: ...
+    def main(self) -> None: ...
 
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:

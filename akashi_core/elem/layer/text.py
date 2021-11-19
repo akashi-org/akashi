@@ -5,7 +5,7 @@ from abc import abstractmethod, ABCMeta
 
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.time import sec
-from akashi_core.pysl import FragShader, GeomShader
+from akashi_core.pysl import FragShader, PolygonShader
 
 from .base import (
     PositionField,
@@ -42,7 +42,7 @@ class TextEntry(ShaderField, DurationField, PositionField, LayerField, TextLocal
 
 @tp.final
 @dataclass
-class Text(ShaderTrait, DurationTrait, PositionTrait, LayerTrait):
+class TextHandle(ShaderTrait, DurationTrait, PositionTrait, LayerTrait):
 
     __idx: int
 
@@ -66,9 +66,9 @@ class Text(ShaderTrait, DurationTrait, PositionTrait, LayerTrait):
             cur_layer.frag_shader = frag_shader
         return self
 
-    def geom(self, geom_shader: GeomShader):
+    def poly(self, poly_shader: PolygonShader):
         if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.geom_shader = geom_shader
+            cur_layer.poly_shader = poly_shader
         return self
 
     def font_size(self, size: int):
@@ -87,8 +87,8 @@ class Text(ShaderTrait, DurationTrait, PositionTrait, LayerTrait):
         return self
 
 
-def text(text: str, key: str = '') -> Text:
+def text(text: str, key: str = '') -> TextHandle:
 
     entry = TextEntry(text)
     idx = register_entry(entry, 'TEXT', key)
-    return Text(idx)
+    return TextHandle(idx)

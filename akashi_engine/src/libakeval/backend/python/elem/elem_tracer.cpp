@@ -49,7 +49,7 @@ namespace akashi {
                     layer_trace_ctx.layer_ctx = parse_layer_context(layer);
                     layer_trace_ctx.params_obj = core::make_owned<pybind11::object>(layer);
                     if (auto layer_end = to_rational(layer_trace_ctx.layer_ctx.to);
-                        !atom_ctx.atom_duration_fixed && atom_ctx.atom_duration <= layer_end) {
+                        atom_ctx.atom_duration <= layer_end) {
                         atom_ctx.atom_duration = layer_end;
                     }
 

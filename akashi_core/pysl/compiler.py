@@ -12,6 +12,9 @@ import sys
 import pydoc
 import re
 
+if tp.TYPE_CHECKING:
+    from .shader import ShaderModule
+
 
 class CompileError(Exception):
     pass
@@ -89,10 +92,10 @@ def get_class_def(root: ast.AST) -> ast.ClassDef:
 
 
 def mangle_shader_func(shmod_name: str, func_name: str) -> str:
-    if func_name in ['frag_main', 'main']:
+    if func_name in ['frag_main', 'main', 'poly_main']:
         return func_name
     else:
-        return shmod_name + '__' + func_name
+        return shmod_name + '_' + func_name
 
 
 def has_params_qualifier(tp_name: str) -> bool:
@@ -248,6 +251,7 @@ class CompilerConfig:
 class CompilerContext:
     config: CompilerConfig.Config
     symbol: dict = field(default_factory=dict)
+    cls_symbol: dict = field(default_factory=dict)
     top_indent: int = field(default=0, init=False)
     shmod_name: str = field(default='', init=False)
 
@@ -279,18 +283,19 @@ class transformer:
         is_shader_func: bool = True
 
     @staticmethod
-    def from_FunctionDef(node: ast.FunctionDef, ctx: CompilerContext,
-                         shader_only: bool = False, cls_name: str = '') -> FunctionDefOut:
+    def from_FunctionDef(node: ast.FunctionDef, ctx: CompilerContext, cls_name: str = '') -> FunctionDefOut:
 
+        is_method = False
         # [TODO] more efficient way?
-        if shader_only:
-            if len(node.decorator_list) == 0:
+        if len(node.decorator_list) == 0:
+            return transformer.FunctionDefOut(node, '', False)
+        for deco in node.decorator_list:
+            deco_node = compile_expr(deco, ctx)
+            deco_tpname = type_transformer(deco_node.content, ctx, deco_node.node)
+            if deco_tpname not in ['method', 'func', 'test_func']:
                 return transformer.FunctionDefOut(node, '', False)
-            for deco in node.decorator_list:
-                deco_node = compile_expr(deco, ctx)
-                deco_tpname = type_transformer(deco_node.content, ctx, deco_node.node)
-                if deco_tpname not in ['method', 'func']:
-                    return transformer.FunctionDefOut(node, '', False)
+            if deco_tpname == 'method':
+                is_method = True
 
         func_name = mangle_shader_func(cls_name, node.name) if len(cls_name) > 0 else node.name
 
@@ -305,9 +310,9 @@ class transformer:
         if has_params_qualifier(returns_str):
             raise CompileError('Return type must not have its parameter qualifier')
 
-        args = transformer.from_arguments(node.args, ctx)
+        args = transformer.from_arguments(node.args, ctx, 1 if is_method else 0)
         args_temp = []
-        for arg in args:
+        for idx, arg in enumerate(args):
             arg_tpname = type_transformer(arg.content, ctx, arg.node)
             ctx.symbol[arg.node.arg] = arg_tpname
             args_temp.append(f'{arg_tpname} {arg.node.arg}')
@@ -332,7 +337,7 @@ class transformer:
         body_strs = []
         for stmt in node.body:
             if isinstance(stmt, ast.FunctionDef):
-                out = transformer.from_FunctionDef(stmt, ctx, True, node.name)
+                out = transformer.from_FunctionDef(stmt, ctx, node.name)
                 if out.is_shader_func:
                     body_strs.append(out.content)
 
@@ -715,6 +720,7 @@ class transformer:
         node: ast.Attribute
         content: str
 
+    # [TODO] needs refactoring
     @staticmethod
     def from_Attribute(node: ast.Attribute, ctx: CompilerContext) -> AttributeOut:
 
@@ -729,10 +735,24 @@ class transformer:
                     attr_str = ''
                     content = f'{value_str}'
                     return transformer.AttributeOut(node, content)
-        if value_str == "gl":
+        if value_str == 'gl':
             if hasattr(_gl, attr_str):
                 content = f'{attr_str}'
                 return transformer.AttributeOut(node, content)
+        if value_str == 'self':
+            if attr_str in ctx.cls_symbol and ctx.cls_symbol[attr_str][0] == 'instancemethod' and ctx.shmod_name:
+                content = mangle_shader_func(ctx.shmod_name, attr_str)
+                return transformer.AttributeOut(node, content)
+            else:
+                content = f'{attr_str}'
+                return transformer.AttributeOut(node, content)
+
+        if value_str in ctx.cls_symbol:
+            value_tpname: str = ctx.cls_symbol[value_str][0]
+            if value_tpname.startswith('uniform'):
+                if attr_str == 'value':
+                    content = f'{value_str}'
+                    return transformer.AttributeOut(node, content)
 
         # [TODO] change this impl later for symbol resolution based one
         if ctx.shmod_name and value_str == ctx.shmod_name:
@@ -818,9 +838,9 @@ class transformer:
     ''' Function Arguments '''
 
     @staticmethod
-    def from_arguments(node: ast.arguments, ctx: CompilerContext) -> list[argOut]:
+    def from_arguments(node: ast.arguments, ctx: CompilerContext, args_offset: int = 0) -> list[argOut]:
         # posonlyargs, kwonlyargs, vararg, kwargs, kw_defaults, defaults are just ignored for now
-        return [transformer.from_arg(ag, ctx) for ag in node.args]
+        return [transformer.from_arg(ag, ctx) for ag in node.args[args_offset:]]
 
     @dataclass
     class argOut(NodeOut):
@@ -996,7 +1016,7 @@ def unwrap_shader_func(fn: Callable) -> Optional[ast.FunctionDef]:
     for deco in func_def.decorator_list:
         deco_node = compile_expr(deco, ctx)
         deco_tpname = type_transformer(deco_node.content, ctx, deco_node.node)
-        if deco_tpname in ['method', 'func']:
+        if deco_tpname in ['method', 'func', 'test_func']:
             return func_def
 
     return None
@@ -1027,8 +1047,23 @@ def __compile_shader_func2(func_def: ast.FunctionDef, ctx: CompilerContext) -> _
     return out.content
 
 
+def class_symbol_analysis(sh_mod: ShaderModule, ctx: CompilerContext) -> None:
+
+    # collect annotated instance variables
+    for fld_name, fld_type in sh_mod.__class__.__annotations__.items():
+        if isinstance(fld_type, tp._GenericAlias):  # type: ignore
+            basic_tpname: str = str(fld_type.__origin__.__name__)  # type:ignore
+            ctx.cls_symbol[fld_name] = (basic_tpname, fld_type)
+        else:
+            ctx.cls_symbol[fld_name] = (str(type(fld_type).__name__), fld_type)
+
+    # collect instance method
+    for method_name, method in inspect.getmembers(sh_mod, inspect.ismethod):
+        ctx.cls_symbol[method_name] = ('instancemethod', method)
+
+
 def compile_shader_module(
-        sh_mod: Any,
+        sh_mod: ShaderModule,
         config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
     klass = sh_mod.__class__
 
@@ -1039,6 +1074,7 @@ def compile_shader_module(
     ctx = CompilerContext(config)
 
     ctx.shmod_name = klass.__name__
+    class_symbol_analysis(sh_mod, ctx)
 
     out = transformer.from_ClassDef(class_def, ctx)
 

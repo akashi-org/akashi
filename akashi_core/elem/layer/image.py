@@ -5,7 +5,7 @@ from abc import abstractmethod, ABCMeta
 
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.time import sec
-from akashi_core.pysl import FragShader, GeomShader
+from akashi_core.pysl import FragShader, PolygonShader
 
 from .base import (
     PositionField,
@@ -57,9 +57,9 @@ class ImageHandle(ShaderTrait, DurationTrait, PositionTrait, LayerTrait):
             cur_layer.frag_shader = frag_shader
         return self
 
-    def geom(self, geom_shader: GeomShader):
+    def poly(self, poly_shader: PolygonShader):
         if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, ImageEntry):
-            cur_layer.geom_shader = geom_shader
+            cur_layer.poly_shader = poly_shader
         return self
 
 

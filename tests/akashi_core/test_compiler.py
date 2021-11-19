@@ -7,7 +7,7 @@ class TestFunctionCompiler(unittest.TestCase):
 
     def test_func_decl(self):
 
-        @gl.func
+        @gl.test_func
         def decl_func(a: int, b: int) -> int: ...
 
         expected = 'int decl_func(int a, int b);'
@@ -16,7 +16,7 @@ class TestFunctionCompiler(unittest.TestCase):
 
     def test_inline_func(self):
 
-        @gl.func
+        @gl.test_func
         def add(a: int, b: int) -> int:
             return a + b
 
@@ -36,11 +36,11 @@ class TestFunctionCompiler(unittest.TestCase):
 
     def test_assign_and_call_func(self):
 
-        @gl.func
+        @gl.test_func
         def add(a: int, b: int) -> int:
             return a + b
 
-        @gl.func
+        @gl.test_func
         def assign_fn(a: int) -> int:
             c: int = add(a, 2)
             d: int = 90
@@ -56,7 +56,7 @@ class TestFunctionCompiler(unittest.TestCase):
 
     def test_paren_arith_func(self):
 
-        @gl.func
+        @gl.test_func
         def paren_arith(a: int, b: int) -> int:
             return (100 - int(((12 * 90) + a) / b))
 
@@ -68,7 +68,7 @@ class TestFunctionCompiler(unittest.TestCase):
 
     def test_vec_attr(self):
 
-        @gl.func
+        @gl.test_func
         def vec_attr(_fragColor: gl.vec4) -> None:
             _fragColor.x = 12
 
@@ -80,7 +80,7 @@ class TestFunctionCompiler(unittest.TestCase):
 
         vec4 = gl.vec4
 
-        @gl.func
+        @gl.test_func
         def vec_attr2(_fragColor: vec4) -> gl.vec4:
             _fragColor.x = 12
             return _fragColor
@@ -93,11 +93,11 @@ class TestFunctionCompiler(unittest.TestCase):
 
     def test_params_qualifier(self):
 
-        @gl.func
+        @gl.test_func
         def add(a: int, b: int) -> int:
             return a + b
 
-        @gl.func
+        @gl.test_func
         def vec_attr(_fragColor: gl.inout_p[gl.vec4]) -> None:
             _fragColor.value.x = add(12, int(_fragColor.value.x))
 
@@ -107,7 +107,7 @@ class TestFunctionCompiler(unittest.TestCase):
 
         self.assertEqual(compile_shader_func(vec_attr), expected)
 
-        @gl.func
+        @gl.test_func
         def vec_attr2(_fragColor: gl.out_p[gl.vec4]) -> gl.out_p[gl.vec4]:
             return _fragColor
 
@@ -121,15 +121,15 @@ class TestShaderModuleCompiler(unittest.TestCase):
 
         class SMod(ak.FragShader):
 
-            @gl.method
+            @gl.func
             def add(a: int, b: int) -> int:
                 return a + b
 
             @gl.method
-            def frag_main(_fragColor: gl.inout_p[gl.vec4]) -> None:
+            def frag_main(self, _fragColor: gl.inout_p[gl.vec4]) -> None:
                 return None
 
-        expected = 'int SMod__add(int a, int b){return (a) + (b);}void frag_main(inout vec4 _fragColor){return;}'
+        expected = 'int SMod_add(int a, int b){return (a) + (b);}void frag_main(inout vec4 _fragColor){return;}'
 
         self.assertEqual(compile_shader_module(SMod()), expected)
 
@@ -139,7 +139,7 @@ class TestShaderModuleCompiler(unittest.TestCase):
                 return a + b
 
             @gl.method
-            def frag_main(_fragColor: gl.inout_p[gl.vec4]) -> None:
+            def frag_main(self, _fragColor: gl.inout_p[gl.vec4]) -> None:
                 return None
 
         self.assertEqual(compile_shader_module(UndecoMod()), 'void frag_main(inout vec4 _fragColor){return;}')
@@ -149,7 +149,7 @@ class TestControlCompiler(unittest.TestCase):
 
     def test_if(self):
 
-        @gl.func
+        @gl.test_func
         def add(a: int, b: int) -> int:
             if bool(a):
                 return -1
@@ -159,7 +159,7 @@ class TestControlCompiler(unittest.TestCase):
 
         self.assertEqual(compile_shader_func(add), expected)
 
-        @gl.func
+        @gl.test_func
         def add2(a: int, b: int) -> int:
             if bool(a):
                 return -1
@@ -170,7 +170,7 @@ class TestControlCompiler(unittest.TestCase):
 
         self.assertEqual(compile_shader_func(add2), expected2)
 
-        @gl.func
+        @gl.test_func
         def add3(a: int, b: int) -> int:
             if bool(a):
                 return -1
@@ -183,7 +183,7 @@ class TestControlCompiler(unittest.TestCase):
 
         self.assertEqual(compile_shader_func(add3), expected3)
 
-        @gl.func
+        @gl.test_func
         def add4(a: int, b: int) -> int:
             if bool(a):
                 ...
@@ -195,7 +195,7 @@ class TestControlCompiler(unittest.TestCase):
 
     def test_ternary_op(self):
 
-        @gl.func
+        @gl.test_func
         def add(a: int, b: int) -> int:
             return a + b if bool(a) else 12
 
@@ -203,7 +203,7 @@ class TestControlCompiler(unittest.TestCase):
 
         self.assertEqual(compile_shader_func(add), expected)
 
-        @gl.func
+        @gl.test_func
         def add2(a: int, b: int) -> int:
             return a + b if bool(a) else 900 if bool(b) else 12
 
@@ -213,7 +213,7 @@ class TestControlCompiler(unittest.TestCase):
 
     def test_compare_and_bool_op(self):
 
-        @gl.func
+        @gl.test_func
         def add(a: int, b: int) -> int:
             if a > 1:
                 return -1
@@ -223,7 +223,7 @@ class TestControlCompiler(unittest.TestCase):
 
         self.assertEqual(compile_shader_func(add), expected)
 
-        @gl.func
+        @gl.test_func
         def add2(a: int, b: int) -> int:
             if 1 <= a < 12:
                 return -1
@@ -232,7 +232,7 @@ class TestControlCompiler(unittest.TestCase):
         with self.assertRaisesRegex(CompileError, 'Multiple comparison operators in one expression') as _:
             compile_shader_func(add2)
 
-        @gl.func
+        @gl.test_func
         def add3(a: int, b: int) -> int:
             if (1 <= a and a < 12) or b > 100 or a < -100:
                 return -1
@@ -248,7 +248,7 @@ class TestControlCompiler(unittest.TestCase):
 
     def test_while(self):
 
-        @gl.func
+        @gl.test_func
         def count() -> int:
             res: int = 0
             while res < 10:
@@ -264,7 +264,7 @@ class TestControlCompiler(unittest.TestCase):
 
         self.assertEqual(compile_shader_func(count), expected)
 
-        @gl.func
+        @gl.test_func
         def count2() -> int:
             res: int = 0
             while res < 10:
@@ -276,7 +276,7 @@ class TestControlCompiler(unittest.TestCase):
         with self.assertRaisesRegex(CompileError, 'Else with while is not supported') as _:
             compile_shader_func(count2)
 
-        @gl.func
+        @gl.test_func
         def count3() -> int:
             res: int = 0
             while True:
@@ -299,7 +299,7 @@ class TestControlCompiler(unittest.TestCase):
 
     def test_for(self):
 
-        @gl.func
+        @gl.test_func
         def count() -> int:
             res: int = 0
             for i in range(1, 10, 2):
@@ -315,7 +315,7 @@ class TestControlCompiler(unittest.TestCase):
 
         self.assertEqual(compile_shader_func(count), expected)
 
-        @gl.func
+        @gl.test_func
         def count2() -> int:
             res: int = 0
             for arr in [1, 2, 3]:
@@ -325,7 +325,7 @@ class TestControlCompiler(unittest.TestCase):
         with self.assertRaisesRegex(CompileError, '^On For statement') as _:
             compile_shader_func(count2)
 
-        @gl.func
+        @gl.test_func
         def count3() -> int:
             res: int = 0
             for i in range(10):

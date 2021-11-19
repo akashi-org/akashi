@@ -12,9 +12,16 @@ def __gl_func(fn):
     return inner
 
 
+def __gl_instance_method(fn):
+    def inner(*args, **kwargs):
+        fn(*args, **kwargs)
+    return inner
+
+
 struct = dataclass
-func = __gl_func
-method = staticmethod
+test_func = __gl_func
+func = staticmethod
+method = __gl_instance_method
 
 uint = int
 
@@ -757,22 +764,14 @@ ivec2 = gvec2[int]
 uvec2 = gvec2[uint]
 
 
+@dataclass(frozen=True)
 class uniform(Generic[_T]):
-
-    def __init__(self, v: _T):
-        self.__value = v
-
-    def value(self) -> _T:
-        return self.__value
+    value: _T
 
 
+@dataclass
 class dynamic(Generic[_T]):
-
-    def __init__(self, v: _T):
-        self.__value = v
-
-    def value(self) -> _T:
-        return self.__value
+    value: _T
 
 
 ''' Built-in Variables '''

@@ -6,7 +6,7 @@ import typing as tp
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.elem.uuid import UUID, gen_uuid
 from akashi_core.time import sec
-from akashi_core.pysl import FragShader, GeomShader
+from akashi_core.pysl import FragShader, PolygonShader
 
 
 LayerKind = tp.Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE', 'FREE']
@@ -24,7 +24,12 @@ class LayerField:
 
 
 class LayerTrait(metaclass=ABCMeta):
-    ...
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *ext: tp.Any):
+        return False
 
 
 ''' Position Concept '''
@@ -66,7 +71,7 @@ class DurationTrait(metaclass=ABCMeta):
 @dataclass
 class ShaderField:
     frag_shader: tp.Optional[FragShader] = None
-    geom_shader: tp.Optional[GeomShader] = None
+    poly_shader: tp.Optional[PolygonShader] = None
 
 
 class ShaderTrait(metaclass=ABCMeta):
@@ -75,7 +80,7 @@ class ShaderTrait(metaclass=ABCMeta):
         ...
 
     @abstractmethod
-    def geom(self, geom_shader: GeomShader) -> ShaderTrait:
+    def poly(self, poly_shader: PolygonShader) -> ShaderTrait:
         ...
 
 

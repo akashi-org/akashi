@@ -44,10 +44,13 @@ static constexpr const char* vshader_src = u8R"(
     out VS_OUT {
         vec2 vUvs;
     } vs_out;
+
+    void poly_main(inout vec4 pos);
     
     void main(void){
         vs_out.vUvs = uvs;
         gl_Position = mvpMatrix * vec4(vertices * vec3(1, flipY, 1), 1.0);
+        poly_main(gl_Position);
     }
 )";
 
@@ -67,6 +70,17 @@ static constexpr const char* fshader_src = u8R"(
         vec4 smpColor = texture(texture0, fs_in.vUvs);
         fragColor = smpColor;
         frag_main(fragColor);
+    }
+)";
+
+static constexpr const char* default_user_pshader_src = u8R"(
+    #version 420 core
+    uniform float time;
+    uniform float global_time;
+    uniform float local_duration;
+    uniform float fps;
+    uniform vec2 resolution;
+    void poly_main(inout vec4 position){
     }
 )";
 
@@ -93,15 +107,15 @@ static constexpr const char* default_user_gshader_src = u8R"(
     out GS_OUT {
         vec2 vUvs;
     } gs_out;
-    
-    void main() { 
+
+    void main() {
         for(int i = 0; i < 3; i++){
-            gs_out.vUvs = gs_in[i].vUvs; 
+            gs_out.vUvs = gs_in[i].vUvs;
             gl_Position = gl_in[i].gl_Position;
             EmitVertex();
         }
         EndPrimitive();
-    }  
+    }
 )";
 
 namespace akashi {
@@ -163,10 +177,13 @@ namespace akashi {
                 }
             }
 
-            auto geom_shader = GET_SHADER(geom, layer, type);
-            CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_GEOMETRY_SHADER,
-                                                  geom_shader.empty() ? default_user_gshader_src
-                                                                      : geom_shader[0].c_str()));
+            auto poly_shader = GET_SHADER(poly, layer, type);
+            CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_VERTEX_SHADER,
+                                                  poly_shader.empty() ? default_user_pshader_src
+                                                                      : poly_shader[0].c_str()));
+
+            CHECK_AK_ERROR2(
+                compile_attach_shader(ctx, prog, GL_GEOMETRY_SHADER, default_user_gshader_src));
 
             CHECK_AK_ERROR2(link_shader(ctx, prog));
             return true;

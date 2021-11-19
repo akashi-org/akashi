@@ -54,7 +54,9 @@ namespace akashi {
 
             if (has_field(layer_params, "DurationField")) {
                 layer_ctx.from = to_rational(layer_params.attr("atom_offset")).to_fraction();
-                layer_ctx.to = to_rational(layer_params.attr("duration")).to_fraction();
+                layer_ctx.to = (to_rational(layer_params.attr("duration")) +
+                                to_rational(layer_params.attr("atom_offset")))
+                                   .to_fraction();
             }
 
             if (has_field(layer_params, "PositionField")) {
@@ -70,11 +72,12 @@ namespace akashi {
                 layer_ctx.video_layer_ctx.src = layer_params.attr("src").cast<std::string>();
                 layer_ctx.video_layer_ctx.gain = layer_params.attr("gain").cast<double>();
 
-                layer_ctx.video_layer_ctx.start = core::Rational(0l).to_fraction();
+                layer_ctx.video_layer_ctx.start =
+                    to_rational(layer_params.attr("start")).to_fraction();
                 layer_ctx.video_layer_ctx.scale = 1.0;
 
                 layer_ctx.video_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
-                layer_ctx.video_layer_ctx.geom = parse_shader(layer_params.attr("geom_shader"));
+                layer_ctx.video_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
 
             } else if (type_str == "AUDIO") {
                 layer_ctx.type = static_cast<int>(core::LayerType::AUDIO);
@@ -91,7 +94,7 @@ namespace akashi {
                 layer_ctx.image_layer_ctx.scale = 1.0;
 
                 layer_ctx.image_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
-                layer_ctx.image_layer_ctx.geom = parse_shader(layer_params.attr("geom_shader"));
+                layer_ctx.image_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
             } else if (type_str == "TEXT") {
                 layer_ctx.type = static_cast<int>(core::LayerType::TEXT);
                 layer_ctx.text_layer_ctx.text = layer_params.attr("text").cast<std::string>();
@@ -100,7 +103,7 @@ namespace akashi {
                 layer_ctx.text_layer_ctx.scale = 1.0;
 
                 layer_ctx.text_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
-                layer_ctx.text_layer_ctx.geom = parse_shader(layer_params.attr("geom_shader"));
+                layer_ctx.text_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
             } else {
                 AKLOG_ERROR("Invalid type '{}' found", type_str.c_str());
                 layer_ctx.type = -1;

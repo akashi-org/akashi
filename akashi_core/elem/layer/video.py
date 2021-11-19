@@ -5,7 +5,7 @@ from abc import abstractmethod, ABCMeta
 
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.time import sec
-from akashi_core.pysl import VideoFragShader, VideoGeomShader
+from akashi_core.pysl import VideoFragShader, PolygonShader
 
 from .base import PositionField, PositionTrait, LayerField, LayerTrait
 from .base import peek_entry, register_entry
@@ -19,9 +19,10 @@ class VideoLocalField:
     src: str
     frame: tuple[int, int] = (0, -1)
     gain: float = 1.0
+    start: sec = sec(0)  # temporary
     atom_offset: sec = sec(0)
     frag_shader: tp.Optional[VideoFragShader] = None
-    geom_shader: tp.Optional[VideoGeomShader] = None
+    poly_shader: tp.Optional[PolygonShader] = None
 
 
 # [TODO] remove DurationConcept later?
@@ -59,6 +60,11 @@ class VideoHandle(DurationTrait, PositionTrait, LayerTrait):
             cur_layer.gain = gain
         return self
 
+    def start(self, start: sec):
+        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, VideoEntry):
+            cur_layer.start = start
+        return self
+
     def offset(self, offset: sec):
         if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.atom_offset = offset
@@ -69,9 +75,9 @@ class VideoHandle(DurationTrait, PositionTrait, LayerTrait):
             cur_layer.frag_shader = frag_shader
         return self
 
-    def geom(self, geom_shader: VideoGeomShader):
+    def poly(self, poly_shader: PolygonShader):
         if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.geom_shader = geom_shader
+            cur_layer.poly_shader = poly_shader
         return self
 
 
