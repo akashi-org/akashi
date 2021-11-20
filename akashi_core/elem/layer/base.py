@@ -21,6 +21,8 @@ class LayerField:
     atom_uuid: UUID = UUID('')
     kind: LayerKind = 'LAYER'
     key: str = ''
+    duration: sec = sec(0)
+    atom_offset: sec = sec(0)
 
 
 @dataclass
@@ -33,6 +35,11 @@ class LayerTrait(metaclass=ABCMeta):
 
     def __exit__(self, *ext: tp.Any):
         return False
+
+    def duration(self, duration: sec):
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(LayerField, cur_layer).duration = duration
+        return self
 
 
 ''' Position Concept '''
@@ -47,27 +54,6 @@ class PositionTrait(LayerTrait, metaclass=ABCMeta):
     def pos(self, x: int, y: int):
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(PositionField, cur_layer).pos = (x, y)
-        return self
-
-
-''' Duration Concept '''
-
-
-@dataclass
-class DurationField:
-    duration: sec = sec(0)
-    atom_offset: sec = sec(0)
-
-
-class DurationTrait(LayerTrait, metaclass=ABCMeta):
-    def duration(self, duration: sec):
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(DurationField, cur_layer).duration = duration
-        return self
-
-    def offset(self, offset: sec):
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(DurationField, cur_layer).atom_offset = offset
         return self
 
 

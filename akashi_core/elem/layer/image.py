@@ -10,8 +10,6 @@ from akashi_core.pysl import FragShader, PolygonShader
 from .base import (
     PositionField,
     PositionTrait,
-    DurationField,
-    DurationTrait,
     ShaderField,
     ShaderTrait,
     LayerField,
@@ -27,13 +25,13 @@ class ImageLocalField:
 
 @tp.final
 @dataclass
-class ImageEntry(ShaderField, DurationField, PositionField, LayerField, ImageLocalField):
+class ImageEntry(ShaderField, PositionField, LayerField, ImageLocalField):
     ...
 
 
 @tp.final
 @dataclass
-class ImageHandle(ShaderTrait, DurationTrait, PositionTrait, LayerTrait):
+class ImageHandle(ShaderTrait, PositionTrait, LayerTrait):
     ...
 
 

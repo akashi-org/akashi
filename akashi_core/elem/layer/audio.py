@@ -6,7 +6,7 @@ from abc import abstractmethod, ABCMeta
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.time import sec
 
-from .base import DurationField, DurationTrait, LayerField, LayerTrait
+from .base import LayerField, LayerTrait
 from .base import peek_entry, register_entry
 
 
@@ -18,13 +18,13 @@ class AudioLocalField:
 
 @tp.final
 @dataclass
-class AudioEntry(DurationField, LayerField, AudioLocalField):
+class AudioEntry(LayerField, AudioLocalField):
     ...
 
 
 @tp.final
 @dataclass
-class AudioHandle(DurationTrait, LayerTrait):
+class AudioHandle(LayerTrait):
 
     def gain(self, gain: float):
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, AudioEntry):

@@ -52,12 +52,10 @@ namespace akashi {
             // layer_ctx.display = layer_params.attr("_display").cast<bool>();
             layer_ctx.display = true;
 
-            if (has_field(layer_params, "DurationField")) {
-                layer_ctx.from = to_rational(layer_params.attr("atom_offset")).to_fraction();
-                layer_ctx.to = (to_rational(layer_params.attr("duration")) +
-                                to_rational(layer_params.attr("atom_offset")))
-                                   .to_fraction();
-            }
+            layer_ctx.from = to_rational(layer_params.attr("atom_offset")).to_fraction();
+            layer_ctx.to = (to_rational(layer_params.attr("duration")) +
+                            to_rational(layer_params.attr("atom_offset")))
+                               .to_fraction();
 
             if (has_field(layer_params, "PositionField")) {
                 const auto& pos = layer_params.attr("pos").cast<std::tuple<long, long>>();

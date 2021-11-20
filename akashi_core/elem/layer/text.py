@@ -10,8 +10,6 @@ from akashi_core.pysl import FragShader, PolygonShader
 from .base import (
     PositionField,
     PositionTrait,
-    DurationField,
-    DurationTrait,
     ShaderField,
     ShaderTrait,
     LayerField,
@@ -36,13 +34,13 @@ class TextLocalField:
 
 @tp.final
 @dataclass
-class TextEntry(ShaderField, DurationField, PositionField, LayerField, TextLocalField):
+class TextEntry(ShaderField, PositionField, LayerField, TextLocalField):
     ...
 
 
 @tp.final
 @dataclass
-class TextHandle(ShaderTrait, DurationTrait, PositionTrait, LayerTrait):
+class TextHandle(ShaderTrait, PositionTrait, LayerTrait):
 
     def font_size(self, size: int):
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):

@@ -10,9 +10,6 @@ from akashi_core.pysl import VideoFragShader, PolygonShader
 from .base import PositionField, PositionTrait, LayerField, LayerTrait
 from .base import peek_entry, register_entry
 
-# temporary
-from .base import DurationField, DurationTrait
-
 
 @dataclass
 class VideoLocalField:
@@ -30,13 +27,13 @@ class VideoLocalField:
 
 @tp.final
 @dataclass
-class VideoEntry(DurationField, PositionField, LayerField, VideoLocalField):
+class VideoEntry(PositionField, LayerField, VideoLocalField):
     ...
 
 
 @tp.final
 @dataclass
-class VideoHandle(DurationTrait, PositionTrait, LayerTrait):
+class VideoHandle(PositionTrait, LayerTrait):
 
     def frame(self, begin_frame: int, end_frame: int = -1):
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
