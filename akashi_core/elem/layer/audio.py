@@ -26,20 +26,8 @@ class AudioEntry(DurationField, LayerField, AudioLocalField):
 @dataclass
 class AudioHandle(DurationTrait, LayerTrait):
 
-    __idx: int
-
-    def duration(self, duration: sec):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, AudioEntry):
-            cur_layer.duration = duration
-        return self
-
-    def offset(self, offset: sec):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, AudioEntry):
-            cur_layer.atom_offset = offset
-        return self
-
     def gain(self, gain: float):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, AudioEntry):
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, AudioEntry):
             cur_layer.gain = gain
         return self
 

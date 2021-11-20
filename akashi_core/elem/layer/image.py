@@ -34,33 +34,7 @@ class ImageEntry(ShaderField, DurationField, PositionField, LayerField, ImageLoc
 @tp.final
 @dataclass
 class ImageHandle(ShaderTrait, DurationTrait, PositionTrait, LayerTrait):
-
-    __idx: int
-
-    def pos(self, x: int, y: int):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, ImageEntry):
-            cur_layer.pos = (x, y)
-        return self
-
-    def duration(self, duration: sec):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, ImageEntry):
-            cur_layer.duration = duration
-        return self
-
-    def offset(self, offset: sec):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, ImageEntry):
-            cur_layer.atom_offset = offset
-        return self
-
-    def frag(self, frag_shader: FragShader):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, ImageEntry):
-            cur_layer.frag_shader = frag_shader
-        return self
-
-    def poly(self, poly_shader: PolygonShader):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, ImageEntry):
-            cur_layer.poly_shader = poly_shader
-        return self
+    ...
 
 
 def image(src: str, key: str = '') -> ImageHandle:

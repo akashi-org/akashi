@@ -23,7 +23,10 @@ class LayerField:
     key: str = ''
 
 
+@dataclass
 class LayerTrait(metaclass=ABCMeta):
+
+    _idx: int
 
     def __enter__(self):
         return self
@@ -40,10 +43,11 @@ class PositionField:
     pos: tuple[int, int] = (0, 0)
 
 
-class PositionTrait(metaclass=ABCMeta):
-    @abstractmethod
-    def pos(self, x: int, y: int) -> PositionTrait:
-        ...
+class PositionTrait(LayerTrait, metaclass=ABCMeta):
+    def pos(self, x: int, y: int):
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(PositionField, cur_layer).pos = (x, y)
+        return self
 
 
 ''' Duration Concept '''
@@ -55,14 +59,16 @@ class DurationField:
     atom_offset: sec = sec(0)
 
 
-class DurationTrait(metaclass=ABCMeta):
-    @abstractmethod
-    def duration(self, duration: sec) -> DurationTrait:
-        ...
+class DurationTrait(LayerTrait, metaclass=ABCMeta):
+    def duration(self, duration: sec):
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(DurationField, cur_layer).duration = duration
+        return self
 
-    @abstractmethod
-    def offset(self, offset: sec) -> DurationTrait:
-        ...
+    def offset(self, offset: sec):
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(DurationField, cur_layer).atom_offset = offset
+        return self
 
 
 ''' Shader Concept '''
@@ -74,14 +80,16 @@ class ShaderField:
     poly_shader: tp.Optional[PolygonShader] = None
 
 
-class ShaderTrait(metaclass=ABCMeta):
-    @abstractmethod
-    def frag(self, frag_shader: FragShader) -> ShaderTrait:
-        ...
+class ShaderTrait(LayerTrait, metaclass=ABCMeta):
+    def frag(self, frag_shader: FragShader):
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(ShaderField, cur_layer).frag_shader = frag_shader
+        return self
 
-    @abstractmethod
-    def poly(self, poly_shader: PolygonShader) -> ShaderTrait:
-        ...
+    def poly(self, poly_shader: PolygonShader):
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(ShaderField, cur_layer).poly_shader = poly_shader
+        return self
 
 
 def __is_atom_active(atom_uuid: UUID, raise_exp: bool = True) -> bool:

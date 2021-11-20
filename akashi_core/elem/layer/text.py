@@ -44,45 +44,18 @@ class TextEntry(ShaderField, DurationField, PositionField, LayerField, TextLocal
 @dataclass
 class TextHandle(ShaderTrait, DurationTrait, PositionTrait, LayerTrait):
 
-    __idx: int
-
-    def pos(self, x: int, y: int):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.pos = (x, y)
-        return self
-
-    def duration(self, duration: sec):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.duration = duration
-        return self
-
-    def offset(self, offset: sec):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.atom_offset = offset
-        return self
-
-    def frag(self, frag_shader: FragShader):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.frag_shader = frag_shader
-        return self
-
-    def poly(self, poly_shader: PolygonShader):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.poly_shader = poly_shader
-        return self
-
     def font_size(self, size: int):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, TextEntry):
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.style.font_size = size
         return self
 
     def font_path(self, path: str):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, TextEntry):
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.style.font_path = path
         return self
 
     def font_fill(self, color: str):
-        if (cur_layer := peek_entry(self.__idx)) and isinstance(cur_layer, TextEntry):
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.style.fill = color
         return self
 
