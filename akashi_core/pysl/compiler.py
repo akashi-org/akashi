@@ -263,6 +263,7 @@ class CompilerContext:
     on_import_resolution: bool = False
     top_indent: int = field(default=0, init=False)
     shmod_name: str = field(default='', init=False)
+    shmod_inst: tp.Optional[ShaderModule] = field(default=None, init=False)
 
 
 def get_stmt_indent(node: ast.AST, ctx: CompilerContext) -> str:
@@ -790,6 +791,10 @@ class transformer:
                 if attr_str == 'value':
                     content = f'{value_str}'
                     return transformer.AttributeOut(node, content)
+            elif value_tpname.startswith('dynamic'):
+                if attr_str == 'value' and ctx.shmod_inst:
+                    content = str(getattr(getattr(ctx.shmod_inst, value_str), 'value'))
+                    return transformer.AttributeOut(node, content)
 
         # [TODO] change this impl later for symbol resolution based one
         if ctx.shmod_name and value_str == ctx.shmod_name:
@@ -1094,9 +1099,13 @@ def instance_symbol_analysis(sh_mod: ShaderModule, ctx: CompilerContext) -> None
         else:
             ctx.cls_symbol[fld_name] = (str(type(fld_type).__name__), fld_type)
 
-    # collect instance method
-    for method_name, method in inspect.getmembers(sh_mod, inspect.ismethod):
-        ctx.cls_symbol[method_name] = ('instancemethod', method)
+    # collect instance method and inherited variables
+    for mem_name, mem in inspect.getmembers(sh_mod):
+        if inspect.ismethod(mem) and not mem_name.startswith('_'):
+            ctx.cls_symbol[mem_name] = ('instancemethod', mem)
+
+        if not(inspect.isfunction(mem)) and not(inspect.ismethod(mem)):
+            ctx.cls_symbol[mem_name] = (str(type(mem).__name__), mem)
 
 
 def class_symbol_analysis(shmod_klass: tp.Type[ShaderModule], ctx: CompilerContext) -> None:
@@ -1131,6 +1140,7 @@ def compile_shader_module(
     ctx = CompilerContext(config)
 
     ctx.shmod_name = klass.__name__
+    ctx.shmod_inst = sh_mod
     global_symbol_analysis(klass, ctx)
     instance_symbol_analysis(sh_mod, ctx)
 

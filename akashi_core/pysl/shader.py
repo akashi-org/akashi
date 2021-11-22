@@ -2,17 +2,24 @@ from __future__ import annotations
 from .compiler import compile_shader_module, CompilerConfig
 from . import _gl
 
-from typing import Final, Optional
 from abc import abstractmethod, ABCMeta
+import typing as tp
+from dataclasses import dataclass, field
 
 
+@dataclass
 class ShaderModule(metaclass=ABCMeta):
-    __glsl_version__: Final[str] = '#version 420 core\n'
-    __preamble__: list[str] = []
-    __header__: list[str] = []
+    __glsl_version__: tp.ClassVar[str] = '#version 420 core\n'
+    __header__: tp.ClassVar[list[str]] = []
+    __preamble__: tp.ClassVar[list[str]] = []
 
-    def __init__(self):
-        self._assemble_cache: Optional[str] = None
+    _assemble_cache: tp.Optional[str] = field(default=None, init=False)
+
+    time: _gl.uniform[float] = field(default=_gl.uniform.default(), init=False)
+    global_time: _gl.uniform[float] = field(default=_gl.uniform.default(), init=False)
+    local_duration: _gl.uniform[float] = field(default=_gl.uniform.default(), init=False)
+    fps: _gl.uniform[float] = field(default=_gl.uniform.default(), init=False)
+    resolution: _gl.uniform[_gl.vec2] = field(default=_gl.uniform.default(), init=False)
 
     def _header(self, config: CompilerConfig.Config) -> str:
         if not config['pretty_compile']:
@@ -33,9 +40,10 @@ class ShaderModule(metaclass=ABCMeta):
         self._assemble_cache = None
 
 
+@dataclass
 class FragShader(ShaderModule):
 
-    __header__ = [
+    __header__: tp.ClassVar[list[str]] = [
         'uniform float time;',
         'uniform float global_time;',
         'uniform float local_duration;',
@@ -44,6 +52,8 @@ class FragShader(ShaderModule):
         'uniform sampler2D texture0;',
         'in GS_OUT { vec2 vUvs; } fs_in;'
     ]
+
+    texture0: _gl.uniform[_gl.sampler2D] = field(default=_gl.uniform.default(), init=False)
 
     @_gl.method
     @abstractmethod
@@ -55,9 +65,10 @@ class FragShader(ShaderModule):
         return self._assemble_cache
 
 
+@dataclass
 class VideoFragShader(ShaderModule):
 
-    __header__ = [
+    __header__: tp.ClassVar[list[str]] = [
         'uniform float time;',
         'uniform float global_time;',
         'uniform float local_duration;',
@@ -72,6 +83,10 @@ class VideoFragShader(ShaderModule):
         '} fs_in;'
     ]
 
+    # textureY: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
+    # textureCb: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
+    # textureCr: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
+
     @_gl.method
     @abstractmethod
     def frag_main(self, color: _gl.inout_p[_gl.vec4]) -> None: ...
@@ -82,9 +97,10 @@ class VideoFragShader(ShaderModule):
         return self._assemble_cache
 
 
+@dataclass
 class PolygonShader(ShaderModule):
 
-    __header__ = [
+    __header__: tp.ClassVar[list[str]] = [
         'uniform float time;',
         'uniform float global_time;',
         'uniform float local_duration;',
@@ -104,7 +120,7 @@ class PolygonShader(ShaderModule):
 
 class GeomShader(ShaderModule):
 
-    __header__ = [
+    __header__: tp.ClassVar[list[str]] = [
         'uniform float time;',
         'uniform float global_time;',
         'uniform float local_duration;',
@@ -114,6 +130,8 @@ class GeomShader(ShaderModule):
         'in VS_OUT { vec2 vUvs; } gs_in[];',
         'out GS_OUT { vec2 vUvs; } gs_out;',
     ]
+
+    texture0: _gl.uniform[_gl.sampler2D] = field(default=_gl.uniform.default(), init=False)
 
     @_gl.method
     @abstractmethod
@@ -125,9 +143,10 @@ class GeomShader(ShaderModule):
         return self._assemble_cache
 
 
+@dataclass
 class VideoGeomShader(ShaderModule):
 
-    __header__ = [
+    __header__: tp.ClassVar[list[str]] = [
         'uniform float time;',
         'uniform float global_time;',
         'uniform float local_duration;',
@@ -147,6 +166,10 @@ class VideoGeomShader(ShaderModule):
         '}',
         'gs_out;',
     ]
+
+    # textureY: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
+    # textureCb: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
+    # textureCr: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
 
     @_gl.method
     @abstractmethod

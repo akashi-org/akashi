@@ -128,6 +128,7 @@ class Sub2Mod(ak.FragShader):
         return None
 
 
+@gl.module
 class SubMod(ak.FragShader):
     # For TestShaderModuleCompiler
 
@@ -152,6 +153,7 @@ class TestShaderModuleCompiler(unittest.TestCase):
 
     def test_basic(self):
 
+        @gl.module
         class SMod(ak.FragShader):
 
             @gl.func
@@ -166,6 +168,7 @@ class TestShaderModuleCompiler(unittest.TestCase):
 
         self.assertEqual(compile_shader_module(SMod()), expected)
 
+        @gl.module
         class UndecoMod(ak.FragShader):
 
             def add(a: int, b: int) -> int:  # type: ignore
@@ -179,6 +182,7 @@ class TestShaderModuleCompiler(unittest.TestCase):
 
     def test_import(self):
 
+        @gl.module
         class MainMod(ak.FragShader):
 
             @gl.method
@@ -194,6 +198,7 @@ class TestShaderModuleCompiler(unittest.TestCase):
 
     def test_recursive_import(self):
 
+        @gl.module
         class MainMod(ak.FragShader):
 
             @gl.method
@@ -210,6 +215,7 @@ class TestShaderModuleCompiler(unittest.TestCase):
 
     def test_recursive_and_self_import(self):
 
+        @gl.module
         class MainMod(ak.FragShader):
 
             @gl.method
@@ -229,6 +235,7 @@ class TestShaderModuleCompiler(unittest.TestCase):
 
     def test_module_import(self):
 
+        @gl.module
         class MainMod(ak.FragShader):
 
             @gl.method
@@ -242,6 +249,40 @@ class TestShaderModuleCompiler(unittest.TestCase):
         ])
 
         self.assertEqual(compile_shader_module(MainMod()), expected)
+
+    def test_dynamic(self):
+
+        @gl.module
+        class MainMod(ak.FragShader):
+
+            dvalue: gl.dynamic[float]
+
+            @gl.method
+            def frag_main(self, color: gl.inout_p[gl.vec4]) -> None:
+                c: float = 2.0 + self.dvalue.value  # noqa: F841
+
+        expected = ''.join([
+            'void frag_main(inout vec4 color){float c = (2.0) + (1.2);}'
+        ])
+
+        self.assertEqual(compile_shader_module(MainMod(gl.dynamic(1.2))), expected)
+
+    def test_uniform(self):
+
+        @gl.module
+        class MainMod(ak.FragShader):
+
+            dvalue: gl.dynamic[float]
+
+            @gl.method
+            def frag_main(self, color: gl.inout_p[gl.vec4]) -> None:
+                c: float = 2.0 + self.global_time.value  # noqa: F841
+
+        expected = ''.join([
+            'void frag_main(inout vec4 color){float c = (2.0) + (global_time);}'
+        ])
+
+        self.assertEqual(compile_shader_module(MainMod(gl.dynamic(1.2))), expected)
 
 
 class TestControlCompiler(unittest.TestCase):

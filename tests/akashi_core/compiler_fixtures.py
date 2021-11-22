@@ -1,6 +1,7 @@
 from akashi_core import ak, gl
 
 
+@gl.module
 class OuterMod(ak.FragShader):
     # For TestShaderModuleCompiler
 
