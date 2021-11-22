@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 from __future__ import annotations
 from dataclasses import dataclass
 from abc import abstractmethod, ABCMeta
@@ -112,5 +113,9 @@ def register_entry(entry: LayerField, kind: LayerKind, key: str) -> int:
     cur_ctx.layers.append(entry)
     cur_layer_idx = len(cur_ctx.layers) - 1
     cur_atom.layer_indices.append(cur_layer_idx)
+
+    if len(cur_atom._lanes) == 0:
+        raise Exception('Layer initialization outside the lane is prohibited')
+    cur_atom._lanes[-1].items.append(cur_ctx.layers[-1])
 
     return cur_layer_idx
