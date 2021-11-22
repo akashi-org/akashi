@@ -10,16 +10,19 @@ if tp.TYPE_CHECKING:
     from .lane import LaneEntry
 
 
-# [TODO] For atom, we should split it into Entry/Handle
-
-
 @dataclass
-class Atom:
+class AtomEntry:
 
     uuid: UUID
     layer_indices: list[int] = field(default_factory=list, init=False)
     _lanes: list[LaneEntry] = field(default_factory=list, init=False)
     _on_lane: bool = field(default=False, init=False)
+
+
+@dataclass
+class AtomHandle:
+
+    _atom_idx: int
 
     def __enter__(self):
         return self
@@ -27,16 +30,12 @@ class Atom:
     def __exit__(self, *ext: tp.Any):
         return False
 
-    @staticmethod
-    def begin() -> Atom:
 
-        uuid = gen_uuid()
-        _atom = Atom(uuid)
-        gctx.get_ctx().atoms.append(_atom)
+def atom() -> AtomHandle:
 
-        return _atom
+    uuid = gen_uuid()
+    _atom = AtomEntry(uuid)
+    gctx.get_ctx().atoms.append(_atom)
+    atom_idx = len(gctx.get_ctx().atoms) - 1
 
-
-def atom() -> Atom:
-
-    return Atom.begin()
+    return AtomHandle(atom_idx)

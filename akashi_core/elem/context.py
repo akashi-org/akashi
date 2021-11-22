@@ -5,7 +5,7 @@ from .uuid import gen_uuid, UUID
 import sys
 
 if TYPE_CHECKING:
-    from .atom import Atom
+    from .atom import AtomEntry
     from .layer.base import LayerField
     ElemFn = Callable[[], None]
     # ConfFn = Callable[[], AKConf]
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 @dataclass
 class KronContext:
     uuid: UUID
-    atoms: list[Atom] = field(default_factory=list, init=False)
+    atoms: list[AtomEntry] = field(default_factory=list, init=False)
     layers: list[LayerField] = field(default_factory=list, init=False)
 
     @staticmethod
