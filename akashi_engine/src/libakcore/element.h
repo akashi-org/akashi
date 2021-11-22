@@ -23,6 +23,7 @@ namespace akashi {
             Fraction start;
             double scale;
             double gain;
+            bool stretch;
             std::vector<std::string> frag;
             std::vector<std::string> poly;
         };
@@ -43,6 +44,7 @@ namespace akashi {
 
         struct ImageLayerContext {
             std::string src;
+            bool stretch;
             double scale;
             std::vector<std::string> frag;
             std::vector<std::string> poly;

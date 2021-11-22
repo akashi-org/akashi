@@ -183,9 +183,10 @@ namespace akashi {
             if (!m_quad_obj.created()) {
                 VideoQuadPass pass;
                 pass.create(ctx, size_format, m_layer_ctx, buf_data->prop().decode_method);
-                m_quad_obj.create(ctx, std::move(pass), std::move(buf_data));
+                m_quad_obj.create(ctx, std::move(pass), m_layer_ctx.video_layer_ctx,
+                                  std::move(buf_data));
             } else {
-                m_quad_obj.update_mesh(ctx, std::move(buf_data));
+                m_quad_obj.update_mesh(ctx, m_layer_ctx.video_layer_ctx, std::move(buf_data));
             }
 
             const auto& obj_prop = m_quad_obj.get_prop();
@@ -344,6 +345,11 @@ namespace akashi {
             tex.effective_height = surface->h;
             tex.format = (surface->format->BytesPerPixel == 3) ? GL_RGB : GL_RGBA;
             tex.surface = surface;
+
+            if (m_layer_ctx.image_layer_ctx.stretch) {
+                tex.effective_width = ctx.fbo->get_prop().width;
+                tex.effective_height = ctx.fbo->get_prop().height;
+            }
 
             // [TODO] error-check?
             create_texture(ctx, tex);

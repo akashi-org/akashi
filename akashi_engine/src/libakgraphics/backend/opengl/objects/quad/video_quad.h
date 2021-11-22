@@ -16,6 +16,7 @@
 namespace akashi {
     namespace core {
         struct LayerContext;
+        struct VideoLayerContext;
     }
     namespace graphics {
 
@@ -108,11 +109,13 @@ namespace akashi {
             explicit VideoQuadMesh(void) = default;
             virtual ~VideoQuadMesh(void) = default;
 
-            bool create(const GLRenderContext& ctx, core::owned_ptr<buffer::AVBufferData> buf_data);
+            bool create(const GLRenderContext& ctx, const core::VideoLayerContext& layer_ctx,
+                        core::owned_ptr<buffer::AVBufferData> buf_data);
 
             bool destroy(const GLRenderContext& ctx);
 
-            void update(const GLRenderContext& ctx, core::owned_ptr<buffer::AVBufferData> buf_data);
+            void update(const GLRenderContext& ctx, const core::VideoLayerContext& layer_ctx,
+                        core::owned_ptr<buffer::AVBufferData> buf_data);
 
             const std::vector<GLTextureData>& textures(void) const { return m_textures; }
             const glm::mat4& mvp(void) const { return m_mvp; }
@@ -122,7 +125,8 @@ namespace akashi {
 
           private:
             template <enum core::VideoDecodeMethod>
-            bool create_inner(const GLRenderContext& ctx, const buffer::AVBufferData& buf_data);
+            bool create_inner(const GLRenderContext& ctx, const core::VideoLayerContext& layer_ctx,
+                              const buffer::AVBufferData& buf_data);
 
             void free_vaapi_context(const GLRenderContext& ctx);
 
@@ -146,6 +150,7 @@ namespace akashi {
             virtual ~VideoQuadObject(void) = default;
 
             void create(const GLRenderContext& ctx, const VideoQuadPass&& pass,
+                        const core::VideoLayerContext& layer_ctx,
                         core::owned_ptr<buffer::AVBufferData> buf_data);
             void destroy(const GLRenderContext& ctx);
 
@@ -157,7 +162,7 @@ namespace akashi {
 
             void update_pass(const GLRenderContext& ctx, VideoQuadPass&& pass);
 
-            void update_mesh(const GLRenderContext& ctx,
+            void update_mesh(const GLRenderContext& ctx, const core::VideoLayerContext& layer_ctx,
                              core::owned_ptr<buffer::AVBufferData> buf_data);
 
           private:

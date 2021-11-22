@@ -16,6 +16,7 @@ class VideoLocalField:
     src: str
     frame: tuple[int, int] = (0, -1)
     gain: float = 1.0
+    stretch: bool = False
     start: sec = sec(0)  # temporary
     atom_offset: sec = sec(0)
     frag_shader: tp.Optional[VideoFragShader] = None
@@ -43,6 +44,11 @@ class VideoHandle(PositionTrait, LayerTrait):
     def gain(self, gain: float):
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.gain = gain
+        return self
+
+    def stretch(self, stretch: bool):
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
+            cur_layer.stretch = stretch
         return self
 
     def start(self, start: sec):
