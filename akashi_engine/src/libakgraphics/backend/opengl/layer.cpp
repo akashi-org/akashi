@@ -7,6 +7,7 @@
 #include "./objects/quad/layer_quad.h"
 #include "./resource/font.h"
 #include "./resource/image.h"
+#include "./framebuffer.h"
 
 #include <libakbuffer/avbuffer.h>
 #include <libakcore/logger.h>
@@ -349,5 +350,40 @@ namespace akashi {
 
             return true;
         }
+
+        /* --- EffectLayerTarget --- */
+
+        bool EffectLayerTarget::create(const GLRenderContext& ctx, core::LayerContext layer_ctx) {
+            m_layer_ctx = layer_ctx;
+            m_layer_type = core::LayerType::EFFECT;
+
+            LayerQuadMesh mesh;
+            mesh.flip_y = ctx.fbo->get_prop().quad.get_prop().mesh.flip_y;
+            mesh.tex = ctx.fbo->get_prop().quad.get_prop().mesh.tex;
+
+            LayerQuadPass pass;
+            pass.create(ctx, m_layer_ctx, m_layer_type);
+
+            // [TODO] nullptr check
+            m_quad_obj.create(ctx, std::move(pass), std::move(mesh));
+
+            return true;
+        }
+
+        bool EffectLayerTarget::render(core::borrowed_ptr<GLGraphicsContext> glx_ctx,
+                                       const GLRenderContext& ctx, const core::Rational& pts) {
+            const auto& obj_prop = m_quad_obj.get_prop();
+            const auto& pass_prop = obj_prop.pass.get_prop();
+            const auto& mesh_prop = obj_prop.mesh;
+            CHECK_AK_ERROR2(layer_render(ctx, pass_prop, mesh_prop, m_layer_ctx, pts,
+                                         glx_ctx->resolution(), glx_ctx->fps()));
+            return true;
+        }
+
+        bool EffectLayerTarget::destroy(const GLRenderContext& ctx) {
+            // m_quad_obj.destroy(ctx);
+            return true;
+        }
+
     }
 }

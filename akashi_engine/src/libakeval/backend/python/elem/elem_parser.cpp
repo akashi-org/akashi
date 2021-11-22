@@ -102,6 +102,10 @@ namespace akashi {
 
                 layer_ctx.text_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
                 layer_ctx.text_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
+            } else if (type_str == "EFFECT") {
+                layer_ctx.type = static_cast<int>(core::LayerType::EFFECT);
+                layer_ctx.effect_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
+                layer_ctx.effect_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
             } else {
                 AKLOG_ERROR("Invalid type '{}' found", type_str.c_str());
                 layer_ctx.type = -1;

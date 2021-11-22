@@ -27,6 +27,9 @@ using namespace akashi::core;
             case LayerType::IMAGE: {                                                               \
                 return layer_.image_layer_ctx.shader_type;                                         \
             }                                                                                      \
+            case LayerType::EFFECT: {                                                              \
+                return layer_.effect_layer_ctx.shader_type;                                        \
+            }                                                                                      \
             default: {                                                                             \
                 AKLOG_ERROR("Not implemented Error for the type: {}", type_);                      \
                 throw std::runtime_error("Not implemented Error");                                 \

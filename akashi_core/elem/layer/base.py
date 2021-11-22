@@ -10,7 +10,7 @@ from akashi_core.time import sec
 from akashi_core.pysl import FragShader, PolygonShader
 
 
-LayerKind = tp.Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE', 'FREE']
+LayerKind = tp.Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE', 'EFFECT', 'FREE']
 
 
 ''' Layer Concept '''

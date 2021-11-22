@@ -101,6 +101,15 @@ namespace akashi {
                     m_target_map.insert({layer_ctx.uuid, target});
                     return true;
                 }
+                case LayerType::EFFECT: {
+                    auto target = new EffectLayerTarget;
+                    if (!target->create(ctx, layer_ctx)) {
+                        break;
+                    }
+                    m_targets.push_back(target);
+                    m_target_map.insert({layer_ctx.uuid, target});
+                    return true;
+                }
                 default: {
                     AKLOG_ERROR("RenderScene::add_layer(): Invalid layer type '{}' found",
                                 layer_type);

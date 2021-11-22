@@ -9,7 +9,7 @@
 namespace akashi {
     namespace core {
 
-        enum class LayerType { VIDEO = 0, AUDIO, TEXT, IMAGE, LENGTH };
+        enum class LayerType { VIDEO = 0, AUDIO, TEXT, IMAGE, EFFECT, LENGTH };
 
         struct Style {
             json::optional::type<uint32_t> font_size;
@@ -48,6 +48,11 @@ namespace akashi {
             std::vector<std::string> poly;
         };
 
+        struct EffectLayerContext {
+            std::vector<std::string> frag;
+            std::vector<std::string> poly;
+        };
+
         struct LayerContext {
             double x;
             double y;
@@ -77,6 +82,11 @@ namespace akashi {
              * exists iff type == LayerType::IMAGE
              */
             ImageLayerContext image_layer_ctx;
+
+            /**
+             * exists iff type == LayerType::EFFECT
+             */
+            EffectLayerContext effect_layer_ctx;
         };
 
         struct FrameContext {
