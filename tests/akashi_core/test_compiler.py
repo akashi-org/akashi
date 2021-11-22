@@ -149,6 +149,18 @@ class SubMod(ak.FragShader):
         return None
 
 
+class AnyMod1(ak.AnyShader):
+    # For TestShaderModuleCompiler
+
+    @gl.func
+    def forbidden_func() -> int:
+        return SubMod.add(1, 2)
+
+    @gl.func
+    def rand(co: gl.vec2) -> float:
+        return gl.fract(gl.sin(gl.dot(co.xy, gl.vec2(12.9898, 78.233))) * 43758.5453)
+
+
 class TestShaderModuleCompiler(unittest.TestCase):
 
     def test_basic(self):
@@ -283,6 +295,32 @@ class TestShaderModuleCompiler(unittest.TestCase):
         ])
 
         self.assertEqual(compile_shader_module(MainMod(gl.dynamic(1.2))), expected)
+
+    def test_anyshader(self):
+
+        @gl.module
+        class MainMod(ak.FragShader):
+
+            @gl.method
+            def frag_main(self, color: gl.inout_p[gl.vec4]) -> None:
+                c: float = AnyMod1.rand(gl.vec2(1, 2))  # noqa: F841
+
+        expected = ''.join([
+            'float AnyMod1_rand(vec2 co){return fract((sin(dot(co.xy, vec2(12.9898, 78.233)))) * (43758.5453));}',
+            'void frag_main(inout vec4 color){float c = AnyMod1_rand(vec2(1, 2));}'
+        ])
+
+        self.assertEqual(compile_shader_module(MainMod()), expected)
+
+        @gl.module
+        class MainMod2(ak.FragShader):
+
+            @gl.method
+            def frag_main(self, color: gl.inout_p[gl.vec4]) -> None:
+                c: int = AnyMod1.forbidden_func()  # noqa: F841
+
+        with self.assertRaisesRegex(CompileError, 'Forbidden import FragShader from AnyShader') as _:
+            compile_shader_module(MainMod2())
 
 
 class TestControlCompiler(unittest.TestCase):

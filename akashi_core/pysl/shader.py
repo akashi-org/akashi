@@ -6,6 +6,8 @@ from abc import abstractmethod, ABCMeta
 import typing as tp
 from dataclasses import dataclass, field
 
+ShaderKind = tp.Literal['AnyShader', 'FragShader', 'PolygonShader', 'GeomShader']
+
 
 @dataclass
 class ShaderModule(metaclass=ABCMeta):
@@ -13,13 +15,9 @@ class ShaderModule(metaclass=ABCMeta):
     __header__: tp.ClassVar[list[str]] = []
     __preamble__: tp.ClassVar[list[str]] = []
 
-    _assemble_cache: tp.Optional[str] = field(default=None, init=False)
+    __kind__: tp.ClassVar[ShaderKind] = 'AnyShader'
 
-    time: _gl.uniform[float] = field(default=_gl.uniform.default(), init=False)
-    global_time: _gl.uniform[float] = field(default=_gl.uniform.default(), init=False)
-    local_duration: _gl.uniform[float] = field(default=_gl.uniform.default(), init=False)
-    fps: _gl.uniform[float] = field(default=_gl.uniform.default(), init=False)
-    resolution: _gl.uniform[_gl.vec2] = field(default=_gl.uniform.default(), init=False)
+    _assemble_cache: tp.Optional[str] = field(default=None, init=False)
 
     def _header(self, config: CompilerConfig.Config) -> str:
         if not config['pretty_compile']:
@@ -41,7 +39,30 @@ class ShaderModule(metaclass=ABCMeta):
 
 
 @dataclass
-class FragShader(ShaderModule):
+class BasicUniform:
+
+    time: _gl.uniform[float] = field(default=_gl.uniform.default(), init=False)
+    global_time: _gl.uniform[float] = field(default=_gl.uniform.default(), init=False)
+    local_duration: _gl.uniform[float] = field(default=_gl.uniform.default(), init=False)
+    fps: _gl.uniform[float] = field(default=_gl.uniform.default(), init=False)
+    resolution: _gl.uniform[_gl.vec2] = field(default=_gl.uniform.default(), init=False)
+
+
+@dataclass
+class AnyShader(ShaderModule):
+
+    __kind__: tp.ClassVar[ShaderKind] = 'AnyShader'
+
+    def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
+        if not self._assemble_cache:
+            self._assemble_cache = self._preamble(config) + self._header(config) + compile_shader_module(self, config)
+        return self._assemble_cache
+
+
+@dataclass
+class FragShader(BasicUniform, ShaderModule):
+
+    __kind__: tp.ClassVar[ShaderKind] = 'FragShader'
 
     __header__: tp.ClassVar[list[str]] = [
         'uniform float time;',
@@ -66,7 +87,9 @@ class FragShader(ShaderModule):
 
 
 @dataclass
-class VideoFragShader(ShaderModule):
+class VideoFragShader(BasicUniform, ShaderModule):
+
+    __kind__: tp.ClassVar[ShaderKind] = 'FragShader'
 
     __header__: tp.ClassVar[list[str]] = [
         'uniform float time;',
@@ -98,7 +121,9 @@ class VideoFragShader(ShaderModule):
 
 
 @dataclass
-class PolygonShader(ShaderModule):
+class PolygonShader(BasicUniform, ShaderModule):
+
+    __kind__: tp.ClassVar[ShaderKind] = 'PolygonShader'
 
     __header__: tp.ClassVar[list[str]] = [
         'uniform float time;',
@@ -118,7 +143,9 @@ class PolygonShader(ShaderModule):
         return self._assemble_cache
 
 
-class GeomShader(ShaderModule):
+class GeomShader(BasicUniform, ShaderModule):
+
+    __kind__: tp.ClassVar[ShaderKind] = 'GeomShader'
 
     __header__: tp.ClassVar[list[str]] = [
         'uniform float time;',
@@ -144,7 +171,9 @@ class GeomShader(ShaderModule):
 
 
 @dataclass
-class VideoGeomShader(ShaderModule):
+class VideoGeomShader(BasicUniform, ShaderModule):
+
+    __kind__: tp.ClassVar[ShaderKind] = 'GeomShader'
 
     __header__: tp.ClassVar[list[str]] = [
         'uniform float time;',

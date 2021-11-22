@@ -98,6 +98,16 @@ def mangle_shader_func(shmod_name: str, func_name: str) -> str:
         return shmod_name + '_' + func_name
 
 
+def can_import(from_mod: Type[ShaderModule], imp_mod: Type[ShaderModule]) -> bool:
+
+    if imp_mod.__kind__ == 'AnyShader':
+        return True
+    elif from_mod.__kind__ == imp_mod.__kind__:
+        return True
+    else:
+        return False
+
+
 def is_shader_module(obj: tp.Any) -> bool:
     # [TODO] issubclass()?
     return hasattr(obj, '__glsl_version__')
@@ -264,6 +274,7 @@ class CompilerContext:
     top_indent: int = field(default=0, init=False)
     shmod_name: str = field(default='', init=False)
     shmod_inst: tp.Optional[ShaderModule] = field(default=None, init=False)
+    shmod_klass: tp.Optional[tp.Type[ShaderModule]] = field(default=None, init=False)
 
 
 def get_stmt_indent(node: ast.AST, ctx: CompilerContext) -> str:
@@ -336,6 +347,12 @@ class transformer:
 
         imported_strs = []
         for imp in ctx.imported_current.values():
+            if not ctx.shmod_klass:
+                # [TODO] better msg?
+                raise CompileError('ctx.shmod_klass is null')
+            elif not can_import(ctx.shmod_klass, imp[0]):
+                raise CompileError(f'Forbidden import {imp[0].__kind__} from {ctx.shmod_klass.__kind__}')
+
             imported_strs.append(compile_shader_staticmethod(imp[0], imp[1], True, ctx.config))
 
         content = "".join(imported_strs) + content
@@ -1141,6 +1158,7 @@ def compile_shader_module(
 
     ctx.shmod_name = klass.__name__
     ctx.shmod_inst = sh_mod
+    ctx.shmod_klass = klass
     global_symbol_analysis(klass, ctx)
     instance_symbol_analysis(sh_mod, ctx)
 
@@ -1163,6 +1181,7 @@ def compile_shader_staticmethod(
     ctx.on_import_resolution = on_import_resolution
 
     ctx.shmod_name = klass.__name__
+    ctx.shmod_klass = klass
     global_symbol_analysis(klass, ctx)
     class_symbol_analysis(klass, ctx)
 
