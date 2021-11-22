@@ -66,7 +66,12 @@ endif()
 
 add_subdirectory("./src/libakplayer")
 add_subdirectory("./src/libakcore")
+
 add_subdirectory("./src/libakcodec")
+set_target_properties(akprobe PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 add_subdirectory("./src/libakbuffer")
 add_subdirectory("./src/libakaudio")
 add_subdirectory("./src/libakgraphics")

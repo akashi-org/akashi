@@ -3,7 +3,6 @@ project (akcodec CXX)
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(AVDEVICE REQUIRED libavdevice)
-pkg_check_modules(AVFILTER REQUIRED libavfilter)
 pkg_check_modules(AVFORMAT REQUIRED libavformat)
 pkg_check_modules(AVCODEC REQUIRED libavcodec)
 pkg_check_modules(SWRESAMPLE REQUIRED libswresample)
@@ -45,7 +44,6 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_directories(${PROJECT_NAME}
   PRIVATE ${AVDEVICE_LIBRARY_DIRS}
-  PRIVATE ${AVFILTER_LIBRARY_DIRS}
   PRIVATE ${AVFORMAT_LIBRARY_DIRS}
   PRIVATE ${AVCODEC_LIBRARY_DIRS}
   PRIVATE ${SWRESAMPLE_LIBRARY_DIRS}
@@ -59,7 +57,6 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE akstate # for akencoder
   PRIVATE Threads::Threads
   PRIVATE ${AVDEVICE_LIBRARIES}
-  PRIVATE ${AVFILTER_LIBRARIES}
   PRIVATE ${AVFORMAT_LIBRARIES}
   PRIVATE ${AVCODEC_LIBRARIES}
   PRIVATE ${SWRESAMPLE_LIBRARIES}
@@ -77,6 +74,31 @@ endif()
 install(TARGETS ${PROJECT_NAME}
   PUBLIC_HEADER DESTINATION include/lib${PROJECT_NAME}
 )
+
+set(AKPROBE_TARGET "akprobe")
+
+add_library(${AKPROBE_TARGET} SHARED
+  "./backend/ffmpeg/probe.cpp"
+)
+
+target_compile_definitions(${AKPROBE_TARGET}
+  PRIVATE "__STDC_CONSTANT_MACROS" # ffmpeg needs this
+)
+
+target_include_directories(${AKPROBE_TARGET}
+  PRIVATE "../../src"
+)
+
+target_link_directories(${AKPROBE_TARGET}
+  PRIVATE ${AVFORMAT_LIBRARY_DIRS}
+  PRIVATE ${AVUTIL_LIBRARY_DIRS}
+)
+
+target_link_libraries(${AKPROBE_TARGET}
+  PRIVATE ${AVFORMAT_LIBRARIES}
+  PRIVATE ${AVUTIL_LIBRARIES}
+)
+
 
 if(AKASHI_BUILD_TESTS)
   add_subdirectory("./test")

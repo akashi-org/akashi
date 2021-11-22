@@ -50,6 +50,10 @@ namespace akashi {
                 sys_path.cast<py::list>().insert(
                     0, core::Path(std::getenv("AK_CORELIB_PATH")).to_abspath().to_cloned_str());
             }
+            if (std::getenv("AK_LIBPROBE_PATH")) {
+                py::module_::import("os").attr("environ")["AK_LIBPROBE_PATH"] =
+                    std::getenv("AK_LIBPROBE_PATH");
+            }
 
             // version check
             // auto res = py::module_::import("akashi_core").attr("utils").attr("version_check")();
