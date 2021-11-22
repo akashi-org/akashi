@@ -7,6 +7,7 @@ from akashi_core.time import sec
 from akashi_core.pysl import FragShader, PolygonShader
 
 from .base import (
+    FittableDurationTrait,
     ShaderField,
     ShaderTrait,
     LayerField,
@@ -23,7 +24,7 @@ class EffectEntry(ShaderField, LayerField):
 
 @tp.final
 @dataclass
-class EffectHandle(ShaderTrait, LayerTrait):
+class EffectHandle(FittableDurationTrait, ShaderTrait, LayerTrait):
     ...
 
 

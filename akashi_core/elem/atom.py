@@ -8,6 +8,7 @@ from akashi_core.time import sec
 
 if tp.TYPE_CHECKING:
     from .lane import LaneEntry
+    from .layer.base import LayerField
 
 
 @dataclass
@@ -17,6 +18,9 @@ class AtomEntry:
     layer_indices: list[int] = field(default_factory=list, init=False)
     _lanes: list[LaneEntry] = field(default_factory=list, init=False)
     _on_lane: bool = field(default=False, init=False)
+    _duration: sec = field(default=sec(0), init=False)
+    # [TODO] we should use layer index
+    _atom_fitted_layers: list[LayerField] = field(default_factory=list, init=False)
 
 
 @dataclass
@@ -28,6 +32,11 @@ class AtomHandle:
         return self
 
     def __exit__(self, *ext: tp.Any):
+
+        cur_atom = gctx.get_ctx().atoms[self._atom_idx]
+        for at_layer in cur_atom._atom_fitted_layers:
+            at_layer.duration = cur_atom._duration
+
         return False
 
 

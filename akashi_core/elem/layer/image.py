@@ -8,6 +8,7 @@ from akashi_core.time import sec
 from akashi_core.pysl import FragShader, PolygonShader
 
 from .base import (
+    FittableDurationTrait,
     PositionField,
     PositionTrait,
     ShaderField,
@@ -31,7 +32,7 @@ class ImageEntry(ShaderField, PositionField, LayerField, ImageLocalField):
 
 @tp.final
 @dataclass
-class ImageHandle(ShaderTrait, PositionTrait, LayerTrait):
+class ImageHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
     ...
 
 

@@ -36,8 +36,7 @@ namespace akashi {
             for (const auto& atom : elem.attr("atoms").cast<py::list>()) {
                 AtomTracerContext atom_ctx;
                 atom_ctx.atom_profile = {};
-                atom_ctx.atom_duration = core::Rational(0l);
-                atom_ctx.atom_duration_fixed = false;
+                atom_ctx.atom_duration = to_rational(atom.attr("_duration"));
 
                 atom_ctx.atom_profile.uuid = atom.attr("uuid").cast<std::string>();
 
@@ -48,10 +47,6 @@ namespace akashi {
                     auto layer = elem.attr("layers")[layer_idx];
                     layer_trace_ctx.layer_ctx = parse_layer_context(layer);
                     layer_trace_ctx.params_obj = core::make_owned<pybind11::object>(layer);
-                    if (auto layer_end = to_rational(layer_trace_ctx.layer_ctx.to);
-                        atom_ctx.atom_duration <= layer_end) {
-                        atom_ctx.atom_duration = layer_end;
-                    }
 
                     atom_ctx.layer_proxies.push_back(core::make_owned<LayerProxy>(
                         layer_trace_ctx.layer_ctx, std::move(layer_trace_ctx.params_obj),

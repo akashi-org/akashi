@@ -9,6 +9,9 @@ from akashi_core.elem.uuid import UUID, gen_uuid
 from akashi_core.time import sec
 from akashi_core.pysl import FragShader, PolygonShader
 
+if tp.TYPE_CHECKING:
+    from akashi_core.elem.atom import AtomHandle
+
 
 LayerKind = tp.Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE', 'EFFECT', 'FREE']
 
@@ -22,7 +25,7 @@ class LayerField:
     atom_uuid: UUID = UUID('')
     kind: LayerKind = 'LAYER'
     key: str = ''
-    duration: sec = sec(0)
+    duration: tp.Union[sec, AtomHandle] = sec(0)
     atom_offset: sec = sec(0)
 
 
@@ -76,6 +79,16 @@ class ShaderTrait(LayerTrait, metaclass=ABCMeta):
     def poly(self, poly_shader: PolygonShader):
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(ShaderField, cur_layer).poly_shader = poly_shader
+        return self
+
+
+''' FittableDuration Concept '''
+
+
+class FittableDurationTrait(LayerTrait, metaclass=ABCMeta):
+    def fit_to(self, handle: AtomHandle):
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(LayerField, cur_layer).duration = handle
         return self
 
 

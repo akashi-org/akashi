@@ -40,13 +40,26 @@ class LaneHandle:
         cur_atom._on_lane = False
         cur_entry = cur_atom._lanes[self.__lane_idx]
         acc_duration: sec = sec(0)
+
         for item in cur_entry.items:
             if isinstance(item, LanePad):
                 acc_duration += item.pad_sec
             # assumes LayerField
             else:
+                # assumes AtomHandle
+                if not isinstance(item.duration, sec):
+                    if len(cur_entry.items) > 1:
+                        raise Exception('Single item is only allowed in a lane with atom-fitted layer')
+                    else:
+                        cur_atom._atom_fitted_layers.append(item)
+                        acc_duration = sec(0)
+                        break
+
                 item.atom_offset = acc_duration
                 acc_duration += item.duration
+
+        if acc_duration > cur_atom._duration:
+            cur_atom._duration = acc_duration
 
         return False
 
