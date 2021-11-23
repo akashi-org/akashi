@@ -780,6 +780,24 @@ class dynamic(Generic[_T]):
     value: _T
 
 
+@dataclass(frozen=True)
+class in_t(Generic[_T]):
+    value: _T
+
+    @staticmethod
+    def default() -> Any:
+        return in_t[_T](None)
+
+
+@dataclass(frozen=True)
+class out_t(Generic[_T]):
+    value: _T
+
+    @staticmethod
+    def default() -> Any:
+        return out_t[_T](None)
+
+
 ''' Samplers '''
 
 

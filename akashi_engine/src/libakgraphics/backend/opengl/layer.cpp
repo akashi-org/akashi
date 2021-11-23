@@ -318,41 +318,84 @@ namespace akashi {
         }
 
         bool ImageLayerTarget::destroy(const GLRenderContext& ctx) {
-            m_quad_obj.destroy(ctx);
+            // m_quad_obj.destroy(ctx);
+
+            GET_GLFUNC(ctx, glDeleteTextures)(1, &m_quad_obj.get_prop().mesh.tex.buffer);
+            for (auto&& surface : m_surfaces) {
+                SDL_FreeSurface(surface);
+            }
             return true;
         }
 
         bool ImageLayerTarget::load_mesh(const GLRenderContext& ctx, LayerQuadMesh& mesh,
-                                         core::LayerContext& layer_ctx) const {
+                                         core::LayerContext& layer_ctx) {
             CHECK_AK_ERROR2(this->load_texture(ctx, mesh.tex, layer_ctx));
             return true;
         }
 
         bool ImageLayerTarget::load_texture(const GLRenderContext& ctx, GLTextureData& tex,
-                                            core::LayerContext& layer_ctx) const {
-            SDL_Surface* surface = nullptr;
-
-            const char* image_path = layer_ctx.image_layer_ctx.src.c_str();
-            if (ImageLoader::GetInstance().getSurface(surface, image_path) != ErrorType::OK) {
-                AKLOG_ERRORN("load_texture failed: Failed to getSurface");
+                                            core::LayerContext& layer_ctx) {
+            if (layer_ctx.image_layer_ctx.srcs.empty()) {
+                AKLOG_ERRORN("Failed to getSurface. `image_layer_ctx.srcs` is null");
                 return false;
             }
 
-            tex.image = surface->pixels;
-            tex.width = surface->w;
-            tex.height = surface->h;
-            tex.effective_width = surface->w;
-            tex.effective_height = surface->h;
-            tex.format = (surface->format->BytesPerPixel == 3) ? GL_RGB : GL_RGBA;
-            tex.surface = surface;
+            auto num_sprites = layer_ctx.image_layer_ctx.srcs.size();
+            m_surfaces.reserve(num_sprites);
+            m_surfaces.resize(num_sprites);
+
+            for (size_t i = 0; i < m_surfaces.size(); i++) {
+                const auto& image_path = layer_ctx.image_layer_ctx.srcs[i];
+                if (ImageLoader::GetInstance().getSurface(m_surfaces[i], image_path.c_str()) !=
+                    ErrorType::OK) {
+                    AKLOG_ERROR("Failed to getSurface: {}", image_path.c_str());
+                    return false;
+                }
+            }
+
+            tex.width = m_surfaces[0]->w;
+            tex.height = m_surfaces[0]->h;
+            tex.effective_width = m_surfaces[0]->w;
+            tex.effective_height = m_surfaces[0]->h;
+            tex.format = (m_surfaces[0]->format->BytesPerPixel == 3) ? GL_RGB : GL_RGBA;
+            tex.internal_format = GL_RGBA8;
+            tex.target = GL_TEXTURE_2D_ARRAY;
 
             if (m_layer_ctx.image_layer_ctx.stretch) {
                 tex.effective_width = ctx.fbo->get_prop().width;
                 tex.effective_height = ctx.fbo->get_prop().height;
             }
 
-            // [TODO] error-check?
-            create_texture(ctx, tex);
+            GET_GLFUNC(ctx, glGenTextures)(1, &tex.buffer);
+
+            GET_GLFUNC(ctx, glBindTexture)(GL_TEXTURE_2D_ARRAY, tex.buffer);
+
+            // 1. below GL4.2
+            // GET_GLFUNC(ctx, glTexImage3D)
+            // (GL_TEXTURE_2D_ARRAY, 0, tex.internal_format, tex.width, tex.height,
+            // m_surfaces.size(),
+            //  0, tex.format, GL_UNSIGNED_BYTE, nullptr);
+
+            // 2. GL4.2+
+            GET_GLFUNC(ctx, glTexStorage3D)
+            (GL_TEXTURE_2D_ARRAY, 1, tex.internal_format, tex.width, tex.height, m_surfaces.size());
+
+            // GET_GLFUNC(ctx, glGenerateMipmap)(GL_TEXTURE_2D_ARRAY);
+
+            GET_GLFUNC(ctx, glTexParameteri)(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            GET_GLFUNC(ctx, glTexParameteri)(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            GET_GLFUNC(ctx, glTexParameteri)
+            (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            GET_GLFUNC(ctx, glTexParameteri)
+            (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+            for (size_t i = 0; i < m_surfaces.size(); i++) {
+                GET_GLFUNC(ctx, glTexSubImage3D)
+                (GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, tex.width, tex.height, 1, tex.format,
+                 GL_UNSIGNED_BYTE, m_surfaces[i]->pixels);
+            }
+
+            GET_GLFUNC(ctx, glBindTexture)(GL_TEXTURE_2D_ARRAY, 0);
 
             return true;
         }

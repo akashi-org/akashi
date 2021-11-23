@@ -69,6 +69,7 @@ namespace akashi {
                 layer_ctx.type = static_cast<int>(core::LayerType::VIDEO);
                 layer_ctx.video_layer_ctx.src = layer_params.attr("src").cast<std::string>();
                 layer_ctx.video_layer_ctx.gain = layer_params.attr("gain").cast<double>();
+
                 layer_ctx.video_layer_ctx.stretch = layer_params.attr("stretch").cast<bool>();
 
                 layer_ctx.video_layer_ctx.start =
@@ -89,8 +90,12 @@ namespace akashi {
 
             } else if (type_str == "IMAGE") {
                 layer_ctx.type = static_cast<int>(core::LayerType::IMAGE);
-                layer_ctx.image_layer_ctx.src = layer_params.attr("src").cast<std::string>();
+                for (const auto& src : layer_params.attr("srcs").cast<pybind11::list>()) {
+                    layer_ctx.image_layer_ctx.srcs.push_back(src.cast<std::string>());
+                }
+
                 layer_ctx.image_layer_ctx.stretch = layer_params.attr("stretch").cast<bool>();
+
                 layer_ctx.image_layer_ctx.scale = 1.0;
 
                 layer_ctx.image_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));

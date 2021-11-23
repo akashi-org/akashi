@@ -50,7 +50,7 @@ namespace akashi {
 
         void use_texture(const GLRenderContext& ctx, const GLTextureData& tex, GLint tex_loc) {
             GET_GLFUNC(ctx, glActiveTexture)(get_texture_unit(tex.index));
-            GET_GLFUNC(ctx, glBindTexture)(GL_TEXTURE_2D, tex.buffer);
+            GET_GLFUNC(ctx, glBindTexture)(tex.target, tex.buffer);
             GET_GLFUNC(ctx, glUniform1i)(tex_loc, tex.index);
         }
 

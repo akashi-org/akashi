@@ -23,7 +23,7 @@ namespace akashi {
             Fraction start;
             double scale;
             double gain;
-            bool stretch;
+            bool stretch = false;
             std::vector<std::string> frag;
             std::vector<std::string> poly;
         };
@@ -43,8 +43,8 @@ namespace akashi {
         };
 
         struct ImageLayerContext {
-            std::string src;
-            bool stretch;
+            std::vector<std::string> srcs;
+            bool stretch = false;
             double scale;
             std::vector<std::string> frag;
             std::vector<std::string> poly;
@@ -63,7 +63,7 @@ namespace akashi {
             int type;
             std::string uuid;
             std::string atom_uuid;
-            bool display;
+            bool display = false;
 
             /**
              * exists iff type == LayerType::VIDEO

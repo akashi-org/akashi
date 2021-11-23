@@ -13,4 +13,12 @@ from .config import (
     from_relpath,
 )
 
-from .pysl import FragShader, VideoFragShader, GeomShader, VideoGeomShader, PolygonShader, AnyShader
+from .pysl import (
+    FragShader,
+    VideoFragShader,
+    GeomShader,
+    VideoGeomShader,
+    PolygonShader,
+    VideoPolygonShader,
+    AnyShader
+)

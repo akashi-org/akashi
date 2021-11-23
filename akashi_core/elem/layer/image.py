@@ -21,7 +21,7 @@ from .base import peek_entry, register_entry
 
 @dataclass
 class ImageLocalField:
-    src: str
+    srcs: list[str]
     stretch: bool = False
 
 
@@ -41,8 +41,8 @@ class ImageHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait)
         return self
 
 
-def image(src: str, key: str = '') -> ImageHandle:
+def image(srcs: list[str], key: str = '') -> ImageHandle:
 
-    entry = ImageEntry(src)
+    entry = ImageEntry(srcs)
     idx = register_entry(entry, 'IMAGE', key)
     return ImageHandle(idx)

@@ -71,10 +71,12 @@ class FragShader(BasicUniform, ShaderModule):
         'uniform float fps;',
         'uniform vec2 resolution;',
         'uniform sampler2D texture0;',
-        'in GS_OUT { vec2 vUvs; } fs_in;'
+        'uniform sampler2DArray texture_arr;',
+        'in GS_OUT { vec2 vUvs; float sprite_idx; } fs_in;'
     ]
 
     texture0: _gl.uniform[_gl.sampler2D] = field(default=_gl.uniform.default(), init=False)
+    texture_arr: _gl.uniform[_gl.sampler2DArray] = field(default=_gl.uniform.default(), init=False)
 
     @_gl.method
     @abstractmethod
@@ -121,6 +123,12 @@ class VideoFragShader(BasicUniform, ShaderModule):
 
 
 @dataclass
+class VS_OUT:
+    vUvs: _gl.vec2
+    sprite_idx: float
+
+
+@dataclass
 class PolygonShader(BasicUniform, ShaderModule):
 
     __kind__: tp.ClassVar[ShaderKind] = 'PolygonShader'
@@ -130,7 +138,36 @@ class PolygonShader(BasicUniform, ShaderModule):
         'uniform float global_time;',
         'uniform float local_duration;',
         'uniform float fps;',
-        'uniform vec2 resolution;'
+        'uniform vec2 resolution;',
+        'out VS_OUT {',
+        '    vec2 vUvs;',
+        '    float sprite_idx;',
+        '} vs_out;'
+    ]
+
+    vs_out: _gl.out_t[VS_OUT] = field(default=_gl.out_t.default(), init=False)
+
+    @_gl.method
+    @abstractmethod
+    def poly_main(self, position: _gl.inout_p[_gl.vec4]) -> None: ...
+
+    def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
+        if not self._assemble_cache:
+            self._assemble_cache = self._preamble(config) + self._header(config) + compile_shader_module(self, config)
+        return self._assemble_cache
+
+
+@dataclass
+class VideoPolygonShader(BasicUniform, ShaderModule):
+
+    __kind__: tp.ClassVar[ShaderKind] = 'PolygonShader'
+
+    __header__: tp.ClassVar[list[str]] = [
+        'uniform float time;',
+        'uniform float global_time;',
+        'uniform float local_duration;',
+        'uniform float fps;',
+        'uniform vec2 resolution;',
     ]
 
     @_gl.method
@@ -154,8 +191,8 @@ class GeomShader(BasicUniform, ShaderModule):
         'uniform float fps;',
         'uniform vec2 resolution;',
         'uniform sampler2D texture0;',
-        'in VS_OUT { vec2 vUvs; } gs_in[];',
-        'out GS_OUT { vec2 vUvs; } gs_out;',
+        'in VS_OUT { vec2 vUvs; float sprite_idx; } gs_in[];',
+        'out GS_OUT { vec2 vUvs; float sprite_idx;} gs_out;',
     ]
 
     texture0: _gl.uniform[_gl.sampler2D] = field(default=_gl.uniform.default(), init=False)

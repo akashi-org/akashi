@@ -812,6 +812,10 @@ class transformer:
                 if attr_str == 'value' and ctx.shmod_inst:
                     content = str(getattr(getattr(ctx.shmod_inst, value_str), 'value'))
                     return transformer.AttributeOut(node, content)
+            elif value_tpname.startswith('out_t'):
+                if attr_str == 'value':
+                    content = f'{value_str}'
+                    return transformer.AttributeOut(node, content)
 
         # [TODO] change this impl later for symbol resolution based one
         if ctx.shmod_name and value_str == ctx.shmod_name:
