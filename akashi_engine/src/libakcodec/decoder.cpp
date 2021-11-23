@@ -38,13 +38,17 @@ namespace akashi {
 
         DecodeResult AKDecoder::decode(const DecodeArg& decode_arg) {
             auto& cur_atom_source = m_atom_sources[m_current_atom_idx];
-            if (!cur_atom_source->done_init()) {
-                cur_atom_source->init(m_atom_profiles[m_current_atom_idx], m_decode_start,
-                                      decode_arg.decode_method, decode_arg.video_max_queue_count);
-            }
 
-            if (cur_atom_source->can_decode()) {
-                return cur_atom_source->decode(decode_arg);
+            if (!m_atom_profiles[m_current_atom_idx].layers.empty()) {
+                if (!cur_atom_source->done_init()) {
+                    cur_atom_source->init(m_atom_profiles[m_current_atom_idx], m_decode_start,
+                                          decode_arg.decode_method,
+                                          decode_arg.video_max_queue_count);
+                }
+
+                if (cur_atom_source->can_decode()) {
+                    return cur_atom_source->decode(decode_arg);
+                }
             }
 
             if (m_current_atom_idx < m_max_atom_idx) {
