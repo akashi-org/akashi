@@ -1,3 +1,5 @@
+from .utils import KERNEL_BIN_PATH
+
 import argparse
 from argparse import RawTextHelpFormatter
 import sys
@@ -5,6 +7,15 @@ from os import path
 from importlib.machinery import SourceFileLoader
 from typing import Any
 from dataclasses import dataclass
+from subprocess import Popen, PIPE
+import pkg_resources
+
+
+def _version_string():
+    py_ver = pkg_resources.get_distribution('akashi-engine').version
+    _, err = Popen([KERNEL_BIN_PATH, "--version"], stderr=PIPE).communicate()
+    engine_ver = err.decode('utf-8').split(' ')[-1]
+    return f'akashi/{py_ver} engine-ver: {engine_ver}'
 
 
 @dataclass(frozen=True)
@@ -25,7 +36,7 @@ def argument_parse() -> ParsedOption:
 
     parser.add_argument(
         "action",
-        choices=['debug', 'build', 'kernel']
+        choices=['debug', 'build', 'kernel'],
     )
 
     parser.add_argument(
@@ -37,7 +48,13 @@ def argument_parse() -> ParsedOption:
         required=False
     )
 
-    if sys.argv[1] == 'kernel':
+    parser.add_argument(
+        "--version",
+        action='version',
+        version=_version_string()
+    )
+
+    if len(sys.argv) > 1 and sys.argv[1] == 'kernel':
         parser.add_argument(
             "-p", "--port",
             help="port number used for akashi-server",
@@ -49,7 +66,7 @@ def argument_parse() -> ParsedOption:
     args_dict = vars(parser.parse_args())
     if len(args_dict) == 0:
         parser.print_help(sys.stderr)
-        sys.exit(1)
+        sys.exit(0)
 
     return ParsedOption(
         args_dict['action'],
