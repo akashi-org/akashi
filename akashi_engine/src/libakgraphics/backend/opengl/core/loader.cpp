@@ -130,6 +130,7 @@ namespace akashi {
             DEF_FN_CHECK(ctx, get_proc_address, glGetString);
             DEF_FN_CHECK(ctx, get_proc_address, glUseProgram);
             DEF_FN_CHECK(ctx, get_proc_address, glGetUniformLocation);
+            DEF_FN_CHECK(ctx, get_proc_address, glGetError);
 
             DEF_FN_CHECK(ctx, get_proc_address, glUniform1f);
             DEF_FN_CHECK(ctx, get_proc_address, glUniform2f);
@@ -178,6 +179,8 @@ namespace akashi {
             DEF_FN_CHECK(ctx, get_proc_address, glBindTexture);
             DEF_FN_CHECK(ctx, get_proc_address, glSwapInterval);
             DEF_FN_CHECK(ctx, get_proc_address, glTexImage3D);
+            DEF_FN_CHECK(ctx, get_proc_address, glTexSubImage3D);
+            DEF_FN_CHECK(ctx, get_proc_address, glTexStorage3D);
             DEF_FN_CHECK(ctx, get_proc_address, glGenVertexArrays);
             DEF_FN_CHECK(ctx, get_proc_address, glBindVertexArray);
             DEF_FN_CHECK(ctx, get_proc_address, glGetAttribLocation);

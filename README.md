@@ -16,52 +16,7 @@ You can edit your videos only by programs without being bothered with complex GU
 
 Akashi is still in the very early stages of development, and **not ready for production** in any sense.
 
-## Demo
 
-Although Akashi is still unstable, if conditions are met, you can try Akashi to see what it is like.
+<br>
 
-The current requirements are as follows.
-
-### System Requirements
-
-* Linux (tested on Debian 11) 
-* X11
-* Major desktop environments like GNOME
-* Vim8
-* OpenGL core profile 4.2 or later
-* Python 3.9 or later
-* PulseAudio
-
-### Runtime Dependencies
-
-* FFmpeg 4.x
-* SDL2, SDL_ttf, SDL_image
-* Qt5
-
-If you use Debian, you can install these dependencies by the command below.
-
-`apt install ffmpeg qtbase5-dev libsdl2-2.0-0 libsdl2-image-2.0-0 libsdl2-ttf-2.0-0 `
-
-If your system satisfies the requirements, go to [Basic Example](https://github.com/akashi-org/akashi/tree/master/examples/basic) and follow the instructions there.
-If you have any questions, please feel free to ask in issues page.
-
-## Screenshots
-
-![screenshot](https://user-images.githubusercontent.com/70841910/106698725-4aab9700-65d9-11eb-951c-9d751a741a99.png)
-
-![sample1](https://user-images.githubusercontent.com/70841910/106697192-2ef2c180-65d6-11eb-8956-32208aed015b.gif)
-
-## Tasks
-
-- [x] Basic Playback Feature 
-- [x] Basic Hot Reload Feature
-- [x] Basic Shader Effects
-- [x] Hardware Decoding(VA-API)
-- [x] Basic Encoder
-- [ ] Deployment by AppImage
-- [ ] Introduce Unit Tests and E2E
-- [x] Refactor Kron System
-- [x] ASP Editing
-- [ ] Documentation
-- [ ] Qt -> GLFW
-
+**Project Status**: 🚧 *RESTRUCTURING* 🚧

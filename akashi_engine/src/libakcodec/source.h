@@ -42,7 +42,8 @@ namespace akashi {
             explicit AtomSource();
             virtual ~AtomSource();
 
-            void init(const core::AtomProfile& atom_profile, const core::Rational& decode_start,
+            void init(const core::Rational& global_duration, const core::AtomProfile& atom_profile,
+                      const core::Rational& decode_start,
                       const core::VideoDecodeMethod& decode_method,
                       const size_t video_max_queue_count);
 
@@ -53,16 +54,27 @@ namespace akashi {
             bool done_init(void) const { return m_done_init; }
 
           private:
-            bool is_layers_active(void);
+            bool all_active_layers_dead(void);
+
+            bool collect_active_layers(void);
+
+          private:
+            const core::Rational BLOCK_SIZE = core::Rational(3l); // 3s
 
           private:
             std::vector<core::owned_ptr<LayerSource>> m_layer_sources;
             core::AtomProfile m_atom_profile;
-            size_t m_current_layer_idx = 0;
-            size_t m_max_layer_idx = 0;
             bool m_can_decode = true;
             bool m_done_init = false;
+            core::VideoDecodeMethod m_decode_method;
+            size_t m_video_max_queue_count = 0;
             core::Rational m_dts_avg = core::Rational(0, 1);
+            core::Rational m_dts_src = core::Rational(0, 1);
+            core::Rational m_dts_dest = core::Rational(0, 1);
+            core::Rational m_global_duration = core::Rational(0, 1);
+
+            std::vector<core::borrowed_ptr<LayerSource>> m_active_layers;
+            size_t m_current_active_layer_idx = 0;
         };
 
     }

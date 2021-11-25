@@ -23,9 +23,8 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 fps = m_state->m_prop.fps;
-                atom_profiles = m_state->m_prop.render_prof.atom_profiles;
+                render_prof = m_state->m_prop.render_prof;
                 decode_pts = m_state->m_prop.current_time;
-                render_prof_uuid = m_state->m_prop.render_prof.uuid;
                 seek_id = m_state->m_prop.seek_id;
             }
             loop_cnt = m_state->m_atomic_state.decode_loop_cnt;
@@ -44,8 +43,7 @@ namespace akashi {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 fps = m_state->m_prop.fps;
                 decode_pts = m_state->m_prop.current_time;
-                atom_profiles = m_state->m_prop.render_prof.atom_profiles;
-                render_prof_uuid = m_state->m_prop.render_prof.uuid;
+                render_prof = m_state->m_prop.render_prof;
             }
             m_state->m_atomic_state.decode_loop_cnt = 0;
             loop_cnt = m_state->m_atomic_state.decode_loop_cnt;
@@ -66,8 +64,7 @@ namespace akashi {
 
             DecodeState decode_state(ctx.state);
 
-            auto decoder =
-                new codec::AKDecoder(decode_state.atom_profiles, decode_state.decode_pts);
+            auto decoder = new codec::AKDecoder(decode_state.render_prof, decode_state.decode_pts);
             bool decode_finished = false;
             bool enable_loop = true;
             while (loop->m_is_alive.load() && !decode_finished) {
@@ -100,8 +97,8 @@ namespace akashi {
                     }
                     if (!seek_success) {
                         delete decoder;
-                        decoder = new codec::AKDecoder(decode_state.atom_profiles,
-                                                       decode_state.decode_pts);
+                        decoder =
+                            new codec::AKDecoder(decode_state.render_prof, decode_state.decode_pts);
                     }
                 }
 
@@ -110,7 +107,7 @@ namespace akashi {
                     decode_state.hr_update();
                     delete decoder;
                     decoder =
-                        new codec::AKDecoder(decode_state.atom_profiles, decode_state.decode_pts);
+                        new codec::AKDecoder(decode_state.render_prof, decode_state.decode_pts);
                 }
 
                 codec::DecodeArg decode_args;
@@ -136,7 +133,7 @@ namespace akashi {
                             delete decoder;
                             decode_state.loop_incr();
                             decode_state.decode_pts = Rational(0, 1);
-                            decoder = new codec::AKDecoder(decode_state.atom_profiles,
+                            decoder = new codec::AKDecoder(decode_state.render_prof,
                                                            decode_state.decode_pts);
                         } else {
                             decode_finished = true;
@@ -217,7 +214,7 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(state->m_prop_mtx);
                 render_prof_updated =
-                    state->m_prop.render_prof.uuid != decode_state.render_prof_uuid;
+                    state->m_prop.render_prof.uuid != decode_state.render_prof.uuid;
             }
             return render_prof_updated;
         }

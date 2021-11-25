@@ -2,6 +2,7 @@
 
 #include <libakcore/memory.h>
 #include <libakcore/rational.h>
+#include <libakcore/element.h>
 
 #include <thread>
 #include <vector>
@@ -36,8 +37,7 @@ namespace akashi {
           public:
             core::Rational fps;
             core::Rational decode_pts;
-            std::string render_prof_uuid;
-            std::vector<core::AtomProfile> atom_profiles;
+            core::RenderProfile render_prof;
             size_t loop_cnt = 0;
             size_t seek_id = 0;
 

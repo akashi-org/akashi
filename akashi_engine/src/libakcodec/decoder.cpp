@@ -13,13 +13,13 @@ using namespace akashi::core;
 namespace akashi {
     namespace codec {
 
-        AKDecoder::AKDecoder(const std::vector<core::AtomProfile>& atom_profiles,
+        AKDecoder::AKDecoder(const core::RenderProfile& render_prof,
                              const core::Rational& decode_start) {
-            m_atom_profiles = atom_profiles;
+            m_render_prof = render_prof;
             m_decode_start = decode_start;
 
             // find the appropriate current_atom_idx for m_decode_start
-            for (const auto& atom_profile : m_atom_profiles) {
+            for (const auto& atom_profile : m_render_prof.atom_profiles) {
                 if (to_rational(atom_profile.from) <= m_decode_start &&
                     m_decode_start <= to_rational(atom_profile.to)) {
                     break;
@@ -27,9 +27,10 @@ namespace akashi {
                 m_current_atom_idx += 1;
             }
 
-            m_max_atom_idx = atom_profiles.size() == 0 ? 0 : atom_profiles.size() - 1;
+            m_max_atom_idx =
+                render_prof.atom_profiles.size() == 0 ? 0 : render_prof.atom_profiles.size() - 1;
 
-            for (size_t i = 0; i < atom_profiles.size(); i++) {
+            for (size_t i = 0; i < render_prof.atom_profiles.size(); i++) {
                 m_atom_sources.push_back(make_owned<AtomSource>());
             }
         }
@@ -38,13 +39,18 @@ namespace akashi {
 
         DecodeResult AKDecoder::decode(const DecodeArg& decode_arg) {
             auto& cur_atom_source = m_atom_sources[m_current_atom_idx];
-            if (!cur_atom_source->done_init()) {
-                cur_atom_source->init(m_atom_profiles[m_current_atom_idx], m_decode_start,
-                                      decode_arg.decode_method, decode_arg.video_max_queue_count);
-            }
 
-            if (cur_atom_source->can_decode()) {
-                return cur_atom_source->decode(decode_arg);
+            if (!m_render_prof.atom_profiles[m_current_atom_idx].layers.empty()) {
+                if (!cur_atom_source->done_init()) {
+                    cur_atom_source->init(to_rational(m_render_prof.duration),
+                                          m_render_prof.atom_profiles[m_current_atom_idx],
+                                          m_decode_start, decode_arg.decode_method,
+                                          decode_arg.video_max_queue_count);
+                }
+
+                if (cur_atom_source->can_decode()) {
+                    return cur_atom_source->decode(decode_arg);
+                }
             }
 
             if (m_current_atom_idx < m_max_atom_idx) {

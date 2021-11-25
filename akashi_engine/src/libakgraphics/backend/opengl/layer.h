@@ -12,6 +12,8 @@
 
 #include <stdexcept>
 
+struct SDL_Surface;
+
 namespace akashi {
     namespace core {
         class Rational;
@@ -93,9 +95,25 @@ namespace akashi {
 
           private:
             bool load_mesh(const GLRenderContext& ctx, LayerQuadMesh& mesh,
-                           core::LayerContext& layer_ctx) const;
+                           core::LayerContext& layer_ctx);
             bool load_texture(const GLRenderContext& ctx, GLTextureData& tex,
-                              core::LayerContext& layer_ctx) const;
+                              core::LayerContext& layer_ctx);
+
+          private:
+            LayerQuadObject m_quad_obj;
+            std::vector<SDL_Surface*> m_surfaces;
+        };
+
+        class EffectLayerTarget final : public LayerTarget {
+          public:
+            explicit EffectLayerTarget(void) = default;
+            virtual ~EffectLayerTarget(void) = default;
+            EffectLayerTarget(EffectLayerTarget&&) = default;
+
+            bool create(const GLRenderContext& ctx, core::LayerContext layer_ctx);
+            bool render(core::borrowed_ptr<GLGraphicsContext> glx_ctx, const GLRenderContext& ctx,
+                        const core::Rational& pts) override;
+            bool destroy(const GLRenderContext& ctx) override;
 
           private:
             LayerQuadObject m_quad_obj;

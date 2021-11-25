@@ -58,7 +58,7 @@ namespace akashi {
             GET_GLFUNC(ctx, glBindFramebuffer)(GL_FRAMEBUFFER, params.fb);
             GET_GLFUNC(ctx, glViewport)(0.0, 0.0, params.width, params.height);
             GET_GLFUNC(ctx, glClearColor)(0.0, 0.0, 0.0, 1.0);
-            GET_GLFUNC(ctx, glClear)(GL_COLOR_BUFFER_BIT);
+            GET_GLFUNC(ctx, glClear)(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             // [XXX] required when interacting with alpha blend thing.
             GET_GLFUNC(ctx, glEnable)(GL_BLEND);
@@ -94,6 +94,15 @@ namespace akashi {
                 }
                 case LayerType::IMAGE: {
                     auto target = new ImageLayerTarget;
+                    if (!target->create(ctx, layer_ctx)) {
+                        break;
+                    }
+                    m_targets.push_back(target);
+                    m_target_map.insert({layer_ctx.uuid, target});
+                    return true;
+                }
+                case LayerType::EFFECT: {
+                    auto target = new EffectLayerTarget;
                     if (!target->create(ctx, layer_ctx)) {
                         break;
                     }

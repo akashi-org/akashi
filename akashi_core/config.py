@@ -2,12 +2,14 @@ from __future__ import annotations
 from typing import (
     Tuple,
     Any,
-    Literal
+    Literal,
+    Callable
 )
-from .time import Second
+from .time import sec
 from dataclasses import dataclass, asdict
 from os import path
 import json
+import sys
 
 
 """
@@ -23,7 +25,7 @@ class GenerelConf:
 
 @dataclass(frozen=True)
 class VideoConf:
-    fps: Second = Second(24)
+    fps: sec = sec(24)
     resolution: Tuple[int, int] = (1920, 1080)
     default_font_path: str = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
 
@@ -105,3 +107,13 @@ class AKConf:
 
 def from_relpath(bpath: str, tpath: str) -> str:
     return path.normpath(path.join(path.dirname(path.abspath(bpath)), tpath))
+
+
+ConfFn = Callable[[], AKConf]
+
+
+def config() -> Callable[[ConfFn], ConfFn]:
+    def inner(fn: ConfFn):
+        sys.modules[fn.__module__].__akashi_export_config_fn = fn  # type: ignore
+        return fn
+    return inner

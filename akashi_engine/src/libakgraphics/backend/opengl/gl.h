@@ -63,9 +63,11 @@ namespace akashi {
             void(GLAPIENTRY* PREFIXED_GLFUNC(glDrawElements))(GLenum mode, GLsizei count,
                                                               GLenum type, const void* indices);
 
-            // GLenum(GLAPIENTRY* PREFIXED_GLFUNC(glGetError))(void); void(GLAPIENTRY**
+            // void(GLAPIENTRY**
             // GetTexLevelParameteriv))(GLenum, GLint, GLenum, GLint*); void(GLAPIENTRY**
             // Scissor))(GLint, GLint, GLsizei, GLsizei);
+
+            GLenum(GLAPIENTRY* PREFIXED_GLFUNC(glGetError))(void);
 
             void(GLAPIENTRY* PREFIXED_GLFUNC(glGenBuffers))(GLsizei, GLuint*);
             void(GLAPIENTRY* PREFIXED_GLFUNC(glDeleteBuffers))(GLsizei, const GLuint*);
@@ -85,6 +87,13 @@ namespace akashi {
             void(GLAPIENTRY* PREFIXED_GLFUNC(glTexImage3D))(GLenum, GLint, GLenum, GLsizei, GLsizei,
                                                             GLsizei, GLint, GLenum, GLenum,
                                                             const GLvoid*);
+
+            void(GLAPIENTRY* PREFIXED_GLFUNC(glTexSubImage3D))(GLenum, GLint, GLint, GLint, GLint,
+                                                               GLsizei, GLsizei, GLsizei, GLenum,
+                                                               GLenum, const void*);
+
+            void(GLAPIENTRY* PREFIXED_GLFUNC(glTexStorage3D))(GLenum, GLsizei, GLenum, GLsizei,
+                                                              GLsizei, GLsizei);
 
             void(GLAPIENTRY* PREFIXED_GLFUNC(glGenVertexArrays))(GLsizei, GLuint*);
             void(GLAPIENTRY* PREFIXED_GLFUNC(glBindVertexArray))(GLuint);
@@ -228,6 +237,7 @@ namespace akashi {
             int effective_height;
             GLenum format = GL_RGBA;
             GLenum internal_format = GL_RGBA;
+            GLenum target = GL_TEXTURE_2D;
             int8_t reversed =
                 0; // if 1, tex format is GL_RG8, but the order of r and g are reversed
         };

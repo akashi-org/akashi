@@ -27,6 +27,9 @@ using namespace akashi::core;
             case LayerType::IMAGE: {                                                               \
                 return layer_.image_layer_ctx.shader_type;                                         \
             }                                                                                      \
+            case LayerType::EFFECT: {                                                              \
+                return layer_.effect_layer_ctx.shader_type;                                        \
+            }                                                                                      \
             default: {                                                                             \
                 AKLOG_ERROR("Not implemented Error for the type: {}", type_);                      \
                 throw std::runtime_error("Not implemented Error");                                 \
@@ -43,11 +46,16 @@ static constexpr const char* vshader_src = u8R"(
 
     out VS_OUT {
         vec2 vUvs;
+        float sprite_idx;
     } vs_out;
+
+    void poly_main(inout vec4 pos);
     
     void main(void){
         vs_out.vUvs = uvs;
+        vs_out.sprite_idx = 0;
         gl_Position = mvpMatrix * vec4(vertices * vec3(1, flipY, 1), 1.0);
+        poly_main(gl_Position);
     }
 )";
 
@@ -57,6 +65,7 @@ static constexpr const char* fshader_src = u8R"(
 
     in GS_OUT {
         vec2 vUvs;
+        float sprite_idx;
     } fs_in;
 
     out vec4 fragColor;
@@ -67,6 +76,38 @@ static constexpr const char* fshader_src = u8R"(
         vec4 smpColor = texture(texture0, fs_in.vUvs);
         fragColor = smpColor;
         frag_main(fragColor);
+    }
+)";
+
+static constexpr const char* image_fshader_src = u8R"(
+    #version 420 core
+    uniform sampler2DArray texture_arr;
+    uniform float time;
+
+    in GS_OUT {
+        vec2 vUvs;
+        float sprite_idx;
+    } fs_in;
+
+    out vec4 fragColor;
+
+    void frag_main(inout vec4 rv);
+
+    void main(void){
+        vec4 smpColor = texture(texture_arr, vec3(fs_in.vUvs, fs_in.sprite_idx));
+        fragColor = smpColor;
+        frag_main(fragColor);
+    }
+)";
+
+static constexpr const char* default_user_pshader_src = u8R"(
+    #version 420 core
+    uniform float time;
+    uniform float global_time;
+    uniform float local_duration;
+    uniform float fps;
+    uniform vec2 resolution;
+    void poly_main(inout vec4 position){
     }
 )";
 
@@ -88,20 +129,23 @@ static constexpr const char* default_user_gshader_src = u8R"(
 
     in VS_OUT {
         vec2 vUvs;
+        float sprite_idx;
     } gs_in[];
 
     out GS_OUT {
         vec2 vUvs;
+        float sprite_idx;
     } gs_out;
-    
-    void main() { 
+
+    void main() {
         for(int i = 0; i < 3; i++){
-            gs_out.vUvs = gs_in[i].vUvs; 
+            gs_out.vUvs = gs_in[i].vUvs;
+            gs_out.sprite_idx = gs_in[i].sprite_idx;
             gl_Position = gl_in[i].gl_Position;
             EmitVertex();
         }
         EndPrimitive();
-    }  
+    }
 )";
 
 namespace akashi {
@@ -119,7 +163,11 @@ namespace akashi {
             // uniform location
             m_prop.mvp_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "mvpMatrix");
             m_prop.flipY_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "flipY");
-            m_prop.tex_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "texture0");
+            if (type == core::LayerType::IMAGE) {
+                m_prop.tex_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "texture_arr");
+            } else {
+                m_prop.tex_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "texture0");
+            }
             m_prop.time_loc = GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "time");
             m_prop.global_time_loc =
                 GET_GLFUNC(ctx, glGetUniformLocation)(m_prop.prog, "global_time");
@@ -150,7 +198,9 @@ namespace akashi {
                                         const core::LayerContext& layer,
                                         const core::LayerType& type) const {
             CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_VERTEX_SHADER, vshader_src));
-            CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_FRAGMENT_SHADER, fshader_src));
+            CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_FRAGMENT_SHADER,
+                                                  type == core::LayerType::IMAGE ? image_fshader_src
+                                                                                 : fshader_src));
 
             auto frag_shaders = GET_SHADER(frag, layer, type);
             if (frag_shaders.empty()) {
@@ -163,10 +213,13 @@ namespace akashi {
                 }
             }
 
-            auto geom_shader = GET_SHADER(geom, layer, type);
-            CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_GEOMETRY_SHADER,
-                                                  geom_shader.empty() ? default_user_gshader_src
-                                                                      : geom_shader[0].c_str()));
+            auto poly_shader = GET_SHADER(poly, layer, type);
+            CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_VERTEX_SHADER,
+                                                  poly_shader.empty() ? default_user_pshader_src
+                                                                      : poly_shader[0].c_str()));
+
+            CHECK_AK_ERROR2(
+                compile_attach_shader(ctx, prog, GL_GEOMETRY_SHADER, default_user_gshader_src));
 
             CHECK_AK_ERROR2(link_shader(ctx, prog));
             return true;

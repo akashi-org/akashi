@@ -5,6 +5,7 @@
 #include "../../core/buffer.h"
 #include "../../core/texture.h"
 #include "../../../../drm_fourcc_excerpt.h"
+#include "../../framebuffer.h"
 
 #include <libakcore/logger.h>
 #include <libakcore/error.h>
@@ -58,11 +59,14 @@ static constexpr const char* vshader_src = u8R"(
         vec2 vLumaUvs;
         vec2 vChromaUvs;
     } vs_out;
+
+    void poly_main(inout vec4 pos);
     
     void main(void){
         vs_out.vLumaUvs = lumaUvs;
         vs_out.vChromaUvs = chromaUvs;
         gl_Position = mvpMatrix * vec4(vertices * vec3(1, flipY, 1), 1.0);
+        poly_main(gl_Position);
     }
 )";
 
@@ -144,6 +148,17 @@ static constexpr const char* color_conv_fshader_vaapi = u8R"(
             dot(yuv, bc),
             1
         );
+    }
+)";
+
+static constexpr const char* default_user_pshader_src = u8R"(
+    #version 420 core
+    uniform float time;
+    uniform float global_time;
+    uniform float local_duration;
+    uniform float fps;
+    uniform vec2 resolution;
+    void poly_main(inout vec4 position){
     }
 )";
 
@@ -248,10 +263,13 @@ namespace akashi {
                 }
             }
 
-            auto geom_shader = GET_SHADER(geom, layer, LayerType::VIDEO);
-            CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_GEOMETRY_SHADER,
-                                                  geom_shader.empty() ? default_user_gshader_src
-                                                                      : geom_shader[0].c_str()));
+            auto poly_shader = GET_SHADER(poly, layer, LayerType::VIDEO);
+            CHECK_AK_ERROR2(compile_attach_shader(ctx, prog, GL_VERTEX_SHADER,
+                                                  poly_shader.empty() ? default_user_pshader_src
+                                                                      : poly_shader[0].c_str()));
+
+            CHECK_AK_ERROR2(
+                compile_attach_shader(ctx, prog, GL_GEOMETRY_SHADER, default_user_gshader_src));
 
             CHECK_AK_ERROR2(link_shader(ctx, prog));
             return true;
@@ -347,13 +365,15 @@ namespace akashi {
         /* --- VideoQuadMesh --- */
 
         template <enum core::VideoDecodeMethod>
-        bool VideoQuadMesh::create_inner(const GLRenderContext&, const buffer::AVBufferData&) {
+        bool VideoQuadMesh::create_inner(const GLRenderContext&, const core::VideoLayerContext&,
+                                         const buffer::AVBufferData&) {
             throw std::runtime_error("Not Implemented Error: create_inner()");
         }
 
         template <>
         bool VideoQuadMesh::create_inner<core::VideoDecodeMethod::SW>(
-            const GLRenderContext& ctx, const buffer::AVBufferData& buf_data) {
+            const GLRenderContext& ctx, const core::VideoLayerContext& layer_ctx,
+            const buffer::AVBufferData& buf_data) {
             for (size_t i = 0; i < m_textures.size(); i++) {
                 auto& tex = m_textures[i];
                 tex.image = buf_data.prop().video_data[i].buf;
@@ -361,6 +381,11 @@ namespace akashi {
                 tex.height = i == 0 ? buf_data.prop().height : buf_data.prop().chroma_height;
                 tex.effective_width = i == 0 ? buf_data.prop().width : buf_data.prop().chroma_width;
                 tex.effective_height = tex.height;
+
+                if (layer_ctx.stretch) {
+                    tex.effective_width = ctx.fbo->get_prop().width;
+                    tex.effective_height = ctx.fbo->get_prop().height;
+                }
 
                 tex.format = GL_RED;
                 tex.internal_format = GL_R8;
@@ -388,7 +413,8 @@ namespace akashi {
 
         template <>
         bool VideoQuadMesh::create_inner<core::VideoDecodeMethod::VAAPI>(
-            const GLRenderContext& ctx, const buffer::AVBufferData& buf_data) {
+            const GLRenderContext& ctx, const core::VideoLayerContext& layer_ctx,
+            const buffer::AVBufferData& buf_data) {
             if (auto status = vaExportSurfaceHandle(
                     buf_data.prop().va_display, buf_data.prop().va_surface_id,
                     VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
@@ -452,6 +478,11 @@ namespace akashi {
                     }
                 }
 
+                if (layer_ctx.stretch) {
+                    tex.effective_width = ctx.fbo->get_prop().width;
+                    tex.effective_height = ctx.fbo->get_prop().height;
+                }
+
                 GET_GLFUNC(ctx, glBindTexture)(GL_TEXTURE_2D, tex.buffer);
                 GET_GLFUNC(ctx, glTexParameteri)(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 GET_GLFUNC(ctx, glTexParameteri)(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -505,7 +536,8 @@ namespace akashi {
 
         template <>
         bool VideoQuadMesh::create_inner<core::VideoDecodeMethod::VAAPI_COPY>(
-            const GLRenderContext& ctx, const buffer::AVBufferData& buf_data) {
+            const GLRenderContext& ctx, const core::VideoLayerContext& layer_ctx,
+            const buffer::AVBufferData& buf_data) {
             for (size_t i = 0; i < 2; i++) {
                 auto& tex = m_textures[i];
                 tex.image = buf_data.prop().video_data[i].buf;
@@ -514,6 +546,11 @@ namespace akashi {
                 tex.height = i == 0 ? buf_data.prop().height : buf_data.prop().chroma_height;
                 tex.effective_width = i == 0 ? buf_data.prop().width : buf_data.prop().chroma_width;
                 tex.effective_height = tex.height;
+
+                if (layer_ctx.stretch) {
+                    tex.effective_width = ctx.fbo->get_prop().width;
+                    tex.effective_height = ctx.fbo->get_prop().height;
+                }
 
                 tex.format = i == 0 ? GL_RED : GL_RG;
                 tex.internal_format = i == 0 ? GL_R8 : GL_RG8;
@@ -540,6 +577,7 @@ namespace akashi {
         }
 
         bool VideoQuadMesh::create(const GLRenderContext& ctx,
+                                   const core::VideoLayerContext& layer_ctx,
                                    core::owned_ptr<buffer::AVBufferData> buf_data) {
             m_flip_y = ctx.layer_flip_y;
             m_buf_data = std::move(buf_data);
@@ -553,13 +591,15 @@ namespace akashi {
 
             switch (m_decode_method) {
                 case VideoDecodeMethod::SW: {
-                    return this->create_inner<core::VideoDecodeMethod::SW>(ctx, *m_buf_data);
+                    return this->create_inner<core::VideoDecodeMethod::SW>(ctx, layer_ctx,
+                                                                           *m_buf_data);
                 }
                 case VideoDecodeMethod::VAAPI: {
-                    return this->create_inner<core::VideoDecodeMethod::VAAPI>(ctx, *m_buf_data);
+                    return this->create_inner<core::VideoDecodeMethod::VAAPI>(ctx, layer_ctx,
+                                                                              *m_buf_data);
                 }
                 case VideoDecodeMethod::VAAPI_COPY: {
-                    return this->create_inner<core::VideoDecodeMethod::VAAPI_COPY>(ctx,
+                    return this->create_inner<core::VideoDecodeMethod::VAAPI_COPY>(ctx, layer_ctx,
                                                                                    *m_buf_data);
                 }
                 default: {
@@ -579,6 +619,7 @@ namespace akashi {
         }
 
         void VideoQuadMesh::update(const GLRenderContext& ctx,
+                                   const core::VideoLayerContext& layer_ctx,
                                    core::owned_ptr<buffer::AVBufferData> buf_data) {
             if (m_decode_method == VideoDecodeMethod::VAAPI) {
                 // [XXX] must be called before updating m_buf_data
@@ -587,15 +628,16 @@ namespace akashi {
             m_buf_data = std::move(buf_data);
             switch (m_decode_method) {
                 case VideoDecodeMethod::SW: {
-                    this->create_inner<core::VideoDecodeMethod::SW>(ctx, *m_buf_data);
+                    this->create_inner<core::VideoDecodeMethod::SW>(ctx, layer_ctx, *m_buf_data);
                     break;
                 }
                 case VideoDecodeMethod::VAAPI: {
-                    this->create_inner<core::VideoDecodeMethod::VAAPI>(ctx, *m_buf_data);
+                    this->create_inner<core::VideoDecodeMethod::VAAPI>(ctx, layer_ctx, *m_buf_data);
                     break;
                 }
                 case VideoDecodeMethod::VAAPI_COPY: {
-                    this->create_inner<core::VideoDecodeMethod::VAAPI_COPY>(ctx, *m_buf_data);
+                    this->create_inner<core::VideoDecodeMethod::VAAPI_COPY>(ctx, layer_ctx,
+                                                                            *m_buf_data);
                     break;
                 }
                 default: {
@@ -623,9 +665,10 @@ namespace akashi {
         /* --- VideoQuadObject --- */
 
         void VideoQuadObject::create(const GLRenderContext& ctx, const VideoQuadPass&& pass,
+                                     const core::VideoLayerContext& layer_ctx,
                                      core::owned_ptr<buffer::AVBufferData> buf_data) {
             m_prop.pass = std::move(pass);
-            m_prop.mesh.create(ctx, std::move(buf_data));
+            m_prop.mesh.create(ctx, layer_ctx, std::move(buf_data));
             m_created = true;
         }
 
@@ -641,8 +684,9 @@ namespace akashi {
         }
 
         void VideoQuadObject::update_mesh(const GLRenderContext& ctx,
+                                          const core::VideoLayerContext& layer_ctx,
                                           core::owned_ptr<buffer::AVBufferData> buf_data) {
-            m_prop.mesh.update(ctx, std::move(buf_data));
+            m_prop.mesh.update(ctx, layer_ctx, std::move(buf_data));
         }
 
     }
