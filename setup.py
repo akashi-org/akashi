@@ -61,7 +61,13 @@ setup(
     url='https://github.com/akashi-org/akashi',
     author='crux14',
     license='Apache-2.0',
-    packages=['akashi_cli', 'akashi_core'],
+    packages=[
+        'akashi_cli',
+        'akashi_core',
+        'akashi_core.pysl',
+        'akashi_core.elem',
+        'akashi_core.elem.layer',
+    ],
     package_data={
         "akashi_cli": ["py.typed"],
         "akashi_core": ["py.typed"],
