@@ -58,7 +58,7 @@ class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
     def poly(self, poly_shader: PolygonShader) -> 'TextHandle':
         return super().poly(poly_shader)
 
-    def fit_to(self, handle: AtomHandle) -> 'TextHandle':
+    def fit_to(self, handle: 'AtomHandle') -> 'TextHandle':
         return super().fit_to(handle)
 
     def font_size(self, size: int) -> 'TextHandle':

@@ -25,7 +25,7 @@ class LayerField:
     atom_uuid: UUID = UUID('')
     kind: LayerKind = 'LAYER'
     key: str = ''
-    duration: tp.Union[sec, AtomHandle] = sec(0)
+    duration: tp.Union[sec, 'AtomHandle'] = sec(0)
     atom_offset: sec = sec(0)
 
 
@@ -86,7 +86,7 @@ class ShaderTrait(LayerTrait, metaclass=ABCMeta):
 
 
 class FittableDurationTrait(LayerTrait, metaclass=ABCMeta):
-    def fit_to(self, handle: AtomHandle):
+    def fit_to(self, handle: 'AtomHandle'):
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(LayerField, cur_layer).duration = handle
         return self

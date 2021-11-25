@@ -38,7 +38,7 @@ class EffectHandle(FittableDurationTrait, ShaderTrait, LayerTrait):
     def poly(self, poly_shader: PolygonShader) -> 'EffectHandle':
         return super().poly(poly_shader)
 
-    def fit_to(self, handle: AtomHandle) -> 'EffectHandle':
+    def fit_to(self, handle: 'AtomHandle') -> 'EffectHandle':
         return super().fit_to(handle)
 
 
