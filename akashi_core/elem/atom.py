@@ -16,11 +16,11 @@ class AtomEntry:
 
     uuid: UUID
     layer_indices: list[int] = field(default_factory=list, init=False)
-    _lanes: list[LaneEntry] = field(default_factory=list, init=False)
+    _lanes: list['LaneEntry'] = field(default_factory=list, init=False)
     _on_lane: bool = field(default=False, init=False)
     _duration: sec = field(default=sec(0), init=False)
     # [TODO] we should use layer index
-    _atom_fitted_layers: list[LayerField] = field(default_factory=list, init=False)
+    _atom_fitted_layers: list['LayerField'] = field(default_factory=list, init=False)
 
 
 @dataclass

@@ -50,7 +50,7 @@ class ImageHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait)
     def poly(self, poly_shader: PolygonShader) -> 'ImageHandle':
         return super().poly(poly_shader)
 
-    def fit_to(self, handle: AtomHandle) -> 'ImageHandle':
+    def fit_to(self, handle: 'AtomHandle') -> 'ImageHandle':
         return super().fit_to(handle)
 
     def stretch(self, stretch: bool) -> 'ImageHandle':

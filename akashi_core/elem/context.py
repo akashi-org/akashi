@@ -14,8 +14,8 @@ if TYPE_CHECKING:
 @dataclass
 class KronContext:
     uuid: UUID
-    atoms: list[AtomEntry] = field(default_factory=list, init=False)
-    layers: list[LayerField] = field(default_factory=list, init=False)
+    atoms: list['AtomEntry'] = field(default_factory=list, init=False)
+    layers: list['LayerField'] = field(default_factory=list, init=False)
 
     @staticmethod
     def init() -> KronContext:
@@ -40,7 +40,7 @@ class _GlobalKronContext:
         cls.__ctx = None
 
 
-def entry() -> Callable[[ElemFn], Callable[[], KronContext]]:
+def entry() -> Callable[['ElemFn'], Callable[[], KronContext]]:
     def _entry(fn: ElemFn):
         def inner() -> KronContext:
             _GlobalKronContext.flush_ctx()

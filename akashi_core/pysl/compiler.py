@@ -98,7 +98,7 @@ def mangle_shader_func(shmod_name: str, func_name: str) -> str:
         return shmod_name + '_' + func_name
 
 
-def can_import(from_mod: Type[ShaderModule], imp_mod: Type[ShaderModule]) -> bool:
+def can_import(from_mod: Type['ShaderModule'], imp_mod: Type['ShaderModule']) -> bool:
 
     if imp_mod.__kind__ == 'AnyShader':
         return True
@@ -273,8 +273,8 @@ class CompilerContext:
     on_import_resolution: bool = False
     top_indent: int = field(default=0, init=False)
     shmod_name: str = field(default='', init=False)
-    shmod_inst: tp.Optional[ShaderModule] = field(default=None, init=False)
-    shmod_klass: tp.Optional[tp.Type[ShaderModule]] = field(default=None, init=False)
+    shmod_inst: tp.Optional['ShaderModule'] = field(default=None, init=False)
+    shmod_klass: tp.Optional[tp.Type['ShaderModule']] = field(default=None, init=False)
 
 
 def get_stmt_indent(node: ast.AST, ctx: CompilerContext) -> str:
@@ -1110,7 +1110,7 @@ def __compile_shader_func2(func_def: ast.FunctionDef, ctx: CompilerContext) -> _
     return out.content
 
 
-def instance_symbol_analysis(sh_mod: ShaderModule, ctx: CompilerContext) -> None:
+def instance_symbol_analysis(sh_mod: 'ShaderModule', ctx: CompilerContext) -> None:
 
     # collect annotated instance variables
     for fld_name, fld_type in sh_mod.__class__.__annotations__.items():
@@ -1129,7 +1129,7 @@ def instance_symbol_analysis(sh_mod: ShaderModule, ctx: CompilerContext) -> None
             ctx.cls_symbol[mem_name] = (str(type(mem).__name__), mem)
 
 
-def class_symbol_analysis(shmod_klass: tp.Type[ShaderModule], ctx: CompilerContext) -> None:
+def class_symbol_analysis(shmod_klass: tp.Type['ShaderModule'], ctx: CompilerContext) -> None:
 
     # collect annotated variables
     for fld_name, fld_type in shmod_klass.__annotations__.items():
@@ -1144,13 +1144,13 @@ def class_symbol_analysis(shmod_klass: tp.Type[ShaderModule], ctx: CompilerConte
         ctx.cls_symbol[method_name] = ('instancemethod', method)
 
 
-def global_symbol_analysis(shmod_klass: tp.Type[ShaderModule], ctx: CompilerContext) -> None:
+def global_symbol_analysis(shmod_klass: tp.Type['ShaderModule'], ctx: CompilerContext) -> None:
 
     ctx.global_symbol = vars(sys.modules[shmod_klass.__module__])
 
 
 def compile_shader_module(
-        sh_mod: ShaderModule,
+        sh_mod: 'ShaderModule',
         config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
     klass = sh_mod.__class__
 
@@ -1172,7 +1172,7 @@ def compile_shader_module(
 
 
 def compile_shader_staticmethod(
-        klass: tp.Type[ShaderModule],
+        klass: tp.Type['ShaderModule'],
         method: Callable,
         on_import_resolution: bool,
         config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
