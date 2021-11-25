@@ -30,11 +30,9 @@ uint = int
 ''' Builtin Functions '''
 
 
-@staticmethod
 def EmitVertex() -> None: ...
 
 
-@staticmethod
 def EndPrimitive() -> None: ...
 
 
@@ -47,244 +45,189 @@ _TGenType = TypeVar('_TGenType', float, 'vec2', 'vec3', 'vec4')
 
 
 @overload
-@staticmethod
 def abs(x: _TGenIType) -> _TGenIType: ...
 
 
 @overload
-@staticmethod
 def abs(x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def abs(x) -> Any: ...
 
 
 @overload
-@staticmethod
 def sign(x: _TGenIType) -> _TGenIType: ...
 
 
 @overload
-@staticmethod
 def sign(x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def sign(x) -> Any: ...
 
 
-@staticmethod
 def length(x: _TGenType) -> float: ...
 
 
-@staticmethod
 def distance(p0: _TGenType, p1: _TGenType) -> float: ...
 
 
-@staticmethod
 def dot(x: _TGenType, y: _TGenType) -> float: ...
 
 
-@staticmethod
 def cross(x: 'vec3', y: 'vec3') -> 'vec3': ...
 
 
-@staticmethod
 def normalize(x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def faceforward(N: _TGenType, I: _TGenType, Nref: _TGenType) -> _TGenType: ...  # noqa: E741
 
 
-@staticmethod
 def reflect(I: _TGenType, N: _TGenType) -> _TGenType: ...  # noqa: E741
 
 
-@staticmethod
 def refract(I: _TGenType, N: _TGenType, eta: float) -> _TGenType: ...  # noqa: E741
 
 
-@staticmethod
 def sqrt(x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def inversesqrt(x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def pow(x: _TGenType, y: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def exp(x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def exp2(x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def log(x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def log2(x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def degrees(radians: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def radians(degrees: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def floor(x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def ceil(x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def fract(x: _TGenType) -> _TGenType: ...
 
 
 @overload
-@staticmethod
 def mod(x: _TGenType, y: float) -> _TGenType: ...
 
 
 @overload
-@staticmethod
 def mod(x: _TGenType, y: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def mod(x, y) -> Any: ...
 
 
-@staticmethod
 def sin(angle: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def cos(angle: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def tan(angle: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def asin(x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def acos(x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def atan(a: _TGenType, b: Optional[_TGenType] = None) -> _TGenType: ...
 
 
 @overload
-@staticmethod
 def max(x: _TGenIType, y: _TGenIType) -> _TGenIType: ...
 
 
 @overload
-@staticmethod
 def max(x: _TGenIType, y: int) -> _TGenIType: ...
 
 
 @overload
-@staticmethod
 def max(x: _TGenUType, y: _TGenUType) -> _TGenUType: ...
 
 
 @overload
-@staticmethod
 def max(x: _TGenUType, y: uint) -> _TGenUType: ...
 
 
 @overload
-@staticmethod
 def max(x: _TGenType, y: _TGenType) -> _TGenType: ...
 
 
 @overload
-@staticmethod
 def max(x: _TGenType, y: float) -> _TGenType: ...
 
 
-@staticmethod
 def max(x, y) -> Any: ...
 
 
 @overload
-@staticmethod
 def min(x: _TGenIType, y: _TGenIType) -> _TGenIType: ...
 
 
 @overload
-@staticmethod
 def min(x: _TGenIType, y: int) -> _TGenIType: ...
 
 
 @overload
-@staticmethod
 def min(x: _TGenUType, y: _TGenUType) -> _TGenUType: ...
 
 
 @overload
-@staticmethod
 def min(x: _TGenUType, y: uint) -> _TGenUType: ...
 
 
 @overload
-@staticmethod
 def min(x: _TGenType, y: _TGenType) -> _TGenType: ...
 
 
 @overload
-@staticmethod
 def min(x: _TGenType, y: float) -> _TGenType: ...
 
 
-@staticmethod
 def min(x, y) -> Any: ...
 
 
 @overload
-@staticmethod
 def step(edge: _TGenType, x: _TGenType) -> _TGenType: ...
 
 
 @overload
-@staticmethod
 def step(edge: float, x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def step(edge, x) -> Any: ...
 
 
 @overload
-@staticmethod
 def smoothstep(edge0: _TGenType, edge1: _TGenType, x: _TGenType) -> _TGenType: ...
 
 
 @overload
-@staticmethod
 def smoothstep(edge0: float, edge1: float, x: _TGenType) -> _TGenType: ...
 
 
-@staticmethod
 def smoothstep(edge0, edge1, x) -> Any: ...
 
 # [TODO] mix has several overloads with _TGenBType.
@@ -292,50 +235,40 @@ def smoothstep(edge0, edge1, x) -> Any: ...
 
 
 @overload
-@staticmethod
 def mix(x: _TGenType, y: _TGenType, a: _TGenType) -> _TGenType: ...
 
 
 @overload
-@staticmethod
 def mix(x: _TGenType, y: _TGenType, a: float) -> _TGenType: ...
 
 
-@staticmethod
 def mix(x, y, a) -> Any: ...
 
 
 @overload
-@staticmethod
 def clamp(x: _TGenUType, minVal: _TGenUType, maxVal: _TGenUType) -> _TGenUType: ...
 
 
 @overload
-@staticmethod
 def clamp(x: _TGenType, minVal: uint, maxVal: uint) -> _TGenUType: ...
 
 
 @overload
-@staticmethod
 def clamp(x: _TGenIType, minVal: _TGenIType, maxVal: _TGenIType) -> _TGenIType: ...
 
 
 @overload
-@staticmethod
 def clamp(x: _TGenIType, minVal: int, maxVal: int) -> _TGenIType: ...
 
 
 @overload
-@staticmethod
 def clamp(x: _TGenType, minVal: _TGenType, maxVal: _TGenType) -> _TGenType: ...
 
 
 @overload
-@staticmethod
 def clamp(x: _TGenType, minVal: float, maxVal: float) -> _TGenType: ...
 
 
-@staticmethod
 def clamp(x, minVal, maxVal) -> Any: ...
 
 
