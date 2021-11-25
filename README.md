@@ -16,6 +16,7 @@ You can edit your videos only by programs without being bothered with complex GU
 
 Akashi is still in the very early stages of development, and **not ready for production** in any sense.
 
-## Project Status
 
-🚧==RESTRUCTURING==🚧
+<br>
+
+**Project Status**: 🚧 *RESTRUCTURING* 🚧
