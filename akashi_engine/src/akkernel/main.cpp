@@ -1,5 +1,7 @@
 #include "./kernel.h"
 
+#include <version.h>
+
 #include <libakcore/logger.h>
 
 #include <libakcore/config.h>
@@ -31,6 +33,12 @@ int main(int argc, char** argv) {
     if (argc < 2) {
         fprintf(stderr, "You must provide at least one argument\n");
         return 1;
+    }
+
+    if (std::string(argv[1]) == "--version") {
+        fprintf(stderr, "akashi_kernel %d.%d-%s\n", AKASHI_ENGINE_VERSION_MAJOR,
+                AKASHI_ENGINE_VERSION_MINOR, AKASHI_GIT_REV);
+        return 0;
     }
 
     LogCapabilities cap;

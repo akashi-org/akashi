@@ -22,6 +22,9 @@ set(AKASHI_PRIV_BOOST_TARGET_NAME "akashi_priv_boost_target")
 set(AKASHI_PRIV_BOOST_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shared_temp/boost/)
 set(AKASHI_PRIV_BOOST_INCLUDE_DIR ${AKASHI_PRIV_BOOST_ROOT_DIR}/include)
 set(AKASHI_PRIV_BOOST_LIBRARY_DIR ${AKASHI_PRIV_BOOST_ROOT_DIR}/lib)
+set(AKASHI_PRIV_CONFIG_TARGET_NAME "akashi_priv_config_target")
+set(AKASHI_ENGINE_VERSION_MAJOR "0")
+set(AKASHI_ENGINE_VERSION_MINOR "1")
 
 if(CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "" FORCE)
@@ -59,6 +62,11 @@ link_libraries(
   stdc++fs
 )
 
+include_directories(
+  ${CMAKE_CURRENT_BINARY_DIR}/include
+)
+
+
 if(AKASHI_BUILD_TESTS)
   enable_testing()
   add_subdirectory("./src/libaktest")
@@ -94,6 +102,14 @@ set_target_properties(akashi_renderer PROPERTIES
 add_subdirectory("./src/akencoder")
 set_target_properties(akashi_encoder PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+
+add_dependencies(akashi_kernel ${AKASHI_PRIV_CONFIG_TARGET_NAME})
+add_custom_target(${AKASHI_PRIV_CONFIG_TARGET_NAME} ALL
+  VERBATIM
+  BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/include/version.h
+  COMMAND /bin/bash ${CMAKE_CURRENT_SOURCE_DIR}/akashi_version.sh ${CMAKE_CURRENT_BINARY_DIR}/include ${AKASHI_ENGINE_VERSION_MAJOR} ${AKASHI_ENGINE_VERSION_MINOR}
 )
 
 add_library(${AKASHI_PRIV_BOOST_TARGET_NAME} INTERFACE)
