@@ -36,37 +36,43 @@ class VideoEntry(PositionField, LayerField, VideoLocalField):
 @dataclass
 class VideoHandle(PositionTrait, LayerTrait):
 
-    def frame(self, begin_frame: int, end_frame: int = -1):
+    def duration(self, duration: sec) -> 'VideoHandle':
+        return super().duration(duration)
+
+    def pos(self, x: int, y: int) -> 'VideoHandle':
+        return super().pos(x, y)
+
+    def frame(self, begin_frame: int, end_frame: int = -1) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.frame = (begin_frame, end_frame)
         return self
 
-    def gain(self, gain: float):
+    def gain(self, gain: float) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.gain = gain
         return self
 
-    def stretch(self, stretch: bool):
+    def stretch(self, stretch: bool) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.stretch = stretch
         return self
 
-    def start(self, start: sec):
+    def start(self, start: sec) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.start = start
         return self
 
-    def offset(self, offset: sec):
+    def offset(self, offset: sec) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.atom_offset = offset
         return self
 
-    def frag(self, frag_shader: VideoFragShader):
+    def frag(self, frag_shader: VideoFragShader) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.frag_shader = frag_shader
         return self
 
-    def poly(self, poly_shader: VideoPolygonShader):
+    def poly(self, poly_shader: VideoPolygonShader) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.poly_shader = poly_shader
         return self
