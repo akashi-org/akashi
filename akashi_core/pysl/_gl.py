@@ -1,28 +1,26 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from dataclasses import dataclass as struct
+from dataclasses import dataclass as module
 from typing import TypeVar, Generic, overload, cast, Any, Optional, Literal
 
 _T = TypeVar('_T')
 _TNumber = TypeVar('_TNumber', int, float)
 
 
-def __gl_func(fn):
+def test_func(fn):
     def inner(*args, **kwargs):
         fn(*args, **kwargs)
     return inner
 
 
-def __gl_instance_method(fn):
+def method(fn):
     def inner(*args, **kwargs):
         fn(*args, **kwargs)
     return inner
 
 
-struct = dataclass
-test_func = __gl_func
 func = staticmethod
-method = __gl_instance_method
-module = dataclass
 
 
 uint = int
