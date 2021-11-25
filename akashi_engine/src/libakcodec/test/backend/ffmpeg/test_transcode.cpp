@@ -59,10 +59,19 @@ namespace akashi {
 
                  }});
 
+            core::RenderProfile render_prof;
+
+            render_prof.atom_profiles = atom_profiles;
+            core::Rational global_duration;
+            for (const auto& atom_prof : atom_profiles) {
+                global_duration += to_rational(atom_prof.duration);
+            }
+            render_prof.duration = global_duration.to_fraction();
+
             AKAudioSpec audio_spec;
             Rational decode_start{0, 1};
 
-            auto decoder = new AKDecoder(atom_profiles, decode_start);
+            auto decoder = new AKDecoder(render_prof, decode_start);
 
             bool enable_loop = false;
             bool decode_finished = false;
@@ -80,7 +89,7 @@ namespace akashi {
                         fprintf(stderr, "ended, code: %d\n", static_cast<int>(decode_res.result));
                         if (enable_loop) {
                             delete decoder;
-                            decoder = new AKDecoder(atom_profiles, decode_start);
+                            decoder = new AKDecoder(render_prof, decode_start);
                         } else {
                             decode_finished = true;
                         }

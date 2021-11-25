@@ -99,7 +99,7 @@ namespace akashi {
             encode_ctx->video_height = video_height;
             encode_ctx->entry_path = entry_path;
             encode_ctx->elem_name = elem_name;
-            encode_ctx->decoder = make_owned<codec::AKDecoder>(profile.atom_profiles, start_pts);
+            encode_ctx->decoder = make_owned<codec::AKDecoder>(profile, start_pts);
             encode_ctx->buffer = make_owned<buffer::AVBuffer>(borrowed_ptr(ctx.state));
             encode_ctx->abuffer =
                 make_owned<buffer::AudioBuffer>(encode_audio_spec, audio_max_queue_size);
