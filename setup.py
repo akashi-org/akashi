@@ -30,7 +30,7 @@ def readme():
 
 setup(
     name='akashi-engine',
-    version='0.2.0a1',
+    version='0.2.0a2',
     description='A next-generation video editor',
     long_description=readme(),
     long_description_content_type='text/markdown',
@@ -61,7 +61,13 @@ setup(
     url='https://github.com/akashi-org/akashi',
     author='crux14',
     license='Apache-2.0',
-    packages=['akashi_cli', 'akashi_core'],
+    packages=[
+        'akashi_cli',
+        'akashi_core',
+        'akashi_core.pysl',
+        'akashi_core.elem',
+        'akashi_core.elem.layer',
+    ],
     package_data={
         "akashi_cli": ["py.typed"],
         "akashi_core": ["py.typed"],

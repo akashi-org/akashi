@@ -18,6 +18,9 @@ from .base import (
 )
 from .base import peek_entry, register_entry
 
+if tp.TYPE_CHECKING:
+    from akashi_core.elem.atom import AtomHandle
+
 
 @tp.final
 @dataclass
@@ -43,17 +46,32 @@ class TextEntry(ShaderField, PositionField, LayerField, TextLocalField):
 @dataclass
 class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
 
-    def font_size(self, size: int):
+    def duration(self, duration: sec) -> 'TextHandle':
+        return super().duration(duration)
+
+    def pos(self, x: int, y: int) -> 'TextHandle':
+        return super().pos(x, y)
+
+    def frag(self, frag_shader: FragShader) -> 'TextHandle':
+        return super().frag(frag_shader)
+
+    def poly(self, poly_shader: PolygonShader) -> 'TextHandle':
+        return super().poly(poly_shader)
+
+    def fit_to(self, handle: AtomHandle) -> 'TextHandle':
+        return super().fit_to(handle)
+
+    def font_size(self, size: int) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.style.font_size = size
         return self
 
-    def font_path(self, path: str):
+    def font_path(self, path: str) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.style.font_path = path
         return self
 
-    def font_fill(self, color: str):
+    def font_fill(self, color: str) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.style.fill = color
         return self

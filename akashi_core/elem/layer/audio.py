@@ -26,7 +26,10 @@ class AudioEntry(LayerField, AudioLocalField):
 @dataclass
 class AudioHandle(LayerTrait):
 
-    def gain(self, gain: float):
+    def duration(self, duration: sec) -> 'AudioHandle':
+        return super().duration(duration)
+
+    def gain(self, gain: float) -> 'AudioHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, AudioEntry):
             cur_layer.gain = gain
         return self

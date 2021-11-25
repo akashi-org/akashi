@@ -18,6 +18,9 @@ from .base import (
 )
 from .base import peek_entry, register_entry
 
+if tp.TYPE_CHECKING:
+    from akashi_core.elem.atom import AtomHandle
+
 
 @dataclass
 class ImageLocalField:
@@ -35,7 +38,22 @@ class ImageEntry(ShaderField, PositionField, LayerField, ImageLocalField):
 @dataclass
 class ImageHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
 
-    def stretch(self, stretch: bool):
+    def duration(self, duration: sec) -> 'ImageHandle':
+        return super().duration(duration)
+
+    def pos(self, x: int, y: int) -> 'ImageHandle':
+        return super().pos(x, y)
+
+    def frag(self, frag_shader: FragShader) -> 'ImageHandle':
+        return super().frag(frag_shader)
+
+    def poly(self, poly_shader: PolygonShader) -> 'ImageHandle':
+        return super().poly(poly_shader)
+
+    def fit_to(self, handle: AtomHandle) -> 'ImageHandle':
+        return super().fit_to(handle)
+
+    def stretch(self, stretch: bool) -> 'ImageHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ImageEntry):
             cur_layer.stretch = stretch
         return self
