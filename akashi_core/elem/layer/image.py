@@ -28,13 +28,11 @@ class ImageLocalField:
     stretch: bool = False
 
 
-@tp.final
 @dataclass
 class ImageEntry(ShaderField, PositionField, LayerField, ImageLocalField):
     ...
 
 
-@tp.final
 @dataclass
 class ImageHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
 

@@ -26,13 +26,11 @@ class VideoLocalField:
 # [TODO] remove DurationConcept later?
 
 
-@tp.final
 @dataclass
 class VideoEntry(PositionField, LayerField, VideoLocalField):
     ...
 
 
-@tp.final
 @dataclass
 class VideoHandle(PositionTrait, LayerTrait):
 

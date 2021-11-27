@@ -16,13 +16,11 @@ class AudioLocalField:
     gain: float = 1.0
 
 
-@tp.final
 @dataclass
 class AudioEntry(LayerField, AudioLocalField):
     ...
 
 
-@tp.final
 @dataclass
 class AudioHandle(LayerTrait):
 

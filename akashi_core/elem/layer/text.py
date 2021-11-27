@@ -22,7 +22,6 @@ if tp.TYPE_CHECKING:
     from akashi_core.elem.atom import AtomHandle
 
 
-@tp.final
 @dataclass
 class TextStyle:
     font_size: int = 30
@@ -36,13 +35,11 @@ class TextLocalField:
     style: TextStyle = TextStyle()
 
 
-@tp.final
 @dataclass
 class TextEntry(ShaderField, PositionField, LayerField, TextLocalField):
     ...
 
 
-@tp.final
 @dataclass
 class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
 

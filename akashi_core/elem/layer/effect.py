@@ -19,13 +19,11 @@ if tp.TYPE_CHECKING:
     from akashi_core.elem.atom import AtomHandle
 
 
-@tp.final
 @dataclass
 class EffectEntry(ShaderField, LayerField):
     ...
 
 
-@tp.final
 @dataclass
 class EffectHandle(FittableDurationTrait, ShaderTrait, LayerTrait):
 
