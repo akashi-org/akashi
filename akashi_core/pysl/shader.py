@@ -60,6 +60,12 @@ class AnyShader(ShaderModule):
 
 
 @dataclass
+class GS_OUT:
+    vUvs: _gl.vec2
+    sprite_idx: float
+
+
+@dataclass
 class FragShader(BasicUniform, ShaderModule):
 
     __kind__: tp.ClassVar[ShaderKind] = 'FragShader'
@@ -78,6 +84,8 @@ class FragShader(BasicUniform, ShaderModule):
     texture0: _gl.uniform[_gl.sampler2D] = field(default=_gl.uniform.default(), init=False)
     texture_arr: _gl.uniform[_gl.sampler2DArray] = field(default=_gl.uniform.default(), init=False)
 
+    fs_in: _gl.in_t[GS_OUT] = field(default=_gl.in_t.default(), init=False)
+
     @_gl.method
     @abstractmethod
     def frag_main(self, color: _gl.inout_p[_gl.vec4]) -> None: ...
@@ -86,6 +94,12 @@ class FragShader(BasicUniform, ShaderModule):
         if not self._assemble_cache:
             self._assemble_cache = self._preamble(config) + self._header(config) + compile_shader_module(self, config)
         return self._assemble_cache
+
+
+@dataclass
+class GS_OUT_V:
+    vLumaUvs: _gl.vec2
+    vChromaUvs: _gl.vec2
 
 
 @dataclass
@@ -108,9 +122,11 @@ class VideoFragShader(BasicUniform, ShaderModule):
         '} fs_in;'
     ]
 
-    # textureY: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
-    # textureCb: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
-    # textureCr: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
+    textureY: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
+    textureCb: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
+    textureCr: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
+
+    fs_in: _gl.in_t[GS_OUT_V] = field(default=_gl.in_t.default(), init=False)
 
     @_gl.method
     @abstractmethod
