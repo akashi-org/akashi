@@ -9,11 +9,11 @@ namespace akashi {
         using FrameBufferHandle = uint32_t;
 
         struct GetProcAddress {
-            std::function<void*(void* ctx, const char* name)> func;
+            void* (*func)(const char*) = nullptr;
         };
 
         struct EGLGetProcAddress {
-            std::function<void*(void* ctx, const char* name)> func;
+            void* (*func)(const char*) = nullptr;
         };
 
         struct RenderParams {

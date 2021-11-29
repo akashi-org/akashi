@@ -11,10 +11,10 @@
 using namespace akashi::core;
 
 #define DEF_FN(ctx, proc_addr, func_name)                                                          \
-    set_gl_function(proc_addr.func(nullptr, #func_name), GET_GLFUNC(ctx, func_name), #func_name)
+    set_gl_function(proc_addr.func(#func_name), GET_GLFUNC(ctx, func_name), #func_name)
 
 #define DEF_EGL_FN(ctx, proc_addr, func_name)                                                      \
-    set_egl_function(proc_addr.func(nullptr, #func_name), GET_EGLFUNC(ctx, func_name), #func_name)
+    set_egl_function(proc_addr.func(#func_name), GET_EGLFUNC(ctx, func_name), #func_name)
 
 #define DEF_FN_CHECK(ctx, proc_addr, func_name) CHECK_AK_ERROR(DEF_FN(ctx, proc_addr, func_name))
 

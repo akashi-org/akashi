@@ -1,6 +1,8 @@
 #include "./context.h"
 #include "../../item.h"
 
+#include "./glc.h"
+
 #include <libakcore/logger.h>
 #include <libakstate/akstate.h>
 #include <libakbuffer/avbuffer.h>
@@ -19,6 +21,15 @@ namespace akashi {
 
         bool OGLGraphicsContext::load_api(const GetProcAddress& get_proc_address,
                                           const EGLGetProcAddress& egl_get_proc_address) {
+            if (!gladLoadGLLoader((GLADloadproc)get_proc_address.func)) {
+                AKLOG_ERRORN("Failed to initialize OpenGL context");
+                return false;
+            }
+
+            // AKLOG_DEBUG("GL_VERSION: {}", glGetString(GL_VERSION));
+            // AKLOG_DEBUG("GL_VENDOR: {}", glGetString(GL_VENDOR));
+            // AKLOG_DEBUG("GL_RENDERER: {}", glGetString(GL_RENDERER));
+
             return true;
         }
 

@@ -22,7 +22,7 @@ using namespace akashi::core;
 namespace akashi {
     namespace ui {
 
-        static void* get_proc_address(void*, const char* name) {
+        static void* get_proc_address(const char* name) {
             QOpenGLContext* glctx = QOpenGLContext::currentContext();
             if (!glctx) {
                 return nullptr;
@@ -30,7 +30,7 @@ namespace akashi {
             return reinterpret_cast<void*>(glctx->getProcAddress(QByteArray(name)));
         }
 
-        static void* egl_get_proc_address(void*, const char* name) {
+        static void* egl_get_proc_address(const char* name) {
             // [TODO] add checks for validity of egl?
             return reinterpret_cast<void*>(eglGetProcAddress(name));
         }

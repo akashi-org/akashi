@@ -1,7 +1,9 @@
 #include "./akgraphics.h"
 #include "./item.h"
 #include "./context.h"
+
 #include "./backend/opengl.h"
+#include "./backend/ogl.h"
 
 #include <libakcore/memory.h>
 #include <libakcore/element.h>
@@ -16,7 +18,7 @@ namespace akashi {
 
         AKGraphics::AKGraphics(core::borrowed_ptr<state::AKState> state,
                                core::borrowed_ptr<buffer::AVBuffer> buffer) {
-            m_gfx_ctx = make_owned<GLGraphicsContext>(state, buffer);
+            m_gfx_ctx = make_owned<OGLGraphicsContext>(state, buffer);
         }
 
         AKGraphics::~AKGraphics() {}
