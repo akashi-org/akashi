@@ -1,7 +1,10 @@
 #include "./context.h"
 #include "../../item.h"
 
-#include "./glc.h"
+#include "./core/glc.h"
+#include "./glcontext.h"
+#include "./stage.h"
+#include "./actors/actor.h"
 
 #include <libakcore/logger.h>
 #include <libakstate/akstate.h>
@@ -15,7 +18,10 @@ namespace akashi {
 
         OGLGraphicsContext::OGLGraphicsContext(core::borrowed_ptr<state::AKState> state,
                                                core::borrowed_ptr<buffer::AVBuffer> buffer)
-            : GraphicsContext(state, buffer), m_state(state), m_buffer(buffer){};
+            : GraphicsContext(state, buffer) {
+            m_ogl_ctx = core::make_owned<OGLRenderContext>(state, buffer);
+            m_stage = core::make_owned<Stage>();
+        };
 
         OGLGraphicsContext::~OGLGraphicsContext(){};
 

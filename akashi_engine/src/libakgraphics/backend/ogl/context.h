@@ -28,7 +28,8 @@ namespace akashi {
         struct EGLGetProcAddress;
         struct RenderParams;
         struct EncodeRenderParams;
-        class QuadPass;
+        class OGLRenderContext;
+        class Stage;
         class OGLGraphicsContext : public GraphicsContext {
           public:
             explicit OGLGraphicsContext(core::borrowed_ptr<state::AKState> state,
@@ -46,8 +47,8 @@ namespace akashi {
                                const core::FrameContext& frame_ctx) override;
 
           private:
-            core::borrowed_ptr<state::AKState> m_state;
-            core::borrowed_ptr<buffer::AVBuffer> m_buffer;
+            core::owned_ptr<OGLRenderContext> m_ogl_ctx;
+            core::owned_ptr<Stage> m_stage;
         };
 
     }
