@@ -1,8 +1,9 @@
 #pragma once
 
-#include <libakcore/rational.h>
-
 namespace akashi {
+    namespace core {
+        class Rational;
+    }
     namespace graphics {
 
         class OGLRenderContext;

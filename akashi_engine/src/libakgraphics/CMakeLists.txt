@@ -30,7 +30,14 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/opengl/objects/quad/layer_quad.cpp"
 
   "./backend/ogl/context.cpp"
-  "./backend/ogl/glcontext.cpp"
+  "./backend/ogl/render_context.cpp"
+  "./backend/ogl/fbo.cpp"
+  "./backend/ogl/stage.cpp"
+  "./backend/ogl/camera.cpp"
+  "./backend/ogl/core/shader.cpp"
+  "./backend/ogl/core/error.cpp"
+  "./backend/ogl/core/texture.cpp"
+  "./backend/ogl/meshes/quad.cpp"
 )
 
 file(GLOB INTERFACE_HEADERS

@@ -11,8 +11,8 @@ namespace akashi {
     namespace graphics {
 
         class OGLRenderContext;
-        class OGLGraphicsContext;
         struct RenderParams;
+        struct FBInfo;
         class Actor;
 
         class Stage final {
@@ -24,12 +24,17 @@ namespace akashi {
             virtual ~Stage() = default;
 
             bool create(const OGLRenderContext& ctx);
-            bool render(const OGLRenderContext& ctx, const RenderParams& params,
+            bool render(OGLRenderContext& ctx, const RenderParams& params,
                         const core::FrameContext& frame_ctx);
 
             bool encode_render(const OGLRenderContext& ctx, const core::FrameContext& frame_ctx);
 
             bool destroy(const OGLRenderContext& ctx);
+
+          private:
+            void init_gl();
+            void init_renderer(const FBInfo& info);
+            bool render_layers(OGLRenderContext& ctx, const core::FrameContext& frame_ctx);
 
           private:
             std::vector<Actor*> m_actors;

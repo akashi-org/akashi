@@ -2,7 +2,7 @@
 #include "../../item.h"
 
 #include "./core/glc.h"
-#include "./glcontext.h"
+#include "./render_context.h"
 #include "./stage.h"
 #include "./actors/actor.h"
 
@@ -19,7 +19,7 @@ namespace akashi {
         OGLGraphicsContext::OGLGraphicsContext(core::borrowed_ptr<state::AKState> state,
                                                core::borrowed_ptr<buffer::AVBuffer> buffer)
             : GraphicsContext(state, buffer) {
-            m_ogl_ctx = core::make_owned<OGLRenderContext>(state, buffer);
+            m_render_ctx = core::make_owned<OGLRenderContext>(state, buffer);
             m_stage = core::make_owned<Stage>();
         };
 
@@ -32,19 +32,21 @@ namespace akashi {
                 return false;
             }
 
-            // AKLOG_DEBUG("GL_VERSION: {}", glGetString(GL_VERSION));
-            // AKLOG_DEBUG("GL_VENDOR: {}", glGetString(GL_VENDOR));
-            // AKLOG_DEBUG("GL_RENDERER: {}", glGetString(GL_RENDERER));
+            // [TODO] load egl manually
 
-            return true;
+            return m_stage->create(*m_render_ctx);
         }
 
-        bool OGLGraphicsContext::load_fbo(const core::RenderProfile& render_prof, bool flip_y) {
-            return true;
+        // [TODO] we need to change the API
+        bool OGLGraphicsContext::load_fbo(const core::RenderProfile& /* render_prof */,
+                                          bool /* flip_y */) {
+            return m_render_ctx->load_fbo();
         }
 
         void OGLGraphicsContext::render(const RenderParams& params,
-                                        const core::FrameContext& frame_ctx) {}
+                                        const core::FrameContext& frame_ctx) {
+            m_stage->render(*m_render_ctx, params, frame_ctx);
+        }
 
         void OGLGraphicsContext::encode_render(EncodeRenderParams& params,
                                                const core::FrameContext& frame_ctx) {}

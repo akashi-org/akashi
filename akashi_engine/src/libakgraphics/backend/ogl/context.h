@@ -47,7 +47,7 @@ namespace akashi {
                                const core::FrameContext& frame_ctx) override;
 
           private:
-            core::owned_ptr<OGLRenderContext> m_ogl_ctx;
+            core::owned_ptr<OGLRenderContext> m_render_ctx;
             core::owned_ptr<Stage> m_stage;
         };
 

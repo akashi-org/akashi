@@ -1,6 +1,9 @@
-#include "./glcontext.h"
+#include "./render_context.h"
+#include "./fbo.h"
+#include "./camera.h"
 
 #include <libakcore/memory.h>
+#include <libakcore/error.h>
 #include <libakcore/rational.h>
 #include <libakstate/akstate.h>
 #include <libakbuffer/avbuffer.h>
@@ -13,9 +16,38 @@ namespace akashi {
 
         OGLRenderContext::OGLRenderContext(core::borrowed_ptr<state::AKState> state,
                                            core::borrowed_ptr<buffer::AVBuffer> buffer)
-            : m_state(state), m_buffer(buffer) {}
+            : m_state(state), m_buffer(buffer) {
+            m_fbo = core::make_owned<FBO>();
+        }
 
-        OGLRenderContext::~OGLRenderContext() {}
+        OGLRenderContext::~OGLRenderContext() { m_fbo->destroy(); }
+
+        const FBO& OGLRenderContext::fbo() const { return *m_fbo; }
+
+        bool OGLRenderContext::load_fbo() {
+            int video_width = 0;
+            int video_height = 0;
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+                video_width = m_state->m_prop.video_width;
+                video_height = m_state->m_prop.video_height;
+            }
+
+            CHECK_AK_ERROR2(m_fbo->create(video_width, video_height));
+
+            ProjectionState proj_state;
+            proj_state.aspect_ratio = ((double)video_width) / video_height;
+
+            ViewState view_state;
+
+            m_camera = core::make_owned<Camera>(&proj_state, &view_state);
+
+            return true;
+        }
+
+        core::borrowed_ptr<Camera> OGLRenderContext::camera() {
+            return core::borrowed_ptr(m_camera.get());
+        }
 
         size_t OGLRenderContext::loop_cnt() { return m_state->m_atomic_state.play_loop_cnt; }
 

@@ -15,11 +15,20 @@ namespace akashi {
     }
     namespace graphics {
 
+        class FBO;
+        class Camera;
+
         class OGLRenderContext final {
           public:
             explicit OGLRenderContext(core::borrowed_ptr<state::AKState> state,
                                       core::borrowed_ptr<buffer::AVBuffer> buffer);
             virtual ~OGLRenderContext();
+
+            bool load_fbo();
+
+            const FBO& fbo() const;
+
+            core::borrowed_ptr<Camera> camera();
 
             size_t loop_cnt();
 
@@ -33,6 +42,9 @@ namespace akashi {
           private:
             core::borrowed_ptr<state::AKState> m_state;
             core::borrowed_ptr<buffer::AVBuffer> m_buffer;
+
+            core::owned_ptr<FBO> m_fbo;
+            core::owned_ptr<Camera> m_camera;
         };
 
     }
