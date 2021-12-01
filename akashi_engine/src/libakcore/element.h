@@ -58,6 +58,7 @@ namespace akashi {
         struct LayerContext {
             double x;
             double y;
+            double z = 0.0;
             Fraction from;
             Fraction to;
             int type;

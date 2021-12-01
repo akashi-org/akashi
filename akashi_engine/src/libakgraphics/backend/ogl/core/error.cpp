@@ -41,17 +41,5 @@ namespace akashi {
             }
         }
 
-        // returns true if no errors found
-        bool check_gl_errors() {
-            GLenum err;
-            bool no_error = true;
-            while ((err = glGetError()) != GL_NO_ERROR) {
-                no_error = false;
-                AKLOG_ERROR("OpenGL Error: 0x{:x}, {}", err, gl_err_to_str(err));
-            }
-
-            return no_error;
-        }
-
     }
 }

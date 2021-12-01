@@ -1,13 +1,23 @@
 #pragma once
-#include <glad/glad.h>
 
-// https://github.com/Dav1dde/glad/issues/58
-#define GL_STACK_OVERFLOW 0x0503
-#define GL_STACK_UNDERFLOW 0x0504
+#include "./glc_glad.h"
+// #include "./glc_custom.h"
+
+#define CHECK_GL_ERRORS()                                                                          \
+    do {                                                                                           \
+        GLenum err;                                                                                \
+        bool no_error = true;                                                                      \
+        while ((err = glGetError()) != GL_NO_ERROR) {                                              \
+            no_error = false;                                                                      \
+            AKLOG_ERROR("OpenGL Error: 0x{:x}, {}", err, akashi::graphics::gl_err_to_str(err));    \
+        }                                                                                          \
+        if (!no_error) {                                                                           \
+            return false;                                                                          \
+        }                                                                                          \
+    } while (0)
 
 namespace akashi {
     namespace graphics {
         const char* gl_err_to_str(GLenum gl_err);
-        bool check_gl_errors();
     }
 }

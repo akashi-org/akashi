@@ -2,6 +2,8 @@
 
 #include "./glc.h"
 
+#include <glm/glm.hpp>
+
 namespace akashi {
     namespace graphics {
 

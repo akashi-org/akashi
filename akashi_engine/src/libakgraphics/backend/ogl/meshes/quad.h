@@ -1,7 +1,9 @@
 #pragma once
 
 #include "../core/glc.h"
+
 #include <cstddef>
+#include <array>
 
 namespace akashi {
     namespace graphics {
@@ -11,7 +13,8 @@ namespace akashi {
             explicit QuadMesh() = default;
             virtual ~QuadMesh() = default;
 
-            bool create(const GLuint vertices_loc, const GLuint uvs_loc);
+            bool create(const std::array<float, 2>& size, const GLuint vertices_loc,
+                        const GLuint uvs_loc, const bool flip_uv = false);
 
             void destroy();
 

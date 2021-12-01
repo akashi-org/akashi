@@ -6,9 +6,10 @@ namespace akashi {
     namespace graphics {
 
         struct ProjectionState {
-            float fov = 65.0;
-            float aspect_ratio = 16.0 / 9.0;
-            float near = 0.1;
+            float fovy = 60;
+            float video_width = 0.0;
+            float video_height = 0.0;
+            float near = 0.01;
             float far = 100.0;
         };
 
@@ -27,7 +28,7 @@ namespace akashi {
 
         class Camera final {
           public:
-            explicit Camera(ProjectionState* proj_state = nullptr, ViewState* view_state = nullptr);
+            explicit Camera(const ProjectionState& proj_state, ViewState* view_state = nullptr);
             virtual ~Camera();
 
             void update(const FBInfo& fb_info);

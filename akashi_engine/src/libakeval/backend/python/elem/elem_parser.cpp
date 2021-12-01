@@ -61,6 +61,7 @@ namespace akashi {
                 const auto& pos = layer_params.attr("pos").cast<std::tuple<long, long>>();
                 layer_ctx.x = std::get<0>(pos);
                 layer_ctx.y = std::get<1>(pos);
+                layer_ctx.z = layer_params.attr("z").cast<double>();
             }
 
             std::string type_str = layer_params.attr("kind").cast<std::string>();

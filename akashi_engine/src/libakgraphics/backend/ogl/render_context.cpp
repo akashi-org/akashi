@@ -36,16 +36,22 @@ namespace akashi {
             CHECK_AK_ERROR2(m_fbo->create(video_width, video_height));
 
             ProjectionState proj_state;
-            proj_state.aspect_ratio = ((double)video_width) / video_height;
+            proj_state.video_width = video_width;
+            proj_state.video_height = video_height;
 
             ViewState view_state;
+            view_state.camera = glm::vec3(0, 0, 1);
 
-            m_camera = core::make_owned<Camera>(&proj_state, &view_state);
+            m_camera = core::make_owned<Camera>(proj_state, &view_state);
 
             return true;
         }
 
-        core::borrowed_ptr<Camera> OGLRenderContext::camera() {
+        core::borrowed_ptr<Camera> OGLRenderContext::mut_camera() {
+            return core::borrowed_ptr(m_camera.get());
+        }
+
+        const core::borrowed_ptr<Camera> OGLRenderContext::camera() const {
             return core::borrowed_ptr(m_camera.get());
         }
 

@@ -42,8 +42,14 @@ namespace akashi {
 
           private:
             bool load_pass();
+
             bool load_texture();
+
             bool load_fbo();
+
+            glm::mat4 get_model_mat() const;
+
+            glm::vec3 get_sar_scale_vec(const OGLTexture& tex) const;
 
           private:
             Pass* m_pass = nullptr;

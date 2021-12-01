@@ -165,7 +165,7 @@ class PolygonShader(BasicUniform, ShaderModule):
 
     @_gl.method
     @abstractmethod
-    def poly_main(self, position: _gl.inout_p[_gl.vec4]) -> None: ...
+    def poly_main(self, position: _gl.inout_p[_gl.vec3]) -> None: ...
 
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
@@ -188,7 +188,7 @@ class VideoPolygonShader(BasicUniform, ShaderModule):
 
     @_gl.method
     @abstractmethod
-    def poly_main(self, position: _gl.inout_p[_gl.vec4]) -> None: ...
+    def poly_main(self, position: _gl.inout_p[_gl.vec3]) -> None: ...
 
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:

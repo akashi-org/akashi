@@ -28,7 +28,9 @@ namespace akashi {
 
             const FBO& fbo() const;
 
-            core::borrowed_ptr<Camera> camera();
+            core::borrowed_ptr<Camera> mut_camera();
+
+            const core::borrowed_ptr<Camera> camera() const;
 
             size_t loop_cnt();
 

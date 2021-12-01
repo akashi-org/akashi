@@ -37,7 +37,14 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/ogl/core/shader.cpp"
   "./backend/ogl/core/error.cpp"
   "./backend/ogl/core/texture.cpp"
+  "./backend/ogl/core/loader.cpp"
   "./backend/ogl/meshes/quad.cpp"
+  "./backend/ogl/resource/image.cpp"
+  "./backend/ogl/resource/font.cpp"
+  # "./backend/ogl/utility/grid.cpp"
+  "./backend/ogl/actors/actor.cpp"
+  "./backend/ogl/actors/image_actor.cpp"
+
 )
 
 file(GLOB INTERFACE_HEADERS
