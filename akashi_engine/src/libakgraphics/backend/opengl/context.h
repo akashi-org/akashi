@@ -38,8 +38,6 @@ namespace akashi {
             bool load_api(const GetProcAddress& get_proc_address,
                           const EGLGetProcAddress& egl_get_proc_address) override;
 
-            bool load_fbo(const core::RenderProfile& render_prof, bool flip_y = true) override;
-
             void render(const RenderParams& params, const core::FrameContext& frame_ctx) override;
 
             void encode_render(EncodeRenderParams& params,

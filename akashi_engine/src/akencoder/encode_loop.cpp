@@ -113,7 +113,6 @@ namespace akashi {
             encode_ctx.gfx =
                 make_owned<graphics::AKGraphics>(ctx.state, borrowed_ptr(encode_ctx.buffer));
             encode_ctx.gfx->load_api({Window::get_proc_address}, {Window::egl_get_proc_address});
-            encode_ctx.gfx->load_fbo(encode_ctx.render_profile, true);
         }
 
         static void update_encode_context(EncodeContext& encode_ctx) {

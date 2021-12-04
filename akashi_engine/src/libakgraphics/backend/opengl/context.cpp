@@ -40,14 +40,6 @@ namespace akashi {
             return m_stage->create(*m_render_ctx);
         }
 
-        // [TODO] we need to deprecate the API
-        // Perhaps, makeCurrent() is not called in this path
-        bool OGLGraphicsContext::load_fbo(const core::RenderProfile& /* render_prof */,
-                                          bool /* flip_y */) {
-            // return m_render_ctx->load_fbo();
-            return true;
-        }
-
         void OGLGraphicsContext::render(const RenderParams& params,
                                         const core::FrameContext& frame_ctx) {
             if (!m_render_ctx->fbo().initilized()) {

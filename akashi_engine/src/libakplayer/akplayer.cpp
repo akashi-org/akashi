@@ -165,8 +165,6 @@ namespace akashi {
             if (trigger_reset_current_time) {
                 m_event->emit_time_update(current_time);
             }
-
-            m_gfx->load_fbo(render_prof);
         }
 
         void AKPlayer::inline_eval(const std::string& fpath, const std::string& elem_name) {

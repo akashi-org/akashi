@@ -27,10 +27,6 @@ namespace akashi {
             return m_gfx_ctx->load_api(get_proc_address, egl_get_proc_address);
         }
 
-        bool AKGraphics::load_fbo(const core::RenderProfile& render_prof, bool flip_y) {
-            return m_gfx_ctx->load_fbo(render_prof, flip_y);
-        }
-
         void AKGraphics::render(const RenderParams& params, const core::FrameContext& frame_ctx) {
             m_gfx_ctx->render(params, frame_ctx);
         }
