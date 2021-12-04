@@ -114,25 +114,20 @@ namespace akashi {
         }
 
         bool TextActor::load_texture(OGLRenderContext& ctx) {
-            // [XXX] json::optional::unwrap_or internally calls std::map[], which is not defined
-            // for the const value, so we must use non-const value when using unwrap_or
-
             SDL_Surface* surface = nullptr;
 
             FontInfo info;
             info.text = m_layer_ctx.text_layer_ctx.text;
 
-            // [TODO] not sure what happens when style is blank. check is needed.
-            auto style = json::optional::unwrap_or(m_layer_ctx.text_layer_ctx.style);
+            auto style = m_layer_ctx.text_layer_ctx.style;
 
-            auto fill = json::optional::unwrap_or(style.fill);
-            auto fg_color = hex_to_sdl(fill);
+            auto fg_color = hex_to_sdl(style.fill);
             info.fg = fg_color;
 
-            auto font_path = json::optional::unwrap_or(style.font_path);
+            auto font_path = style.font_path;
             info.font_path = font_path.empty() ? ctx.default_font_path() : font_path;
 
-            auto font_size = json::optional::unwrap_or(style.font_size);
+            auto font_size = style.font_size;
             int default_font_size = 30;
             info.font_size = font_size <= 0 ? default_font_size : font_size;
 

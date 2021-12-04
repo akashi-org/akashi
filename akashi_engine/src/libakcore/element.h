@@ -1,6 +1,5 @@
 #pragma once
 
-#include "./common.h"
 #include "./rational.h"
 
 #include <string>
@@ -12,10 +11,10 @@ namespace akashi {
         enum class LayerType { VIDEO = 0, AUDIO, TEXT, IMAGE, EFFECT, LENGTH };
 
         struct Style {
-            json::optional::type<uint32_t> font_size;
-            json::optional::type<std::string> font_path;
-            json::optional::type<std::string> fill;
-            json::optional::type<std::string> color;
+            uint32_t font_size;
+            std::string font_path;
+            std::string fill;
+            std::string color;
         };
 
         struct VideoLayerContext {
@@ -37,7 +36,7 @@ namespace akashi {
         struct TextLayerContext {
             std::string text;
             double scale;
-            json::optional::type<Style> style;
+            Style style;
             std::vector<std::string> frag;
             std::vector<std::string> poly;
         };

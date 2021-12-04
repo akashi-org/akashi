@@ -5,7 +5,6 @@
 
 #include <libakcore/element.h>
 #include <libakcore/logger.h>
-#include <libakcore/common.h>
 
 #include <pybind11/embed.h>
 
@@ -24,14 +23,9 @@ namespace akashi {
 
         static core::Style parse_style(const pybind11::object& style_obj) {
             core::Style style;
-
-            style.font_size[core::json::optional::attr_name] =
-                style_obj.attr("font_size").cast<unsigned long>();
-            style.font_path[core::json::optional::attr_name] =
-                style_obj.attr("font_path").cast<std::string>();
-            style.fill[core::json::optional::attr_name] =
-                style_obj.attr("fill").cast<std::string>();
-
+            style.font_size = style_obj.attr("font_size").cast<unsigned long>();
+            style.font_path = style_obj.attr("font_path").cast<std::string>();
+            style.fill = style_obj.attr("fill").cast<std::string>();
             return style;
         }
 
@@ -104,8 +98,7 @@ namespace akashi {
             } else if (type_str == "TEXT") {
                 layer_ctx.type = static_cast<int>(core::LayerType::TEXT);
                 layer_ctx.text_layer_ctx.text = layer_params.attr("text").cast<std::string>();
-                layer_ctx.text_layer_ctx.style[core::json::optional::attr_name] =
-                    parse_style(layer_params.attr("style"));
+                layer_ctx.text_layer_ctx.style = parse_style(layer_params.attr("style"));
                 layer_ctx.text_layer_ctx.scale = 1.0;
 
                 layer_ctx.text_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
