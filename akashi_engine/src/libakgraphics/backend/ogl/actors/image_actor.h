@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../core/glc.h"
 #include "./actor.h"
 
 struct SDL_Surface;

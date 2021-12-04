@@ -29,7 +29,7 @@ namespace akashi {
             core::LayerType m_layer_type;
         };
 
-        Actor* create_actor(const OGLRenderContext& ctx, const core::LayerContext& layer_ctx);
+        Actor* create_actor(OGLRenderContext& ctx, const core::LayerContext& layer_ctx);
 
     }
 

@@ -14,9 +14,9 @@ namespace akashi {
     namespace graphics {
 
         struct FontInfo {
-            const char* text;
+            std::string text;
             SDL_Color fg;
-            const char* font_path;
+            std::string font_path;
             int font_size;
         };
 

@@ -3,6 +3,7 @@
 #include "./image_actor.h"
 #include "./video_actor.h"
 #include "./effect_actor.h"
+#include "./text_actor.h"
 
 #include <libakcore/element.h>
 #include <libakcore/logger.h>
@@ -12,7 +13,7 @@ using namespace akashi::core;
 namespace akashi {
     namespace graphics {
 
-        Actor* create_actor(const OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
+        Actor* create_actor(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
             auto layer_type = static_cast<LayerType>(layer_ctx.type);
             switch (layer_type) {
                 case LayerType::VIDEO: {
@@ -29,8 +30,13 @@ namespace akashi {
                     return nullptr;
                 }
                 case LayerType::TEXT: {
-                    AKLOG_WARNN("Not implemented");
-                    return nullptr;
+                    auto actor = new TextActor;
+                    if (!actor->create(ctx, layer_ctx)) {
+                        actor->destroy(ctx);
+                        delete actor;
+                        return nullptr;
+                    }
+                    return actor;
                 }
                 case LayerType::IMAGE: {
                     auto actor = new ImageActor;

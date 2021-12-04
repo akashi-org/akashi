@@ -38,6 +38,8 @@ namespace akashi {
 
             std::array<int, 2> resolution();
 
+            std::string default_font_path();
+
             std::unique_ptr<buffer::AVBufferData> dequeue(std::string layer_uuid,
                                                           const core::Rational& pts);
 

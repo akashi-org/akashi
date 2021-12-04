@@ -9,6 +9,8 @@
 #include <libakbuffer/avbuffer.h>
 #include <libakbuffer/video_queue.h>
 
+#include <libakcore/logger.h>
+
 #include <array>
 
 namespace akashi {
@@ -74,6 +76,15 @@ namespace akashi {
                 res[1] = m_state->m_prop.video_height;
             }
             return res;
+        }
+
+        std::string OGLRenderContext::default_font_path() {
+            std::string font_path;
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+                font_path = m_state->m_prop.default_font_path;
+            }
+            return font_path;
         }
 
         std::unique_ptr<buffer::AVBufferData> OGLRenderContext::dequeue(std::string layer_uuid,

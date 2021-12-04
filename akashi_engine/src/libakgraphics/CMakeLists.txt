@@ -24,7 +24,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/opengl/core/mvp.cpp"
   "./backend/opengl/resource/resource.cpp"
   "./backend/opengl/resource/image.cpp"
-  "./backend/opengl/resource/font.cpp"
+  # "./backend/opengl/resource/font.cpp"
   "./backend/opengl/objects/quad/quad.cpp"
   "./backend/opengl/objects/quad/video_quad.cpp"
   "./backend/opengl/objects/quad/layer_quad.cpp"
@@ -44,9 +44,10 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/ogl/resource/font.cpp"
   # "./backend/ogl/utility/grid.cpp"
   "./backend/ogl/actors/actor.cpp"
-  "./backend/ogl/actors/image_actor.cpp"
   "./backend/ogl/actors/video_actor.cpp"
   "./backend/ogl/actors/video_actor_texture.cpp"
+  "./backend/ogl/actors/image_actor.cpp"
+  "./backend/ogl/actors/text_actor.cpp"
   "./backend/ogl/actors/effect_actor.cpp"
 )
 
