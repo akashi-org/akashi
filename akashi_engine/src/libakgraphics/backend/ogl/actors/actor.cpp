@@ -2,6 +2,7 @@
 
 #include "./image_actor.h"
 #include "./video_actor.h"
+#include "./effect_actor.h"
 
 #include <libakcore/element.h>
 #include <libakcore/logger.h>
@@ -41,8 +42,13 @@ namespace akashi {
                     return actor;
                 }
                 case LayerType::EFFECT: {
-                    AKLOG_WARNN("Not implemented");
-                    return nullptr;
+                    auto actor = new EffectActor;
+                    if (!actor->create(ctx, layer_ctx)) {
+                        actor->destroy(ctx);
+                        delete actor;
+                        return nullptr;
+                    }
+                    return actor;
                 }
                 default: {
                     AKLOG_ERROR("Invalid layer type '{}' found", layer_type);

@@ -47,6 +47,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/ogl/actors/image_actor.cpp"
   "./backend/ogl/actors/video_actor.cpp"
   "./backend/ogl/actors/video_actor_texture.cpp"
+  "./backend/ogl/actors/effect_actor.cpp"
 )
 
 file(GLOB INTERFACE_HEADERS
