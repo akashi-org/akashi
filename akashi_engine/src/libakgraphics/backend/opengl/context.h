@@ -23,17 +23,17 @@ namespace akashi {
     }
     namespace graphics {
 
-        struct GLRenderContext;
         struct GetProcAddress;
         struct EGLGetProcAddress;
         struct RenderParams;
         struct EncodeRenderParams;
-        class QuadPass;
-        class GLGraphicsContext : public GraphicsContext {
+        class OGLRenderContext;
+        class Stage;
+        class OGLGraphicsContext : public GraphicsContext {
           public:
-            explicit GLGraphicsContext(core::borrowed_ptr<state::AKState> state,
-                                       core::borrowed_ptr<buffer::AVBuffer> buffer);
-            virtual ~GLGraphicsContext();
+            explicit OGLGraphicsContext(core::borrowed_ptr<state::AKState> state,
+                                        core::borrowed_ptr<buffer::AVBuffer> buffer);
+            virtual ~OGLGraphicsContext();
 
             bool load_api(const GetProcAddress& get_proc_address,
                           const EGLGetProcAddress& egl_get_proc_address) override;
@@ -45,20 +45,9 @@ namespace akashi {
             void encode_render(EncodeRenderParams& params,
                                const core::FrameContext& frame_ctx) override;
 
-            size_t loop_cnt();
-
-            core::Rational fps();
-
-            std::array<int, 2> resolution();
-
-            std::unique_ptr<buffer::AVBufferData> dequeue(std::string layer_uuid,
-                                                          const core::Rational& pts);
-
           private:
-            core::borrowed_ptr<state::AKState> m_state;
-            core::borrowed_ptr<buffer::AVBuffer> m_buffer;
-            core::owned_ptr<GLRenderContext> m_render_ctx;
-            QuadPass* m_fbo_pass = nullptr;
+            core::owned_ptr<OGLRenderContext> m_render_ctx;
+            core::owned_ptr<Stage> m_stage;
         };
 
     }

@@ -14,7 +14,7 @@ namespace akashi {
 
         FontLoader::FontLoader(void) {
             if (TTF_Init() == -1) {
-                AKLOG_ERROR("FontLoader::FontLoader: TTF_Init failed\n{}", TTF_GetError());
+                AKLOG_ERROR("TTF_Init failed\n{}", TTF_GetError());
                 throw std::runtime_error("Failed to init FontLoader");
             }
         };
@@ -25,17 +25,16 @@ namespace akashi {
         };
 
         ak_error_t FontLoader::getSurface(SDL_Surface*& surface, const FontInfo& info) {
-            auto font = TTF_OpenFont(info.font_path, info.font_size);
+            auto font = TTF_OpenFont(info.font_path.c_str(), info.font_size);
             if (!font) {
-                AKLOG_ERROR("FontLoader::getSurface: TTF_OpenFont failed\n{}", TTF_GetError());
+                AKLOG_ERROR("TTF_OpenFont failed\n{}", TTF_GetError());
                 return ErrorType::Error;
             }
             // TTF_SetFontOutline(font, 1);
-            surface = TTF_RenderUTF8_Blended(font, info.text, info.fg);
+            surface = TTF_RenderUTF8_Blended(font, info.text.c_str(), info.fg);
             if (!surface) {
                 TTF_CloseFont(font);
-                AKLOG_ERROR("FontLoader::getFontSurface: TTF_RenderUTF8_Blended failed\n{}",
-                            TTF_GetError());
+                AKLOG_ERROR("TTF_RenderUTF8_Blended failed\n{}", TTF_GetError());
                 return ErrorType::Error;
             }
             TTF_CloseFont(font);
@@ -54,9 +53,9 @@ namespace akashi {
             unsigned long value = stoul(input, nullptr, 16);
 
             // color.a = (value >> 24) & 0xff;
-            color.r = (value >> 16) & 0xff;
+            color.r = (value >> 0) & 0xff;
             color.g = (value >> 8) & 0xff;
-            color.b = (value >> 0) & 0xff;
+            color.b = (value >> 16) & 0xff;
             return color;
         }
 

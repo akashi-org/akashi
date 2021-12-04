@@ -3,7 +3,6 @@
 #include "./context.h"
 
 #include "./backend/opengl.h"
-#include "./backend/ogl.h"
 
 #include <libakcore/memory.h>
 #include <libakcore/element.h>

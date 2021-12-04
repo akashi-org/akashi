@@ -1,7 +1,5 @@
 #include "./shader.h"
 
-#include "../gl.h"
-
 #include <libakcore/logger.h>
 
 #include <string>
@@ -11,24 +9,23 @@ using namespace akashi::core;
 namespace akashi {
     namespace graphics {
 
-        bool compile_attach_shader(const GLRenderContext& ctx, const GLuint prog, const GLenum type,
-                                   const char* source) {
+        bool compile_attach_shader(const GLuint prog, const GLenum type, const char* source) {
             bool res = true;
             GLuint shader = 0;
             GLint compile_status = 0;
             GLint log_length = 0;
             GLchar* log_str = nullptr;
 
-            shader = GET_GLFUNC(ctx, glCreateShader)(type);
-            GET_GLFUNC(ctx, glShaderSource)(shader, 1, &source, nullptr);
-            GET_GLFUNC(ctx, glCompileShader)(shader);
+            shader = glCreateShader(type);
+            glShaderSource(shader, 1, &source, nullptr);
+            glCompileShader(shader);
 
-            GET_GLFUNC(ctx, glGetShaderiv)(shader, GL_COMPILE_STATUS, &compile_status);
-            GET_GLFUNC(ctx, glGetShaderiv)(shader, GL_INFO_LOG_LENGTH, &log_length);
+            glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status);
+            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &log_length);
 
             if (log_length > 1) {
                 log_str = static_cast<GLchar*>(calloc(log_length + 1, sizeof(GLchar)));
-                GET_GLFUNC(ctx, glGetShaderInfoLog)(shader, log_length, nullptr, log_str);
+                glGetShaderInfoLog(shader, log_length, nullptr, log_str);
                 AKLOG_INFO("Shader compile log: {}", log_str);
             }
 
@@ -39,29 +36,29 @@ namespace akashi {
                 goto exit;
             }
 
-            GET_GLFUNC(ctx, glAttachShader)(prog, shader);
+            glAttachShader(prog, shader);
 
         exit:
             if (log_str != nullptr) {
                 free(log_str);
                 log_str = nullptr;
             }
-            GET_GLFUNC(ctx, glDeleteShader)(shader);
+            glDeleteShader(shader);
             return res;
         }
 
-        bool link_shader(const GLRenderContext& ctx, const GLuint prog) {
+        bool link_shader(const GLuint prog) {
             GLint link_status = 0;
             GLint log_length = 0;
 
-            GET_GLFUNC(ctx, glLinkProgram)(prog);
+            glLinkProgram(prog);
 
-            GET_GLFUNC(ctx, glGetProgramiv)(prog, GL_LINK_STATUS, &link_status);
-            GET_GLFUNC(ctx, glGetProgramiv)(prog, GL_INFO_LOG_LENGTH, &log_length);
+            glGetProgramiv(prog, GL_LINK_STATUS, &link_status);
+            glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &log_length);
 
             if (!link_status) {
                 GLchar* log_str = static_cast<GLchar*>(calloc(log_length + 1, sizeof(GLchar)));
-                GET_GLFUNC(ctx, glGetProgramInfoLog)(prog, log_length, nullptr, log_str);
+                glGetProgramInfoLog(prog, log_length, nullptr, log_str);
                 AKLOG_ERROR("link_program() failed: Failed to link shader: {}, {}", link_status,
                             log_str);
                 free(log_str);
