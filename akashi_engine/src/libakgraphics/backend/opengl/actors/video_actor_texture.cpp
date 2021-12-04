@@ -10,7 +10,7 @@
 #include <libakcore/hw_accel.h>
 #include <libakbuffer/avbuffer.h>
 
-#include "../../../drm_fourcc_excerpt.h"
+#include <libdrm/drm_fourcc.h>
 #include <va/va.h>
 #include <va/va_drmcommon.h>
 #include <unistd.h>
