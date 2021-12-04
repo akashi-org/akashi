@@ -44,11 +44,11 @@ namespace akashi {
 
             glUniformMatrix4fv(m_pass->mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 
-            auto local_pts = pts - to_rational(m_layer_ctx.from);
+            auto local_pts = pts - m_layer_ctx.from;
             glUniform1f(m_pass->time_loc, local_pts.to_decimal());
             glUniform1f(m_pass->global_time_loc, pts.to_decimal());
 
-            auto local_duration = to_rational(m_layer_ctx.to) - to_rational(m_layer_ctx.from);
+            auto local_duration = m_layer_ctx.to - m_layer_ctx.from;
             glUniform1f(m_pass->local_duration_loc, local_duration.to_decimal());
             glUniform1f(m_pass->fps_loc, ctx.fps().to_decimal());
 

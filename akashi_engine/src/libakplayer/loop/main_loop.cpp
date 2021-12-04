@@ -52,7 +52,7 @@ namespace akashi {
         bool MainLoop::sync_render(const MainLoopContext& ctx,
                                    const core::FrameContext& frame_ctx) {
             auto audio_time = ctx.player->current_time();
-            auto delay = to_rational(frame_ctx.pts) - audio_time;
+            auto delay = frame_ctx.pts - audio_time;
 
             // auto elapsed = audio_time - p_perf->elapsed_time();
 
@@ -109,7 +109,7 @@ namespace akashi {
                 }
                 AKLOG_DEBUGN("loop detected");
             } else {
-                current_time = to_rational(frame_ctx.pts);
+                current_time = frame_ctx.pts;
                 {
                     std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
                     ctx.state->m_prop.current_time = current_time;

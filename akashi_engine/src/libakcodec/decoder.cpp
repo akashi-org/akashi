@@ -20,8 +20,7 @@ namespace akashi {
 
             // find the appropriate current_atom_idx for m_decode_start
             for (const auto& atom_profile : m_render_prof.atom_profiles) {
-                if (to_rational(atom_profile.from) <= m_decode_start &&
-                    m_decode_start <= to_rational(atom_profile.to)) {
+                if (atom_profile.from <= m_decode_start && m_decode_start <= atom_profile.to) {
                     break;
                 }
                 m_current_atom_idx += 1;
@@ -42,10 +41,9 @@ namespace akashi {
 
             if (!m_render_prof.atom_profiles[m_current_atom_idx].layers.empty()) {
                 if (!cur_atom_source->done_init()) {
-                    cur_atom_source->init(to_rational(m_render_prof.duration),
-                                          m_render_prof.atom_profiles[m_current_atom_idx],
-                                          m_decode_start, decode_arg.decode_method,
-                                          decode_arg.video_max_queue_count);
+                    cur_atom_source->init(
+                        m_render_prof.duration, m_render_prof.atom_profiles[m_current_atom_idx],
+                        m_decode_start, decode_arg.decode_method, decode_arg.video_max_queue_count);
                 }
 
                 if (cur_atom_source->can_decode()) {

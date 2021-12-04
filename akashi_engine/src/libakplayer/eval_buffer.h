@@ -18,7 +18,7 @@ namespace akashi {
 
         class EvalBuffer final {
           public:
-            inline const static core::FrameContext BLANK_FRAME_CTX = {{-100, 1}, {}};
+            inline const static core::FrameContext BLANK_FRAME_CTX = {core::Rational{-100, 1}, {}};
 
           public:
             constexpr static size_t BUFFER_MAX_LENGTH = 300;

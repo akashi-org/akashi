@@ -46,10 +46,9 @@ namespace akashi {
             // layer_ctx.display = layer_params.attr("_display").cast<bool>();
             layer_ctx.display = true;
 
-            layer_ctx.from = to_rational(layer_params.attr("atom_offset")).to_fraction();
+            layer_ctx.from = to_rational(layer_params.attr("atom_offset"));
             layer_ctx.to = (to_rational(layer_params.attr("duration")) +
-                            to_rational(layer_params.attr("atom_offset")))
-                               .to_fraction();
+                            to_rational(layer_params.attr("atom_offset")));
 
             if (has_field(layer_params, "PositionField")) {
                 const auto& pos = layer_params.attr("pos").cast<std::tuple<long, long>>();
@@ -67,8 +66,7 @@ namespace akashi {
 
                 layer_ctx.video_layer_ctx.stretch = layer_params.attr("stretch").cast<bool>();
 
-                layer_ctx.video_layer_ctx.start =
-                    to_rational(layer_params.attr("start")).to_fraction();
+                layer_ctx.video_layer_ctx.start = to_rational(layer_params.attr("start"));
                 layer_ctx.video_layer_ctx.scale = 1.0;
 
                 layer_ctx.video_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
@@ -81,7 +79,7 @@ namespace akashi {
 
                 // layer_ctx.audio_layer_ctx.start =
                 //     to_rational(layer_params.attr("start")).to_fraction();
-                layer_ctx.audio_layer_ctx.start = core::Rational(0l).to_fraction();
+                layer_ctx.audio_layer_ctx.start = core::Rational(0l);
 
             } else if (type_str == "IMAGE") {
                 layer_ctx.type = static_cast<int>(core::LayerType::IMAGE);

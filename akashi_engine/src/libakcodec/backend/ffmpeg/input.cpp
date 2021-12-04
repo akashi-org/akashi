@@ -69,9 +69,9 @@ namespace akashi {
             input_src = new InputSource;
             init_input_src(input_src, layer_profile.src.c_str());
 
-            input_src->from = to_rational(layer_profile.from);
-            input_src->to = to_rational(layer_profile.to);
-            input_src->start = to_rational(layer_profile.start);
+            input_src->from = layer_profile.from;
+            input_src->to = layer_profile.to;
+            input_src->start = layer_profile.start;
             input_src->uuid = layer_profile.uuid.c_str();
             input_src->layer_profile = layer_profile;
 

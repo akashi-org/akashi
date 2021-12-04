@@ -19,11 +19,11 @@ namespace akashi {
             m_player = new PlayerWidget(state, this);
 
             // player -> parent
-            QObject::connect(m_player, SIGNAL(time_changed(akashi::core::Fraction&)),
-                             this->window(), SLOT(on_time_change(akashi::core::Fraction&)));
-            QObject::connect(m_player, SIGNAL(render_prof_updated(akashi::core::RenderProfile&)),
-                             this->window(),
-                             SLOT(on_render_prof_updated(akashi::core::RenderProfile&)));
+            QObject::connect(m_player, SIGNAL(time_changed(const akashi::core::Rational&)),
+                             this->window(), SLOT(on_time_change(const akashi::core::Rational&)));
+            QObject::connect(
+                m_player, SIGNAL(render_prof_updated(const akashi::core::RenderProfile&)),
+                this->window(), SLOT(on_render_prof_updated(const akashi::core::RenderProfile&)));
             QObject::connect(m_player, SIGNAL(play_state_changed(const akashi::state::PlayState&)),
                              this->window(),
                              SLOT(on_state_change(const akashi::state::PlayState&)));

@@ -12,7 +12,6 @@ typedef struct pa_context pa_context;
 namespace akashi {
     namespace core {
         class Rational;
-        struct Fraction;
         struct AtomProfile;
         enum class PlayState;
         struct AKAudioSpec;

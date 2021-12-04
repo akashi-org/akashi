@@ -125,10 +125,5 @@ namespace akashi {
             m_den = m_den / gcd;
         }
 
-        Rational to_rational(const Fraction& fraction) {
-            Rational rational(fraction.num, fraction.den);
-            return rational;
-        }
-
     }
 }

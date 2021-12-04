@@ -80,9 +80,8 @@ namespace akashi {
                 std::lock_guard<std::mutex> lock(m_synced_buf.mtx);
                 while (!m_synced_buf.buf.empty()) {
                     const auto& current_frame_ctx = m_synced_buf.buf.back();
-                    Rational r_pts = Rational(current_frame_ctx.pts.num, current_frame_ctx.pts.den);
                     // if found
-                    if (seek_time == r_pts) {
+                    if (seek_time == current_frame_ctx.pts) {
                         result = true;
                         break;
                     }

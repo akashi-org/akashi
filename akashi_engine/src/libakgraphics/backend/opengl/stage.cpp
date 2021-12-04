@@ -137,7 +137,7 @@ namespace akashi {
             for (auto iter = m_actors.rbegin(), end = m_actors.rend(); iter != end; ++iter) {
                 const auto& actor = *iter;
                 if (actor && actor->get_layer_ctx().display) {
-                    CHECK_AK_ERROR2(actor->render(ctx, to_rational(frame_ctx.pts)));
+                    CHECK_AK_ERROR2(actor->render(ctx, frame_ctx.pts));
                 }
             }
 

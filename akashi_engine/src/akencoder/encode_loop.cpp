@@ -94,7 +94,7 @@ namespace akashi {
             encode_ctx->cur_pts = start_pts;
             encode_ctx->next_pts = start_pts;
             encode_ctx->fps = fps;
-            encode_ctx->duration = to_rational(profile.duration);
+            encode_ctx->duration = profile.duration;
             encode_ctx->video_width = video_width;
             encode_ctx->video_height = video_height;
             encode_ctx->entry_path = entry_path;
@@ -229,8 +229,8 @@ namespace akashi {
                     AKLOG_ERROR("got only {} counts from evaluation", frame_ctx.size());
                     break;
                 }
-                encode_ctx->cur_pts = to_rational(frame_ctx[0].pts);
-                encode_ctx->next_pts = to_rational(frame_ctx[1].pts);
+                encode_ctx->cur_pts = frame_ctx[0].pts;
+                encode_ctx->next_pts = frame_ctx[1].pts;
 
                 // decode
                 if (!encode_ctx->decode_ended && ctx.state->get_decode_layers_not_empty()) {

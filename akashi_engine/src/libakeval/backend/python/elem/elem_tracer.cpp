@@ -56,9 +56,9 @@ namespace akashi {
                 if (atom_ctx.atom_duration < ctx.interval) {
                     atom_ctx.atom_duration = ctx.interval;
                 }
-                atom_ctx.atom_profile.from = ctx.duration.to_fraction();
-                atom_ctx.atom_profile.to = (ctx.duration + atom_ctx.atom_duration).to_fraction();
-                atom_ctx.atom_profile.duration = atom_ctx.atom_duration.to_fraction();
+                atom_ctx.atom_profile.from = ctx.duration;
+                atom_ctx.atom_profile.to = ctx.duration + atom_ctx.atom_duration;
+                atom_ctx.atom_profile.duration = atom_ctx.atom_duration;
 
                 for (auto&& layer_proxy : atom_ctx.layer_proxies) {
                     auto& layer_ctx = layer_proxy->layer_ctx_mut();
@@ -156,9 +156,9 @@ namespace akashi {
             if (atom_ctx.atom_duration < ctx.interval) {
                 atom_ctx.atom_duration = ctx.interval;
             }
-            atom_ctx.atom_profile.from = ctx.duration.to_fraction();
-            atom_ctx.atom_profile.to = (ctx.duration + atom_ctx.atom_duration).to_fraction();
-            atom_ctx.atom_profile.duration = atom_ctx.atom_duration.to_fraction();
+            atom_ctx.atom_profile.from = ctx.duration;
+            atom_ctx.atom_profile.to = ctx.duration + atom_ctx.atom_duration;
+            atom_ctx.atom_profile.duration = atom_ctx.atom_duration;
 
             for (auto&& layer_proxy : atom_ctx.layer_proxies) {
                 auto& layer_ctx = layer_proxy->layer_ctx_mut();
@@ -192,7 +192,7 @@ namespace akashi {
                 // layer params
                 else {
                     layer_trace_ctx.layer_ctx = parse_layer_context(cell_contents);
-                    if (auto layer_end = to_rational(layer_trace_ctx.layer_ctx.to);
+                    if (auto layer_end = layer_trace_ctx.layer_ctx.to;
                         !atom_ctx.atom_duration_fixed && atom_ctx.atom_duration <= layer_end) {
                         atom_ctx.atom_duration = layer_end;
                     }

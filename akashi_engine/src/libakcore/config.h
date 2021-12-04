@@ -11,6 +11,11 @@
 namespace akashi {
     namespace core {
 
+        struct Fraction {
+            int64_t num;
+            int64_t den;
+        };
+
         struct GenerelConf {
             std::string entry_file;
             std::string include_dir;

@@ -316,11 +316,11 @@ namespace akashi {
             this->changePlayState(new_state);
         }
 
-        void Window::on_time_change(akashi::core::Fraction& time_frac) {
-            Q_EMIT this->time_changed(to_rational(time_frac));
+        void Window::on_time_change(const akashi::core::Rational& time_rat) {
+            Q_EMIT this->time_changed(time_rat);
         }
 
-        void Window::on_render_prof_updated(akashi::core::RenderProfile& render_prof) {
+        void Window::on_render_prof_updated(const akashi::core::RenderProfile& render_prof) {
             Q_EMIT this->render_prof_changed(render_prof);
         }
 

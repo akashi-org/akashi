@@ -32,8 +32,7 @@ namespace akashi {
             // [TODO] impl faster way (binary search?)
             for (size_t i = 0; i < ctx.atom_proxies.size(); i++) {
                 auto profile = ctx.atom_proxies[i]->computed_profile();
-                if (to_rational(profile.from) <= arg.play_time &&
-                    arg.play_time <= to_rational(profile.to)) {
+                if (profile.from <= arg.play_time && arg.play_time <= profile.to) {
                     return i;
                 }
             }
@@ -42,7 +41,7 @@ namespace akashi {
 
         core::FrameContext local_eval(const GlobalContext& ctx, const KronArg& arg) {
             core::FrameContext frame_ctx;
-            frame_ctx.pts = arg.play_time.to_fraction();
+            frame_ctx.pts = arg.play_time;
             auto proxy_idx = find_proxy_index(ctx, arg);
             if (proxy_idx < 0) {
                 AKLOG_DEBUG("Could not find the suitable pts for: {}", arg.play_time.to_decimal());

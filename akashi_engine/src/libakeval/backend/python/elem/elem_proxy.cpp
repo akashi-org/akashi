@@ -30,9 +30,8 @@ namespace akashi {
                                     const core::LayerContext& params) {
                 auto kron_args_obj = KronArgs(arg.play_time, arg.fps);
 
-                auto comp_params_obj =
-                    params_obj.attr("_update")(detail::Second(to_rational(params.from)),
-                                               detail::Second(to_rational(params.to)));
+                auto comp_params_obj = params_obj.attr("_update")(detail::Second(params.from),
+                                                                  detail::Second(params.to));
                 comp_params_obj.attr("_uuid") = py::str(params.uuid);
                 comp_params_obj.attr("_atom_uuid") = py::str(params.atom_uuid);
                 comp_params_obj.attr("_display") = py::bool_(params.display);
@@ -54,11 +53,10 @@ namespace akashi {
             core::LayerContext layer_ctx = m_layer_ctx;
             layer_ctx.display = false;
 
-            layer_ctx.from = (to_rational(m_layer_ctx.from) + base_time).to_fraction();
-            layer_ctx.to = (to_rational(m_layer_ctx.to) + base_time).to_fraction();
+            layer_ctx.from = m_layer_ctx.from + base_time;
+            layer_ctx.to = m_layer_ctx.to + base_time;
 
-            if (to_rational(layer_ctx.from) <= arg.play_time &&
-                arg.play_time <= to_rational(layer_ctx.to)) {
+            if (layer_ctx.from <= arg.play_time && arg.play_time <= layer_ctx.to) {
                 layer_ctx.display = true;
                 if (m_update && !m_update->is_none()) {
                     return parse_layer_context(
@@ -78,8 +76,8 @@ namespace akashi {
         core::LayerProfile LayerProxy::computed_profile(const core::Rational& base_time) const {
             core::LayerProfile computed{};
             computed.uuid = m_layer_ctx.uuid;
-            computed.from = (to_rational(m_layer_ctx.from) + base_time).to_fraction();
-            computed.to = (to_rational(m_layer_ctx.to) + base_time).to_fraction();
+            computed.from = m_layer_ctx.from + base_time;
+            computed.to = m_layer_ctx.to + base_time;
             computed.type = static_cast<core::LayerType>(m_layer_ctx.type);
             switch (computed.type) {
                 case core::LayerType::VIDEO: {
@@ -110,7 +108,7 @@ namespace akashi {
         std::vector<core::LayerContext> AtomProxy::eval(const KronArg& arg) const {
             std::vector<core::LayerContext> layer_ctxs;
             for (const auto& layer_proxy : m_layer_proxies) {
-                auto layer_ctx = layer_proxy->eval(arg, to_rational(m_profile.from));
+                auto layer_ctx = layer_proxy->eval(arg, m_profile.from);
                 layer_ctxs.push_back(layer_ctx);
             }
             return layer_ctxs;
@@ -122,8 +120,7 @@ namespace akashi {
             for (const auto& layer_proxy : m_layer_proxies) {
                 auto layer_type = static_cast<core::LayerType>(layer_proxy->layer_ctx().type);
                 if (layer_type == core::LayerType::VIDEO || layer_type == core::LayerType::AUDIO) {
-                    computed.layers.push_back(
-                        layer_proxy->computed_profile(to_rational(m_profile.from)));
+                    computed.layers.push_back(layer_proxy->computed_profile(m_profile.from));
                 }
             }
             return computed;

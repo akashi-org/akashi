@@ -123,7 +123,7 @@ namespace akashi {
         struct AtomicState {
             std::atomic<int64_t> bytes_played = 0;
 
-            std::atomic<core::Fraction> start_time{{.num = 0, .den = 1}};
+            std::atomic<core::Rational> start_time{core::Rational{0, 1}};
 
             std::atomic<size_t> current_atom_index = 0;
 
