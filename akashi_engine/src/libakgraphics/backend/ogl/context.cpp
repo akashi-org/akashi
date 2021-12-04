@@ -58,6 +58,10 @@ namespace akashi {
 
         void OGLGraphicsContext::encode_render(EncodeRenderParams& params,
                                                const core::FrameContext& frame_ctx) {
+            if (!m_render_ctx->fbo().initilized()) {
+                m_render_ctx->load_fbo();
+            }
+
             if (m_stage) {
                 m_stage->encode_render(*m_render_ctx, frame_ctx);
                 params.width = m_render_ctx->fbo().info().width;
