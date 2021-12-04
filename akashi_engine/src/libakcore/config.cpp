@@ -15,7 +15,7 @@ namespace akashi {
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Fraction, num, den);
 
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GenerelConf, entry_file, include_dir);
-        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VideoConf, fps, resolution, default_font_path);
+        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VideoConf, fps, resolution, default_font_path, msaa);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AudioConf, format, sample_rate, channels,
                                            channel_layout);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PlaybackConf, enable_loop, gain, decode_method,

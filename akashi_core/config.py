@@ -28,6 +28,7 @@ class VideoConf:
     fps: sec = sec(24)
     resolution: Tuple[int, int] = (1920, 1080)
     default_font_path: str = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
+    msaa: int = 0
 
 
 AudioSampleFormat = Literal['', 'u8', 's16', 's32', 'flt', 'dbl']

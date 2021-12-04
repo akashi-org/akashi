@@ -20,6 +20,7 @@ namespace akashi {
             Fraction fps;
             std::pair<int, int> resolution;
             std::string default_font_path;
+            int msaa;
         };
 
         struct AudioConf : AKAudioSpec {};
