@@ -1,5 +1,7 @@
 #include "./quad.h"
 
+#include "../actors/video_actor_texture.h"
+
 #include <libakcore/logger.h>
 
 #include <array>
@@ -73,6 +75,51 @@ namespace akashi {
                                       (GLvoid*)0);
             }
 
+            static void load_video_uvs(const VideoTextureInfo& info, const GLuint luma_uvs_loc,
+                                       const GLuint chroma_uvs_loc) {
+                // luma
+                GLfloat lx0 = 0.0;
+                GLfloat ly0 = 1.0;
+                // [XXX] since there is a stride, not all of the uploaded textures are used
+                GLfloat lx1 = (GLfloat)(info.video_width) / info.luma_tex_width;
+                GLfloat ly1 = 0.0;
+
+                GLfloat luma_uvs[] = {
+                    lx0, ly1, // left-top
+                    lx1, ly1, // right-top
+                    lx0, ly0, // left-bottom
+                    lx1, ly0, // right-bottom
+                };
+                GLuint luma_uvs_vbo;
+                priv::create_buffer(luma_uvs_vbo, GL_ARRAY_BUFFER, luma_uvs, sizeof(luma_uvs));
+
+                glBindBuffer(GL_ARRAY_BUFFER, luma_uvs_vbo);
+                glEnableVertexAttribArray(luma_uvs_loc);
+                glVertexAttribPointer(luma_uvs_loc, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat),
+                                      (GLvoid*)0);
+
+                // chroma
+                GLfloat cx0 = 0.0;
+                GLfloat cy0 = 1.0;
+                // [XXX] since there is a stride, not all of the uploaded textures are used
+                GLfloat cx1 = (GLfloat)(info.video_width) / info.chroma_tex_width;
+                GLfloat cy1 = 0.0;
+
+                GLfloat chroma_uvs[] = {
+                    cx0, cy1, // left-top
+                    cx1, cy1, // right-top
+                    cx0, cy0, // left-bottom
+                    cx1, cy0, // right-bottom
+                };
+                GLuint chroma_uvs_vbo;
+                create_buffer(chroma_uvs_vbo, GL_ARRAY_BUFFER, chroma_uvs, sizeof(chroma_uvs));
+
+                glBindBuffer(GL_ARRAY_BUFFER, chroma_uvs_vbo);
+                glEnableVertexAttribArray(chroma_uvs_loc);
+                glVertexAttribPointer(chroma_uvs_loc, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat),
+                                      (GLvoid*)0);
+            }
+
             static void load_ibo(GLuint& ibo, size_t& ibo_length) {
                 // unsigned short indices[] = {
                 //     0, 1, 2, // left
@@ -97,6 +144,25 @@ namespace akashi {
 
             priv::load_vertices(vertices_loc, size[0], size[1]);
             priv::load_uvs(uvs_loc, flip_uv);
+
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            glBindVertexArray(0);
+
+            // load ibo
+            priv::load_ibo(m_ibo, m_ibo_length);
+
+            return true;
+        }
+
+        bool QuadMesh::create(const std::array<float, 2>& size, const VideoTextureInfo& info,
+                              const GLuint vertices_loc, const GLuint luma_uvs_loc,
+                              const GLuint chroma_uvs_loc) {
+            // load vao
+            glGenVertexArrays(1, &m_vao);
+            glBindVertexArray(m_vao);
+
+            priv::load_vertices(vertices_loc, size[0], size[1]);
+            priv::load_video_uvs(info, luma_uvs_loc, chroma_uvs_loc);
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);

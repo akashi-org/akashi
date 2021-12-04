@@ -16,7 +16,13 @@
 namespace akashi {
     namespace graphics {
 
-        struct ImageActor::Pass : public layer_commons::Pass {};
+        struct ImageActor::Pass : public layer_commons::CommonProgramLocation,
+                                  public layer_commons::Transform {
+            GLuint prog;
+            QuadMesh mesh;
+            GLuint tex_loc;
+            OGLTexture tex;
+        };
 
         bool ImageActor::create(const OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
             m_layer_ctx = layer_ctx;
@@ -26,17 +32,8 @@ namespace akashi {
                 AKLOG_ERRORN("Pass already loaded");
                 return false;
             }
-
             m_pass = new ImageActor::Pass;
-
-            // [XXX] load_texture() must be called before load_pass()
-            CHECK_AK_ERROR2(this->load_texture(ctx));
-            CHECK_AK_ERROR2(this->load_pass());
-
-            m_pass->trans_vec = layer_commons::get_trans_vec(m_layer_ctx);
-            m_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.image_layer_ctx.scale;
-            this->update_model_mat();
-
+            CHECK_AK_ERROR2(this->load_pass(ctx));
             return true;
         }
 
@@ -87,7 +84,7 @@ namespace akashi {
             return true;
         }
 
-        bool ImageActor::load_pass() {
+        bool ImageActor::load_pass(const OGLRenderContext& ctx) {
             m_pass->prog = glCreateProgram();
 
             CHECK_AK_ERROR2(layer_commons::load_shaders(m_pass->prog, m_layer_ctx, m_layer_type));
@@ -107,9 +104,15 @@ namespace akashi {
             auto vertices_loc = glGetAttribLocation(m_pass->prog, "vertices");
             auto uvs_loc = glGetAttribLocation(m_pass->prog, "uvs");
 
+            CHECK_AK_ERROR2(this->load_texture(ctx));
+
             CHECK_AK_ERROR2(m_pass->mesh.create(
                 {(float)m_pass->tex.effective_width, (float)m_pass->tex.effective_height},
                 vertices_loc, uvs_loc));
+
+            m_pass->trans_vec = layer_commons::get_trans_vec(m_layer_ctx);
+            m_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.image_layer_ctx.scale;
+            this->update_model_mat();
 
             return true;
         }

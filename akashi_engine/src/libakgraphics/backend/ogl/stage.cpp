@@ -54,8 +54,7 @@ namespace akashi {
         bool Stage::encode_render(OGLRenderContext& ctx, const core::FrameContext& frame_ctx) {
             // render layers to fbo
             CHECK_AK_ERROR2(this->render_layers(ctx, frame_ctx));
-
-            return false;
+            return true;
         }
 
         void Stage::init_gl() {

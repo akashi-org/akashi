@@ -126,3 +126,13 @@
     }
 
 AK_GL_DECL_FUNCS(extern)
+
+namespace akashi {
+    namespace graphics {
+
+        struct GetProcAddress;
+
+        bool load_gl_functions(const GetProcAddress& get_proc_address);
+
+    }
+}

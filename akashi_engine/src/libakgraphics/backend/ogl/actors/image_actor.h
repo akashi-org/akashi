@@ -28,7 +28,7 @@ namespace akashi {
             bool destroy(const OGLRenderContext& ctx) override;
 
           private:
-            bool load_pass();
+            bool load_pass(const OGLRenderContext& ctx);
 
             bool load_texture(const OGLRenderContext& ctx);
 

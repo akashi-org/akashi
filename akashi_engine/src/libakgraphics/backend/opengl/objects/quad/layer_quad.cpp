@@ -49,13 +49,14 @@ static constexpr const char* vshader_src = u8R"(
         float sprite_idx;
     } vs_out;
 
-    void poly_main(inout vec4 pos);
+    void poly_main(inout vec3 pos);
     
     void main(void){
         vs_out.vUvs = uvs;
         vs_out.sprite_idx = 0;
-        gl_Position = mvpMatrix * vec4(vertices * vec3(1, flipY, 1), 1.0);
-        poly_main(gl_Position);
+        vec3 t_vertices = vertices;
+        poly_main(t_vertices);
+        gl_Position = mvpMatrix * vec4(t_vertices * vec3(1, flipY, 1), 1.0);
     }
 )";
 
@@ -107,7 +108,7 @@ static constexpr const char* default_user_pshader_src = u8R"(
     uniform float local_duration;
     uniform float fps;
     uniform vec2 resolution;
-    void poly_main(inout vec4 position){
+    void poly_main(inout vec3 position){
     }
 )";
 

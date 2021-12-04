@@ -1,4 +1,3 @@
-#include "./loader.h"
 #include "../../../item.h"
 
 #include "./glc.h"

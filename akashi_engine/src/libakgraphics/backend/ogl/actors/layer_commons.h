@@ -154,13 +154,7 @@ namespace akashi {
     }
 )";
 
-            struct Pass {
-                GLuint prog;
-
-                QuadMesh mesh;
-
-                GLuint tex_loc;
-
+            struct CommonProgramLocation {
                 GLuint mvp_loc;
 
                 GLuint time_loc;
@@ -172,9 +166,9 @@ namespace akashi {
                 GLuint fps_loc;
 
                 GLuint resolution_loc;
+            };
 
-                OGLTexture tex;
-
+            struct Transform {
                 glm::vec3 trans_vec = glm::vec3(1.0f);
 
                 glm::vec3 scale_vec = glm::vec3(1.0f);
@@ -218,15 +212,13 @@ namespace akashi {
                 int screen_width = viewport[2];
                 int screen_height = viewport[3];
 
-                auto c_x = core::Rational(screen_width, 1) / 2;
-                auto c_y = core::Rational(screen_height, 1) / 2;
+                auto c_x = core::Rational(screen_width, 2);
+                auto c_y = core::Rational(screen_height, 2);
 
                 auto a_x = core::Rational(layer_ctx.x); // mouse coord
                 auto a_y = core::Rational(layer_ctx.y); // mouse coord
 
-                return glm::vec3((core::Rational(2l) * (a_x - c_x) / screen_width).to_decimal(),
-                                 (core::Rational(-2l) * (a_y - c_y) / screen_height).to_decimal(),
-                                 layer_ctx.z);
+                return glm::vec3((a_x - c_x).to_decimal(), -(a_y - c_y).to_decimal(), layer_ctx.z);
             }
 
         }

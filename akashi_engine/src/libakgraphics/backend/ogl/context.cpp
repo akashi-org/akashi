@@ -2,11 +2,11 @@
 #include "../../item.h"
 
 #include "./core/glc.h"
+#include "./core/eglc.h"
 #include "./render_context.h"
 #include "./stage.h"
 #include "./actors/actor.h"
 #include "./fbo.h"
-#include "./core/loader.h"
 
 #include <libakcore/logger.h>
 #include <libakstate/akstate.h>
@@ -33,9 +33,10 @@ namespace akashi {
                 AKLOG_ERRORN("Failed to initialize OpenGL context");
                 return false;
             }
-
-            // [TODO] load egl manually
-
+            if (!load_egl_functions(egl_get_proc_address)) {
+                AKLOG_ERRORN("Failed to initialize EGL context");
+                return false;
+            }
             return m_stage->create(*m_render_ctx);
         }
 
