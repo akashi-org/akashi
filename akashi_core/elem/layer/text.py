@@ -24,9 +24,11 @@ if tp.TYPE_CHECKING:
 
 @dataclass
 class TextStyle:
-    font_size: int = 30
     font_path: str = ""
-    fill: str = ""  # rrggbb
+    fg_size: int = 30
+    fg_color: str = "#ffffff"  # "#rrggbb" or "#rrggbbaa"
+    outline_size: int = 0
+    outline_color: str = "#000000"  # "#rrggbb" or "#rrggbbaa"
 
 
 @dataclass
@@ -64,19 +66,21 @@ class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
     def fit_to(self, handle: 'AtomHandle') -> 'TextHandle':
         return super().fit_to(handle)
 
-    def font_size(self, size: int) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.style.font_size = size
-        return self
-
     def font_path(self, path: str) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.style.font_path = path
         return self
 
-    def font_fill(self, color: str) -> 'TextHandle':
+    def fg(self, fg_color: str, fg_size: int) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.style.fill = color
+            cur_layer.style.fg_color = fg_color
+            cur_layer.style.fg_size = fg_size
+        return self
+
+    def outline(self, outline_color: str, outline_size: int) -> 'TextHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
+            cur_layer.style.outline_color = outline_color
+            cur_layer.style.outline_size = outline_size
         return self
 
 

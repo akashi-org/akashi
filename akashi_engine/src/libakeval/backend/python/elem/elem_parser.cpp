@@ -23,9 +23,11 @@ namespace akashi {
 
         static core::Style parse_style(const pybind11::object& style_obj) {
             core::Style style;
-            style.font_size = style_obj.attr("font_size").cast<unsigned long>();
             style.font_path = style_obj.attr("font_path").cast<std::string>();
-            style.fill = style_obj.attr("fill").cast<std::string>();
+            style.fg_size = style_obj.attr("fg_size").cast<unsigned long>();
+            style.fg_color = style_obj.attr("fg_color").cast<std::string>();
+            style.outline_size = style_obj.attr("outline_size").cast<unsigned long>();
+            style.outline_color = style_obj.attr("outline_color").cast<std::string>();
             return style;
         }
 

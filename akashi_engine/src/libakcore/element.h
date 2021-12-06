@@ -11,10 +11,11 @@ namespace akashi {
         enum class LayerType { VIDEO = 0, AUDIO, TEXT, IMAGE, EFFECT, LENGTH };
 
         struct Style {
-            uint32_t font_size;
             std::string font_path;
-            std::string fill;
-            std::string color;
+            uint32_t fg_size;
+            std::string fg_color;
+            uint32_t outline_size;
+            std::string outline_color;
         };
 
         struct VideoLayerContext {

@@ -8,7 +8,6 @@
 #include "../core/texture.h"
 
 #include <libakcore/rational.h>
-#include <libakcore/error.h>
 #include <libakcore/logger.h>
 #include <libakcore/element.h>
 
@@ -118,20 +117,19 @@ namespace akashi {
 
             FontInfo info;
             info.text = m_layer_ctx.text_layer_ctx.text;
-
             auto style = m_layer_ctx.text_layer_ctx.style;
-
-            auto fg_color = hex_to_sdl(style.fill);
-            info.fg = fg_color;
-
+            info.color = hex_to_sdl(style.fg_color);
+            ;
             auto font_path = style.font_path;
             info.font_path = font_path.empty() ? ctx.default_font_path() : font_path;
+            info.size = style.fg_size <= 0 ? 0 : style.fg_size;
 
-            auto font_size = style.font_size;
-            int default_font_size = 30;
-            info.font_size = font_size <= 0 ? default_font_size : font_size;
+            FontOutline outline;
+            outline.size = style.outline_size;
+            outline.color = hex_to_sdl(style.outline_color);
 
-            if (FontLoader::GetInstance().getSurface(surface, info) != core::ErrorType::OK) {
+            if (!FontLoader::GetInstance().get_surface(surface, info,
+                                                       outline.size > 0 ? &outline : nullptr)) {
                 AKLOG_ERRORN("Failed to getFontsSurface");
                 return false;
             }
