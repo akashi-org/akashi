@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import typing as tp
 from abc import abstractmethod, ABCMeta
 
@@ -32,12 +32,15 @@ class TextStyle:
 @dataclass
 class TextLocalField:
     text: str
-    style: TextStyle = TextStyle()
+    style: TextStyle = field(init=False)
 
 
 @dataclass
 class TextEntry(ShaderField, PositionField, LayerField, TextLocalField):
     ...
+
+    def __post_init__(self):
+        self.style = TextStyle()
 
 
 @dataclass
