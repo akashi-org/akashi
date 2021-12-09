@@ -26,8 +26,12 @@ namespace akashi {
             style.font_path = style_obj.attr("font_path").cast<std::string>();
             style.fg_size = style_obj.attr("fg_size").cast<unsigned long>();
             style.fg_color = style_obj.attr("fg_color").cast<std::string>();
+            style.use_outline = style_obj.attr("use_outline").cast<bool>();
             style.outline_size = style_obj.attr("outline_size").cast<unsigned long>();
             style.outline_color = style_obj.attr("outline_color").cast<std::string>();
+            style.use_shadow = style_obj.attr("use_shadow").cast<bool>();
+            style.shadow_size = style_obj.attr("shadow_size").cast<unsigned long>();
+            style.shadow_color = style_obj.attr("shadow_color").cast<std::string>();
             return style;
         }
 

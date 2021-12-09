@@ -14,8 +14,12 @@ namespace akashi {
             std::string font_path;
             uint32_t fg_size;
             std::string fg_color;
+            bool use_outline;
             uint32_t outline_size;
             std::string outline_color;
+            bool use_shadow;
+            uint32_t shadow_size;
+            std::string shadow_color;
         };
 
         struct VideoLayerContext {

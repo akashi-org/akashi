@@ -119,7 +119,7 @@ namespace akashi {
             info.text = m_layer_ctx.text_layer_ctx.text;
             auto style = m_layer_ctx.text_layer_ctx.style;
             info.color = hex_to_sdl(style.fg_color);
-            ;
+
             auto font_path = style.font_path;
             info.font_path = font_path.empty() ? ctx.default_font_path() : font_path;
             info.size = style.fg_size <= 0 ? 0 : style.fg_size;
@@ -128,8 +128,13 @@ namespace akashi {
             outline.size = style.outline_size;
             outline.color = hex_to_sdl(style.outline_color);
 
+            FontShadow shadow;
+            shadow.color = hex_to_sdl(style.shadow_color);
+            shadow.size = style.shadow_size;
+
             if (!FontLoader::GetInstance().get_surface(surface, info,
-                                                       outline.size > 0 ? &outline : nullptr)) {
+                                                       style.use_outline ? &outline : nullptr,
+                                                       style.use_shadow ? &shadow : nullptr)) {
                 AKLOG_ERRORN("Failed to getFontsSurface");
                 return false;
             }

@@ -27,8 +27,12 @@ class TextStyle:
     font_path: str = ""
     fg_size: int = 30
     fg_color: str = "#ffffff"  # "#rrggbb" or "#rrggbbaa"
+    use_outline: bool = False
     outline_size: int = 0
     outline_color: str = "#000000"  # "#rrggbb" or "#rrggbbaa"
+    use_shadow: bool = False
+    shadow_size: int = 0
+    shadow_color: str = "#000000"  # "#rrggbb" or "#rrggbbaa"
 
 
 @dataclass
@@ -79,8 +83,18 @@ class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
 
     def outline(self, outline_color: str, outline_size: int) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
+            cur_layer.style.use_shadow = False
+            cur_layer.style.use_outline = True
             cur_layer.style.outline_color = outline_color
             cur_layer.style.outline_size = outline_size
+        return self
+
+    def shadow(self, shadow_color: str, shadow_size: int) -> 'TextHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
+            cur_layer.style.use_outline = False
+            cur_layer.style.use_shadow = True
+            cur_layer.style.shadow_color = shadow_color
+            cur_layer.style.shadow_size = shadow_size
         return self
 
 

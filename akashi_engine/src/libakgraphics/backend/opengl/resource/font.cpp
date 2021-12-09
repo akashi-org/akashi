@@ -25,7 +25,10 @@ namespace akashi {
         };
 
         bool FontLoader::get_surface(SDL_Surface*& surface, const FontInfo& info,
-                                     const FontOutline* outline) {
+                                     const FontOutline* outline, const FontShadow* shadow) {
+            if (shadow) {
+                return this->get_surface_shadow(surface, info, *shadow);
+            }
             if (outline) {
                 return this->get_surface_outline(surface, info, *outline);
             }
@@ -78,6 +81,38 @@ namespace akashi {
             }
 
             surface = outline_surface;
+            return true;
+        }
+
+        bool FontLoader::get_surface_shadow(SDL_Surface*& surface, const FontInfo& info,
+                                            const FontShadow& shadow) {
+            SDL_Surface* fg_surface = nullptr;
+            if (!this->get_surface_normal(fg_surface, info)) {
+                return false;
+            }
+
+            FontOutline outline;
+            outline.color = shadow.color;
+            outline.size = shadow.size;
+            SDL_Surface* shadow_surface = nullptr;
+            if (!this->get_surface_normal(shadow_surface, info, &outline)) {
+                return false;
+            }
+
+            int err_code = 0;
+            SDL_Rect rect = {0, 0, fg_surface->w, fg_surface->h};
+            err_code += SDL_SetSurfaceBlendMode(fg_surface, SDL_BLENDMODE_BLEND);
+            err_code += SDL_BlitSurface(fg_surface, nullptr, shadow_surface, &rect);
+            SDL_FreeSurface(fg_surface);
+
+            if (err_code != 0) {
+                AKLOG_ERROR("{}", SDL_GetError());
+                SDL_FreeSurface(fg_surface);
+                SDL_FreeSurface(shadow_surface);
+                return false;
+            }
+
+            surface = shadow_surface;
             return true;
         }
 
