@@ -78,7 +78,9 @@ namespace akashi {
         bool EffectActor::load_pass(const OGLRenderContext& ctx) {
             m_pass->prog = glCreateProgram();
 
-            CHECK_AK_ERROR2(layer_commons::load_shaders(m_pass->prog, m_layer_ctx, m_layer_type));
+            CHECK_AK_ERROR2(layer_commons::load_shaders(m_pass->prog, m_layer_type,
+                                                        m_layer_ctx.effect_layer_ctx.poly,
+                                                        m_layer_ctx.effect_layer_ctx.frag));
 
             m_pass->mvp_loc = glGetUniformLocation(m_pass->prog, "mvpMatrix");
             if (m_layer_type == core::LayerType::IMAGE) {

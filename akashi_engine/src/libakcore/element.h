@@ -25,14 +25,20 @@ namespace akashi {
 
         enum class TextAlign { LEFT = 0, CENTER, RIGHT, LENGTH };
 
+        struct TextLabel {
+            std::string color;
+            std::string frag;
+            std::string poly;
+        };
+
         struct VideoLayerContext {
             std::string src;
             Rational start = core::Rational(0, 1);
             double scale;
             double gain;
             bool stretch = false;
-            std::vector<std::string> frag;
-            std::vector<std::string> poly;
+            std::string frag;
+            std::string poly;
         };
 
         struct AudioLayerContext {
@@ -43,26 +49,27 @@ namespace akashi {
 
         struct TextLayerContext {
             std::string text;
+            TextLabel label;
             TextAlign text_align;
             std::array<int32_t, 4> pad; // left, right, top, bottom
             int32_t line_span;
             double scale;
             Style style;
-            std::vector<std::string> frag;
-            std::vector<std::string> poly;
+            std::string frag;
+            std::string poly;
         };
 
         struct ImageLayerContext {
             std::vector<std::string> srcs;
             bool stretch = false;
             double scale;
-            std::vector<std::string> frag;
-            std::vector<std::string> poly;
+            std::string frag;
+            std::string poly;
         };
 
         struct EffectLayerContext {
-            std::vector<std::string> frag;
-            std::vector<std::string> poly;
+            std::string frag;
+            std::string poly;
         };
 
         struct LayerContext {

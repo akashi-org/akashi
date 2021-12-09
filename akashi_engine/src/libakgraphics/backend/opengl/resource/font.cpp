@@ -45,11 +45,11 @@ namespace akashi {
                 bool result = false;
                 if (shadow) {
                     result = this->get_surface_shadow(line_surfaces[i], line_info, *shadow);
-                }
-                if (outline) {
+                } else if (outline) {
                     result = this->get_surface_outline(line_surfaces[i], line_info, *outline);
+                } else {
+                    result = this->get_surface_normal(line_surfaces[i], line_info);
                 }
-                result = this->get_surface_normal(line_surfaces[i], line_info);
 
                 if (!result) {
                     for (auto&& ls : line_surfaces) {
@@ -67,6 +67,7 @@ namespace akashi {
                 main_height + info.pad[2] + info.pad[3] +
                     (info.line_span * (std::max(0, (int)line_surfaces.size() - 1))),
                 32, 0, 0, 0, 0);
+
             int err_code = 0;
             int acc_height = 0;
             for (auto&& ln_surface : line_surfaces) {

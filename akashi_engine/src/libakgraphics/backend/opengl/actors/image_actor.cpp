@@ -87,7 +87,9 @@ namespace akashi {
         bool ImageActor::load_pass(const OGLRenderContext& ctx) {
             m_pass->prog = glCreateProgram();
 
-            CHECK_AK_ERROR2(layer_commons::load_shaders(m_pass->prog, m_layer_ctx, m_layer_type));
+            CHECK_AK_ERROR2(layer_commons::load_shaders(m_pass->prog, m_layer_type,
+                                                        m_layer_ctx.image_layer_ctx.poly,
+                                                        m_layer_ctx.image_layer_ctx.frag));
 
             m_pass->mvp_loc = glGetUniformLocation(m_pass->prog, "mvpMatrix");
             if (m_layer_type == core::LayerType::IMAGE) {
@@ -110,7 +112,8 @@ namespace akashi {
                 {(float)m_pass->tex.effective_width, (float)m_pass->tex.effective_height},
                 vertices_loc, uvs_loc));
 
-            m_pass->trans_vec = layer_commons::get_trans_vec(m_layer_ctx);
+            m_pass->trans_vec =
+                layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
             m_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.image_layer_ctx.scale;
             this->update_model_mat();
 

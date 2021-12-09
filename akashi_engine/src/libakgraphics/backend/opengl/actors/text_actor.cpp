@@ -22,48 +22,32 @@ namespace akashi {
             QuadMesh mesh;
             GLuint tex_loc;
             OGLTexture tex;
+            bool is_label = false;
         };
 
         bool TextActor::create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
             m_layer_ctx = layer_ctx;
             m_layer_type = static_cast<core::LayerType>(layer_ctx.type);
 
-            if (m_pass) {
+            if (m_pass || m_lb_pass) {
                 AKLOG_ERRORN("Pass already loaded");
                 return false;
             }
             m_pass = new TextActor::Pass;
+            m_pass->is_label = false;
             CHECK_AK_ERROR2(this->load_pass(ctx));
+
+            m_lb_pass = new TextActor::Pass;
+            m_lb_pass->is_label = true;
+            CHECK_AK_ERROR2(this->load_label_pass(ctx));
             return true;
         }
 
         bool TextActor::render(OGLRenderContext& ctx, const core::Rational& pts) {
-            glUseProgram(m_pass->prog);
-
-            use_ogl_texture(m_pass->tex, m_pass->tex_loc);
-
-            glm::mat4 new_mvp = ctx.camera()->vp_mat() * m_pass->model_mat;
-
-            glUniformMatrix4fv(m_pass->mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
-
-            auto local_pts = pts - m_layer_ctx.from;
-            glUniform1f(m_pass->time_loc, local_pts.to_decimal());
-            glUniform1f(m_pass->global_time_loc, pts.to_decimal());
-
-            auto local_duration = m_layer_ctx.to - m_layer_ctx.from;
-            glUniform1f(m_pass->local_duration_loc, local_duration.to_decimal());
-            glUniform1f(m_pass->fps_loc, ctx.fps().to_decimal());
-
-            auto res = ctx.resolution();
-            glUniform2f(m_pass->resolution_loc, res[0], res[1]);
-
-            glBindVertexArray(m_pass->mesh.vao());
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_pass->mesh.ibo());
-
-            glDrawElements(GL_TRIANGLES, m_pass->mesh.ibo_length(), GL_UNSIGNED_SHORT, 0);
-
-            glBindVertexArray(0);
-
+            if (m_pass && m_lb_pass) {
+                this->render_pass(*m_lb_pass, ctx, pts);
+                this->render_pass(*m_pass, ctx, pts);
+            }
             return true;
         }
 
@@ -76,20 +60,26 @@ namespace akashi {
             }
             m_pass = nullptr;
 
+            if (m_lb_pass) {
+                m_lb_pass->mesh.destroy();
+                free_ogl_texture(m_lb_pass->tex);
+                glDeleteProgram(m_lb_pass->prog);
+                delete m_lb_pass;
+            }
+            m_lb_pass = nullptr;
+
             return true;
         }
 
         bool TextActor::load_pass(OGLRenderContext& ctx) {
             m_pass->prog = glCreateProgram();
 
-            CHECK_AK_ERROR2(layer_commons::load_shaders(m_pass->prog, m_layer_ctx, m_layer_type));
+            CHECK_AK_ERROR2(layer_commons::load_shaders(m_pass->prog, m_layer_type,
+                                                        m_layer_ctx.text_layer_ctx.poly,
+                                                        m_layer_ctx.text_layer_ctx.frag));
 
             m_pass->mvp_loc = glGetUniformLocation(m_pass->prog, "mvpMatrix");
-            if (m_layer_type == core::LayerType::IMAGE) {
-                m_pass->tex_loc = glGetUniformLocation(m_pass->prog, "texture_arr");
-            } else {
-                m_pass->tex_loc = glGetUniformLocation(m_pass->prog, "texture0");
-            }
+            m_pass->tex_loc = glGetUniformLocation(m_pass->prog, "texture0");
             m_pass->time_loc = glGetUniformLocation(m_pass->prog, "time");
             m_pass->global_time_loc = glGetUniformLocation(m_pass->prog, "global_time");
             m_pass->local_duration_loc = glGetUniformLocation(m_pass->prog, "local_duration");
@@ -105,9 +95,77 @@ namespace akashi {
                 {(float)m_pass->tex.effective_width, (float)m_pass->tex.effective_height},
                 vertices_loc, uvs_loc));
 
-            m_pass->trans_vec = layer_commons::get_trans_vec(m_layer_ctx);
+            m_pass->trans_vec =
+                layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
             m_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.text_layer_ctx.scale;
-            this->update_model_mat();
+            this->update_model_mat(*m_pass);
+
+            return true;
+        }
+
+        namespace priv {
+
+            static constexpr const char* default_label_user_fshader_src_head = u8R"(
+    #version 420 core
+    uniform float time;
+    uniform float global_time;
+    uniform float local_duration;
+    uniform float fps;
+    uniform vec2 resolution;
+    void frag_main(inout vec4 _fragColor){ _fragColor = vec4)";
+
+            static std::string to_color_glsl_str(const std::string& color_str) {
+                auto sdl_color = hex_to_sdl(color_str);
+                return "(" + std::to_string(sdl_color.b / 255.0) + "," +
+                       std::to_string(sdl_color.g / 255.0) + "," +
+                       std::to_string(sdl_color.r / 255.0) + "," +
+                       std::to_string(sdl_color.a / 255.0) + ")";
+            }
+
+            static std::string default_label_user_fshader_src(const std::string& color_str) {
+                return default_label_user_fshader_src_head + to_color_glsl_str(color_str) + ";}";
+            }
+        }
+
+        bool TextActor::load_label_pass(OGLRenderContext& /*ctx*/) {
+            assert(this->m_pass);
+
+            m_lb_pass->prog = glCreateProgram();
+
+            auto frag_shader = m_layer_ctx.text_layer_ctx.label.frag;
+            if (frag_shader.empty()) {
+                frag_shader =
+                    priv::default_label_user_fshader_src(m_layer_ctx.text_layer_ctx.label.color);
+            }
+
+            CHECK_AK_ERROR2(layer_commons::load_shaders(
+                m_lb_pass->prog, m_layer_type, m_layer_ctx.text_layer_ctx.label.poly, frag_shader));
+
+            m_lb_pass->mvp_loc = glGetUniformLocation(m_lb_pass->prog, "mvpMatrix");
+            m_lb_pass->tex_loc = glGetUniformLocation(m_lb_pass->prog, "texture0");
+            m_lb_pass->time_loc = glGetUniformLocation(m_lb_pass->prog, "time");
+            m_lb_pass->global_time_loc = glGetUniformLocation(m_lb_pass->prog, "global_time");
+            m_lb_pass->local_duration_loc = glGetUniformLocation(m_lb_pass->prog, "local_duration");
+            m_lb_pass->fps_loc = glGetUniformLocation(m_lb_pass->prog, "fps");
+            m_lb_pass->resolution_loc = glGetUniformLocation(m_lb_pass->prog, "resolution");
+
+            auto vertices_loc = glGetAttribLocation(m_lb_pass->prog, "vertices");
+            auto uvs_loc = glGetAttribLocation(m_lb_pass->prog, "uvs");
+
+            // [TODO] impl later
+            // CHECK_AK_ERROR2(this->load_texture(ctx));
+            glGenTextures(1, &m_lb_pass->tex.buffer);
+
+            // [TODO] check label type (fill/not-fill, round/not-round)
+            CHECK_AK_ERROR2(m_lb_pass->mesh.create(
+                {(float)m_pass->tex.effective_width, (float)m_pass->tex.effective_height},
+                vertices_loc, uvs_loc));
+
+            m_lb_pass->trans_vec =
+                layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
+            // [TODO] label pass should have a different scale value than text pass
+            m_lb_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.text_layer_ctx.scale;
+            this->update_model_mat(*m_lb_pass);
 
             return true;
         }
@@ -170,9 +228,40 @@ namespace akashi {
             return true;
         }
 
-        void TextActor::update_model_mat() {
-            m_pass->model_mat = glm::translate(m_pass->model_mat, m_pass->trans_vec);
-            m_pass->model_mat = glm::scale(m_pass->model_mat, m_pass->scale_vec);
+        bool TextActor::render_pass(const TextActor::Pass& pass, OGLRenderContext& ctx,
+                                    const core::Rational& pts) {
+            glUseProgram(pass.prog);
+
+            use_ogl_texture(pass.tex, pass.tex_loc);
+
+            glm::mat4 new_mvp = ctx.camera()->vp_mat() * pass.model_mat;
+
+            glUniformMatrix4fv(pass.mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
+
+            auto local_pts = pts - m_layer_ctx.from;
+            glUniform1f(pass.time_loc, local_pts.to_decimal());
+            glUniform1f(pass.global_time_loc, pts.to_decimal());
+
+            auto local_duration = m_layer_ctx.to - m_layer_ctx.from;
+            glUniform1f(pass.local_duration_loc, local_duration.to_decimal());
+            glUniform1f(pass.fps_loc, ctx.fps().to_decimal());
+
+            auto res = ctx.resolution();
+            glUniform2f(pass.resolution_loc, res[0], res[1]);
+
+            glBindVertexArray(pass.mesh.vao());
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pass.mesh.ibo());
+
+            glDrawElements(GL_TRIANGLES, pass.mesh.ibo_length(), GL_UNSIGNED_SHORT, 0);
+
+            glBindVertexArray(0);
+
+            return true;
+        }
+
+        void TextActor::update_model_mat(TextActor::Pass& pass) {
+            pass.model_mat = glm::translate(pass.model_mat, pass.trans_vec);
+            pass.model_mat = glm::scale(pass.model_mat, pass.scale_vec);
         }
 
     }
