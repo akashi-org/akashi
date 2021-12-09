@@ -2,6 +2,7 @@
 
 #include <libakcore/logger.h>
 #include <libakcore/error.h>
+#include <libakcore/string.h>
 
 #include <SDL_ttf.h>
 #include <stdexcept>
@@ -26,13 +27,61 @@ namespace akashi {
 
         bool FontLoader::get_surface(SDL_Surface*& surface, const FontInfo& info,
                                      const FontOutline* outline, const FontShadow* shadow) {
-            if (shadow) {
-                return this->get_surface_shadow(surface, info, *shadow);
+            auto lines = core::split_by(info.text, "\n");
+            std::vector<SDL_Surface*> line_surfaces(lines.size(), nullptr);
+
+            int main_width = 0;
+            int main_height = 0;
+            for (size_t i = 0; i < lines.size(); i++) {
+                FontInfo line_info = info;
+                line_info.text = lines[i];
+
+                bool result = false;
+                if (shadow) {
+                    result = this->get_surface_shadow(line_surfaces[i], line_info, *shadow);
+                }
+                if (outline) {
+                    result = this->get_surface_outline(line_surfaces[i], line_info, *outline);
+                }
+                result = this->get_surface_normal(line_surfaces[i], line_info);
+
+                if (!result) {
+                    for (auto&& ls : line_surfaces) {
+                        SDL_FreeSurface(ls);
+                    }
+                    return false;
+                }
+
+                main_width = std::max(main_width, line_surfaces[i]->w);
+                main_height += line_surfaces[i]->h;
             }
-            if (outline) {
-                return this->get_surface_outline(surface, info, *outline);
+
+            main_width = std::max(main_width, int(main_width * 1.2));
+            // main_height = std::max(main_height, info.height);
+
+            SDL_Surface* main_surface =
+                SDL_CreateRGBSurface(0, main_width, main_height, 32, 0, 0, 0, 0);
+            int err_code = 0;
+            int acc_height = 0;
+            for (auto&& ln_surface : line_surfaces) {
+                int lw = info.text_align == TextAlign::RIGHT    ? main_width - ln_surface->w
+                         : info.text_align == TextAlign::CENTER ? (main_width - ln_surface->w) / 2
+                                                                : 0;
+                SDL_Rect rect = {lw, acc_height, main_surface->w, main_surface->h};
+
+                err_code += SDL_BlitSurface(ln_surface, nullptr, main_surface, &rect);
+                acc_height += ln_surface->h;
+                SDL_FreeSurface(ln_surface);
             }
-            return this->get_surface_normal(surface, info);
+
+            if (err_code != 0) {
+                AKLOG_ERROR("{}", SDL_GetError());
+                SDL_FreeSurface(main_surface);
+                return false;
+            }
+
+            surface = main_surface;
+            return true;
         }
 
         bool FontLoader::get_surface_normal(SDL_Surface*& surface, const FontInfo& info,

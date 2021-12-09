@@ -117,6 +117,7 @@ namespace akashi {
 
             FontInfo info;
             info.text = m_layer_ctx.text_layer_ctx.text;
+            info.text_align = m_layer_ctx.text_layer_ctx.text_align;
             auto style = m_layer_ctx.text_layer_ctx.style;
             info.color = hex_to_sdl(style.fg_color);
 

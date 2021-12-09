@@ -2,6 +2,8 @@
 
 #include "./resource.h"
 
+#include <libakcore/element.h>
+
 #include <SDL.h>
 #include <string>
 
@@ -12,6 +14,7 @@ namespace akashi {
 
         struct FontInfo {
             std::string text;
+            core::TextAlign text_align;
             std::string font_path;
             SDL_Color color;
             int size;

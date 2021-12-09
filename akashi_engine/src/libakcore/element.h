@@ -22,6 +22,8 @@ namespace akashi {
             std::string shadow_color;
         };
 
+        enum class TextAlign { LEFT = 0, CENTER, RIGHT, LENGTH };
+
         struct VideoLayerContext {
             std::string src;
             Rational start = core::Rational(0, 1);
@@ -40,6 +42,7 @@ namespace akashi {
 
         struct TextLayerContext {
             std::string text;
+            TextAlign text_align;
             double scale;
             Style style;
             std::vector<std::string> frag;

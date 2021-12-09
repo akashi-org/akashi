@@ -22,6 +22,9 @@ if tp.TYPE_CHECKING:
     from akashi_core.elem.atom import AtomHandle
 
 
+TextAlign = tp.Literal['left', 'center', 'right']
+
+
 @dataclass
 class TextStyle:
     font_path: str = ""
@@ -39,6 +42,7 @@ class TextStyle:
 class TextLocalField:
     text: str
     style: TextStyle = field(init=False)
+    text_align: TextAlign = 'left'
 
 
 @dataclass
@@ -69,6 +73,11 @@ class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
 
     def fit_to(self, handle: 'AtomHandle') -> 'TextHandle':
         return super().fit_to(handle)
+
+    def text_align(self, align: TextAlign) -> 'TextHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
+            cur_layer.text_align = align
+        return self
 
     def font_path(self, path: str) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):

@@ -105,6 +105,15 @@ namespace akashi {
                 layer_ctx.text_layer_ctx.style = parse_style(layer_params.attr("style"));
                 layer_ctx.text_layer_ctx.scale = 1.0;
 
+                std::string text_align_str = layer_params.attr("text_align").cast<std::string>();
+                if (text_align_str == "center") {
+                    layer_ctx.text_layer_ctx.text_align = core::TextAlign::CENTER;
+                } else if (text_align_str == "right") {
+                    layer_ctx.text_layer_ctx.text_align = core::TextAlign::RIGHT;
+                } else {
+                    layer_ctx.text_layer_ctx.text_align = core::TextAlign::LEFT;
+                }
+
                 layer_ctx.text_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
                 layer_ctx.text_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
             } else if (type_str == "EFFECT") {
