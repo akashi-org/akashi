@@ -119,6 +119,7 @@ namespace akashi {
             info.text = m_layer_ctx.text_layer_ctx.text;
             info.text_align = m_layer_ctx.text_layer_ctx.text_align;
             info.pad = m_layer_ctx.text_layer_ctx.pad;
+            info.line_span = m_layer_ctx.text_layer_ctx.line_span;
 
             auto style = m_layer_ctx.text_layer_ctx.style;
             info.color = hex_to_sdl(style.fg_color);

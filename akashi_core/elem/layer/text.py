@@ -44,6 +44,7 @@ class TextLocalField:
     style: TextStyle = field(init=False)
     text_align: TextAlign = 'left'
     pad: tuple[int, int, int, int] = (0, 0, 0, 0)  # left, right, top, bottom
+    line_span: int = 0
 
 
 @dataclass
@@ -80,18 +81,23 @@ class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
             cur_layer.text_align = align
         return self
 
-    def pad_x(self, a: int, b: int = -1) -> 'TextHandle':
+    def pad_x(self, a: int, b: tp.Optional[int] = None) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             left_pad = a
-            right_pad = a if b == -1 else b
+            right_pad = a if not b else b
             cur_layer.pad = (left_pad, right_pad, *cur_layer.pad[2:])
         return self
 
-    def pad_y(self, a: int, b: int = -1) -> 'TextHandle':
+    def pad_y(self, a: int, b: tp.Optional[int] = None) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             top_pad = a
-            bottom_pad = a if b == -1 else b
+            bottom_pad = a if not b else b
             cur_layer.pad = (*cur_layer.pad[:2], top_pad, bottom_pad)
+        return self
+
+    def line_span(self, span: int) -> 'TextHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
+            cur_layer.line_span = span
         return self
 
     def font_path(self, path: str) -> 'TextHandle':

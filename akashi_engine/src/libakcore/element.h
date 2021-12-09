@@ -44,7 +44,8 @@ namespace akashi {
         struct TextLayerContext {
             std::string text;
             TextAlign text_align;
-            std::array<uint32_t, 4> pad; // left, right, top, bottom
+            std::array<int32_t, 4> pad; // left, right, top, bottom
+            int32_t line_span;
             double scale;
             Style style;
             std::vector<std::string> frag;
