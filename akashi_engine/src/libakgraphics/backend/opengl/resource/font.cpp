@@ -27,7 +27,13 @@ namespace akashi {
 
         bool FontLoader::get_surface(SDL_Surface*& surface, const FontInfo& info,
                                      const FontOutline* outline, const FontShadow* shadow) {
+            if (info.text.empty()) {
+                AKLOG_WARNN("Text length is 0");
+                return false;
+            }
+
             auto lines = core::split_by(info.text, "\n");
+
             std::vector<SDL_Surface*> line_surfaces(lines.size(), nullptr);
 
             int main_width = 0;
