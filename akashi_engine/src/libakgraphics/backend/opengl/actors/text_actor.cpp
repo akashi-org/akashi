@@ -118,9 +118,10 @@ namespace akashi {
             FontInfo info;
             info.text = m_layer_ctx.text_layer_ctx.text;
             info.text_align = m_layer_ctx.text_layer_ctx.text_align;
+            info.pad = m_layer_ctx.text_layer_ctx.pad;
+
             auto style = m_layer_ctx.text_layer_ctx.style;
             info.color = hex_to_sdl(style.fg_color);
-
             auto font_path = style.font_path;
             info.font_path = font_path.empty() ? ctx.default_font_path() : font_path;
             info.size = style.fg_size <= 0 ? 0 : style.fg_size;

@@ -56,18 +56,17 @@ namespace akashi {
                 main_height += line_surfaces[i]->h;
             }
 
-            main_width = std::max(main_width, int(main_width * 1.2));
-            // main_height = std::max(main_height, info.height);
-
             SDL_Surface* main_surface =
-                SDL_CreateRGBSurface(0, main_width, main_height, 32, 0, 0, 0, 0);
+                SDL_CreateRGBSurface(0, main_width + info.pad[0] + info.pad[1],
+                                     main_height + info.pad[2] + info.pad[3], 32, 0, 0, 0, 0);
             int err_code = 0;
             int acc_height = 0;
             for (auto&& ln_surface : line_surfaces) {
                 int lw = info.text_align == TextAlign::RIGHT    ? main_width - ln_surface->w
                          : info.text_align == TextAlign::CENTER ? (main_width - ln_surface->w) / 2
                                                                 : 0;
-                SDL_Rect rect = {lw, acc_height, main_surface->w, main_surface->h};
+                SDL_Rect rect = {lw + (int)info.pad[0], acc_height + (int)info.pad[2],
+                                 main_surface->w, main_surface->h};
 
                 err_code += SDL_BlitSurface(ln_surface, nullptr, main_surface, &rect);
                 acc_height += ln_surface->h;

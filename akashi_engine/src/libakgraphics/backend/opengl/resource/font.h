@@ -15,6 +15,7 @@ namespace akashi {
         struct FontInfo {
             std::string text;
             core::TextAlign text_align;
+            std::array<uint32_t, 4> pad;
             std::string font_path;
             SDL_Color color;
             int size;

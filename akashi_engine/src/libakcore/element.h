@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 
 namespace akashi {
     namespace core {
@@ -43,6 +44,7 @@ namespace akashi {
         struct TextLayerContext {
             std::string text;
             TextAlign text_align;
+            std::array<uint32_t, 4> pad; // left, right, top, bottom
             double scale;
             Style style;
             std::vector<std::string> frag;

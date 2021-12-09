@@ -114,6 +114,12 @@ namespace akashi {
                     layer_ctx.text_layer_ctx.text_align = core::TextAlign::LEFT;
                 }
 
+                auto pads = layer_params.attr("pad").cast<std::tuple<long, long, long, long>>();
+                layer_ctx.text_layer_ctx.pad[0] = std::get<0>(pads);
+                layer_ctx.text_layer_ctx.pad[1] = std::get<1>(pads);
+                layer_ctx.text_layer_ctx.pad[2] = std::get<2>(pads);
+                layer_ctx.text_layer_ctx.pad[3] = std::get<3>(pads);
+
                 layer_ctx.text_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
                 layer_ctx.text_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
             } else if (type_str == "EFFECT") {

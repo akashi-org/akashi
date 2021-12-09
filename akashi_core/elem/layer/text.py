@@ -43,6 +43,7 @@ class TextLocalField:
     text: str
     style: TextStyle = field(init=False)
     text_align: TextAlign = 'left'
+    pad: tuple[int, int, int, int] = (0, 0, 0, 0)  # left, right, top, bottom
 
 
 @dataclass
@@ -77,6 +78,20 @@ class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
     def text_align(self, align: TextAlign) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.text_align = align
+        return self
+
+    def pad_x(self, a: int, b: int = -1) -> 'TextHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
+            left_pad = a
+            right_pad = a if b == -1 else b
+            cur_layer.pad = (left_pad, right_pad, *cur_layer.pad[2:])
+        return self
+
+    def pad_y(self, a: int, b: int = -1) -> 'TextHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
+            top_pad = a
+            bottom_pad = a if b == -1 else b
+            cur_layer.pad = (*cur_layer.pad[:2], top_pad, bottom_pad)
         return self
 
     def font_path(self, path: str) -> 'TextHandle':
