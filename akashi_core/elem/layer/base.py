@@ -52,12 +52,18 @@ class LayerTrait(metaclass=ABCMeta):
 @dataclass
 class PositionField:
     pos: tuple[int, int] = (0, 0)
+    z: float = 0.0
 
 
 class PositionTrait(LayerTrait, metaclass=ABCMeta):
     def pos(self, x: int, y: int):
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(PositionField, cur_layer).pos = (x, y)
+        return self
+
+    def z(self, value: float):
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(PositionField, cur_layer).z = value
         return self
 
 

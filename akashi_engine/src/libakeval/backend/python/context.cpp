@@ -79,7 +79,7 @@ namespace akashi {
 
         core::FrameContext PyEvalContext::eval_kron(const char* module_path, const KronArg& arg) {
             FrameContext frame_ctx;
-            frame_ctx.pts = Fraction{-1, 1};
+            frame_ctx.pts = Rational{-1, 1};
 
             if (!m_gctx) {
                 AKLOG_ERRORN("GlobalContext is null");
@@ -114,7 +114,7 @@ namespace akashi {
             for (size_t i = 0; i < length; i++) {
                 auto frame_ctx =
                     local_eval(*m_gctx, {start_time + (Rational(i, 1) * Rational(1, fps)), fps});
-                if (to_rational(frame_ctx.pts) <= duration) {
+                if (frame_ctx.pts <= duration) {
                     frame_ctxs.push_back(frame_ctx);
                 }
             }
@@ -179,7 +179,7 @@ namespace akashi {
             //             timer.current_time_micro().to_decimal());
 
             render_prof.uuid = m_gctx->uuid;
-            render_prof.duration = m_gctx->duration.to_fraction();
+            render_prof.duration = m_gctx->duration;
             for (const auto& atom_proxy : m_gctx->atom_proxies) {
                 render_prof.atom_profiles.push_back(atom_proxy->computed_profile());
             }

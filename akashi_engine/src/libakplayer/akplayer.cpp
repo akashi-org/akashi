@@ -62,8 +62,7 @@ namespace akashi {
         void AKPlayer::render(const graphics::RenderParams& params) {
             const auto current_frame_ctx = m_eval_buf->render_buf();
 
-            if (to_rational(current_frame_ctx.pts) ==
-                to_rational(EvalBuffer::BLANK_FRAME_CTX.pts)) {
+            if (current_frame_ctx.pts == EvalBuffer::BLANK_FRAME_CTX.pts) {
                 AKLOG_INFON("PlayerContext::render(): Cannot get eval buffer. Skipping rendering.");
                 m_state->set_render_completed(true);
                 return;
@@ -105,7 +104,7 @@ namespace akashi {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 on_seeking = !m_state->get_seek_completed();
                 Rational tpf = (Rational(1, 1) / m_state->m_prop.fps);
-                Rational seek_max = to_rational(m_state->m_prop.render_prof.duration) - tpf;
+                Rational seek_max = m_state->m_prop.render_prof.duration - tpf;
                 real_seek_time = Rational((int64_t)((seek_time / tpf).to_decimal()), 1) * tpf;
                 real_seek_time = real_seek_time < Rational(0, 1) ? Rational(0, 1)
                                  : real_seek_time > seek_max     ? seek_max
@@ -120,8 +119,7 @@ namespace akashi {
             Rational seek_time;
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
-                Rational incr_time =
-                    Rational(ratio) * to_rational(m_state->m_prop.render_prof.duration);
+                Rational incr_time = Rational(ratio) * m_state->m_prop.render_prof.duration;
                 seek_time = m_state->m_prop.current_time + incr_time;
             }
             this->seek(seek_time);
@@ -153,8 +151,7 @@ namespace akashi {
                 m_state->m_prop.render_prof = render_prof;
 
                 // set play time to zero when the play time is longer than the updated duration
-                if (m_state->m_prop.current_time >
-                    to_rational(m_state->m_prop.render_prof.duration)) {
+                if (m_state->m_prop.current_time > m_state->m_prop.render_prof.duration) {
                     m_state->m_prop.current_time = Rational(0, 1);
                     m_state->m_prop.elapsed_time = Rational(0, 1);
                     trigger_reset_current_time = true;
@@ -165,8 +162,6 @@ namespace akashi {
             if (trigger_reset_current_time) {
                 m_event->emit_time_update(current_time);
             }
-
-            m_gfx->load_fbo(render_prof);
         }
 
         void AKPlayer::inline_eval(const std::string& fpath, const std::string& elem_name) {

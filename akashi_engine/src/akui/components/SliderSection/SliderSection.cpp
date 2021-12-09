@@ -142,8 +142,8 @@ namespace akashi {
         void SliderSection::on_render_prof_changed(const akashi::core::RenderProfile& render_prof) {
             // m_unit = Rational(1, render_prof.fps);
             blockSignals(true);
-            this->slider->setRange(
-                0, static_cast<int>((to_rational(render_prof.duration) / m_unit).to_decimal()));
+            this->slider->setRange(0,
+                                   static_cast<int>((render_prof.duration / m_unit).to_decimal()));
             blockSignals(false);
         }
 

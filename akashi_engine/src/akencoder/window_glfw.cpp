@@ -49,11 +49,11 @@ namespace akashi {
             }
         }
 
-        void* Window::get_proc_address(void*, const char* name) {
+        void* Window::get_proc_address(const char* name) {
             return reinterpret_cast<void*>(glfwGetProcAddress(name));
         }
 
-        void* Window::egl_get_proc_address(void*, const char* name) {
+        void* Window::egl_get_proc_address(const char* name) {
             // [TODO] add checks for validity of egl?
             return reinterpret_cast<void*>(eglGetProcAddress(name));
         }

@@ -270,6 +270,74 @@ def clamp(x: _TGenType, minVal: float, maxVal: float) -> _TGenType: ...
 def clamp(x, minVal, maxVal) -> Any: ...
 
 
+@overload
+def texture(sampler: gsampler1D['_TGenSamplerType'], P: float, Q: float = 0) -> gvec4['_TGenSamplerType']: ...
+
+
+@overload
+def texture(sampler: gsampler2D['_TGenSamplerType'], P: vec2, Q: float = 0) -> gvec4['_TGenSamplerType']: ...
+
+
+@overload
+def texture(sampler: gsampler3D['_TGenSamplerType'], P: vec3, Q: float = 0) -> gvec4['_TGenSamplerType']: ...
+
+
+@overload
+def texture(sampler: gsamplerCube['_TGenSamplerType'], P: vec3, Q: float = 0) -> gvec4['_TGenSamplerType']: ...
+
+
+@overload
+def texture(sampler: sampler1DShadow, P: vec3, Q: float = 0) -> float: ...
+
+
+@overload
+def texture(sampler: sampler2DShadow, P: vec3, Q: float = 0) -> float: ...
+
+
+@overload
+def texture(sampler: samplerCubeShadow, P: vec4, Q: float = 0) -> float: ...
+
+
+@overload
+def texture(sampler: gsampler1DArray['_TGenSamplerType'], P: vec2, Q: float = 0) -> gvec4['_TGenSamplerType']: ...
+
+
+@overload
+def texture(sampler: gsampler2DArray['_TGenSamplerType'], P: vec3, Q: float = 0) -> gvec4['_TGenSamplerType']: ...
+
+
+@overload
+def texture(sampler: gsamplerCubeArray['_TGenSamplerType'], P: vec4, Q: float = 0) -> gvec4['_TGenSamplerType']: ...
+
+
+@overload
+def texture(sampler: sampler1DArrayShadow, P: vec3, Q: float = 0) -> float: ...
+
+
+@overload
+def texture(sampler: sampler2DArrayShadow, P: vec4, Q: float = 0) -> float: ...
+
+
+# Q is for arity issues. This argument should not be filled in.
+@overload
+def texture(sampler: gsampler2DRect['_TGenSamplerType'], P: vec2,
+            Q: Any = None) -> gvec4['_TGenSamplerType']: ...
+
+
+# Q is for arity issues. This argument should not be filled in.
+@overload
+def texture(sampler: sampler2DRectShadow, P: vec3,
+            Q: Any = None) -> float: ...
+
+
+@overload
+def texture(sampler: gsamplerCubeArrayShadow['_TGenSamplerType'],
+            P: vec4, Q: float) -> float: ...
+
+
+def texture(sampler, P, Q=0) -> Any: ...
+
+
 #
 ''' Function Parameter qualifiers '''
 # https://www.khronos.org/opengl/wiki/Core_Language_(GLSL)#Parameters
@@ -860,8 +928,13 @@ class sampler2DArrayShadow():
     ...
 
 
-class samplerCubeArrayShadow():
+class gsamplerCubeArrayShadow(Generic[_TGenSamplerType]):
     ...
+
+
+samplerCubeArrayShadow = gsamplerCubeArrayShadow[float]
+isamplerCubeArrayShadow = gsamplerCubeArrayShadow[int]
+usamplerCubeArrayShadow = gsamplerCubeArrayShadow[uint]
 
 
 ''' Built-in Variables '''

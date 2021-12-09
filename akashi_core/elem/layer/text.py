@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import typing as tp
 from abc import abstractmethod, ABCMeta
 
@@ -22,7 +22,6 @@ if tp.TYPE_CHECKING:
     from akashi_core.elem.atom import AtomHandle
 
 
-@tp.final
 @dataclass
 class TextStyle:
     font_size: int = 30
@@ -33,16 +32,17 @@ class TextStyle:
 @dataclass
 class TextLocalField:
     text: str
-    style: TextStyle = TextStyle()
+    style: TextStyle = field(init=False)
 
 
-@tp.final
 @dataclass
 class TextEntry(ShaderField, PositionField, LayerField, TextLocalField):
     ...
 
+    def __post_init__(self):
+        self.style = TextStyle()
 
-@tp.final
+
 @dataclass
 class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
 
@@ -51,6 +51,9 @@ class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
 
     def pos(self, x: int, y: int) -> 'TextHandle':
         return super().pos(x, y)
+
+    def z(self, value: float) -> 'TextHandle':
+        return super().z(value)
 
     def frag(self, frag_shader: FragShader) -> 'TextHandle':
         return super().frag(frag_shader)

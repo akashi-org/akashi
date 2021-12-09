@@ -35,7 +35,7 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(state->m_prop_mtx);
                 fps = state->m_prop.fps;
-                duration = to_rational(state->m_prop.render_prof.duration);
+                duration = state->m_prop.render_prof.duration;
                 entry_path = state->m_prop.eval_state.config.entry_path;
             }
 
@@ -60,8 +60,7 @@ namespace akashi {
 
             while (true) {
                 const auto atom_profile = atom_profiles[current_atom_index];
-                if (to_rational(atom_profile.from) <= seek_time &&
-                    seek_time <= to_rational(atom_profile.to)) {
+                if (atom_profile.from <= seek_time && seek_time <= atom_profile.to) {
                     break;
                 } else {
                     if (is_forward_seek) {
@@ -113,8 +112,7 @@ namespace akashi {
             m_event->emit_time_update(seek_time);
             // m_audio->seek(seek_time);
 
-            m_state->m_atomic_state.start_time.store(
-                {.num = seek_time.num(), .den = seek_time.den()});
+            m_state->m_atomic_state.start_time.store(Rational{seek_time.num(), seek_time.den()});
             m_state->m_atomic_state.bytes_played.store(0);
 
             // avbuffer update
@@ -172,7 +170,7 @@ namespace akashi {
             bool seek_completed = false;
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
-                duration = to_rational(m_state->m_prop.render_prof.duration);
+                duration = m_state->m_prop.render_prof.duration;
                 seek_completed = m_state->get_seek_completed();
             }
 

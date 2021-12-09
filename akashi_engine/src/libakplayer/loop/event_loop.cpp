@@ -168,7 +168,7 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(state->m_prop_mtx);
                 fps = state->m_prop.fps;
-                duration = to_rational(state->m_prop.render_prof.duration);
+                duration = state->m_prop.render_prof.duration;
                 entry_path = ctx.state->m_prop.eval_state.config.entry_path;
             }
 
@@ -184,8 +184,7 @@ namespace akashi {
             if (!seek_completed) {
                 start_time = current_time;
             } else {
-                start_time = Rational(eval_buf->empty() ? 0 : eval_buf->front().pts.num,
-                                      eval_buf->empty() ? 1 : eval_buf->front().pts.den);
+                start_time = eval_buf->empty() ? Rational(0l) : eval_buf->front().pts;
             }
 
             auto is_init_pts = start_time.num() == 0 ? true : false;

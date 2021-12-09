@@ -1,6 +1,7 @@
 #include "./akgraphics.h"
 #include "./item.h"
 #include "./context.h"
+
 #include "./backend/opengl.h"
 
 #include <libakcore/memory.h>
@@ -16,7 +17,7 @@ namespace akashi {
 
         AKGraphics::AKGraphics(core::borrowed_ptr<state::AKState> state,
                                core::borrowed_ptr<buffer::AVBuffer> buffer) {
-            m_gfx_ctx = make_owned<GLGraphicsContext>(state, buffer);
+            m_gfx_ctx = make_owned<OGLGraphicsContext>(state, buffer);
         }
 
         AKGraphics::~AKGraphics() {}
@@ -24,10 +25,6 @@ namespace akashi {
         bool AKGraphics::load_api(const GetProcAddress& get_proc_address,
                                   const EGLGetProcAddress& egl_get_proc_address) {
             return m_gfx_ctx->load_api(get_proc_address, egl_get_proc_address);
-        }
-
-        bool AKGraphics::load_fbo(const core::RenderProfile& render_prof, bool flip_y) {
-            return m_gfx_ctx->load_fbo(render_prof, flip_y);
         }
 
         void AKGraphics::render(const RenderParams& params, const core::FrameContext& frame_ctx) {

@@ -141,8 +141,7 @@ namespace akashi {
 
             for (size_t i = 0; i < m_atom_profile.layers.size(); i++) {
                 const auto& layer_prof = m_atom_profile.layers[i];
-                auto within_block = m_dts_src <= core::to_rational(layer_prof.to) &&
-                                    core::to_rational(layer_prof.from) <= m_dts_dest;
+                auto within_block = m_dts_src <= layer_prof.to && layer_prof.from <= m_dts_dest;
                 if (!within_block) {
                     continue;
                 }

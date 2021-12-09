@@ -22,7 +22,6 @@ namespace akashi {
             Q_OBJECT
 
             using RenderProfile = akashi::core::RenderProfile;
-            using Fraction = akashi::core::Fraction;
 
             // If the cursor remains stationary after the time below passed, the cursor gets hidden
             // automatically. This behavior is only applicable when m_enable_smart_cursor is true.
@@ -44,8 +43,8 @@ namespace akashi {
 
           Q_SIGNALS:
             void closed(void);
-            void render_prof_updated(akashi::core::RenderProfile& render_prof);
-            void time_changed(akashi::core::Fraction& time);
+            void render_prof_updated(const akashi::core::RenderProfile& render_prof);
+            void time_changed(const akashi::core::Rational& time);
             void play_state_changed(const akashi::state::PlayState& play_state);
             void seek_completed(void);
 

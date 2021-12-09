@@ -122,7 +122,7 @@ namespace akashi {
         };
 
         core::Rational PulseAudioContext::current_time(void) const {
-            return to_rational(m_state->m_atomic_state.start_time.load()) +
+            return m_state->m_atomic_state.start_time.load() +
                    this->to_pts(m_state->m_atomic_state.bytes_played.load());
         };
 

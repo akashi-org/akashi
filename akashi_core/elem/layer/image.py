@@ -28,13 +28,11 @@ class ImageLocalField:
     stretch: bool = False
 
 
-@tp.final
 @dataclass
 class ImageEntry(ShaderField, PositionField, LayerField, ImageLocalField):
     ...
 
 
-@tp.final
 @dataclass
 class ImageHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
 
@@ -43,6 +41,9 @@ class ImageHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait)
 
     def pos(self, x: int, y: int) -> 'ImageHandle':
         return super().pos(x, y)
+
+    def z(self, value: float) -> 'ImageHandle':
+        return super().z(value)
 
     def frag(self, frag_shader: FragShader) -> 'ImageHandle':
         return super().frag(frag_shader)

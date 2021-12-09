@@ -26,13 +26,11 @@ class VideoLocalField:
 # [TODO] remove DurationConcept later?
 
 
-@tp.final
 @dataclass
 class VideoEntry(PositionField, LayerField, VideoLocalField):
     ...
 
 
-@tp.final
 @dataclass
 class VideoHandle(PositionTrait, LayerTrait):
 
@@ -41,6 +39,9 @@ class VideoHandle(PositionTrait, LayerTrait):
 
     def pos(self, x: int, y: int) -> 'VideoHandle':
         return super().pos(x, y)
+
+    def z(self, value: float) -> 'VideoHandle':
+        return super().z(value)
 
     def frame(self, begin_frame: int, end_frame: int = -1) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):

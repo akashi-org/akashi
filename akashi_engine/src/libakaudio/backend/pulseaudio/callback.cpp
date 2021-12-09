@@ -71,7 +71,7 @@ namespace akashi {
             }
 
             const auto cur_atom_to =
-                to_rational(atom_profiles[m_state->m_atomic_state.current_atom_index.load()].to);
+                atom_profiles[m_state->m_atomic_state.current_atom_index.load()].to;
             Rational next_pts = this->current_time() + this->to_pts(requested_bytes);
 
             if (next_pts <= cur_atom_to) {
@@ -79,7 +79,7 @@ namespace akashi {
             } else {
                 if (this->is_play_over()) {
                     m_state->m_atomic_state.current_atom_index.store(0);
-                    m_state->m_atomic_state.start_time.store({0, 1});
+                    m_state->m_atomic_state.start_time.store(core::Rational{0, 1});
                     m_state->m_atomic_state.bytes_played.store(0);
                     this->incr_loop_cnt();
                 } else {
@@ -211,9 +211,7 @@ namespace akashi {
 
         static bool has_overlap(const LayerProfile& track, const Rational& cur,
                                 const Rational& next) {
-            const auto from = to_rational(track.from);
-            const auto to = to_rational(track.to);
-            return from <= next && to >= cur;
+            return track.from <= next && track.to >= cur;
         }
 
         void stream_write_cb(pa_stream* stream, size_t requested_bytes, void* userdata) {
@@ -254,8 +252,7 @@ namespace akashi {
 
             for (size_t i = 0; i < cur_layers.size(); i++) {
                 if (has_overlap(cur_layers[i], cur_pts, next_pts)) {
-                    const auto offset_pts =
-                        std::max(to_rational(cur_layers[i].from) - cur_pts, Rational(0, 1));
+                    const auto offset_pts = std::max(cur_layers[i].from - cur_pts, Rational(0, 1));
                     size_t offset_bytes = (offset_pts * cb_ctx->bytes_per_second()).to_decimal();
 
                     fill_layer(&s_mask_buf.buf[offset_bytes], requested_bytes - offset_bytes,

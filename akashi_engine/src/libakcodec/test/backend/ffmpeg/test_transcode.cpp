@@ -26,36 +26,36 @@ namespace akashi {
             printf("%s\n", std::filesystem::current_path().c_str());
 
             atom_profiles.push_back(
-                {.from = {.num = 0, .den = 1},
-                 .to = {.num = 10, .den = 1},
-                 .duration = {.num = 10, .den = 1},
+                {.from = Rational{0, 1},
+                 .to = Rational{10, 1},
+                 .duration = Rational{10, 1},
                  .uuid = "0c5f3d5f-56b2-4977-b799-20115f72dbd7",
                  .layers = {
                      {.type = LayerType::VIDEO,
-                      .from = {.num = 0, .den = 1},
-                      .to = {.num = 7, .den = 1},
+                      .from = Rational{0, 1},
+                      .to = Rational{7, 1},
                       .uuid = "c01c77fc-44b0-455d-b91f-870b92212693",
                       .src = "../src/libakcodec/test/fixtures/countdown1/countdown1_720p.mp4",
-                      .start = {.num = 0, .den = 1}},
+                      .start = Rational{0, 1}},
                      {.type = LayerType::VIDEO,
-                      .from = {.num = 2, .den = 1},
-                      .to = {.num = 10, .den = 1},
+                      .from = Rational{2, 1},
+                      .to = Rational{10, 1},
                       .uuid = "d5ed6e83-1b88-4f62-92e3-75b777f1de8c",
                       .src = "../src/libakcodec/test/fixtures/countdown1/countdown1_720p.mp4",
-                      .start = {.num = 0, .den = 1}},
+                      .start = Rational{0, 1}},
                  }});
             atom_profiles.push_back(
-                {.from = {.num = 241, .den = 24}, // 10.041666666666666
-                 .to = {.num = 721, .den = 24},   // 30.041666666666668
-                 .duration = {.num = 20, .den = 1},
+                {.from = Rational{241, 24}, // 10.041666666666666
+                 .to = Rational{721, 24},   // 30.041666666666668
+                 .duration = Rational{20, 1},
                  .uuid = "3de58572-9d86-41a6-9f24-c957a3fef2cc",
                  .layers = {
                      {.type = LayerType::VIDEO,
-                      .from = {.num = 12, .den = 1},
-                      .to = {.num = 17, .den = 1},
+                      .from = Rational{12, 1},
+                      .to = Rational{17, 1},
                       .uuid = "61094793-de40-42c4-af47-eaca4c1b80c3",
                       .src = "../src/libakcodec/test/fixtures/countdown1/countdown1_720p.mp4",
-                      .start = {.num = 0, .den = 1}}
+                      .start = Rational{0, 1}}
 
                  }});
 
@@ -64,9 +64,9 @@ namespace akashi {
             render_prof.atom_profiles = atom_profiles;
             core::Rational global_duration;
             for (const auto& atom_prof : atom_profiles) {
-                global_duration += to_rational(atom_prof.duration);
+                global_duration += atom_prof.duration;
             }
-            render_prof.duration = global_duration.to_fraction();
+            render_prof.duration = global_duration;
 
             AKAudioSpec audio_spec;
             Rational decode_start{0, 1};

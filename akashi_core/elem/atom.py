@@ -28,7 +28,7 @@ class AtomHandle:
 
     _atom_idx: int
 
-    def __enter__(self):
+    def __enter__(self) -> 'AtomHandle':
         return self
 
     def __exit__(self, *ext: tp.Any):

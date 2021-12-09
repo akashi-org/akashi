@@ -5,11 +5,6 @@
 namespace akashi {
     namespace core {
 
-        struct Fraction {
-            int64_t num;
-            int64_t den;
-        };
-
         class Rational final {
           private:
             int64_t m_num = 0;
@@ -23,8 +18,6 @@ namespace akashi {
             const int64_t& den(void) const;
 
             double to_decimal(void) const;
-
-            Fraction to_fraction(void) const { return Fraction{m_num, m_den}; }
 
             Rational operator+(const Rational& other) const;
             Rational operator+=(const Rational& other);
@@ -45,8 +38,6 @@ namespace akashi {
           private:
             void reduce(void);
         };
-
-        Rational to_rational(const Fraction& fraction);
 
     }
 }

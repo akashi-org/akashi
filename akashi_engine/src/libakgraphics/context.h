@@ -29,7 +29,6 @@ namespace akashi {
 
             virtual bool load_api(const GetProcAddress& get_proc_address,
                                   const EGLGetProcAddress& egl_get_proc_address) = 0;
-            virtual bool load_fbo(const core::RenderProfile& render_prof, bool flip_y = true) = 0;
             virtual void render(const RenderParams& params,
                                 const core::FrameContext& frame_ctx) = 0;
             virtual void encode_render(EncodeRenderParams& params,

@@ -74,7 +74,6 @@ file(GLOB INTERFACE_HEADERS
   akcore.h
   audio.h
   class.h
-  common.h
   config.h
   element.h
   error.h

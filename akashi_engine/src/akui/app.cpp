@@ -34,11 +34,6 @@ namespace akashi {
 
             QApplication app(ctx.argc, ctx.argv);
 
-            QSurfaceFormat format;
-            format.setVersion(4, 2);
-            format.setProfile(QSurfaceFormat::CoreProfile);
-            QSurfaceFormat::setDefaultFormat(format);
-
             QApplication::setApplicationName("Akashi Player");
             QTextCodec::setCodecForLocale(QTextCodec::codecForLocale());
 
@@ -55,6 +50,14 @@ namespace akashi {
 
             auto akconf = core::parse_akconfig(ctx.argv[1]);
             akashi::state::AKState state(akconf, ctx.argv[2]);
+
+            QSurfaceFormat format;
+            format.setVersion(4, 2);
+            format.setProfile(QSurfaceFormat::CoreProfile);
+            if (akconf.video.msaa > 0) {
+                format.setSamples(akconf.video.msaa);
+            }
+            QSurfaceFormat::setDefaultFormat(format);
 
             Window window{borrowed_ptr(&state)};
             // disable auto focus on startup

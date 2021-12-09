@@ -1,6 +1,5 @@
 #pragma once
 
-#include "./common.h"
 #include "./rational.h"
 
 #include <string>
@@ -12,15 +11,15 @@ namespace akashi {
         enum class LayerType { VIDEO = 0, AUDIO, TEXT, IMAGE, EFFECT, LENGTH };
 
         struct Style {
-            json::optional::type<uint32_t> font_size;
-            json::optional::type<std::string> font_path;
-            json::optional::type<std::string> fill;
-            json::optional::type<std::string> color;
+            uint32_t font_size;
+            std::string font_path;
+            std::string fill;
+            std::string color;
         };
 
         struct VideoLayerContext {
             std::string src;
-            Fraction start;
+            Rational start = core::Rational(0, 1);
             double scale;
             double gain;
             bool stretch = false;
@@ -30,14 +29,14 @@ namespace akashi {
 
         struct AudioLayerContext {
             std::string src;
-            Fraction start;
+            Rational start = core::Rational(0, 1);
             double gain;
         };
 
         struct TextLayerContext {
             std::string text;
             double scale;
-            json::optional::type<Style> style;
+            Style style;
             std::vector<std::string> frag;
             std::vector<std::string> poly;
         };
@@ -58,8 +57,9 @@ namespace akashi {
         struct LayerContext {
             double x;
             double y;
-            Fraction from;
-            Fraction to;
+            double z = 0.0;
+            Rational from = core::Rational(0, 1);
+            Rational to = core::Rational(0, 1);
             int type;
             std::string uuid;
             std::string atom_uuid;
@@ -92,30 +92,30 @@ namespace akashi {
         };
 
         struct FrameContext {
-            Fraction pts;
+            Rational pts;
             std::vector<LayerContext> layer_ctxs;
         };
 
         struct LayerProfile {
             LayerType type;
-            Fraction from;
-            Fraction to;
+            Rational from = core::Rational(0, 1);
+            Rational to = core::Rational(0, 1);
             std::string uuid;
             std::string src;
-            Fraction start;
+            Rational start = core::Rational(0, 1);
             double gain;
         };
 
         struct AtomProfile {
-            Fraction from;
-            Fraction to;
-            Fraction duration;
+            Rational from = core::Rational(0, 1);
+            Rational to = core::Rational(0, 1);
+            Rational duration = core::Rational(0, 1);
             std::string uuid;
             std::vector<LayerProfile> layers;
         };
 
         struct RenderProfile {
-            Fraction duration;
+            Rational duration = core::Rational(0, 1);
             std::string uuid;
             std::vector<AtomProfile> atom_profiles;
         };

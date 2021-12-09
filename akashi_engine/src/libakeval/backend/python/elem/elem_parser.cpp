@@ -5,7 +5,6 @@
 
 #include <libakcore/element.h>
 #include <libakcore/logger.h>
-#include <libakcore/common.h>
 
 #include <pybind11/embed.h>
 
@@ -24,14 +23,9 @@ namespace akashi {
 
         static core::Style parse_style(const pybind11::object& style_obj) {
             core::Style style;
-
-            style.font_size[core::json::optional::attr_name] =
-                style_obj.attr("font_size").cast<unsigned long>();
-            style.font_path[core::json::optional::attr_name] =
-                style_obj.attr("font_path").cast<std::string>();
-            style.fill[core::json::optional::attr_name] =
-                style_obj.attr("fill").cast<std::string>();
-
+            style.font_size = style_obj.attr("font_size").cast<unsigned long>();
+            style.font_path = style_obj.attr("font_path").cast<std::string>();
+            style.fill = style_obj.attr("fill").cast<std::string>();
             return style;
         }
 
@@ -52,15 +46,15 @@ namespace akashi {
             // layer_ctx.display = layer_params.attr("_display").cast<bool>();
             layer_ctx.display = true;
 
-            layer_ctx.from = to_rational(layer_params.attr("atom_offset")).to_fraction();
+            layer_ctx.from = to_rational(layer_params.attr("atom_offset"));
             layer_ctx.to = (to_rational(layer_params.attr("duration")) +
-                            to_rational(layer_params.attr("atom_offset")))
-                               .to_fraction();
+                            to_rational(layer_params.attr("atom_offset")));
 
             if (has_field(layer_params, "PositionField")) {
                 const auto& pos = layer_params.attr("pos").cast<std::tuple<long, long>>();
                 layer_ctx.x = std::get<0>(pos);
                 layer_ctx.y = std::get<1>(pos);
+                layer_ctx.z = layer_params.attr("z").cast<double>();
             }
 
             std::string type_str = layer_params.attr("kind").cast<std::string>();
@@ -72,8 +66,7 @@ namespace akashi {
 
                 layer_ctx.video_layer_ctx.stretch = layer_params.attr("stretch").cast<bool>();
 
-                layer_ctx.video_layer_ctx.start =
-                    to_rational(layer_params.attr("start")).to_fraction();
+                layer_ctx.video_layer_ctx.start = to_rational(layer_params.attr("start"));
                 layer_ctx.video_layer_ctx.scale = 1.0;
 
                 layer_ctx.video_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
@@ -86,7 +79,7 @@ namespace akashi {
 
                 // layer_ctx.audio_layer_ctx.start =
                 //     to_rational(layer_params.attr("start")).to_fraction();
-                layer_ctx.audio_layer_ctx.start = core::Rational(0l).to_fraction();
+                layer_ctx.audio_layer_ctx.start = core::Rational(0l);
 
             } else if (type_str == "IMAGE") {
                 layer_ctx.type = static_cast<int>(core::LayerType::IMAGE);
@@ -103,8 +96,7 @@ namespace akashi {
             } else if (type_str == "TEXT") {
                 layer_ctx.type = static_cast<int>(core::LayerType::TEXT);
                 layer_ctx.text_layer_ctx.text = layer_params.attr("text").cast<std::string>();
-                layer_ctx.text_layer_ctx.style[core::json::optional::attr_name] =
-                    parse_style(layer_params.attr("style"));
+                layer_ctx.text_layer_ctx.style = parse_style(layer_params.attr("style"));
                 layer_ctx.text_layer_ctx.scale = 1.0;
 
                 layer_ctx.text_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));

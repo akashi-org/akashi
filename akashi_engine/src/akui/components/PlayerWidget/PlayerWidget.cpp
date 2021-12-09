@@ -22,7 +22,7 @@ using namespace akashi::core;
 namespace akashi {
     namespace ui {
 
-        static void* get_proc_address(void*, const char* name) {
+        static void* get_proc_address(const char* name) {
             QOpenGLContext* glctx = QOpenGLContext::currentContext();
             if (!glctx) {
                 return nullptr;
@@ -30,7 +30,7 @@ namespace akashi {
             return reinterpret_cast<void*>(glctx->getProcAddress(QByteArray(name)));
         }
 
-        static void* egl_get_proc_address(void*, const char* name) {
+        static void* egl_get_proc_address(const char* name) {
             // [TODO] add checks for validity of egl?
             return reinterpret_cast<void*>(eglGetProcAddress(name));
         }
@@ -129,10 +129,8 @@ namespace akashi {
 
             switch (evt.name) {
                 case EventName::TIME_UPDATE: {
-                    Fraction frac;
-                    frac.num = evt.int64_value;
-                    frac.den = evt.int64_value2;
-                    Q_EMIT this->time_changed(frac);
+                    core::Rational rat{evt.int64_value, evt.int64_value2};
+                    Q_EMIT this->time_changed(rat);
                     break;
                 }
                 case EventName::SET_RENDER_PROF: {

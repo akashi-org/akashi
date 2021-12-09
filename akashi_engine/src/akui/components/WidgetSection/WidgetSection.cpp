@@ -132,7 +132,7 @@ namespace akashi {
             double sec = 0;
             double ms = 0;
             QTime qtime(0, 0, 0, 0);
-            ms = std::modf(to_rational(render_prof.duration).to_decimal(), &sec);
+            ms = std::modf(render_prof.duration.to_decimal(), &sec);
             qtime = qtime.addSecs(sec).addMSecs(ms * 1000);
             this->durationLabel->setText(qtime.toString("hh:mm:ss.zzz"));
         }

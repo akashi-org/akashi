@@ -29,7 +29,7 @@ class LaneHandle:
 
     __lane_idx: int = field(default=-1, init=False)
 
-    def __enter__(self):
+    def __enter__(self) -> 'LaneHandle':
         cur_atom = gctx.get_ctx().atoms[-1]
         if cur_atom._on_lane:
             raise Exception('Nested lanes is prohibited')
@@ -76,7 +76,7 @@ class LaneHandle:
 
         return False
 
-    def pad(self, pad_sec: sec):
+    def pad(self, pad_sec: sec) -> None:
         cur_atom = gctx.get_ctx().atoms[-1]
         cur_atom._lanes[self.__lane_idx].items.append(LanePad(pad_sec))
 
