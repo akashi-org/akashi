@@ -42,11 +42,12 @@ namespace akashi {
                            const core::FrameContext& frame_ctx) {
             // render layers to fbo
             CHECK_AK_ERROR2(this->render_layers(ctx, frame_ctx));
+            ctx.fbo().resolve();
 
             // render fbo to the provided framebuffer
             this->init_renderer({params.default_fb, params.screen_width, params.screen_height});
 
-            ctx.fbo().render(ctx.camera()->vp_mat());
+            ctx.mut_fbo().render(ctx);
 
             return true;
         }
@@ -54,6 +55,7 @@ namespace akashi {
         bool Stage::encode_render(OGLRenderContext& ctx, const core::FrameContext& frame_ctx) {
             // render layers to fbo
             CHECK_AK_ERROR2(this->render_layers(ctx, frame_ctx));
+            ctx.fbo().resolve();
             return true;
         }
 

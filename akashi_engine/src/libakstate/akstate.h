@@ -178,6 +178,8 @@ namespace akashi {
             // no need to be synced?
             core::UIConf m_ui_conf;
 
+            core::VideoConf m_video_conf;
+
             core::Path m_conf_path;
 
           public:

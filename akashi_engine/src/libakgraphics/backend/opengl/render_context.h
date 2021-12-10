@@ -28,6 +28,8 @@ namespace akashi {
 
             const FBO& fbo() const;
 
+            FBO& mut_fbo();
+
             core::borrowed_ptr<Camera> mut_camera();
 
             const core::borrowed_ptr<Camera> camera() const;
@@ -39,6 +41,8 @@ namespace akashi {
             std::array<int, 2> resolution();
 
             std::string default_font_path();
+
+            int msaa();
 
             std::unique_ptr<buffer::AVBufferData> dequeue(std::string layer_uuid,
                                                           const core::Rational& pts);

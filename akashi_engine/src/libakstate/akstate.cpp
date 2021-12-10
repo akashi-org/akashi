@@ -30,6 +30,7 @@ namespace akashi {
 
             m_encode_conf = akconf.encode;
             m_ui_conf = akconf.ui;
+            m_video_conf = akconf.video;
         }
 
         AKState::~AKState() {

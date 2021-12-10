@@ -28,9 +28,11 @@ namespace akashi {
             explicit FBO() = default;
             virtual ~FBO() = default;
 
-            bool create(int fbo_width, int fbo_height);
+            bool create(int fbo_width, int fbo_height, int msaa = 0);
 
-            bool render(const glm::mat4& pv) const;
+            bool render(OGLRenderContext& ctx);
+
+            void resolve() const;
 
             void destroy();
 
@@ -38,14 +40,20 @@ namespace akashi {
 
             const FBInfo& info() const;
 
+            bool dst_fbo(GLuint* fbo) const;
+
             bool texture(OGLTexture& in_tex) const;
+
+            bool msaa_texture(OGLTexture& in_tex) const;
 
           private:
             bool load_pass();
 
             bool load_texture();
 
-            bool load_fbo();
+            bool load_msaa_texture(int msaa);
+
+            bool load_fbo(int msaa);
 
             glm::mat4 get_model_mat() const;
 

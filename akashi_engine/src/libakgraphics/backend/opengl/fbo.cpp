@@ -2,6 +2,8 @@
 #include "./meshes/quad.h"
 #include "./core/shader.h"
 #include "./core/texture.h"
+#include "./render_context.h"
+#include "./camera.h"
 
 #include <libakcore/error.h>
 #include <libakcore/logger.h>
@@ -51,10 +53,14 @@ namespace akashi {
 
             OGLTexture tex;
 
+            OGLTexture msaa_tex;
+
+            GLuint dst_fbo;
+
             GLuint depth_buffer;
         };
 
-        bool FBO::create(int fbo_width, int fbo_height) {
+        bool FBO::create(int fbo_width, int fbo_height, int msaa) {
             if (m_pass) {
                 AKLOG_ERRORN("Pass already loaded");
                 return false;
@@ -65,16 +71,18 @@ namespace akashi {
             m_info.width = fbo_width;
             m_info.height = fbo_height;
 
+            CHECK_AK_ERROR2(this->load_msaa_texture(msaa));
             CHECK_AK_ERROR2(this->load_texture());
             CHECK_AK_ERROR2(this->load_pass());
-            CHECK_AK_ERROR2(this->load_fbo());
+
+            CHECK_AK_ERROR2(this->load_fbo(msaa));
 
             m_initialized = true;
 
             return true;
         }
 
-        bool FBO::render(const glm::mat4& pv) const {
+        bool FBO::render(OGLRenderContext& ctx) {
             if (!m_initialized) {
                 AKLOG_ERRORN("FBO is not yet initialized");
                 return false;
@@ -84,7 +92,7 @@ namespace akashi {
 
             use_ogl_texture(m_pass->tex, m_pass->tex_loc);
 
-            glm::mat4 new_mvp = pv * this->get_model_mat();
+            glm::mat4 new_mvp = ctx.camera()->vp_mat() * this->get_model_mat();
 
             glUniformMatrix4fv(m_pass->mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
             glBindVertexArray(m_pass->mesh.vao());
@@ -97,12 +105,22 @@ namespace akashi {
             return true;
         }
 
+        void FBO::resolve() const {
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, m_info.fbo);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pass->dst_fbo);
+            glBlitFramebuffer(0, 0, m_info.width, m_info.height, 0, 0, m_info.width, m_info.height,
+                              GL_COLOR_BUFFER_BIT, GL_LINEAR);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
         void FBO::destroy() {
             if (m_pass) {
                 glDeleteRenderbuffers(1, &m_pass->depth_buffer);
                 m_pass->mesh.destroy();
                 free_ogl_texture(m_pass->tex);
+                free_ogl_texture(m_pass->msaa_tex);
                 glDeleteProgram(m_pass->prog);
+                glDeleteFramebuffers(1, &m_pass->dst_fbo);
                 delete m_pass;
             }
             glDeleteFramebuffers(1, &m_info.fbo);
@@ -112,9 +130,27 @@ namespace akashi {
 
         const FBInfo& FBO::info() const { return m_info; }
 
+        bool FBO::dst_fbo(GLuint* fbo) const {
+            if (m_pass) {
+                *fbo = m_pass->dst_fbo;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
         bool FBO::texture(OGLTexture& in_tex) const {
             if (m_pass) {
                 in_tex = m_pass->tex;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        bool FBO::msaa_texture(OGLTexture& in_tex) const {
+            if (m_pass) {
+                in_tex = m_pass->msaa_tex;
                 return true;
             } else {
                 return false;
@@ -171,7 +207,29 @@ namespace akashi {
             return true;
         }
 
-        bool FBO::load_fbo() {
+        bool FBO::load_msaa_texture(int msaa) {
+            m_pass->msaa_tex.width = m_info.width;
+            m_pass->msaa_tex.height = m_info.height;
+            m_pass->msaa_tex.effective_width = m_info.width;
+            m_pass->msaa_tex.effective_height = m_info.height;
+            m_pass->msaa_tex.image = nullptr;
+            m_pass->msaa_tex.index = FBO::FBO_TEX_UNIT;
+            m_pass->msaa_tex.target = GL_TEXTURE_2D_MULTISAMPLE;
+
+            glGenTextures(1, &m_pass->msaa_tex.buffer);
+
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_pass->msaa_tex.buffer);
+            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa,
+                                    m_pass->msaa_tex.internal_format, m_pass->msaa_tex.width,
+                                    m_pass->msaa_tex.height, GL_TRUE);
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+
+            CHECK_GL_ERRORS();
+
+            return true;
+        }
+
+        bool FBO::load_fbo(int msaa) {
             GLint bounded_fbo;
             glGetIntegerv(GL_FRAMEBUFFER_BINDING, &bounded_fbo);
 
@@ -180,24 +238,41 @@ namespace akashi {
 
             glGenRenderbuffers(1, &m_pass->depth_buffer);
             glBindRenderbuffer(GL_RENDERBUFFER, m_pass->depth_buffer);
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_info.width, m_info.height);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, msaa, GL_DEPTH_COMPONENT,
+                                             m_info.width, m_info.height);
             glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,
                                       m_pass->depth_buffer);
             // [TODO] stencil?
 
-            glBindTexture(GL_TEXTURE_2D, m_pass->tex.buffer);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                                   m_pass->tex.buffer, 0);
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_pass->msaa_tex.buffer);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE,
+                                   m_pass->msaa_tex.buffer, 0);
 
             GLenum err = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
-            glBindTexture(GL_TEXTURE_2D, 0);
-            glBindFramebuffer(GL_FRAMEBUFFER, bounded_fbo);
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
             if (err != GL_FRAMEBUFFER_COMPLETE) {
                 AKLOG_ERROR("Failed to create FBO: 0x{:x}, {}", err, gl_err_to_str(err));
                 return false;
             }
+
+            glGenFramebuffers(1, &m_pass->dst_fbo);
+            glBindFramebuffer(GL_FRAMEBUFFER, m_pass->dst_fbo);
+
+            glBindTexture(GL_TEXTURE_2D, m_pass->tex.buffer);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                                   m_pass->tex.buffer, 0);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            err = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+            if (err != GL_FRAMEBUFFER_COMPLETE) {
+                AKLOG_ERROR("Failed to create FBO: 0x{:x}, {}", err, gl_err_to_str(err));
+                return false;
+            }
+
+            glBindFramebuffer(GL_FRAMEBUFFER, bounded_fbo);
+
             return true;
         }
 

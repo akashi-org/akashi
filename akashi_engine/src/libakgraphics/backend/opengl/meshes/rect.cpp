@@ -133,10 +133,17 @@ namespace akashi {
                 }
 
                 // [TODO] calc lod for different radius
-                constexpr int lod = 64;
+                // int lod = radius <= 1.0f    ? 3
+                //           : radius <= 6.0f  ? 5
+                //           : radius <= 12.0f ? 9
+                //                             : std::min(64.0f, (radius * 0.2f) + 6);
+
+                int lod = 16;
+
                 std::array<GLfloat, 3> center_pos = {0.0, 0.0, 0.0};
-                constexpr int vertice_point_length = (lod * 4) + 1;
-                std::array<GLfloat, vertice_point_length * 3> vertices{0};
+                size_t vertice_point_length = (lod * 4) + 1;
+                // std::array<GLfloat, vertice_point_length * 3> vertices{0};
+                std::vector<GLfloat> vertices(vertice_point_length * 3, 0);
 
                 auto delta = M_PI_2 / (lod - 1);
 
@@ -152,11 +159,14 @@ namespace akashi {
                 vertices[v_index++] = center_pos[1];
                 vertices[v_index++] = center_pos[2];
 
-                std::vector<std::array<GLfloat, 2>> buffers(lod, {0, 0});
+                std::vector<std::array<double, 2>> buffers(lod, {0, 0});
                 for (int i = 0; i < lod; i++) {
                     auto rad = delta * i;
-                    buffers[i] = {(float)cos(rad) * radius, (float)sin(rad) * radius};
+                    buffers[i] = {(double)cos(rad) * radius, (double)sin(rad) * radius};
                 }
+                // hacks for arithmetic error
+                buffers[0] = {radius, 0};
+                buffers[lod - 1] = {0, radius};
 
                 // left-top
                 for (int i = 0; i < lod; i++) {
@@ -175,8 +185,12 @@ namespace akashi {
                 // right-bottom
                 for (int i = 0; i < lod; i++) {
                     vertices[v_index++] = centers[2][0] + buffers[i][0]; // x
-                    vertices[v_index++] = centers[2][1] - buffers[i][1]; // y
-                    vertices[v_index++] = centers[2][2];                 // z
+                    if (i == lod - 1) {
+                        vertices[v_index++] = -hheight; // y
+                    } else {
+                        vertices[v_index++] = centers[2][1] - buffers[i][1]; // y
+                    }
+                    vertices[v_index++] = centers[2][2]; // z
                 }
 
                 // left-bottom
@@ -187,16 +201,18 @@ namespace akashi {
                 }
 
                 GLuint vertices_vbo;
-                create_buffer(vertices_vbo, GL_ARRAY_BUFFER, vertices.data(), sizeof(vertices));
+                create_buffer(vertices_vbo, GL_ARRAY_BUFFER, vertices.data(),
+                              sizeof(GLfloat) * vertices.size());
 
                 glBindBuffer(GL_ARRAY_BUFFER, vertices_vbo);
                 glEnableVertexAttribArray(vertices_loc);
                 glVertexAttribPointer(vertices_loc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat),
                                       (GLvoid*)0);
 
-                constexpr size_t ibo_size = (4 * lod) * 3;
+                size_t ibo_size = (4 * lod) * 3;
                 auto ibo_index = 0;
-                std::array<unsigned short, ibo_size> indices{0};
+                // std::array<unsigned short, ibo_size> indices{0};
+                std::vector<unsigned short> indices(ibo_size, 0);
 
                 for (size_t i = 1; i < vertice_point_length; i++) {
                     if (i == vertice_point_length - 1) {
@@ -210,7 +226,8 @@ namespace akashi {
                     }
                 }
 
-                create_buffer(ibo, GL_ELEMENT_ARRAY_BUFFER, indices.data(), sizeof(indices));
+                create_buffer(ibo, GL_ELEMENT_ARRAY_BUFFER, indices.data(),
+                              sizeof(unsigned short) * indices.size());
                 ibo_length = ibo_size;
 
                 return true;
