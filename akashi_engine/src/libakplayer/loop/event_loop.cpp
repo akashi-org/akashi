@@ -79,6 +79,8 @@ namespace akashi {
                 std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
                 ctx.state->m_prop.need_first_render = true;
             }
+            AKLOG_DEBUGN("Initial Render Call");
+            event->emit_update();
 
             SeekManager seek_mgr{state, buffer, event, eval_buf, borrowed_ptr(eval)};
 

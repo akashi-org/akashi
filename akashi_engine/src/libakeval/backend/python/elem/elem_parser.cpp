@@ -23,18 +23,31 @@ namespace akashi {
 
         static core::Style parse_style(const pybind11::object& style_obj) {
             core::Style style;
-            style.font_size = style_obj.attr("font_size").cast<unsigned long>();
             style.font_path = style_obj.attr("font_path").cast<std::string>();
-            style.fill = style_obj.attr("fill").cast<std::string>();
+            style.fg_size = style_obj.attr("fg_size").cast<unsigned long>();
+            style.fg_color = style_obj.attr("fg_color").cast<std::string>();
+            style.use_outline = style_obj.attr("use_outline").cast<bool>();
+            style.outline_size = style_obj.attr("outline_size").cast<unsigned long>();
+            style.outline_color = style_obj.attr("outline_color").cast<std::string>();
+            style.use_shadow = style_obj.attr("use_shadow").cast<bool>();
+            style.shadow_size = style_obj.attr("shadow_size").cast<unsigned long>();
+            style.shadow_color = style_obj.attr("shadow_color").cast<std::string>();
             return style;
         }
 
-        static std::vector<std::string> parse_shader(const pybind11::object& shader_obj) {
-            std::vector<std::string> res_shaders;
+        static std::string parse_shader(const pybind11::object& shader_obj) {
             if (!shader_obj.is_none()) {
-                res_shaders.push_back(shader_obj.attr("_assemble")().cast<std::string>());
+                return shader_obj.attr("_assemble")().cast<std::string>();
             }
-            return res_shaders;
+            return "";
+        }
+
+        static core::TextLabel parse_text_label(const pybind11::object& label_obj) {
+            core::TextLabel label;
+            label.color = label_obj.attr("color").cast<std::string>();
+            label.frag = parse_shader(label_obj.attr("frag_shader"));
+            label.poly = parse_shader(label_obj.attr("poly_shader"));
+            return label;
         }
 
         core::LayerContext parse_layer_context(const pybind11::object& layer_params) {
@@ -98,6 +111,25 @@ namespace akashi {
                 layer_ctx.text_layer_ctx.text = layer_params.attr("text").cast<std::string>();
                 layer_ctx.text_layer_ctx.style = parse_style(layer_params.attr("style"));
                 layer_ctx.text_layer_ctx.scale = 1.0;
+
+                layer_ctx.text_layer_ctx.label = parse_text_label(layer_params.attr("label"));
+
+                std::string text_align_str = layer_params.attr("text_align").cast<std::string>();
+                if (text_align_str == "center") {
+                    layer_ctx.text_layer_ctx.text_align = core::TextAlign::CENTER;
+                } else if (text_align_str == "right") {
+                    layer_ctx.text_layer_ctx.text_align = core::TextAlign::RIGHT;
+                } else {
+                    layer_ctx.text_layer_ctx.text_align = core::TextAlign::LEFT;
+                }
+
+                auto pads = layer_params.attr("pad").cast<std::tuple<long, long, long, long>>();
+                layer_ctx.text_layer_ctx.pad[0] = std::get<0>(pads);
+                layer_ctx.text_layer_ctx.pad[1] = std::get<1>(pads);
+                layer_ctx.text_layer_ctx.pad[2] = std::get<2>(pads);
+                layer_ctx.text_layer_ctx.pad[3] = std::get<3>(pads);
+
+                layer_ctx.text_layer_ctx.line_span = layer_params.attr("line_span").cast<int32_t>();
 
                 layer_ctx.text_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
                 layer_ctx.text_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));

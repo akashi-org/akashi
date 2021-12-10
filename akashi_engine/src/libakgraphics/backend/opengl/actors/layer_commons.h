@@ -176,28 +176,22 @@ namespace akashi {
                 glm::mat4 model_mat = glm::mat4(1.0f);
             };
 
-            inline bool load_shaders(const GLuint prog, const core::LayerContext& layer,
-                                     const core::LayerType& type) {
+            inline bool load_shaders(const GLuint prog, const core::LayerType& type,
+                                     const std::string& u_poly_shader,
+                                     const std::string& u_frag_shader) {
                 CHECK_AK_ERROR2(compile_attach_shader(prog, GL_VERTEX_SHADER, vshader_src));
                 CHECK_AK_ERROR2(compile_attach_shader(
                     prog, GL_FRAGMENT_SHADER,
                     type == core::LayerType::IMAGE ? image_fshader_src : fshader_src));
 
-                auto frag_shaders = GET_SHADER(frag, layer, type);
-                if (frag_shaders.empty()) {
-                    CHECK_AK_ERROR2(
-                        compile_attach_shader(prog, GL_FRAGMENT_SHADER, default_user_fshader_src));
-                } else {
-                    for (const auto& frag_shader : frag_shaders) {
-                        CHECK_AK_ERROR2(
-                            compile_attach_shader(prog, GL_FRAGMENT_SHADER, frag_shader.c_str()));
-                    }
-                }
+                std::string frag_shader =
+                    u_frag_shader.empty() ? default_user_fshader_src : u_frag_shader;
+                CHECK_AK_ERROR2(
+                    compile_attach_shader(prog, GL_FRAGMENT_SHADER, frag_shader.c_str()));
 
-                auto poly_shader = GET_SHADER(poly, layer, type);
-                CHECK_AK_ERROR2(compile_attach_shader(
-                    prog, GL_VERTEX_SHADER,
-                    poly_shader.empty() ? default_user_pshader_src : poly_shader[0].c_str()));
+                std::string poly_shader =
+                    u_poly_shader.empty() ? default_user_pshader_src : u_poly_shader;
+                CHECK_AK_ERROR2(compile_attach_shader(prog, GL_VERTEX_SHADER, poly_shader.c_str()));
 
                 CHECK_AK_ERROR2(
                     compile_attach_shader(prog, GL_GEOMETRY_SHADER, default_user_gshader_src));
@@ -206,7 +200,7 @@ namespace akashi {
                 return true;
             }
 
-            inline glm::vec3 get_trans_vec(const core::LayerContext& layer_ctx) {
+            inline glm::vec3 get_trans_vec(const std::array<double, 3>& layer_pos) {
                 GLint viewport[4];
                 glGetIntegerv(GL_VIEWPORT, viewport);
                 int screen_width = viewport[2];
@@ -215,10 +209,10 @@ namespace akashi {
                 auto c_x = core::Rational(screen_width, 2);
                 auto c_y = core::Rational(screen_height, 2);
 
-                auto a_x = core::Rational(layer_ctx.x); // mouse coord
-                auto a_y = core::Rational(layer_ctx.y); // mouse coord
+                auto a_x = core::Rational(layer_pos[0]); // mouse coord
+                auto a_y = core::Rational(layer_pos[1]); // mouse coord
 
-                return glm::vec3((a_x - c_x).to_decimal(), -(a_y - c_y).to_decimal(), layer_ctx.z);
+                return glm::vec3((a_x - c_x).to_decimal(), -(a_y - c_y).to_decimal(), layer_pos[2]);
             }
 
         }

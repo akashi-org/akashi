@@ -12,6 +12,7 @@ namespace akashi {
 
         class TextActor : public Actor {
             struct Pass;
+            struct LabelPass;
 
           public:
             explicit TextActor() = default;
@@ -27,12 +28,18 @@ namespace akashi {
           private:
             bool load_pass(OGLRenderContext& ctx);
 
+            bool load_label_pass(OGLRenderContext& ctx);
+
             bool load_texture(OGLRenderContext& ctx);
 
-            void update_model_mat();
+            bool render_pass(const TextActor::Pass& pass, OGLRenderContext& ctx,
+                             const core::Rational& pts);
+
+            void update_model_mat(TextActor::Pass& pass);
 
           private:
             TextActor::Pass* m_pass = nullptr;
+            TextActor::Pass* m_lb_pass = nullptr;
         };
     }
 

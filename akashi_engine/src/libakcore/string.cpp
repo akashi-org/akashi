@@ -2,7 +2,7 @@
 
 #include "./logger.h"
 
-#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <string>
 #include <cstdlib>
@@ -53,6 +53,12 @@ namespace akashi {
 
         bool ends_with(const std::string& str, const std::string& pat) {
             return boost::algorithm::ends_with(str, pat);
+        }
+
+        std::vector<std::string> split_by(const std::string& in_str, const std::string& delim) {
+            std::vector<std::string> parts;
+            boost::split(parts, in_str, boost::is_any_of(delim));
+            return parts;
         }
 
     }

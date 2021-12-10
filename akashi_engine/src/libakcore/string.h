@@ -3,6 +3,7 @@
 #include "./class.h"
 #include <string>
 #include <cstdlib>
+#include <vector>
 
 namespace akashi {
     namespace core {
@@ -35,6 +36,8 @@ namespace akashi {
         };
 
         bool ends_with(const std::string& str, const std::string& pat);
+
+        std::vector<std::string> split_by(const std::string& in_str, const std::string& delim);
 
     }
 }

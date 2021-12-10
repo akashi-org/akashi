@@ -299,7 +299,8 @@ namespace akashi {
             CHECK_AK_ERROR2(m_pass->mesh.create(mesh_size, m_pass->vtex.info(), vertices_loc,
                                                 luma_uvs_loc, chroma_uvs_loc));
 
-            m_pass->trans_vec = layer_commons::get_trans_vec(m_layer_ctx);
+            m_pass->trans_vec =
+                layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
             m_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.video_layer_ctx.scale;
             this->update_model_mat();
 
@@ -314,21 +315,15 @@ namespace akashi {
                 m_pass->vtex.decode_method() == VideoDecodeMethod::SW ? color_conv_fshader_sw
                                                                       : color_conv_fshader_vaapi));
 
-            auto frag_shaders = m_layer_ctx.video_layer_ctx.frag;
-            if (frag_shaders.empty()) {
-                CHECK_AK_ERROR2(compile_attach_shader(m_pass->prog, GL_FRAGMENT_SHADER,
-                                                      default_user_fshader_src));
-            } else {
-                for (const auto& frag_shader : frag_shaders) {
-                    CHECK_AK_ERROR2(compile_attach_shader(m_pass->prog, GL_FRAGMENT_SHADER,
-                                                          frag_shader.c_str()));
-                }
-            }
+            auto frag_shader = m_layer_ctx.video_layer_ctx.frag;
+            CHECK_AK_ERROR2(compile_attach_shader(m_pass->prog, GL_FRAGMENT_SHADER,
+                                                  frag_shader.empty() ? default_user_fshader_src
+                                                                      : frag_shader.c_str()));
 
             auto poly_shader = m_layer_ctx.video_layer_ctx.poly;
             CHECK_AK_ERROR2(compile_attach_shader(m_pass->prog, GL_VERTEX_SHADER,
                                                   poly_shader.empty() ? default_user_pshader_src
-                                                                      : poly_shader[0].c_str()));
+                                                                      : poly_shader.c_str()));
 
             CHECK_AK_ERROR2(
                 compile_attach_shader(m_pass->prog, GL_GEOMETRY_SHADER, default_user_gshader_src));
