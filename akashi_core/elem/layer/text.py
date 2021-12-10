@@ -42,6 +42,7 @@ class TextStyle:
 class TextLabel:
     color: str = "#ffffff00"  # "#rrggbb" or "#rrggbbaa"
     src: str = ""  # expects image path
+    radius: int = 0
     frag_shader: tp.Optional[FragShader] = None
     poly_shader: tp.Optional[PolygonShader] = None
 
@@ -161,6 +162,11 @@ class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
     def label_src(self, src: str) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.label.src = src
+        return self
+
+    def label_radius(self, radius: int) -> 'TextHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
+            cur_layer.label.radius = radius
         return self
 
     def label_poly(self, poly: PolygonShader) -> 'TextHandle':

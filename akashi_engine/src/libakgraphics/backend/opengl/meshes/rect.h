@@ -20,5 +20,19 @@ namespace akashi {
             void destroy() override;
         };
 
+        class RoundRectMesh final : public BaseMesh {
+          public:
+            explicit RoundRectMesh() : BaseMesh(){};
+            virtual ~RoundRectMesh() = default;
+
+            bool create(const std::array<float, 2>& size, const GLfloat radius,
+                        const GLuint vertices_loc);
+
+            bool create_border(const std::array<float, 2>& size, const GLfloat border_width,
+                               const GLuint vertices_loc);
+
+            void destroy() override;
+        };
+
     }
 }

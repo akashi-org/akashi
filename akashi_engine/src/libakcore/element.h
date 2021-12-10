@@ -28,6 +28,7 @@ namespace akashi {
         struct TextLabel {
             std::string color;
             std::string src;
+            uint32_t radius;
             std::string frag;
             std::string poly;
         };

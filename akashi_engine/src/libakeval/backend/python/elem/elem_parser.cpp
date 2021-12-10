@@ -46,6 +46,7 @@ namespace akashi {
             core::TextLabel label;
             label.color = label_obj.attr("color").cast<std::string>();
             label.src = label_obj.attr("src").cast<std::string>();
+            label.radius = label_obj.attr("radius").cast<unsigned long>();
             label.frag = parse_shader(label_obj.attr("frag_shader"));
             label.poly = parse_shader(label_obj.attr("poly_shader"));
             return label;

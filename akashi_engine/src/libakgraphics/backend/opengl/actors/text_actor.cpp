@@ -172,12 +172,21 @@ namespace akashi {
                 this->load_label_texture(*m_lb_pass, label_src);
             }
 
-            m_lb_pass->mesh = new QuadMesh;
+            auto radius = m_layer_ctx.text_layer_ctx.label.radius;
 
-            CHECK_AK_ERROR2(static_cast<QuadMesh*>(m_lb_pass->mesh)
-                                ->create({(float)m_pass->tex.effective_width,
-                                          (float)m_pass->tex.effective_height},
-                                         vertices_loc, uvs_loc));
+            if (radius > 0) {
+                m_lb_pass->mesh = new RoundRectMesh;
+                static_cast<RoundRectMesh*>(m_lb_pass->mesh)
+                    ->create(
+                        {(float)m_pass->tex.effective_width, (float)m_pass->tex.effective_height},
+                        radius, vertices_loc);
+            } else {
+                m_lb_pass->mesh = new QuadMesh;
+                static_cast<QuadMesh*>(m_lb_pass->mesh)
+                    ->create(
+                        {(float)m_pass->tex.effective_width, (float)m_pass->tex.effective_height},
+                        vertices_loc, uvs_loc);
+            }
 
             m_lb_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
