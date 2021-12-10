@@ -4,8 +4,10 @@
 #include "../render_context.h"
 #include "../camera.h"
 #include "../resource/font.h"
+#include "../resource/image.h"
 #include "../fbo.h"
 #include "../core/texture.h"
+#include "../meshes/rect.h"
 
 #include <libakcore/rational.h>
 #include <libakcore/logger.h>
@@ -19,54 +21,61 @@ namespace akashi {
         struct TextActor::Pass : public layer_commons::CommonProgramLocation,
                                  public layer_commons::Transform {
             GLuint prog;
-            QuadMesh mesh;
+            BaseMesh* mesh = nullptr;
             GLuint tex_loc;
             OGLTexture tex;
-            bool is_label = false;
         };
 
         bool TextActor::create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
             m_layer_ctx = layer_ctx;
             m_layer_type = static_cast<core::LayerType>(layer_ctx.type);
 
-            if (m_pass || m_lb_pass) {
+            if (m_pass || m_lb_pass || m_border_pass) {
                 AKLOG_ERRORN("Pass already loaded");
                 return false;
             }
             m_pass = new TextActor::Pass;
-            m_pass->is_label = false;
             CHECK_AK_ERROR2(this->load_pass(ctx));
 
             m_lb_pass = new TextActor::Pass;
-            m_lb_pass->is_label = true;
             CHECK_AK_ERROR2(this->load_label_pass(ctx));
+
+            if (m_layer_ctx.text_layer_ctx.border.size > 0) {
+                m_border_pass = new TextActor::Pass;
+                CHECK_AK_ERROR2(this->load_border_pass(ctx));
+            }
+
             return true;
         }
 
         bool TextActor::render(OGLRenderContext& ctx, const core::Rational& pts) {
             if (m_pass && m_lb_pass) {
                 this->render_pass(*m_lb_pass, ctx, pts);
+                if (m_border_pass) {
+                    this->render_pass(*m_border_pass, ctx, pts);
+                }
                 this->render_pass(*m_pass, ctx, pts);
             }
             return true;
         }
 
         bool TextActor::destroy(const OGLRenderContext& /*ctx */) {
-            if (m_pass) {
-                m_pass->mesh.destroy();
-                free_ogl_texture(m_pass->tex);
-                glDeleteProgram(m_pass->prog);
-                delete m_pass;
+            auto passes = {m_pass, m_lb_pass, m_border_pass};
+            for (auto&& pass : passes) {
+                if (pass) {
+                    if (pass->mesh) {
+                        pass->mesh->destroy();
+                        delete pass->mesh;
+                    }
+                    free_ogl_texture(pass->tex);
+                    glDeleteProgram(pass->prog);
+                    delete pass;
+                }
             }
-            m_pass = nullptr;
 
-            if (m_lb_pass) {
-                m_lb_pass->mesh.destroy();
-                free_ogl_texture(m_lb_pass->tex);
-                glDeleteProgram(m_lb_pass->prog);
-                delete m_lb_pass;
-            }
+            m_pass = nullptr;
             m_lb_pass = nullptr;
+            m_border_pass = nullptr;
 
             return true;
         }
@@ -91,9 +100,12 @@ namespace akashi {
 
             CHECK_AK_ERROR2(this->load_texture(ctx));
 
-            CHECK_AK_ERROR2(m_pass->mesh.create(
-                {(float)m_pass->tex.effective_width, (float)m_pass->tex.effective_height},
-                vertices_loc, uvs_loc));
+            m_pass->mesh = new QuadMesh;
+
+            CHECK_AK_ERROR2(static_cast<QuadMesh*>(m_pass->mesh)
+                                ->create({(float)m_pass->tex.effective_width,
+                                          (float)m_pass->tex.effective_height},
+                                         vertices_loc, uvs_loc));
 
             m_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
@@ -132,8 +144,10 @@ namespace akashi {
 
             m_lb_pass->prog = glCreateProgram();
 
+            auto label_src = m_layer_ctx.text_layer_ctx.label.src;
+
             auto frag_shader = m_layer_ctx.text_layer_ctx.label.frag;
-            if (frag_shader.empty()) {
+            if (frag_shader.empty() && label_src.empty()) {
                 frag_shader =
                     priv::default_label_user_fshader_src(m_layer_ctx.text_layer_ctx.label.color);
             }
@@ -152,20 +166,68 @@ namespace akashi {
             auto vertices_loc = glGetAttribLocation(m_lb_pass->prog, "vertices");
             auto uvs_loc = glGetAttribLocation(m_lb_pass->prog, "uvs");
 
-            // [TODO] impl later
-            // CHECK_AK_ERROR2(this->load_texture(ctx));
-            glGenTextures(1, &m_lb_pass->tex.buffer);
+            if (label_src.empty()) {
+                glGenTextures(1, &m_lb_pass->tex.buffer);
+            } else {
+                this->load_label_texture(*m_lb_pass, label_src);
+            }
 
-            // [TODO] check label type (fill/not-fill, round/not-round)
-            CHECK_AK_ERROR2(m_lb_pass->mesh.create(
-                {(float)m_pass->tex.effective_width, (float)m_pass->tex.effective_height},
-                vertices_loc, uvs_loc));
+            m_lb_pass->mesh = new QuadMesh;
+
+            CHECK_AK_ERROR2(static_cast<QuadMesh*>(m_lb_pass->mesh)
+                                ->create({(float)m_pass->tex.effective_width,
+                                          (float)m_pass->tex.effective_height},
+                                         vertices_loc, uvs_loc));
 
             m_lb_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
             // [TODO] label pass should have a different scale value than text pass
             m_lb_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.text_layer_ctx.scale;
             this->update_model_mat(*m_lb_pass);
+
+            return true;
+        }
+
+        bool TextActor::load_border_pass(OGLRenderContext& /*ctx*/) {
+            assert(this->m_pass);
+
+            m_border_pass->prog = glCreateProgram();
+
+            auto border_color = m_layer_ctx.text_layer_ctx.border.color;
+            auto border_width = m_layer_ctx.text_layer_ctx.border.size;
+            auto border_radius = m_layer_ctx.text_layer_ctx.border.radius;
+
+            auto frag_shader = priv::default_label_user_fshader_src(border_color);
+
+            CHECK_AK_ERROR2(
+                layer_commons::load_shaders(m_border_pass->prog, m_layer_type, "", frag_shader));
+
+            m_border_pass->mvp_loc = glGetUniformLocation(m_border_pass->prog, "mvpMatrix");
+            m_border_pass->tex_loc = glGetUniformLocation(m_border_pass->prog, "texture0");
+            m_border_pass->time_loc = glGetUniformLocation(m_border_pass->prog, "time");
+            m_border_pass->global_time_loc =
+                glGetUniformLocation(m_border_pass->prog, "global_time");
+            m_border_pass->local_duration_loc =
+                glGetUniformLocation(m_border_pass->prog, "local_duration");
+            m_border_pass->fps_loc = glGetUniformLocation(m_border_pass->prog, "fps");
+            m_border_pass->resolution_loc = glGetUniformLocation(m_border_pass->prog, "resolution");
+
+            auto vertices_loc = glGetAttribLocation(m_border_pass->prog, "vertices");
+
+            glGenTextures(1, &m_border_pass->tex.buffer);
+
+            m_border_pass->mesh = new RectMesh;
+
+            CHECK_AK_ERROR2(static_cast<RectMesh*>(m_border_pass->mesh)
+                                ->create_border({(float)m_pass->tex.effective_width,
+                                                 (float)m_pass->tex.effective_height},
+                                                border_width, vertices_loc));
+
+            m_border_pass->trans_vec =
+                layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
+            // [TODO] border pass should have a different scale value than text pass ?
+            m_border_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.text_layer_ctx.scale;
+            this->update_model_mat(*m_border_pass);
 
             return true;
         }
@@ -228,6 +290,49 @@ namespace akashi {
             return true;
         }
 
+        bool TextActor::load_label_texture(TextActor::Pass& pass, const std::string& src) {
+            if (src.empty()) {
+                AKLOG_ERRORN("Failed to getSurface");
+                return false;
+            }
+            SDL_Surface* surface = nullptr;
+
+            if (ImageLoader::GetInstance().getSurface(surface, src.c_str()) !=
+                core::ErrorType::OK) {
+                AKLOG_ERROR("Failed to getSurface: {}", src.c_str());
+                return false;
+            }
+
+            pass.tex.width = surface->w;
+            pass.tex.height = surface->h;
+            pass.tex.effective_width = surface->w;  // !!
+            pass.tex.effective_height = surface->h; // !!
+            pass.tex.format = (surface->format->BytesPerPixel == 3) ? GL_RGB : GL_RGBA;
+            pass.tex.internal_format = GL_RGBA8;
+            pass.tex.target = GL_TEXTURE_2D;
+            pass.tex.surface = surface;
+            pass.tex.image = surface->pixels;
+
+            glGenTextures(1, &pass.tex.buffer);
+            glBindTexture(GL_TEXTURE_2D, pass.tex.buffer);
+
+            glTexImage2D(GL_TEXTURE_2D, 0, pass.tex.internal_format, pass.tex.width,
+                         pass.tex.height, 0, pass.tex.format, GL_UNSIGNED_BYTE, pass.tex.image);
+
+            // GET_GLFUNC(ctx, glGenerateMipmap)(GL_TEXTURE_2D_ARRAY);
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            // SDL_FreeSurface(surface);
+
+            return true;
+        }
+
         bool TextActor::render_pass(const TextActor::Pass& pass, OGLRenderContext& ctx,
                                     const core::Rational& pts) {
             glUseProgram(pass.prog);
@@ -249,10 +354,10 @@ namespace akashi {
             auto res = ctx.resolution();
             glUniform2f(pass.resolution_loc, res[0], res[1]);
 
-            glBindVertexArray(pass.mesh.vao());
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pass.mesh.ibo());
+            glBindVertexArray(pass.mesh->vao());
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pass.mesh->ibo());
 
-            glDrawElements(GL_TRIANGLES, pass.mesh.ibo_length(), GL_UNSIGNED_SHORT, 0);
+            glDrawElements(GL_TRIANGLES, pass.mesh->ibo_length(), GL_UNSIGNED_SHORT, 0);
 
             glBindVertexArray(0);
 

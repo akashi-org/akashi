@@ -11,13 +11,6 @@ namespace akashi {
 
         namespace priv {
 
-            static void create_buffer(GLuint& buffer, GLenum target, void* data, size_t data_size) {
-                glGenBuffers(1, &buffer);
-                glBindBuffer(target, buffer);
-                glBufferData(target, data_size, data, GL_STATIC_DRAW);
-                glBindBuffer(target, 0);
-            }
-
             // Expects a suitable vao to be binded before calling this function
             static void load_vertices(const GLuint vertices_loc, const GLfloat quad_width,
                                       const GLfloat quad_height) {
@@ -39,7 +32,7 @@ namespace akashi {
                 };
 
                 GLuint vertices_vbo;
-                priv::create_buffer(vertices_vbo, GL_ARRAY_BUFFER, vertices, sizeof(vertices));
+                create_buffer(vertices_vbo, GL_ARRAY_BUFFER, vertices, sizeof(vertices));
 
                 glBindBuffer(GL_ARRAY_BUFFER, vertices_vbo);
                 glEnableVertexAttribArray(vertices_loc);
@@ -67,7 +60,7 @@ namespace akashi {
                 }
 
                 GLuint uvs_vbo;
-                priv::create_buffer(uvs_vbo, GL_ARRAY_BUFFER, uvs.data(), sizeof(uvs));
+                create_buffer(uvs_vbo, GL_ARRAY_BUFFER, uvs.data(), sizeof(uvs));
 
                 glBindBuffer(GL_ARRAY_BUFFER, uvs_vbo);
                 glEnableVertexAttribArray(uvs_loc);
@@ -91,7 +84,7 @@ namespace akashi {
                     lx1, ly0, // right-bottom
                 };
                 GLuint luma_uvs_vbo;
-                priv::create_buffer(luma_uvs_vbo, GL_ARRAY_BUFFER, luma_uvs, sizeof(luma_uvs));
+                create_buffer(luma_uvs_vbo, GL_ARRAY_BUFFER, luma_uvs, sizeof(luma_uvs));
 
                 glBindBuffer(GL_ARRAY_BUFFER, luma_uvs_vbo);
                 glEnableVertexAttribArray(luma_uvs_loc);
@@ -121,16 +114,12 @@ namespace akashi {
             }
 
             static void load_ibo(GLuint& ibo, size_t& ibo_length) {
-                // unsigned short indices[] = {
-                //     0, 1, 2, // left
-                //     1, 3, 2  // right
-                // };
                 unsigned short indices[] = {
                     0, 2, 1, // left
                     2, 3, 1  // right
                 };
 
-                priv::create_buffer(ibo, GL_ELEMENT_ARRAY_BUFFER, indices, sizeof(indices));
+                create_buffer(ibo, GL_ELEMENT_ARRAY_BUFFER, indices, sizeof(indices));
                 ibo_length = 6;
             }
 
@@ -173,11 +162,7 @@ namespace akashi {
             return true;
         }
 
-        void QuadMesh::destroy() {
-            glDeleteBuffers(1, &m_ibo);
-            glDeleteVertexArrays(1, &m_vao);
-            m_ibo_length = 0;
-        }
+        void QuadMesh::destroy() {}
 
     }
 }

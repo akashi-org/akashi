@@ -27,8 +27,15 @@ namespace akashi {
 
         struct TextLabel {
             std::string color;
+            std::string src;
             std::string frag;
             std::string poly;
+        };
+
+        struct TextBorder {
+            std::string color;
+            uint32_t size;
+            uint32_t radius;
         };
 
         struct VideoLayerContext {
@@ -51,6 +58,7 @@ namespace akashi {
             std::string text;
             TextLabel label;
             TextAlign text_align;
+            TextBorder border;
             std::array<int32_t, 4> pad; // left, right, top, bottom
             int32_t line_span;
             double scale;

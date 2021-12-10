@@ -1,8 +1,7 @@
 #pragma once
 
-#include "../core/glc.h"
+#include "./mesh.h"
 
-#include <cstddef>
 #include <array>
 
 namespace akashi {
@@ -10,9 +9,9 @@ namespace akashi {
 
         struct VideoTextureInfo;
 
-        class QuadMesh final {
+        class QuadMesh final : public BaseMesh {
           public:
-            explicit QuadMesh() = default;
+            explicit QuadMesh() : BaseMesh(){};
             virtual ~QuadMesh() = default;
 
             bool create(const std::array<float, 2>& size, const GLuint vertices_loc,
@@ -22,18 +21,7 @@ namespace akashi {
                         const GLuint vertices_loc, const GLuint luma_uvs_loc,
                         const GLuint chroma_uvs_loc);
 
-            void destroy();
-
-            GLuint vao() const { return m_vao; }
-
-            GLuint ibo() const { return m_ibo; }
-
-            size_t ibo_length() const { return m_ibo_length; }
-
-          private:
-            GLuint m_vao;
-            GLuint m_ibo;
-            size_t m_ibo_length = 0;
+            void destroy() override;
         };
 
     }

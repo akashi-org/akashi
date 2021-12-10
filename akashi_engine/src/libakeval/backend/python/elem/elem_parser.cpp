@@ -45,9 +45,18 @@ namespace akashi {
         static core::TextLabel parse_text_label(const pybind11::object& label_obj) {
             core::TextLabel label;
             label.color = label_obj.attr("color").cast<std::string>();
+            label.src = label_obj.attr("src").cast<std::string>();
             label.frag = parse_shader(label_obj.attr("frag_shader"));
             label.poly = parse_shader(label_obj.attr("poly_shader"));
             return label;
+        }
+
+        static core::TextBorder parse_text_border(const pybind11::object& border_obj) {
+            core::TextBorder border;
+            border.color = border_obj.attr("color").cast<std::string>();
+            border.size = border_obj.attr("size").cast<unsigned long>();
+            border.radius = border_obj.attr("radius").cast<unsigned long>();
+            return border;
         }
 
         core::LayerContext parse_layer_context(const pybind11::object& layer_params) {
@@ -113,6 +122,7 @@ namespace akashi {
                 layer_ctx.text_layer_ctx.scale = 1.0;
 
                 layer_ctx.text_layer_ctx.label = parse_text_label(layer_params.attr("label"));
+                layer_ctx.text_layer_ctx.border = parse_text_border(layer_params.attr("border"));
 
                 std::string text_align_str = layer_params.attr("text_align").cast<std::string>();
                 if (text_align_str == "center") {

@@ -41,8 +41,16 @@ class TextStyle:
 @dataclass
 class TextLabel:
     color: str = "#ffffff00"  # "#rrggbb" or "#rrggbbaa"
+    src: str = ""  # expects image path
     frag_shader: tp.Optional[FragShader] = None
     poly_shader: tp.Optional[PolygonShader] = None
+
+
+@dataclass
+class TextBorder:
+    color: str = "#ffffff00"  # "#rrggbb" or "#rrggbbaa"
+    size: int = 0
+    radius: int = 0
 
 
 @dataclass
@@ -50,6 +58,7 @@ class TextLocalField:
     text: str
     style: TextStyle = field(init=False)
     label: TextLabel = field(init=False)
+    border: TextBorder = field(init=False)
     text_align: TextAlign = 'left'
     pad: tuple[int, int, int, int] = (0, 0, 0, 0)  # left, right, top, bottom
     line_span: int = 0
@@ -62,6 +71,7 @@ class TextEntry(ShaderField, PositionField, LayerField, TextLocalField):
     def __post_init__(self):
         self.style = TextStyle()
         self.label = TextLabel()
+        self.border = TextBorder()
 
 
 @dataclass
@@ -136,9 +146,21 @@ class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
             cur_layer.style.shadow_size = shadow_size
         return self
 
+    def border(self, color: str, size: int, radius: int = 0) -> 'TextHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
+            cur_layer.border.color = color
+            cur_layer.border.size = size
+            cur_layer.border.radius = radius
+        return self
+
     def label_color(self, color: str) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.label.color = color
+        return self
+
+    def label_src(self, src: str) -> 'TextHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
+            cur_layer.label.src = src
         return self
 
     def label_poly(self, poly: PolygonShader) -> 'TextHandle':
