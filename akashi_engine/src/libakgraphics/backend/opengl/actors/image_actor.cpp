@@ -144,7 +144,8 @@ namespace akashi {
             m_pass->tex.effective_width = m_surfaces[0]->w;
             m_pass->tex.effective_height = m_surfaces[0]->h;
             m_pass->tex.format = (m_surfaces[0]->format->BytesPerPixel == 3) ? GL_RGB : GL_RGBA;
-            m_pass->tex.internal_format = GL_RGBA8;
+            m_pass->tex.internal_format =
+                (m_surfaces[0]->format->BytesPerPixel == 3) ? GL_RGB8 : GL_RGBA8;
             m_pass->tex.target = GL_TEXTURE_2D_ARRAY;
 
             if (m_layer_ctx.image_layer_ctx.stretch) {
