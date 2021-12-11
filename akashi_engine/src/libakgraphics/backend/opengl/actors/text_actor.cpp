@@ -225,12 +225,20 @@ namespace akashi {
 
             glGenTextures(1, &m_border_pass->tex.buffer);
 
-            m_border_pass->mesh = new RectMesh;
+            if (border_radius > 0) {
+                m_border_pass->mesh = new RoundRectMesh;
+                static_cast<RoundRectMesh*>(m_border_pass->mesh)
+                    ->create_border(
+                        {(float)m_pass->tex.effective_width, (float)m_pass->tex.effective_height},
+                        border_radius, border_width, vertices_loc);
 
-            CHECK_AK_ERROR2(static_cast<RectMesh*>(m_border_pass->mesh)
-                                ->create_border({(float)m_pass->tex.effective_width,
-                                                 (float)m_pass->tex.effective_height},
-                                                border_width, vertices_loc));
+            } else {
+                m_border_pass->mesh = new RectMesh;
+                CHECK_AK_ERROR2(static_cast<RectMesh*>(m_border_pass->mesh)
+                                    ->create_border({(float)m_pass->tex.effective_width,
+                                                     (float)m_pass->tex.effective_height},
+                                                    border_width, vertices_loc));
+            }
 
             m_border_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
