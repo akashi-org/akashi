@@ -46,7 +46,7 @@ namespace akashi {
             core::TextLabel label;
             label.color = label_obj.attr("color").cast<std::string>();
             label.src = label_obj.attr("src").cast<std::string>();
-            label.radius = label_obj.attr("radius").cast<unsigned long>();
+            label.radius = label_obj.attr("radius").cast<double>();
             label.frag = parse_shader(label_obj.attr("frag_shader"));
             label.poly = parse_shader(label_obj.attr("poly_shader"));
             return label;
@@ -56,7 +56,7 @@ namespace akashi {
             core::TextBorder border;
             border.color = border_obj.attr("color").cast<std::string>();
             border.size = border_obj.attr("size").cast<unsigned long>();
-            border.radius = border_obj.attr("radius").cast<unsigned long>();
+            border.radius = border_obj.attr("radius").cast<double>();
             return border;
         }
 

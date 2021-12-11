@@ -28,7 +28,7 @@ namespace akashi {
         struct TextLabel {
             std::string color;
             std::string src;
-            uint32_t radius;
+            double radius;
             std::string frag;
             std::string poly;
         };
@@ -36,7 +36,7 @@ namespace akashi {
         struct TextBorder {
             std::string color;
             uint32_t size;
-            uint32_t radius;
+            double radius;
         };
 
         struct VideoLayerContext {
