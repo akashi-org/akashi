@@ -106,11 +106,15 @@ namespace akashi {
         }
 
         void FBO::resolve() const {
+            GLint bounded_fbo;
+            glGetIntegerv(GL_FRAMEBUFFER_BINDING, &bounded_fbo);
+
             glBindFramebuffer(GL_READ_FRAMEBUFFER, m_info.fbo);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pass->dst_fbo);
             glBlitFramebuffer(0, 0, m_info.width, m_info.height, 0, 0, m_info.width, m_info.height,
                               GL_COLOR_BUFFER_BIT, GL_LINEAR);
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, bounded_fbo);
         }
 
         void FBO::destroy() {

@@ -18,7 +18,6 @@ namespace akashi {
             GLuint prog;
             QuadMesh mesh;
             GLuint tex_loc;
-            GLuint msaa_loc;
         };
 
         bool EffectActor::create(const OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
@@ -37,11 +36,10 @@ namespace akashi {
         bool EffectActor::render(OGLRenderContext& ctx, const core::Rational& pts) {
             glUseProgram(m_pass->prog);
 
-            if (OGLTexture fbo_tex; ctx.fbo().msaa_texture(fbo_tex)) {
+            ctx.fbo().resolve();
+            if (OGLTexture fbo_tex; ctx.fbo().texture(fbo_tex)) {
                 use_ogl_texture(fbo_tex, m_pass->tex_loc);
             }
-
-            glUniform1i(m_pass->msaa_loc, ctx.msaa());
 
             glm::mat4 new_mvp = ctx.camera()->vp_mat() * m_pass->model_mat;
 
@@ -86,14 +84,12 @@ namespace akashi {
                                                         m_layer_ctx.effect_layer_ctx.frag));
 
             m_pass->mvp_loc = glGetUniformLocation(m_pass->prog, "mvpMatrix");
-            m_pass->tex_loc = glGetUniformLocation(m_pass->prog, "texture_ms");
+            m_pass->tex_loc = glGetUniformLocation(m_pass->prog, "texture0");
             m_pass->time_loc = glGetUniformLocation(m_pass->prog, "time");
             m_pass->global_time_loc = glGetUniformLocation(m_pass->prog, "global_time");
             m_pass->local_duration_loc = glGetUniformLocation(m_pass->prog, "local_duration");
             m_pass->fps_loc = glGetUniformLocation(m_pass->prog, "fps");
             m_pass->resolution_loc = glGetUniformLocation(m_pass->prog, "resolution");
-
-            m_pass->msaa_loc = glGetUniformLocation(m_pass->prog, "msaa");
 
             auto vertices_loc = glGetAttribLocation(m_pass->prog, "vertices");
             auto uvs_loc = glGetAttribLocation(m_pass->prog, "uvs");

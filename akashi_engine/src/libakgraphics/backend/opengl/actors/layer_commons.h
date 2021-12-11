@@ -105,33 +105,6 @@ namespace akashi {
         frag_main(fragColor);
     }
 )";
-            static constexpr const char* effect_fshader_src = u8R"(
-    #version 420 core
-    uniform sampler2DMS texture_ms;
-    uniform int msaa;
-
-    in GS_OUT {
-        vec2 vUvs;
-        float sprite_idx;
-    } fs_in;
-
-    out vec4 fragColor;
-
-    void frag_main(inout vec4 rv);
-
-    void main(void){
-
-        vec4 smpColor = vec4(0);
-        const int num_samples = min(8, msaa + 4);
-        for(int i = 0; i < num_samples; i++) {
-            smpColor += texelFetch(texture_ms, ivec2(gl_FragCoord.xy), i);
-        }
-        smpColor /= float(num_samples);
-
-        fragColor = smpColor;
-        frag_main(fragColor);
-    }
-)";
 
             static constexpr const char* default_user_pshader_src = u8R"(
     #version 420 core
@@ -207,11 +180,9 @@ namespace akashi {
                                      const std::string& u_poly_shader,
                                      const std::string& u_frag_shader) {
                 CHECK_AK_ERROR2(compile_attach_shader(prog, GL_VERTEX_SHADER, vshader_src));
-                CHECK_AK_ERROR2(
-                    compile_attach_shader(prog, GL_FRAGMENT_SHADER,
-                                          type == core::LayerType::IMAGE    ? image_fshader_src
-                                          : type == core::LayerType::EFFECT ? effect_fshader_src
-                                                                            : fshader_src));
+                CHECK_AK_ERROR2(compile_attach_shader(
+                    prog, GL_FRAGMENT_SHADER,
+                    type == core::LayerType::IMAGE ? image_fshader_src : fshader_src));
 
                 std::string frag_shader =
                     u_frag_shader.empty() ? default_user_fshader_src : u_frag_shader;
