@@ -117,7 +117,7 @@ namespace akashi {
 
             // Expects a suitable vao to be binded before calling this function
             static bool load_round_mesh(const GLuint vertices_loc, const GLfloat width,
-                                        const GLfloat height, const GLfloat radius, GLuint& ibo,
+                                        const GLfloat height, GLfloat radius, GLuint& ibo,
                                         size_t& ibo_length) {
                 auto hwidth = width * 0.5f;
                 auto hheight = height * 0.5f;
@@ -128,16 +128,11 @@ namespace akashi {
                 }
                 // [TODO] impl cases like radius == hwidth or radius == hheight later
                 if (!(radius < std::min(hwidth, hheight))) {
-                    AKLOG_ERRORN("radius is too large");
-                    return false;
+                    AKLOG_WARNN("Radius is too large. Using an arbitrary value.");
+                    radius = std::min(hwidth, hheight) - 1;
                 }
 
                 // [TODO] calc lod for different radius
-                // int lod = radius <= 1.0f    ? 3
-                //           : radius <= 6.0f  ? 5
-                //           : radius <= 12.0f ? 9
-                //                             : std::min(64.0f, (radius * 0.2f) + 6);
-
                 int lod = 16;
 
                 std::array<GLfloat, 3> center_pos = {0.0, 0.0, 0.0};
