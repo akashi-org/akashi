@@ -15,10 +15,10 @@ namespace akashi {
             std::string font_path;
             uint32_t fg_size;
             std::string fg_color;
-            bool use_outline;
+            bool use_outline = false;
             uint32_t outline_size;
             std::string outline_color;
-            bool use_shadow;
+            bool use_shadow = false;
             uint32_t shadow_size;
             std::string shadow_color;
         };
