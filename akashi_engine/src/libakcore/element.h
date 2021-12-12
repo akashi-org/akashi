@@ -9,16 +9,16 @@
 namespace akashi {
     namespace core {
 
-        enum class LayerType { VIDEO = 0, AUDIO, TEXT, IMAGE, EFFECT, LENGTH };
+        enum class LayerType { VIDEO = 0, AUDIO, TEXT, IMAGE, EFFECT, SHAPE, LENGTH };
 
         struct Style {
             std::string font_path;
             uint32_t fg_size;
             std::string fg_color;
-            bool use_outline;
+            bool use_outline = false;
             uint32_t outline_size;
             std::string outline_color;
-            bool use_shadow;
+            bool use_shadow = false;
             uint32_t shadow_size;
             std::string shadow_color;
         };
@@ -27,8 +27,16 @@ namespace akashi {
 
         struct TextLabel {
             std::string color;
+            std::string src;
+            double radius;
             std::string frag;
             std::string poly;
+        };
+
+        struct TextBorder {
+            std::string color;
+            uint32_t size;
+            double radius;
         };
 
         struct VideoLayerContext {
@@ -51,6 +59,7 @@ namespace akashi {
             std::string text;
             TextLabel label;
             TextAlign text_align;
+            TextBorder border;
             std::array<int32_t, 4> pad; // left, right, top, bottom
             int32_t line_span;
             double scale;
@@ -72,6 +81,45 @@ namespace akashi {
             std::string poly;
         };
 
+        enum class ShapeKind { RECT = 0, CIRCLE, ELLIPSE, TRIANGLE, LINE, LENGTH };
+
+        struct RectDetail {
+            int width = 0;
+            int height = 0;
+        };
+
+        struct CircleDetail {
+            double radius;
+            int lod;
+        };
+
+        struct TriangleDetail {
+            double side;
+        };
+
+        enum class LineStyle { DEFAULT = 0, ROUND_DOT, SQUARE_DOT, CAP, LENGTH };
+
+        struct LineDetail {
+            double size;
+            std::array<long, 2> begin;
+            std::array<long, 2> end;
+            LineStyle style;
+        };
+
+        struct ShapeLayerContext {
+            ShapeKind shape_kind;
+            double border_size;
+            double edge_radius;
+            bool fill = true;
+            std::string color;
+            std::string frag;
+            std::string poly;
+            RectDetail rect;
+            CircleDetail circle;
+            TriangleDetail tri;
+            LineDetail line;
+        };
+
         struct LayerContext {
             double x;
             double y;
@@ -83,30 +131,17 @@ namespace akashi {
             std::string atom_uuid;
             bool display = false;
 
-            /**
-             * exists iff type == LayerType::VIDEO
-             */
             VideoLayerContext video_layer_ctx;
 
-            /**
-             * exists iff type == LayerType::AUDIO
-             */
             AudioLayerContext audio_layer_ctx;
 
-            /**
-             * exists iff type == LayerType::TEXT
-             */
             TextLayerContext text_layer_ctx;
 
-            /**
-             * exists iff type == LayerType::IMAGE
-             */
             ImageLayerContext image_layer_ctx;
 
-            /**
-             * exists iff type == LayerType::EFFECT
-             */
             EffectLayerContext effect_layer_ctx;
+
+            ShapeLayerContext shape_layer_ctx;
         };
 
         struct FrameContext {

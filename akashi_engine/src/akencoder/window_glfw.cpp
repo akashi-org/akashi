@@ -2,6 +2,7 @@
 
 #include <libakcore/memory.h>
 #include <libakcore/logger.h>
+#include <libakstate/akstate.h>
 
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_X11

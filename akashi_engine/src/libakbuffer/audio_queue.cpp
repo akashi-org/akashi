@@ -34,9 +34,11 @@ namespace akashi {
 
             m_qmap[layer_uuid].buf.push_back(std::move(buf_data));
 
-            AKLOG_INFO("Audio buffer enqueued {}, {}, id: {}", m_qmap.at(layer_uuid).buf.size(),
-                       m_qmap.at(layer_uuid).buf.back()->prop().pts.to_decimal(),
-                       layer_uuid.c_str());
+            if (!this->empty(layer_uuid)) {
+                AKLOG_INFO("Audio buffer enqueued {}, {}, id: {}", m_qmap.at(layer_uuid).buf.size(),
+                           m_qmap.at(layer_uuid).buf.back()->prop().pts.to_decimal(),
+                           layer_uuid.c_str());
+            }
 
             size_t queue_size = m_queue_size.load();
 

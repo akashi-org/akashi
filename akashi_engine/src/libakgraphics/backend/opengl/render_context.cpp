@@ -26,6 +26,8 @@ namespace akashi {
 
         const FBO& OGLRenderContext::fbo() const { return *m_fbo; }
 
+        FBO& OGLRenderContext::mut_fbo() { return *m_fbo; }
+
         bool OGLRenderContext::load_fbo() {
             int video_width = 0;
             int video_height = 0;
@@ -35,7 +37,9 @@ namespace akashi {
                 video_height = m_state->m_prop.video_height;
             }
 
-            CHECK_AK_ERROR2(m_fbo->create(video_width, video_height));
+            int msaa = this->msaa();
+
+            CHECK_AK_ERROR2(m_fbo->create(video_width, video_height, msaa));
 
             ProjectionState proj_state;
             proj_state.video_width = video_width;
@@ -85,6 +89,19 @@ namespace akashi {
                 font_path = m_state->m_prop.default_font_path;
             }
             return font_path;
+        }
+
+        int OGLRenderContext::msaa() {
+            int msaa = 1;
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+                msaa = m_state->m_video_conf.msaa;
+            }
+            if (msaa < 1) {
+                AKLOG_WARNN("MSAA value must be larger than 0.");
+                msaa = 1;
+            }
+            return msaa;
         }
 
         std::unique_ptr<buffer::AVBufferData> OGLRenderContext::dequeue(std::string layer_uuid,

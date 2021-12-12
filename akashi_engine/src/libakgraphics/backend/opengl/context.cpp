@@ -59,7 +59,10 @@ namespace akashi {
                 params.width = m_render_ctx->fbo().info().width;
                 params.height = m_render_ctx->fbo().info().height;
 
-                glBindFramebuffer(GL_FRAMEBUFFER, m_render_ctx->fbo().info().fbo);
+                GLuint dst_fbo;
+                m_render_ctx->fbo().dst_fbo(&dst_fbo);
+
+                glBindFramebuffer(GL_FRAMEBUFFER, dst_fbo);
 
                 glPixelStorei(GL_PACK_ALIGNMENT, 1);
                 // glReadBuffer(GL_COLOR_ATTACHMENT0);

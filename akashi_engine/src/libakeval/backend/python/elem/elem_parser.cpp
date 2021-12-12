@@ -45,9 +45,81 @@ namespace akashi {
         static core::TextLabel parse_text_label(const pybind11::object& label_obj) {
             core::TextLabel label;
             label.color = label_obj.attr("color").cast<std::string>();
+            label.src = label_obj.attr("src").cast<std::string>();
+            label.radius = label_obj.attr("radius").cast<double>();
             label.frag = parse_shader(label_obj.attr("frag_shader"));
             label.poly = parse_shader(label_obj.attr("poly_shader"));
             return label;
+        }
+
+        static core::TextBorder parse_text_border(const pybind11::object& border_obj) {
+            core::TextBorder border;
+            border.color = border_obj.attr("color").cast<std::string>();
+            border.size = border_obj.attr("size").cast<unsigned long>();
+            border.radius = border_obj.attr("radius").cast<double>();
+            return border;
+        }
+
+        static core::LineStyle parse_line_style(const pybind11::object& style_obj) {
+            std::string style_str = style_obj.cast<std::string>();
+
+            if (style_str == "default") {
+                return core::LineStyle::DEFAULT;
+            } else if (style_str == "round-dot") {
+                return core::LineStyle::ROUND_DOT;
+            } else if (style_str == "square-dot") {
+                return core::LineStyle::SQUARE_DOT;
+            } else if (style_str == "cap") {
+                return core::LineStyle::CAP;
+            } else {
+                AKLOG_ERROR("Invalid line style '{}' found", style_str.c_str());
+            }
+
+            return core::LineStyle::LENGTH;
+        }
+
+        static bool parse_shape_detail(core::LayerContext* layer_ctx,
+                                       const pybind11::object& layer_params) {
+            std::string kind_str = layer_params.attr("shape_kind").cast<std::string>();
+            if (kind_str == "RECT") {
+                layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::RECT;
+                layer_ctx->shape_layer_ctx.rect.width =
+                    layer_params.attr("rect").attr("width").cast<long>();
+                layer_ctx->shape_layer_ctx.rect.height =
+                    layer_params.attr("rect").attr("height").cast<long>();
+            } else if (kind_str == "CIRCLE") {
+                layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::CIRCLE;
+                layer_ctx->shape_layer_ctx.circle.radius =
+                    layer_params.attr("circle").attr("circle_radius").cast<double>();
+                layer_ctx->shape_layer_ctx.circle.lod =
+                    layer_params.attr("circle").attr("lod").cast<long>();
+            } else if (kind_str == "ELLIPSE") {
+                layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::ELLIPSE;
+            } else if (kind_str == "TRIANGLE") {
+                layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::TRIANGLE;
+                layer_ctx->shape_layer_ctx.tri.side =
+                    layer_params.attr("tri").attr("side").cast<double>();
+            } else if (kind_str == "LINE") {
+                layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::LINE;
+                layer_ctx->shape_layer_ctx.line.size =
+                    layer_params.attr("line").attr("size").cast<double>();
+
+                const auto& begin =
+                    layer_params.attr("line").attr("begin").cast<std::tuple<long, long>>();
+                const auto& end =
+                    layer_params.attr("line").attr("end").cast<std::tuple<long, long>>();
+                layer_ctx->shape_layer_ctx.line.begin = {std::get<0>(begin), std::get<1>(begin)};
+                layer_ctx->shape_layer_ctx.line.end = {std::get<0>(end), std::get<1>(end)};
+
+                layer_ctx->shape_layer_ctx.line.style =
+                    parse_line_style(layer_params.attr("line").attr("style"));
+
+            } else {
+                AKLOG_ERROR("Invalid shape kind '{}' found", kind_str.c_str());
+                return false;
+            }
+
+            return true;
         }
 
         core::LayerContext parse_layer_context(const pybind11::object& layer_params) {
@@ -113,6 +185,7 @@ namespace akashi {
                 layer_ctx.text_layer_ctx.scale = 1.0;
 
                 layer_ctx.text_layer_ctx.label = parse_text_label(layer_params.attr("label"));
+                layer_ctx.text_layer_ctx.border = parse_text_border(layer_params.attr("border"));
 
                 std::string text_align_str = layer_params.attr("text_align").cast<std::string>();
                 if (text_align_str == "center") {
@@ -137,6 +210,19 @@ namespace akashi {
                 layer_ctx.type = static_cast<int>(core::LayerType::EFFECT);
                 layer_ctx.effect_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
                 layer_ctx.effect_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
+            } else if (type_str == "SHAPE") {
+                layer_ctx.type = static_cast<int>(core::LayerType::SHAPE);
+                layer_ctx.shape_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
+                layer_ctx.shape_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
+
+                layer_ctx.shape_layer_ctx.border_size =
+                    layer_params.attr("border_size").cast<double>();
+                layer_ctx.shape_layer_ctx.edge_radius =
+                    layer_params.attr("edge_radius").cast<double>();
+                layer_ctx.shape_layer_ctx.fill = layer_params.attr("fill").cast<bool>();
+                layer_ctx.shape_layer_ctx.color = layer_params.attr("color").cast<std::string>();
+
+                parse_shape_detail(&layer_ctx, layer_params);
             } else {
                 AKLOG_ERROR("Invalid type '{}' found", type_str.c_str());
                 layer_ctx.type = -1;

@@ -13,7 +13,7 @@ if tp.TYPE_CHECKING:
     from akashi_core.elem.atom import AtomHandle
 
 
-LayerKind = tp.Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE', 'EFFECT', 'FREE']
+LayerKind = tp.Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE', 'EFFECT', 'SHAPE', 'FREE']
 
 
 ''' Layer Concept '''

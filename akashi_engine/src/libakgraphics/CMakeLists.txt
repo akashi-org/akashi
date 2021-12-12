@@ -22,7 +22,12 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/opengl/core/texture.cpp"
   "./backend/opengl/core/loader_gl.cpp"
   "./backend/opengl/core/loader_egl.cpp"
+  "./backend/opengl/meshes/mesh.cpp"
   "./backend/opengl/meshes/quad.cpp"
+  "./backend/opengl/meshes/rect.cpp"
+  "./backend/opengl/meshes/circle.cpp"
+  "./backend/opengl/meshes/triangle.cpp"
+  "./backend/opengl/meshes/line.cpp"
   "./backend/opengl/resource/image.cpp"
   "./backend/opengl/resource/font.cpp"
   # "./backend/opengl/utility/grid.cpp"
@@ -32,6 +37,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/opengl/actors/image_actor.cpp"
   "./backend/opengl/actors/text_actor.cpp"
   "./backend/opengl/actors/effect_actor.cpp"
+  "./backend/opengl/actors/shape_actor.cpp"
 )
 
 file(GLOB INTERFACE_HEADERS

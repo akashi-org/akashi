@@ -19,7 +19,7 @@ namespace akashi {
             virtual ~EffectActor() = default;
             EffectActor(EffectActor&&) = default;
 
-            bool create(const OGLRenderContext& ctx, const core::LayerContext& layer_ctx);
+            bool create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) override;
 
             bool render(OGLRenderContext& ctx, const core::Rational& pts) override;
 

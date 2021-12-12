@@ -60,8 +60,8 @@ class ImageHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait)
         return self
 
 
-def image(srcs: list[str], key: str = '') -> ImageHandle:
+def image(src: tp.Union[str, list[str]], key: str = '') -> ImageHandle:
 
-    entry = ImageEntry(srcs)
+    entry = ImageEntry([src] if isinstance(src, str) else src)
     idx = register_entry(entry, 'IMAGE', key)
     return ImageHandle(idx)

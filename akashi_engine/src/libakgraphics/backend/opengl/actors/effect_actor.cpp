@@ -20,7 +20,7 @@ namespace akashi {
             GLuint tex_loc;
         };
 
-        bool EffectActor::create(const OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
+        bool EffectActor::create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
             m_layer_ctx = layer_ctx;
             m_layer_type = static_cast<core::LayerType>(layer_ctx.type);
 
@@ -36,6 +36,7 @@ namespace akashi {
         bool EffectActor::render(OGLRenderContext& ctx, const core::Rational& pts) {
             glUseProgram(m_pass->prog);
 
+            ctx.fbo().resolve();
             if (OGLTexture fbo_tex; ctx.fbo().texture(fbo_tex)) {
                 use_ogl_texture(fbo_tex, m_pass->tex_loc);
             }
@@ -83,11 +84,7 @@ namespace akashi {
                                                         m_layer_ctx.effect_layer_ctx.frag));
 
             m_pass->mvp_loc = glGetUniformLocation(m_pass->prog, "mvpMatrix");
-            if (m_layer_type == core::LayerType::IMAGE) {
-                m_pass->tex_loc = glGetUniformLocation(m_pass->prog, "texture_arr");
-            } else {
-                m_pass->tex_loc = glGetUniformLocation(m_pass->prog, "texture0");
-            }
+            m_pass->tex_loc = glGetUniformLocation(m_pass->prog, "texture0");
             m_pass->time_loc = glGetUniformLocation(m_pass->prog, "time");
             m_pass->global_time_loc = glGetUniformLocation(m_pass->prog, "global_time");
             m_pass->local_duration_loc = glGetUniformLocation(m_pass->prog, "local_duration");
