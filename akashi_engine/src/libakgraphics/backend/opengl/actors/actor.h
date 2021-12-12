@@ -14,6 +14,8 @@ namespace akashi {
           public:
             virtual ~Actor() = default;
 
+            virtual bool create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) = 0;
+
             virtual bool render(OGLRenderContext& ctx, const core::Rational& pts) = 0;
 
             virtual bool destroy(const OGLRenderContext& ctx) = 0;

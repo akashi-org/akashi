@@ -7,7 +7,8 @@ from .elem import (
     audio,
     text,
     image,
-    effect
+    effect,
+    rect
 )
 from .time import sec
 from .config import config

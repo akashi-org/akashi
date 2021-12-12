@@ -60,6 +60,29 @@ namespace akashi {
             return border;
         }
 
+        static bool parse_shape_detail(core::LayerContext* layer_ctx,
+                                       const pybind11::object& layer_params) {
+            std::string kind_str = layer_params.attr("shape_kind").cast<std::string>();
+            if (kind_str == "RECT") {
+                layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::RECT;
+                layer_ctx->shape_layer_ctx.rect.width =
+                    layer_params.attr("rect").attr("width").cast<long>();
+                layer_ctx->shape_layer_ctx.rect.height =
+                    layer_params.attr("rect").attr("height").cast<long>();
+            } else if (kind_str == "CIRCLE") {
+                layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::CIRCLE;
+            } else if (kind_str == "ELLIPSE") {
+                layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::ELLIPSE;
+            } else if (kind_str == "LINE") {
+                layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::LINE;
+            } else {
+                AKLOG_ERROR("Invalid shape kind '{}' found", kind_str.c_str());
+                return false;
+            }
+
+            return true;
+        }
+
         core::LayerContext parse_layer_context(const pybind11::object& layer_params) {
             core::LayerContext layer_ctx;
 
@@ -148,6 +171,19 @@ namespace akashi {
                 layer_ctx.type = static_cast<int>(core::LayerType::EFFECT);
                 layer_ctx.effect_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
                 layer_ctx.effect_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
+            } else if (type_str == "SHAPE") {
+                layer_ctx.type = static_cast<int>(core::LayerType::SHAPE);
+                layer_ctx.shape_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
+                layer_ctx.shape_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
+
+                layer_ctx.shape_layer_ctx.border_size =
+                    layer_params.attr("border_size").cast<double>();
+                layer_ctx.shape_layer_ctx.edge_radius =
+                    layer_params.attr("edge_radius").cast<double>();
+                layer_ctx.shape_layer_ctx.fill = layer_params.attr("fill").cast<bool>();
+                layer_ctx.shape_layer_ctx.color = layer_params.attr("color").cast<std::string>();
+
+                parse_shape_detail(&layer_ctx, layer_params);
             } else {
                 AKLOG_ERROR("Invalid type '{}' found", type_str.c_str());
                 layer_ctx.type = -1;

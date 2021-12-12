@@ -1,8 +1,7 @@
 #pragma once
 
+#include "../core/glc.h"
 #include "./actor.h"
-
-struct SDL_Surface;
 
 namespace akashi {
     namespace core {
@@ -12,13 +11,13 @@ namespace akashi {
 
         class OGLRenderContext;
 
-        class ImageActor : public Actor {
+        class ShapeActor : public Actor {
             struct Pass;
 
           public:
-            explicit ImageActor() = default;
-            virtual ~ImageActor() = default;
-            ImageActor(ImageActor&&) = default;
+            explicit ShapeActor() = default;
+            virtual ~ShapeActor() = default;
+            ShapeActor(ShapeActor&&) = default;
 
             bool create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) override;
 
@@ -29,13 +28,12 @@ namespace akashi {
           private:
             bool load_pass(const OGLRenderContext& ctx);
 
-            bool load_texture(const OGLRenderContext& ctx);
+            bool load_mesh(const OGLRenderContext& ctx);
 
             void update_model_mat();
 
           private:
-            ImageActor::Pass* m_pass = nullptr;
-            std::vector<SDL_Surface*> m_surfaces;
+            ShapeActor::Pass* m_pass = nullptr;
         };
     }
 

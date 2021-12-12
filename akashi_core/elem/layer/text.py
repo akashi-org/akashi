@@ -50,7 +50,7 @@ class TextLabel:
 @dataclass
 class TextBorder:
     color: str = "#ffffff00"  # "#rrggbb" or "#rrggbbaa"
-    size: int = 0
+    size: int = 0  # [TODO] float?
     radius: float = 0
 
 
@@ -67,7 +67,6 @@ class TextLocalField:
 
 @dataclass
 class TextEntry(ShaderField, PositionField, LayerField, TextLocalField):
-    ...
 
     def __post_init__(self):
         self.style = TextStyle()

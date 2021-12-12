@@ -20,7 +20,7 @@ namespace akashi {
             GLuint tex_loc;
         };
 
-        bool EffectActor::create(const OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
+        bool EffectActor::create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
             m_layer_ctx = layer_ctx;
             m_layer_type = static_cast<core::LayerType>(layer_ctx.type);
 

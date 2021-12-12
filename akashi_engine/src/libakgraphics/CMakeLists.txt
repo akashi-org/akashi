@@ -34,6 +34,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/opengl/actors/image_actor.cpp"
   "./backend/opengl/actors/text_actor.cpp"
   "./backend/opengl/actors/effect_actor.cpp"
+  "./backend/opengl/actors/shape_actor.cpp"
 )
 
 file(GLOB INTERFACE_HEADERS

@@ -18,7 +18,7 @@ namespace akashi {
             virtual ~TextActor() = default;
             TextActor(TextActor&&) = default;
 
-            bool create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx);
+            bool create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) override;
 
             bool render(OGLRenderContext& ctx, const core::Rational& pts) override;
 

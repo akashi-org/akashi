@@ -24,7 +24,7 @@ namespace akashi {
             OGLTexture tex;
         };
 
-        bool ImageActor::create(const OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
+        bool ImageActor::create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
             m_layer_ctx = layer_ctx;
             m_layer_type = static_cast<core::LayerType>(layer_ctx.type);
 

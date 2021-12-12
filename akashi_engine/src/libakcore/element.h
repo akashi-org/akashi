@@ -9,7 +9,7 @@
 namespace akashi {
     namespace core {
 
-        enum class LayerType { VIDEO = 0, AUDIO, TEXT, IMAGE, EFFECT, LENGTH };
+        enum class LayerType { VIDEO = 0, AUDIO, TEXT, IMAGE, EFFECT, SHAPE, LENGTH };
 
         struct Style {
             std::string font_path;
@@ -81,6 +81,24 @@ namespace akashi {
             std::string poly;
         };
 
+        enum class ShapeKind { RECT = 0, CIRCLE, ELLIPSE, LINE, LENGTH };
+
+        struct ShapeRect {
+            int width = 0;
+            int height = 0;
+        };
+
+        struct ShapeLayerContext {
+            ShapeKind shape_kind;
+            double border_size;
+            double edge_radius;
+            bool fill = true;
+            std::string color;
+            std::string frag;
+            std::string poly;
+            ShapeRect rect;
+        };
+
         struct LayerContext {
             double x;
             double y;
@@ -92,30 +110,17 @@ namespace akashi {
             std::string atom_uuid;
             bool display = false;
 
-            /**
-             * exists iff type == LayerType::VIDEO
-             */
             VideoLayerContext video_layer_ctx;
 
-            /**
-             * exists iff type == LayerType::AUDIO
-             */
             AudioLayerContext audio_layer_ctx;
 
-            /**
-             * exists iff type == LayerType::TEXT
-             */
             TextLayerContext text_layer_ctx;
 
-            /**
-             * exists iff type == LayerType::IMAGE
-             */
             ImageLayerContext image_layer_ctx;
 
-            /**
-             * exists iff type == LayerType::EFFECT
-             */
             EffectLayerContext effect_layer_ctx;
+
+            ShapeLayerContext shape_layer_ctx;
         };
 
         struct FrameContext {

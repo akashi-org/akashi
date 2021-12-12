@@ -21,7 +21,7 @@ namespace akashi {
             virtual ~VideoActor() = default;
             VideoActor(VideoActor&&) = default;
 
-            bool create(const OGLRenderContext& ctx, const core::LayerContext& layer_ctx);
+            bool create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) override;
 
             bool render(OGLRenderContext& ctx, const core::Rational& pts) override;
 

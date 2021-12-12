@@ -179,8 +179,7 @@ namespace akashi {
             VideoTexture vtex;
         };
 
-        bool VideoActor::create(const OGLRenderContext& /*ctx */,
-                                const core::LayerContext& layer_ctx) {
+        bool VideoActor::create(OGLRenderContext& /*ctx */, const core::LayerContext& layer_ctx) {
             m_layer_ctx = layer_ctx;
             m_layer_type = static_cast<core::LayerType>(layer_ctx.type);
 
