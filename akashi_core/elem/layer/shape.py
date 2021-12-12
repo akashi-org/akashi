@@ -33,9 +33,14 @@ class CircleDetail:
     lod: int = 64  # level of detail
 
 
+@dataclass
+class TriangleDetail:
+    side: float = 0
+
+
 ''' Shape Concept '''
 
-ShapeKind = tp.Literal['RECT', 'CIRCLE', 'ELLIPSE', 'LINE']
+ShapeKind = tp.Literal['RECT', 'CIRCLE', 'ELLIPSE', 'TRIANGLE', 'LINE']
 
 
 @dataclass
@@ -47,6 +52,7 @@ class ShapeField:
     edge_radius: float = 0
     rect: RectDetail = field(init=False)
     circle: CircleDetail = field(init=False)
+    tri: TriangleDetail = field(init=False)
 
 
 class ShapeTrait(LayerTrait, metaclass=ABCMeta):
@@ -78,6 +84,7 @@ class ShapeEntry(LayerField, ShaderField, PositionField, ShapeField):
     def __post_init__(self):
         self.rect = RectDetail()
         self.circle = CircleDetail()
+        self.tri = TriangleDetail()
 
 
 @dataclass
@@ -150,6 +157,37 @@ class CircleHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait
         return self
 
 
+@dataclass
+class TriangleHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, LayerTrait):
+
+    def fill(self, enable_fill: bool) -> 'TriangleHandle':
+        return super().fill(enable_fill)
+
+    def color(self, color: str) -> 'TriangleHandle':
+        return super().color(color)
+
+    def border_size(self, size: float) -> 'TriangleHandle':
+        return super().border_size(size)
+
+    def duration(self, duration: sec) -> 'TriangleHandle':
+        return super().duration(duration)
+
+    def pos(self, x: int, y: int) -> 'TriangleHandle':
+        return super().pos(x, y)
+
+    def z(self, value: float) -> 'TriangleHandle':
+        return super().z(value)
+
+    def frag(self, frag_shader: FragShader) -> 'TriangleHandle':
+        return super().frag(frag_shader)
+
+    def poly(self, poly_shader: PolygonShader) -> 'TriangleHandle':
+        return super().poly(poly_shader)
+
+    def fit_to(self, handle: 'AtomHandle') -> 'TriangleHandle':
+        return super().fit_to(handle)
+
+
 def rect(width: int, height: int, key: str = '') -> RectHandle:
 
     entry = ShapeEntry('RECT')
@@ -159,9 +197,17 @@ def rect(width: int, height: int, key: str = '') -> RectHandle:
     return RectHandle(idx)
 
 
-def circle(radius: float, key: str = '') -> RectHandle:
+def circle(radius: float, key: str = '') -> CircleHandle:
 
     entry = ShapeEntry('CIRCLE')
     entry.circle.circle_radius = radius
     idx = register_entry(entry, 'SHAPE', key)
-    return RectHandle(idx)
+    return CircleHandle(idx)
+
+
+def tri(side: float, key: str = '') -> TriangleHandle:
+
+    entry = ShapeEntry('TRIANGLE')
+    entry.tri.side = side
+    idx = register_entry(entry, 'SHAPE', key)
+    return TriangleHandle(idx)

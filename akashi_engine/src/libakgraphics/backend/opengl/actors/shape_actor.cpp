@@ -9,6 +9,7 @@
 
 #include "../meshes/rect.h"
 #include "../meshes/circle.h"
+#include "../meshes/triangle.h"
 
 #include <libakcore/rational.h>
 #include <libakcore/error.h>
@@ -166,7 +167,7 @@ namespace akashi {
                 }
 
                 case core::ShapeKind::CIRCLE: {
-                    if (shape_params.fill) {
+                    if (shape_params.fill || !(shape_params.border_size > 0)) {
                         m_pass->mesh = new CircleMesh;
                         CHECK_AK_ERROR2(static_cast<CircleMesh*>(m_pass->mesh)
                                             ->create(shape_params.circle.radius,
@@ -180,6 +181,22 @@ namespace akashi {
                     }
                     break;
                 }
+
+                case core::ShapeKind::TRIANGLE: {
+                    if (shape_params.fill || !(shape_params.border_size > 0)) {
+                        m_pass->mesh = new TriangleMesh;
+                        CHECK_AK_ERROR2(static_cast<TriangleMesh*>(m_pass->mesh)
+                                            ->create(shape_params.tri.side, vertices_loc));
+                    } else {
+                        m_pass->mesh = new TriangleMesh;
+                        CHECK_AK_ERROR2(static_cast<TriangleMesh*>(m_pass->mesh)
+                                            ->create_border(shape_params.tri.side,
+                                                            shape_params.border_size,
+                                                            vertices_loc));
+                    }
+                    break;
+                }
+
                 default: {
                     AKLOG_ERROR("Invalid or not implemented shape kind {} found", shape_kind);
                     break;

@@ -81,7 +81,7 @@ namespace akashi {
             std::string poly;
         };
 
-        enum class ShapeKind { RECT = 0, CIRCLE, ELLIPSE, LINE, LENGTH };
+        enum class ShapeKind { RECT = 0, CIRCLE, ELLIPSE, TRIANGLE, LINE, LENGTH };
 
         struct RectDetail {
             int width = 0;
@@ -91,6 +91,10 @@ namespace akashi {
         struct CircleDetail {
             double radius;
             int lod;
+        };
+
+        struct TriangleDetail {
+            double side;
         };
 
         struct ShapeLayerContext {
@@ -103,6 +107,7 @@ namespace akashi {
             std::string poly;
             RectDetail rect;
             CircleDetail circle;
+            TriangleDetail tri;
         };
 
         struct LayerContext {
