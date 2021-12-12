@@ -97,6 +97,15 @@ namespace akashi {
             double side;
         };
 
+        enum class LineStyle { DEFAULT = 0, ROUND_DOT, SQUARE_DOT, CAP, LENGTH };
+
+        struct LineDetail {
+            double size;
+            std::array<long, 2> begin;
+            std::array<long, 2> end;
+            LineStyle style;
+        };
+
         struct ShapeLayerContext {
             ShapeKind shape_kind;
             double border_size;
@@ -108,6 +117,7 @@ namespace akashi {
             RectDetail rect;
             CircleDetail circle;
             TriangleDetail tri;
+            LineDetail line;
         };
 
         struct LayerContext {

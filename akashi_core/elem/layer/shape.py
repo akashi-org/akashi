@@ -38,6 +38,17 @@ class TriangleDetail:
     side: float = 0
 
 
+LineStyle = tp.Literal['default', 'round-dot', 'square-dot', 'cap']
+
+
+@dataclass
+class LineDetail:
+    size: float = 0
+    begin: tuple[int, int] = (0, 0)
+    end: tuple[int, int] = (0, 0)
+    style: LineStyle = 'default'
+
+
 ''' Shape Concept '''
 
 ShapeKind = tp.Literal['RECT', 'CIRCLE', 'ELLIPSE', 'TRIANGLE', 'LINE']
@@ -53,6 +64,7 @@ class ShapeField:
     rect: RectDetail = field(init=False)
     circle: CircleDetail = field(init=False)
     tri: TriangleDetail = field(init=False)
+    line: LineDetail = field(init=False)
 
 
 class ShapeTrait(LayerTrait, metaclass=ABCMeta):
@@ -85,6 +97,7 @@ class ShapeEntry(LayerField, ShaderField, PositionField, ShapeField):
         self.rect = RectDetail()
         self.circle = CircleDetail()
         self.tri = TriangleDetail()
+        self.line = LineDetail()
 
 
 @dataclass
@@ -188,6 +201,43 @@ class TriangleHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTra
         return super().fit_to(handle)
 
 
+@dataclass
+class LineHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, LayerTrait):
+
+    def color(self, color: str) -> 'LineHandle':
+        return super().color(color)
+
+    def duration(self, duration: sec) -> 'LineHandle':
+        return super().duration(duration)
+
+    def z(self, value: float) -> 'LineHandle':
+        return super().z(value)
+
+    def frag(self, frag_shader: FragShader) -> 'LineHandle':
+        return super().frag(frag_shader)
+
+    def poly(self, poly_shader: PolygonShader) -> 'LineHandle':
+        return super().poly(poly_shader)
+
+    def fit_to(self, handle: 'AtomHandle') -> 'LineHandle':
+        return super().fit_to(handle)
+
+    def begin(self, x: int, y: int) -> 'LineHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
+            cur_layer.line.begin = (x, y)
+        return self
+
+    def end(self, x: int, y: int) -> 'LineHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
+            cur_layer.line.end = (x, y)
+        return self
+
+    def style(self, style: LineStyle) -> 'LineHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
+            cur_layer.line.style = style
+        return self
+
+
 def rect(width: int, height: int, key: str = '') -> RectHandle:
 
     entry = ShapeEntry('RECT')
@@ -211,3 +261,11 @@ def tri(side: float, key: str = '') -> TriangleHandle:
     entry.tri.side = side
     idx = register_entry(entry, 'SHAPE', key)
     return TriangleHandle(idx)
+
+
+def line(size: float, key: str = '') -> LineHandle:
+
+    entry = ShapeEntry('LINE')
+    entry.line.size = size
+    idx = register_entry(entry, 'SHAPE', key)
+    return LineHandle(idx)

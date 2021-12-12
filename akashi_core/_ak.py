@@ -7,7 +7,7 @@ from .elem.layer.audio import audio
 from .elem.layer.image import image
 from .elem.layer.text import text
 from .elem.layer.effect import effect
-from .elem.layer.shape import rect, circle, tri
+from .elem.layer.shape import rect, circle, tri, line
 
 from .time import sec
 from .config import config

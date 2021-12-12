@@ -10,6 +10,7 @@
 #include "../meshes/rect.h"
 #include "../meshes/circle.h"
 #include "../meshes/triangle.h"
+#include "../meshes/line.h"
 
 #include <libakcore/rational.h>
 #include <libakcore/error.h>
@@ -194,6 +195,14 @@ namespace akashi {
                                                             shape_params.border_size,
                                                             vertices_loc));
                     }
+                    break;
+                }
+                case core::ShapeKind::LINE: {
+                    m_pass->mesh = new LineMesh;
+                    CHECK_AK_ERROR2(static_cast<LineMesh*>(m_pass->mesh)
+                                        ->create_default(vertices_loc, shape_params.line.size,
+                                                         shape_params.line.begin,
+                                                         shape_params.line.end));
                     break;
                 }
 

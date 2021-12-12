@@ -60,6 +60,24 @@ namespace akashi {
             return border;
         }
 
+        static core::LineStyle parse_line_style(const pybind11::object& style_obj) {
+            std::string style_str = style_obj.cast<std::string>();
+
+            if (style_str == "default") {
+                return core::LineStyle::DEFAULT;
+            } else if (style_str == "round-dot") {
+                return core::LineStyle::ROUND_DOT;
+            } else if (style_str == "square-dot") {
+                return core::LineStyle::SQUARE_DOT;
+            } else if (style_str == "cap") {
+                return core::LineStyle::CAP;
+            } else {
+                AKLOG_ERROR("Invalid line style '{}' found", style_str.c_str());
+            }
+
+            return core::LineStyle::LENGTH;
+        }
+
         static bool parse_shape_detail(core::LayerContext* layer_ctx,
                                        const pybind11::object& layer_params) {
             std::string kind_str = layer_params.attr("shape_kind").cast<std::string>();
@@ -83,6 +101,19 @@ namespace akashi {
                     layer_params.attr("tri").attr("side").cast<double>();
             } else if (kind_str == "LINE") {
                 layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::LINE;
+                layer_ctx->shape_layer_ctx.line.size =
+                    layer_params.attr("line").attr("size").cast<double>();
+
+                const auto& begin =
+                    layer_params.attr("line").attr("begin").cast<std::tuple<long, long>>();
+                const auto& end =
+                    layer_params.attr("line").attr("end").cast<std::tuple<long, long>>();
+                layer_ctx->shape_layer_ctx.line.begin = {std::get<0>(begin), std::get<1>(begin)};
+                layer_ctx->shape_layer_ctx.line.end = {std::get<0>(end), std::get<1>(end)};
+
+                layer_ctx->shape_layer_ctx.line.style =
+                    parse_line_style(layer_params.attr("line").attr("style"));
+
             } else {
                 AKLOG_ERROR("Invalid shape kind '{}' found", kind_str.c_str());
                 return false;

@@ -27,6 +27,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/opengl/meshes/rect.cpp"
   "./backend/opengl/meshes/circle.cpp"
   "./backend/opengl/meshes/triangle.cpp"
+  "./backend/opengl/meshes/line.cpp"
   "./backend/opengl/resource/image.cpp"
   "./backend/opengl/resource/font.cpp"
   # "./backend/opengl/utility/grid.cpp"
