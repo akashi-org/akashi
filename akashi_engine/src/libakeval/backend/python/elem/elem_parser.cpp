@@ -71,6 +71,10 @@ namespace akashi {
                     layer_params.attr("rect").attr("height").cast<long>();
             } else if (kind_str == "CIRCLE") {
                 layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::CIRCLE;
+                layer_ctx->shape_layer_ctx.circle.radius =
+                    layer_params.attr("circle").attr("circle_radius").cast<double>();
+                layer_ctx->shape_layer_ctx.circle.lod =
+                    layer_params.attr("circle").attr("lod").cast<long>();
             } else if (kind_str == "ELLIPSE") {
                 layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::ELLIPSE;
             } else if (kind_str == "LINE") {

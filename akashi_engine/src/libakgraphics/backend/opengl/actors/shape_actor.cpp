@@ -8,6 +8,7 @@
 #include "../resource/font.h"
 
 #include "../meshes/rect.h"
+#include "../meshes/circle.h"
 
 #include <libakcore/rational.h>
 #include <libakcore/error.h>
@@ -161,6 +162,23 @@ namespace akashi {
                                                                 vertices_loc));
                         }
                     }
+                    break;
+                }
+
+                case core::ShapeKind::CIRCLE: {
+                    if (shape_params.fill) {
+                        m_pass->mesh = new CircleMesh;
+                        CHECK_AK_ERROR2(static_cast<CircleMesh*>(m_pass->mesh)
+                                            ->create(shape_params.circle.radius,
+                                                     shape_params.circle.lod, vertices_loc));
+                    } else {
+                        m_pass->mesh = new CircleMesh;
+                        CHECK_AK_ERROR2(
+                            static_cast<CircleMesh*>(m_pass->mesh)
+                                ->create_border(shape_params.circle.radius, shape_params.circle.lod,
+                                                shape_params.border_size, vertices_loc));
+                    }
+                    break;
                 }
                 default: {
                     AKLOG_ERROR("Invalid or not implemented shape kind {} found", shape_kind);

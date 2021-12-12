@@ -30,6 +30,7 @@ class RectDetail:
 @dataclass
 class CircleDetail:
     circle_radius: float = 0
+    lod: int = 64  # level of detail
 
 
 ''' Shape Concept '''
@@ -45,6 +46,7 @@ class ShapeField:
     border_size: float = 0
     edge_radius: float = 0
     rect: RectDetail = field(init=False)
+    circle: CircleDetail = field(init=False)
 
 
 class ShapeTrait(LayerTrait, metaclass=ABCMeta):
@@ -75,6 +77,7 @@ class ShapeEntry(LayerField, ShaderField, PositionField, ShapeField):
 
     def __post_init__(self):
         self.rect = RectDetail()
+        self.circle = CircleDetail()
 
 
 @dataclass
@@ -111,10 +114,54 @@ class RectHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, 
         return super().fit_to(handle)
 
 
+@dataclass
+class CircleHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, LayerTrait):
+
+    def fill(self, enable_fill: bool) -> 'CircleHandle':
+        return super().fill(enable_fill)
+
+    def color(self, color: str) -> 'CircleHandle':
+        return super().color(color)
+
+    def border_size(self, size: float) -> 'CircleHandle':
+        return super().border_size(size)
+
+    def duration(self, duration: sec) -> 'CircleHandle':
+        return super().duration(duration)
+
+    def pos(self, x: int, y: int) -> 'CircleHandle':
+        return super().pos(x, y)
+
+    def z(self, value: float) -> 'CircleHandle':
+        return super().z(value)
+
+    def frag(self, frag_shader: FragShader) -> 'CircleHandle':
+        return super().frag(frag_shader)
+
+    def poly(self, poly_shader: PolygonShader) -> 'CircleHandle':
+        return super().poly(poly_shader)
+
+    def fit_to(self, handle: 'AtomHandle') -> 'CircleHandle':
+        return super().fit_to(handle)
+
+    def lod(self, value: int) -> 'CircleHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
+            cur_layer.circle.lod = value
+        return self
+
+
 def rect(width: int, height: int, key: str = '') -> RectHandle:
 
     entry = ShapeEntry('RECT')
     entry.rect.width = width
     entry.rect.height = height
+    idx = register_entry(entry, 'SHAPE', key)
+    return RectHandle(idx)
+
+
+def circle(radius: float, key: str = '') -> RectHandle:
+
+    entry = ShapeEntry('CIRCLE')
+    entry.circle.circle_radius = radius
     idx = register_entry(entry, 'SHAPE', key)
     return RectHandle(idx)
