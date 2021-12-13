@@ -77,6 +77,10 @@ class TextEntry(ShaderField, PositionField, LayerField, TextLocalField):
 @dataclass
 class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
 
+    def ap(self, *hs: tp.Callable[['TextHandle'], 'TextHandle']) -> 'TextHandle':
+        [h(self) for h in hs]
+        return self
+
     def duration(self, duration: sec) -> 'TextHandle':
         return super().duration(duration)
 

@@ -34,6 +34,10 @@ class VideoEntry(PositionField, LayerField, VideoLocalField):
 @dataclass
 class VideoHandle(PositionTrait, LayerTrait):
 
+    def ap(self, *hs: tp.Callable[['VideoHandle'], 'VideoHandle']) -> 'VideoHandle':
+        [h(self) for h in hs]
+        return self
+
     def duration(self, duration: sec) -> 'VideoHandle':
         return super().duration(duration)
 

@@ -24,6 +24,10 @@ class AudioEntry(LayerField, AudioLocalField):
 @dataclass
 class AudioHandle(LayerTrait):
 
+    def ap(self, *hs: tp.Callable[['AudioHandle'], 'AudioHandle']) -> 'AudioHandle':
+        [h(self) for h in hs]
+        return self
+
     def duration(self, duration: sec) -> 'AudioHandle':
         return super().duration(duration)
 

@@ -103,6 +103,10 @@ class ShapeEntry(LayerField, ShaderField, PositionField, ShapeField):
 @dataclass
 class RectHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, LayerTrait):
 
+    def ap(self, *hs: tp.Callable[['RectHandle'], 'RectHandle']) -> 'RectHandle':
+        [h(self) for h in hs]
+        return self
+
     def fill(self, enable_fill: bool) -> 'RectHandle':
         return super().fill(enable_fill)
 
@@ -136,6 +140,10 @@ class RectHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, 
 
 @dataclass
 class CircleHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, LayerTrait):
+
+    def ap(self, *hs: tp.Callable[['CircleHandle'], 'CircleHandle']) -> 'CircleHandle':
+        [h(self) for h in hs]
+        return self
 
     def fill(self, enable_fill: bool) -> 'CircleHandle':
         return super().fill(enable_fill)
@@ -173,6 +181,10 @@ class CircleHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait
 @dataclass
 class TriangleHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, LayerTrait):
 
+    def ap(self, *hs: tp.Callable[['TriangleHandle'], 'TriangleHandle']) -> 'TriangleHandle':
+        [h(self) for h in hs]
+        return self
+
     def fill(self, enable_fill: bool) -> 'TriangleHandle':
         return super().fill(enable_fill)
 
@@ -203,6 +215,10 @@ class TriangleHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTra
 
 @dataclass
 class LineHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, LayerTrait):
+
+    def ap(self, *hs: tp.Callable[['LineHandle'], 'LineHandle']) -> 'LineHandle':
+        [h(self) for h in hs]
+        return self
 
     def color(self, color: str) -> 'LineHandle':
         return super().color(color)

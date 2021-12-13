@@ -27,6 +27,10 @@ class EffectEntry(ShaderField, LayerField):
 @dataclass
 class EffectHandle(FittableDurationTrait, ShaderTrait, LayerTrait):
 
+    def ap(self, *hs: tp.Callable[['EffectHandle'], 'EffectHandle']) -> 'EffectHandle':
+        [h(self) for h in hs]
+        return self
+
     def duration(self, duration: sec) -> 'EffectHandle':
         return super().duration(duration)
 

@@ -36,6 +36,10 @@ class ImageEntry(ShaderField, PositionField, LayerField, ImageLocalField):
 @dataclass
 class ImageHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
 
+    def ap(self, *hs: tp.Callable[['ImageHandle'], 'ImageHandle']) -> 'ImageHandle':
+        [h(self) for h in hs]
+        return self
+
     def duration(self, duration: sec) -> 'ImageHandle':
         return super().duration(duration)
 
