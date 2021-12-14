@@ -511,6 +511,14 @@ def from_Attribute(node: ast.Attribute, ctx: CompilerContext) -> AttributeOut:
     value_str = compile_expr(node.value, ctx).content
     attr_str = str(node.attr)
 
+    # lambda params
+    if value_str in ctx.lambda_args:
+        resolved_str = ctx.lambda_args[value_str]
+        if attr_str == 'value':
+            attr_str = ''
+        content = f'{resolved_str}{attr_str}'
+        return AttributeOut(node, content)
+
     # module global
     if value_str in ctx.global_symbol:
 

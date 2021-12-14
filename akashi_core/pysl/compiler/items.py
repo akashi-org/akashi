@@ -36,6 +36,7 @@ class CompilerContext:
     cls_symbol: dict = field(default_factory=dict)
     global_symbol: dict = field(default_factory=dict)
     local_symbol: dict = field(default_factory=dict)
+    lambda_args: dict = field(default_factory=dict)
     imported: set = field(default_factory=set)
     imported_current: dict = field(default_factory=dict)
     on_import_resolution: bool = False

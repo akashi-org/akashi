@@ -55,6 +55,24 @@ class TestInlineExpr(unittest.TestCase):
 
         self.assertEqual(compile_inline_shader(gen1(), 'FragShader'), expected)
 
+    def test_argument_resolution(self):
+
+        speed = 999
+
+        def gen1() -> ak.EntryFragFn:
+            return lambda b, c: gl.expr((c.value.y * global_speed) + (b.time.value * speed * gl.sin(12)))
+
+        expected1 = 'void frag_main(inout vec4 _fragColor){((_fragColor.y) * (1890)) + (((time) * (999)) * (sin(12)));}'
+
+        self.assertEqual(compile_inline_shader(gen1(), 'FragShader'), expected1)
+
+        def gen2() -> ak.EntryPolyFn:
+            return lambda b, p: gl.expr((p.value.y * global_speed) + (b.time.value * speed * gl.sin(12)))
+
+        expected2 = 'void poly_main(inout vec3 pos){((pos.y) * (1890)) + (((time) * (999)) * (sin(12)));}'
+
+        self.assertEqual(compile_inline_shader(gen2(), 'PolygonShader'), expected2)
+
     def test_import_resolution(self):
 
         speed = 999

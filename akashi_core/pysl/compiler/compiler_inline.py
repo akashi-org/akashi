@@ -7,6 +7,7 @@ from akashi_core.pysl import _gl
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
 from .ast import compile_stmt, compile_shader_staticmethod
 from .utils import can_import2
+from .symbol import instance_symbol_analysis
 
 import inspect
 import re
@@ -15,6 +16,9 @@ import sys
 
 if tp.TYPE_CHECKING:
     from akashi_core.pysl.shader import ShaderKind, EntryFragFn, EntryPolyFn
+
+# [XXX] circular import?
+from akashi_core.pysl.shader import FragShader, PolygonShader
 
 
 def entry_point(kind: 'ShaderKind', func_body: str) -> str:
@@ -78,12 +82,23 @@ def parse_expr_level2(iexpr_src: str, ctx: CompilerContext) -> str:
     return compile_stmt(root.body[0], ctx).content
 
 
-def collect_symbols(ctx: CompilerContext, fn: tp.Union['EntryFragFn', 'EntryPolyFn']):
+def collect_symbols(ctx: CompilerContext, fn: tp.Union['EntryFragFn', 'EntryPolyFn'], kind: 'ShaderKind'):
 
     ctx.global_symbol = vars(sys.modules[fn.__module__])
 
     for idx, freevar in enumerate(fn.__code__.co_freevars):
         ctx.local_symbol[freevar] = fn.__closure__[idx].cell_contents
+
+    buf_arg, var_arg = inspect.getfullargspec(fn).args
+    ctx.lambda_args[buf_arg] = ''
+    if kind == 'FragShader':
+        ctx.lambda_args[var_arg] = '_fragColor'
+        instance_symbol_analysis(FragShader(), ctx)
+    elif kind == 'PolygonShader':
+        ctx.lambda_args[var_arg] = 'pos'
+        instance_symbol_analysis(PolygonShader(), ctx)
+    else:
+        raise NotImplementedError()
 
 
 def compile_inline_shader(
@@ -97,7 +112,7 @@ def compile_inline_shader(
     exprs = split_exprs(src)
 
     ctx = CompilerContext(config)
-    collect_symbols(ctx, fn)
+    collect_symbols(ctx, fn, kind)
 
     for expr in exprs:
         res.append(parse_expr(expr, ctx))
