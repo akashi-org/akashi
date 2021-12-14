@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .compiler import compile_shader_module, CompilerConfig
+from . import compile_shader_module, CompilerConfig
 from . import _gl
 
 from abc import abstractmethod, ABCMeta

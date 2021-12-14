@@ -1,5 +1,5 @@
 import unittest
-from akashi_core.pysl.compiler import compile_shader_func, compile_shader_module, CompileError
+from akashi_core.pysl import compile_shader_func, compile_shader_module, CompileError
 from akashi_core import gl, ak
 from . import compiler_fixtures
 
