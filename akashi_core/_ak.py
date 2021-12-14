@@ -29,5 +29,7 @@ from .pysl import (
     VideoGeomShader,
     PolygonShader,
     VideoPolygonShader,
-    AnyShader
+    AnyShader,
+    EntryFragFn,
+    EntryPolyFn
 )
