@@ -606,7 +606,12 @@ def from_Name(node: ast.Name, ctx: CompilerContext) -> NameOut:
     if not hasattr(node, 'id'):
         content = 'None'
     else:
-        content = str(node.id)
+        name_str = str(node.id)
+        # local
+        if name_str in ctx.local_symbol:
+            content = f'{ctx.local_symbol[name_str]}'
+        else:
+            content = str(node.id)
     return NameOut(node, content)
 
 
