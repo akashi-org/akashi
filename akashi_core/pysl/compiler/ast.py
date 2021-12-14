@@ -607,9 +607,10 @@ def from_Name(node: ast.Name, ctx: CompilerContext) -> NameOut:
         content = 'None'
     else:
         name_str = str(node.id)
-        # local
         if name_str in ctx.local_symbol:
             content = f'{ctx.local_symbol[name_str]}'
+        elif name_str in ctx.global_symbol and type(ctx.global_symbol[name_str]) in [int, float]:
+            content = f'{ctx.global_symbol[name_str]}'
         else:
             content = str(node.id)
     return NameOut(node, content)
