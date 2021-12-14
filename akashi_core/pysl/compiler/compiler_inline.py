@@ -8,6 +8,7 @@ from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
 from .ast import compile_stmt, compile_expr, compile_shader_staticmethod, from_annotation
 from .utils import can_import2
 from .symbol import instance_symbol_analysis
+from .transformer import binop_transformer
 
 import inspect
 import re
@@ -15,7 +16,7 @@ import ast
 import sys
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderKind, EntryFragFn, EntryPolyFn
+    from akashi_core.pysl.shader import ShaderKind, TEntryFn
 
 # [XXX] circular import?
 from akashi_core.pysl.shader import FragShader, PolygonShader
@@ -31,26 +32,44 @@ def entry_point(kind: 'ShaderKind', func_body: str) -> str:
         raise NotImplementedError()
 
 
-def get_inline_source(fn: tp.Union['EntryFragFn', 'EntryPolyFn']):
+def get_inline_source(fn: 'TEntryFn') -> ast.expr:
 
     raw_src = inspect.getsource(fn)
+
     if fn.__name__ != '<lambda>':
         raise CompileError('As for inline pysl, we currently support lambda function only!')
     else:
-        lambda_whole = raw_src.split('lambda')[1:][0]
-        return lambda_whole[lambda_whole.index(':') + 1:]
+        root = ast.parse(raw_src.strip())
+        local_ctx = {'content': ast.expr()}
+
+        class Visitor(ast.NodeVisitor):
+
+            def visit_Lambda(self, node: ast.Lambda):
+                local_ctx['content'] = node.body
+
+        Visitor().visit(root)
+
+        return local_ctx['content']
 
 
-def split_exprs(src: str) -> list[str]:
+def split_exprs(expr_node: ast.expr) -> list[ast.Call]:
     '''
         from: gl.expr(...) >> gl.let(...) >> ... >> gl.expr(...)
         to:  [gl.expr(...), gl.let(...), ..., gl.expr(...)]
     '''
-    # [TODO] maybe we need to exclude comments or something like that
-    return src.split('>>')
+    if isinstance(expr_node, ast.Call):
+        return [expr_node]
+    elif isinstance(expr_node, ast.BinOp):
+        if not isinstance(expr_node.op, ast.RShift):
+            raise CompileError('split_exprs() failed')
+        left_strs = split_exprs(expr_node.left)
+        right_strs = split_exprs(expr_node.right)
+        return left_strs + right_strs
+    else:
+        raise CompileError('split_exprs() failed')
 
 
-def parse_expr(raw_expr_src: str, ctx: CompilerContext) -> str:
+def parse_expr(raw_expr: ast.Call, ctx: CompilerContext) -> str:
     '''
         input: gl.expr(...) or C(...) (where C is an alias for gl.expr)
         pattern: expr
@@ -65,100 +84,74 @@ def parse_expr(raw_expr_src: str, ctx: CompilerContext) -> str:
     # [TODO] we should resolve the alias here
 
     # [TODO] any better ways?
+    raw_expr_src = ast.unparse(raw_expr)
     head = raw_expr_src.split('(')[0]
     if head.endswith('expr'):
-        return parse_expr_level1(raw_expr_src, ctx)
+        return parse_gl_expr(raw_expr, ctx)
     elif head.endswith('assign'):
-        return parse_assign_level1(raw_expr_src, ctx)
+        return parse_gl_assign(raw_expr, ctx)
     elif head.endswith('let'):
-        return parse_let_level1(raw_expr_src, ctx)
+        return parse_gl_let(raw_expr, ctx)
     else:
         raise CompileError('parse_expr() failed')
 
 
-def parse_expr_level1(expr_src: str, ctx: CompilerContext) -> str:
-    '''
-        from: gl.expr(AAABBBB)
-        to: AAABBBB
+def parse_gl_expr(expr_node: ast.Call, ctx: CompilerContext) -> str:
 
-        from: C(AAABBBB) (where C is an alias for gl.expr)
-        to: AAABBBB
-    '''
-    t_expr = re.findall(r'(?<=\().*(?=\))', expr_src)[0]
-    return parse_expr_level2(t_expr, ctx)
+    return compile_expr(expr_node.args[0], ctx).content + ';'
 
 
-def parse_expr_level2(iexpr_src: str, ctx: CompilerContext) -> str:
-    root = ast.parse(iexpr_src)  # expects ast.Module
-    return compile_stmt(root.body[0], ctx).content
+def parse_gl_assign(assign_node: ast.Call, ctx: CompilerContext) -> str:
+
+    if not isinstance(assign_node.func, ast.Attribute) or not isinstance(assign_node.func.value, ast.Call):
+        raise CompileError('Invalid format found in gl.assign')
+
+    lhs = compile_expr(assign_node.func.value.args[0], ctx).content
+    op = str(assign_node.func.attr)
+
+    if op == 'eq':
+        rhs = compile_expr(assign_node.args[0], ctx).content
+        return f'{lhs} = {rhs};'
+    elif op == 'op':
+        op_str = compile_expr(assign_node.args[0], ctx).content
+        rhs = compile_expr(assign_node.args[1], ctx).content
+        return f'{lhs} {op_str} {rhs};'
+    else:
+        return ';'
 
 
-def parse_assign_level1(assign_src: str, ctx: CompilerContext) -> str:
-    '''
-        from: gl.assign(AAABBBB).eq(PPP)
-        to: AAABBBB, '=', PPP
+def parse_gl_let(let_node: ast.Call, ctx: CompilerContext) -> str:
 
-        from: gl.assign(AAABBBB).op('+=',PPP)
-        to: AAABBBB, '+=', PPP
-    '''
+    if not isinstance(let_node.func, ast.Attribute) or not isinstance(let_node.func.value, ast.Call):
+        raise CompileError('Invalid format found in gl.let')
 
-    root = ast.parse(assign_src.strip())
+    if (named_expr := let_node.func.value.args[0]) and not isinstance(named_expr, ast.NamedExpr):
+        raise CompileError('gl.let accepts only assignment expression as its argument.')
 
-    local_ctx = {'content': ''}
+    lhs = compile_expr(named_expr.target, ctx).content
+    rhs = compile_expr(named_expr.value, ctx).content
+    type_str = from_annotation(let_node.args[0], ctx)
 
-    class Visitor(ast.NodeVisitor):
-
-        def visit_Call(self, node: ast.Call):
-            lhs = compile_expr(tp.cast(ast.Call, tp.cast(ast.Attribute, node.func).value).args[0], ctx).content
-            op = str(tp.cast(ast.Attribute, node.func).attr)
-
-            if op == 'eq':
-                rhs = compile_expr(node.args[0], ctx).content
-                local_ctx['content'] = f'{lhs} = {rhs}'
-            elif op == 'op':
-                op_str = compile_expr(node.args[0], ctx).content
-                rhs = compile_expr(node.args[1], ctx).content
-                local_ctx['content'] = f'{lhs} {op_str} {rhs}'
-
-    Visitor().visit(root)
-
-    return local_ctx['content'] + ';'
+    return f'{type_str} {lhs} = {rhs};'
 
 
-def parse_let_level1(let_src: str, ctx: CompilerContext) -> str:
-    '''
-        from: gl.let(AAABBBB)
-        to: AAABBBB
-    '''
-
-    root = ast.parse(let_src.strip())
-
-    local_ctx = {'content': ''}
-
-    class Visitor(ast.NodeVisitor):
-
-        def visit_Call(self, node: ast.Call):
-
-            if not isinstance(node.func, ast.Attribute) or not isinstance(node.func.value, ast.Call):
-                raise CompileError('Invalid format found in gl.let')
-
-            if (named_expr := node.func.value.args[0]) and not isinstance(named_expr, ast.NamedExpr):
-                raise CompileError('gl.let accepts only assignment expression as its argument.')
-
-            lhs = compile_expr(named_expr.target, ctx).content
-            rhs = compile_expr(named_expr.value, ctx).content
-            type_str = from_annotation(node.args[0], ctx)
-
-            local_ctx['content'] = f'{type_str} {lhs} = {rhs}'
-
-    Visitor().visit(root)
-
-    return local_ctx['content'] + ';'
-
-
-def collect_symbols(ctx: CompilerContext, fn: tp.Union['EntryFragFn', 'EntryPolyFn'], kind: 'ShaderKind'):
+def collect_global_symbols(ctx: CompilerContext, fn: 'TEntryFn'):
 
     ctx.global_symbol = vars(sys.modules[fn.__module__])
+
+
+# Used for argument resolution
+def collect_instance_symbols(ctx: CompilerContext, kind: 'ShaderKind'):
+
+    if kind == 'FragShader':
+        instance_symbol_analysis(FragShader(), ctx)
+    elif kind == 'PolygonShader':
+        instance_symbol_analysis(PolygonShader(), ctx)
+    else:
+        raise NotImplementedError()
+
+
+def collect_local_symbols(ctx: CompilerContext, fn: 'TEntryFn'):
 
     for idx, freevar in enumerate(fn.__code__.co_freevars):
         value = fn.__closure__[idx].cell_contents
@@ -167,33 +160,49 @@ def collect_symbols(ctx: CompilerContext, fn: tp.Union['EntryFragFn', 'EntryPoly
         else:
             ctx.local_symbol[freevar] = value
 
+
+def collect_argument_symbols(ctx: CompilerContext, fn: 'TEntryFn', kind: 'ShaderKind'):
+
     buf_arg, var_arg = inspect.getfullargspec(fn).args
     ctx.lambda_args[buf_arg] = ''
     if kind == 'FragShader':
         ctx.lambda_args[var_arg] = '_fragColor'
-        instance_symbol_analysis(FragShader(), ctx)
     elif kind == 'PolygonShader':
         ctx.lambda_args[var_arg] = 'pos'
-        instance_symbol_analysis(PolygonShader(), ctx)
     else:
         raise NotImplementedError()
 
 
 def compile_inline_shader(
-        fn: tp.Union['EntryFragFn', 'EntryPolyFn'],
+        fns: tuple['TEntryFn', ...],
         kind: 'ShaderKind',
         config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
 
-    res = []
+    if len(fns) == 0:
+        return entry_point(kind, '')
 
-    src = get_inline_source(fn)
-    exprs = split_exprs(src)
+    stmts = []
 
     ctx = CompilerContext(config)
-    collect_symbols(ctx, fn, kind)
+    collect_global_symbols(ctx, fns[0])
+    collect_instance_symbols(ctx, kind)
 
-    for expr in exprs:
-        res.append(parse_expr(expr, ctx))
+    for fn in fns:
+
+        stmt = []
+
+        expr_node = get_inline_source(fn)
+        exprs = split_exprs(expr_node)
+
+        ctx.lambda_args = {}
+        ctx.local_symbol = {}
+        collect_argument_symbols(ctx, fn, kind)
+        collect_local_symbols(ctx, fn)
+
+        for expr in exprs:
+            stmt.append(parse_expr(expr, ctx))
+
+        stmts.append(''.join(stmt))
 
     imported_strs = []
     for imp in ctx.imported_current.values():
@@ -202,6 +211,4 @@ def compile_inline_shader(
 
         imported_strs.append(compile_shader_staticmethod(imp[0], imp[1], True, ctx.config))
 
-    imported = "".join(imported_strs)
-
-    return imported + entry_point(kind, ''.join(res))
+    return "".join(imported_strs) + entry_point(kind, ''.join(stmts))
