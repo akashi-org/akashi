@@ -61,7 +61,7 @@ def split_exprs(expr_node: ast.expr) -> list[ast.Call]:
         return [expr_node]
     elif isinstance(expr_node, ast.BinOp):
         if not isinstance(expr_node.op, ast.RShift):
-            raise CompileError('split_exprs() failed')
+            raise CompileError('All gl.exprs must be concated with `>>`')
         left_strs = split_exprs(expr_node.left)
         right_strs = split_exprs(expr_node.right)
         return left_strs + right_strs
