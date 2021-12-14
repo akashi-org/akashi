@@ -5,7 +5,7 @@ import typing as tp
 
 from akashi_core.pysl import _gl
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
-from .ast import compile_stmt, compile_expr, compile_shader_staticmethod
+from .ast import compile_stmt, compile_expr, compile_shader_staticmethod, from_annotation
 from .utils import can_import2
 from .symbol import instance_symbol_analysis
 
@@ -131,29 +131,29 @@ def parse_let_level1(let_src: str, ctx: CompilerContext) -> str:
         to: AAABBBB
     '''
 
-    t_expr = re.findall(r'(?<=\().*(?=\))', let_src)[0]
-    root = ast.parse('(' + t_expr + ')')  # For ast parser, explictly add parens
+    root = ast.parse(let_src.strip())
 
-    if not isinstance(root.body[0], ast.Expr):
-        raise CompileError('Invalid format found in gl.let')
+    local_ctx = {'content': ''}
 
-    if (named_expr := root.body[0].value) and not isinstance(named_expr, ast.NamedExpr):
-        raise CompileError('gl.let accepts only assignment expression as its argument.')
+    class Visitor(ast.NodeVisitor):
 
-    lhs = compile_expr(named_expr.target, ctx).content
+        def visit_Call(self, node: ast.Call):
 
-    if isinstance(named_expr.value, ast.Constant):
-        rhs = named_expr.value.value
-        type_str = str(type(rhs).__name__)
-        return f'{type_str} {lhs} = {rhs};'
-    elif isinstance(named_expr.value, ast.Name):
-        raise NotImplementedError()
-    elif isinstance(named_expr.value, ast.Call):
-        raise NotImplementedError()
-    elif isinstance(named_expr.value, ast.Attribute):
-        raise NotImplementedError()
-    else:
-        raise CompileError('Right-hand side expression in gl.let is invalid.')
+            if not isinstance(node.func, ast.Attribute) or not isinstance(node.func.value, ast.Call):
+                raise CompileError('Invalid format found in gl.let')
+
+            if (named_expr := node.func.value.args[0]) and not isinstance(named_expr, ast.NamedExpr):
+                raise CompileError('gl.let accepts only assignment expression as its argument.')
+
+            lhs = compile_expr(named_expr.target, ctx).content
+            rhs = compile_expr(named_expr.value, ctx).content
+            type_str = from_annotation(node.args[0], ctx)
+
+            local_ctx['content'] = f'{type_str} {lhs} = {rhs}'
+
+    Visitor().visit(root)
+
+    return local_ctx['content'] + ';'
 
 
 def collect_symbols(ctx: CompilerContext, fn: tp.Union['EntryFragFn', 'EntryPolyFn'], kind: 'ShaderKind'):
@@ -161,7 +161,11 @@ def collect_symbols(ctx: CompilerContext, fn: tp.Union['EntryFragFn', 'EntryPoly
     ctx.global_symbol = vars(sys.modules[fn.__module__])
 
     for idx, freevar in enumerate(fn.__code__.co_freevars):
-        ctx.local_symbol[freevar] = fn.__closure__[idx].cell_contents
+        value = fn.__closure__[idx].cell_contents
+        if callable(value):
+            raise CompileError('Local symbol in inline shader must be convertible to literals')
+        else:
+            ctx.local_symbol[freevar] = value
 
     buf_arg, var_arg = inspect.getfullargspec(fn).args
     ctx.lambda_args[buf_arg] = ''

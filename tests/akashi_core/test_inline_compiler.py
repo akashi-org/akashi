@@ -138,18 +138,31 @@ class TestInlineAssign(unittest.TestCase):
 
 class TestInlineLet(unittest.TestCase):
 
-    def test_constant(self):
+    def test_easy(self):
+
+        speed = 999
 
         def gen() -> ak.EntryFragFn:
-            return lambda b, c: gl.let(x := 12)  # noqa: F841
+            return lambda b, c: gl.let(x := 102).tp(int)  # noqa: F841
 
-        expected = 'void frag_main(inout vec4 _fragColor){int x = 12;}'
+        expected = 'void frag_main(inout vec4 _fragColor){int x = 102;}'
 
         self.assertEqual(compile_inline_shader(gen(), 'FragShader'), expected)
 
         def gen2() -> ak.EntryFragFn:
-            return lambda b, c: gl.let((x := 12))  # noqa: F841
+            return lambda b, c: gl.let((x := speed)).tp(int)  # noqa: F841
 
-        expected2 = 'void frag_main(inout vec4 _fragColor){int x = 12;}'
+        expected2 = 'void frag_main(inout vec4 _fragColor){int x = 999;}'
 
         self.assertEqual(compile_inline_shader(gen2(), 'FragShader'), expected2)
+
+    def test_merge(self):
+
+        speed = 999
+
+        def gen() -> ak.EntryFragFn:
+            return lambda b, c: gl.assign(c.value.x).eq(speed) >> gl.let(y := 12.1).tp(float) >> gl.expr(y)
+
+        expected = 'void frag_main(inout vec4 _fragColor){_fragColor.x = 999;float y = 12.1;y;}'
+
+        self.assertEqual(compile_inline_shader(gen(), 'FragShader'), expected)

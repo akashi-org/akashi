@@ -15,8 +15,12 @@ class expr(Generic[_T]):
 
 
 @dataclass
-class let(expr[_T]):
-    ...
+class let(Generic[_T]):
+
+    v: _T
+
+    def tp(self, _tp: Type[_T]) -> 'expr[_T]':
+        return expr(self.v)
 
 
 _ASSIGN_OP = Literal['=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '|=', '^=', '&=']
