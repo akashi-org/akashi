@@ -134,3 +134,22 @@ class TestInlineAssign(unittest.TestCase):
         expected = 'void frag_main(inout vec4 _fragColor){_fragColor.x += (resolution.x) + (sin(12));12;}'
 
         self.assertEqual(compile_inline_shader(gen(), 'FragShader'), expected)
+
+
+class TestInlineLet(unittest.TestCase):
+
+    def test_constant(self):
+
+        def gen() -> ak.EntryFragFn:
+            return lambda b, c: gl.let(x := 12)  # noqa: F841
+
+        expected = 'void frag_main(inout vec4 _fragColor){int x = 12;}'
+
+        self.assertEqual(compile_inline_shader(gen(), 'FragShader'), expected)
+
+        def gen2() -> ak.EntryFragFn:
+            return lambda b, c: gl.let((x := 12))  # noqa: F841
+
+        expected2 = 'void frag_main(inout vec4 _fragColor){int x = 12;}'
+
+        self.assertEqual(compile_inline_shader(gen2(), 'FragShader'), expected2)

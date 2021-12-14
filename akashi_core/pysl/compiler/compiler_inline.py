@@ -37,7 +37,8 @@ def get_inline_source(fn: tp.Union['EntryFragFn', 'EntryPolyFn']):
     if fn.__name__ != '<lambda>':
         raise CompileError('As for inline pysl, we currently support lambda function only!')
     else:
-        return raw_src.split('lambda')[1:][0].split(':')[1:][0]
+        lambda_whole = raw_src.split('lambda')[1:][0]
+        return lambda_whole[lambda_whole.index(':') + 1:]
 
 
 def split_exprs(src: str) -> list[str]:
@@ -70,7 +71,7 @@ def parse_expr(raw_expr_src: str, ctx: CompilerContext) -> str:
     elif head.endswith('assign'):
         return parse_assign_level1(raw_expr_src, ctx)
     elif head.endswith('let'):
-        raise NotImplementedError()
+        return parse_let_level1(raw_expr_src, ctx)
     else:
         raise CompileError('parse_expr() failed')
 
@@ -122,6 +123,37 @@ def parse_assign_level1(assign_src: str, ctx: CompilerContext) -> str:
     Visitor().visit(root)
 
     return local_ctx['content'] + ';'
+
+
+def parse_let_level1(let_src: str, ctx: CompilerContext) -> str:
+    '''
+        from: gl.let(AAABBBB)
+        to: AAABBBB
+    '''
+
+    t_expr = re.findall(r'(?<=\().*(?=\))', let_src)[0]
+    root = ast.parse('(' + t_expr + ')')  # For ast parser, explictly add parens
+
+    if not isinstance(root.body[0], ast.Expr):
+        raise CompileError('Invalid format found in gl.let')
+
+    if (named_expr := root.body[0].value) and not isinstance(named_expr, ast.NamedExpr):
+        raise CompileError('gl.let accepts only assignment expression as its argument.')
+
+    lhs = compile_expr(named_expr.target, ctx).content
+
+    if isinstance(named_expr.value, ast.Constant):
+        rhs = named_expr.value.value
+        type_str = str(type(rhs).__name__)
+        return f'{type_str} {lhs} = {rhs};'
+    elif isinstance(named_expr.value, ast.Name):
+        raise NotImplementedError()
+    elif isinstance(named_expr.value, ast.Call):
+        raise NotImplementedError()
+    elif isinstance(named_expr.value, ast.Attribute):
+        raise NotImplementedError()
+    else:
+        raise CompileError('Right-hand side expression in gl.let is invalid.')
 
 
 def collect_symbols(ctx: CompilerContext, fn: tp.Union['EntryFragFn', 'EntryPolyFn'], kind: 'ShaderKind'):
