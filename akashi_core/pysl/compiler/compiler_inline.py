@@ -5,7 +5,7 @@ import typing as tp
 
 from akashi_core.pysl import _gl
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
-from .ast import compile_stmt, compile_shader_staticmethod
+from .ast import compile_stmt, compile_expr, compile_shader_staticmethod
 from .utils import can_import2
 from .symbol import instance_symbol_analysis
 
@@ -45,6 +45,7 @@ def split_exprs(src: str) -> list[str]:
         from: gl.expr(...) >> gl.let(...) >> ... >> gl.expr(...)
         to:  [gl.expr(...), gl.let(...), ..., gl.expr(...)]
     '''
+    # [TODO] maybe we need to exclude comments or something like that
     return src.split('>>')
 
 
@@ -60,9 +61,18 @@ def parse_expr(raw_expr_src: str, ctx: CompilerContext) -> str:
         pattern: assign
     '''
 
-    # we should resolve the alias here
+    # [TODO] we should resolve the alias here
 
-    return parse_expr_level1(raw_expr_src, ctx)
+    # [TODO] any better ways?
+    head = raw_expr_src.split('(')[0]
+    if head.endswith('expr'):
+        return parse_expr_level1(raw_expr_src, ctx)
+    elif head.endswith('assign'):
+        return parse_assign_level1(raw_expr_src, ctx)
+    elif head.endswith('let'):
+        raise NotImplementedError()
+    else:
+        raise CompileError('parse_expr() failed')
 
 
 def parse_expr_level1(expr_src: str, ctx: CompilerContext) -> str:
@@ -80,6 +90,38 @@ def parse_expr_level1(expr_src: str, ctx: CompilerContext) -> str:
 def parse_expr_level2(iexpr_src: str, ctx: CompilerContext) -> str:
     root = ast.parse(iexpr_src)  # expects ast.Module
     return compile_stmt(root.body[0], ctx).content
+
+
+def parse_assign_level1(assign_src: str, ctx: CompilerContext) -> str:
+    '''
+        from: gl.assign(AAABBBB).eq(PPP)
+        to: AAABBBB, '=', PPP
+
+        from: gl.assign(AAABBBB).op('+=',PPP)
+        to: AAABBBB, '+=', PPP
+    '''
+
+    root = ast.parse(assign_src.strip())
+
+    local_ctx = {'content': ''}
+
+    class Visitor(ast.NodeVisitor):
+
+        def visit_Call(self, node: ast.Call):
+            lhs = compile_expr(tp.cast(ast.Call, tp.cast(ast.Attribute, node.func).value).args[0], ctx).content
+            op = str(tp.cast(ast.Attribute, node.func).attr)
+
+            if op == 'eq':
+                rhs = compile_expr(node.args[0], ctx).content
+                local_ctx['content'] = f'{lhs} = {rhs}'
+            elif op == 'op':
+                op_str = compile_expr(node.args[0], ctx).content
+                rhs = compile_expr(node.args[1], ctx).content
+                local_ctx['content'] = f'{lhs} {op_str} {rhs}'
+
+    Visitor().visit(root)
+
+    return local_ctx['content'] + ';'
 
 
 def collect_symbols(ctx: CompilerContext, fn: tp.Union['EntryFragFn', 'EntryPolyFn'], kind: 'ShaderKind'):

@@ -104,3 +104,33 @@ class TestInlineExpr(unittest.TestCase):
         expected = 'void frag_main(inout vec4 _fragColor){(1890) + ((999) * (sin(12)));102;}'
 
         self.assertEqual(compile_inline_shader(gen1(), 'FragShader'), expected)
+
+
+class TestInlineAssign(unittest.TestCase):
+
+    def test_eq(self):
+
+        def gen() -> ak.EntryFragFn:
+            return lambda b, c: gl.assign(c.value.x).eq(gl.sin(12))
+
+        expected = 'void frag_main(inout vec4 _fragColor){_fragColor.x = sin(12);}'
+
+        self.assertEqual(compile_inline_shader(gen(), 'FragShader'), expected)
+
+    def test_op(self):
+
+        def gen() -> ak.EntryFragFn:
+            return lambda b, c: gl.assign(c.value.x).op('+=', b.resolution.value.x + gl.sin(12))
+
+        expected = 'void frag_main(inout vec4 _fragColor){_fragColor.x += (resolution.x) + (sin(12));}'
+
+        self.assertEqual(compile_inline_shader(gen(), 'FragShader'), expected)
+
+    def test_merge(self):
+
+        def gen() -> ak.EntryFragFn:
+            return lambda b, c: gl.assign(c.value.x).op('+=', b.resolution.value.x + gl.sin(12)) >> gl.expr(12)
+
+        expected = 'void frag_main(inout vec4 _fragColor){_fragColor.x += (resolution.x) + (sin(12));12;}'
+
+        self.assertEqual(compile_inline_shader(gen(), 'FragShader'), expected)
