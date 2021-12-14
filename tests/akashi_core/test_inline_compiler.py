@@ -20,7 +20,7 @@ class TestInlineExpr(unittest.TestCase):
         def gen() -> ak.EntryFragFn:
             return lambda b, c: gl.expr(12)
 
-        expected = '12;'
+        expected = 'void frag_main(inout vec4 _fragColor){12;}'
 
         self.assertEqual(compile_inline_shader(gen(), 'FragShader'), expected)
 
@@ -29,7 +29,7 @@ class TestInlineExpr(unittest.TestCase):
         def gen() -> ak.EntryFragFn:
             return lambda b, c: gl.expr(gl.sin(12))
 
-        expected = 'sin(12);'
+        expected = 'void frag_main(inout vec4 _fragColor){sin(12);}'
 
         self.assertEqual(compile_inline_shader(gen(), 'FragShader'), expected)
 
@@ -40,7 +40,7 @@ class TestInlineExpr(unittest.TestCase):
         def gen1() -> ak.EntryFragFn:
             return lambda b, c: gl.expr(speed * gl.sin(12))
 
-        expected = '(999) * (sin(12));'
+        expected = 'void frag_main(inout vec4 _fragColor){(999) * (sin(12));}'
 
         self.assertEqual(compile_inline_shader(gen1(), 'FragShader'), expected)
 
@@ -51,7 +51,7 @@ class TestInlineExpr(unittest.TestCase):
         def gen1() -> ak.EntryFragFn:
             return lambda b, c: gl.expr(global_speed + (speed * gl.sin(12)))
 
-        expected = '(1890) + ((999) * (sin(12)));'
+        expected = 'void frag_main(inout vec4 _fragColor){(1890) + ((999) * (sin(12)));}'
 
         self.assertEqual(compile_inline_shader(gen1(), 'FragShader'), expected)
 
@@ -65,7 +65,7 @@ class TestInlineExpr(unittest.TestCase):
         expected1 = ''.join([
             'int OuterMod_sub(int a, int b){return (a) - (b);}',
             'int OuterMod_boost_sub(int a, int b){return OuterMod_sub(a, (b) * (10));}',
-            '(OuterMod_boost_sub(1, 1890)) + ((999) * (sin(12)));'
+            'void frag_main(inout vec4 _fragColor){(OuterMod_boost_sub(1, 1890)) + ((999) * (sin(12)));}'
         ])
 
         self.assertEqual(compile_inline_shader(gen1(), 'FragShader'), expected1)

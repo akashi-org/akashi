@@ -17,6 +17,16 @@ if tp.TYPE_CHECKING:
     from akashi_core.pysl.shader import ShaderKind, EntryFragFn, EntryPolyFn
 
 
+def entry_point(kind: 'ShaderKind', func_body: str) -> str:
+
+    if kind == 'FragShader':
+        return 'void frag_main(inout vec4 _fragColor){' + func_body + '}'
+    elif kind == 'PolygonShader':
+        return 'void poly_main(inout vec3 pos){' + func_body + '}'
+    else:
+        raise NotImplementedError()
+
+
 def get_inline_source(fn: tp.Union['EntryFragFn', 'EntryPolyFn']):
 
     raw_src = inspect.getsource(fn)
@@ -101,4 +111,4 @@ def compile_inline_shader(
 
     imported = "".join(imported_strs)
 
-    return imported + ';'.join(res)
+    return imported + entry_point(kind, ';'.join(res))
