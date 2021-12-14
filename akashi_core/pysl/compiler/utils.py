@@ -8,7 +8,7 @@ import ast
 import re
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderModule
+    from akashi_core.pysl.shader import ShaderModule, ShaderKind
 
 
 def get_source(obj) -> str:
@@ -81,6 +81,16 @@ def can_import(from_mod: tp.Type['ShaderModule'], imp_mod: tp.Type['ShaderModule
     if imp_mod.__kind__ == 'AnyShader':
         return True
     elif from_mod.__kind__ == imp_mod.__kind__:
+        return True
+    else:
+        return False
+
+
+def can_import2(kind: 'ShaderKind', imp_mod: tp.Type['ShaderModule']) -> bool:
+
+    if kind == 'AnyShader':
+        return True
+    elif kind == imp_mod.__kind__:
         return True
     else:
         return False

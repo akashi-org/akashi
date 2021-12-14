@@ -5,7 +5,8 @@ import typing as tp
 
 from akashi_core.pysl import _gl
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
-from .ast import compile_stmt
+from .ast import compile_stmt, compile_shader_staticmethod
+from .utils import can_import2
 
 import inspect
 import re
@@ -91,4 +92,13 @@ def compile_inline_shader(
     for expr in exprs:
         res.append(parse_expr(expr, ctx))
 
-    return ';'.join(res)
+    imported_strs = []
+    for imp in ctx.imported_current.values():
+        if not can_import2(kind, imp[0]):
+            raise CompileError(f'Forbidden import {imp[0].__kind__} from {kind}')
+
+        imported_strs.append(compile_shader_staticmethod(imp[0], imp[1], True, ctx.config))
+
+    imported = "".join(imported_strs)
+
+    return imported + ';'.join(res)
