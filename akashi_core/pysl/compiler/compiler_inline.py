@@ -126,4 +126,4 @@ def compile_inline_shader(
 
     imported = "".join(imported_strs)
 
-    return imported + entry_point(kind, ';'.join(res))
+    return imported + entry_point(kind, ''.join(res))

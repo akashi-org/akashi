@@ -92,4 +92,15 @@ class TestInlineExpr(unittest.TestCase):
             return lambda b, c: gl.expr(PolyMod.boost(1) + (speed * gl.sin(12)))
 
         with self.assertRaisesRegex(CompileError, 'Forbidden import PolygonShader from FragShader') as _:
-            compile_inline_shader(gen2(), 'FragShader'),
+            compile_inline_shader(gen2(), 'FragShader')
+
+    def test_merge(self):
+
+        speed = 999
+
+        def gen1() -> ak.EntryFragFn:
+            return lambda b, c: gl.expr(global_speed + (speed * gl.sin(12))) >> gl.expr(102)
+
+        expected = 'void frag_main(inout vec4 _fragColor){(1890) + ((999) * (sin(12)));102;}'
+
+        self.assertEqual(compile_inline_shader(gen1(), 'FragShader'), expected)
