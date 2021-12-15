@@ -5,6 +5,8 @@ from abc import abstractmethod, ABCMeta
 
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.time import sec
+from akashi_core.color import Color as ColorEnum
+from akashi_core.color import color_value
 from akashi_core.pysl import FragShader, PolygonShader
 
 from .base import (
@@ -106,38 +108,38 @@ class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
             cur_layer.style.font_path = path
         return self
 
-    def fg(self, fg_color: str, fg_size: int) -> 'TextHandle':
+    def fg(self, fg_color: tp.Union[str, ColorEnum], fg_size: int) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.style.fg_color = fg_color
+            cur_layer.style.fg_color = color_value(fg_color)
             cur_layer.style.fg_size = fg_size
         return self
 
-    def outline(self, outline_color: str, outline_size: int) -> 'TextHandle':
+    def outline(self, outline_color: tp.Union[str, ColorEnum], outline_size: int) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.style.use_shadow = False
             cur_layer.style.use_outline = True
-            cur_layer.style.outline_color = outline_color
+            cur_layer.style.outline_color = color_value(outline_color)
             cur_layer.style.outline_size = outline_size
         return self
 
-    def shadow(self, shadow_color: str, shadow_size: int) -> 'TextHandle':
+    def shadow(self, shadow_color: tp.Union[str, ColorEnum], shadow_size: int) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.style.use_outline = False
             cur_layer.style.use_shadow = True
-            cur_layer.style.shadow_color = shadow_color
+            cur_layer.style.shadow_color = color_value(shadow_color)
             cur_layer.style.shadow_size = shadow_size
         return self
 
-    def border(self, color: str, size: int, radius: float = 0) -> 'TextHandle':
+    def border(self, color: tp.Union[str, ColorEnum], size: int, radius: float = 0) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.border.color = color
+            cur_layer.border.color = color_value(color)
             cur_layer.border.size = size
             cur_layer.border.radius = radius
         return self
 
-    def label_color(self, color: str) -> 'TextHandle':
+    def label_color(self, color: tp.Union[str, ColorEnum]) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.label.color = color
+            cur_layer.label.color = color_value(color)
         return self
 
     def label_src(self, src: str) -> 'TextHandle':

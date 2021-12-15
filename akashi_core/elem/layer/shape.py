@@ -5,6 +5,8 @@ from abc import abstractmethod, ABCMeta
 
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.time import sec
+from akashi_core.color import Color as ColorEnum
+from akashi_core.color import color_value
 from akashi_core.pysl import FragShader, PolygonShader
 from .base import (
     FittableDurationTrait,
@@ -76,9 +78,9 @@ class ShapeTrait(LayerTrait, metaclass=ABCMeta):
             tp.cast(ShapeField, cur_layer).fill = enable_fill
         return self
 
-    def color(self: '_TShapeLayer', color: str) -> '_TShapeLayer':
+    def color(self: '_TShapeLayer', color: tp.Union[str, 'ColorEnum']) -> '_TShapeLayer':
         if (cur_layer := peek_entry(self._idx)):
-            tp.cast(ShapeField, cur_layer).color = color
+            tp.cast(ShapeField, cur_layer).color = color_value(color)
         return self
 
     def border_size(self: '_TShapeLayer', size: float) -> '_TShapeLayer':
@@ -124,7 +126,7 @@ class TriangleHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTra
 @dataclass
 class LineHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, LayerTrait):
 
-    def color(self, color: str) -> 'LineHandle':
+    def color(self, color: tp.Union[str, 'ColorEnum']) -> 'LineHandle':
         return super().color(color)
 
     def begin(self, x: int, y: int) -> 'LineHandle':
