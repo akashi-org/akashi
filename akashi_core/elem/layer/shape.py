@@ -128,12 +128,6 @@ class RectHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, 
     def z(self, value: float) -> 'RectHandle':
         return super().z(value)
 
-    def frag(self, frag_shader: FragShader) -> 'RectHandle':
-        return super().frag(frag_shader)
-
-    def poly(self, poly_shader: PolygonShader) -> 'RectHandle':
-        return super().poly(poly_shader)
-
     def fit_to(self, handle: 'AtomHandle') -> 'RectHandle':
         return super().fit_to(handle)
 
@@ -162,12 +156,6 @@ class CircleHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait
 
     def z(self, value: float) -> 'CircleHandle':
         return super().z(value)
-
-    def frag(self, frag_shader: FragShader) -> 'CircleHandle':
-        return super().frag(frag_shader)
-
-    def poly(self, poly_shader: PolygonShader) -> 'CircleHandle':
-        return super().poly(poly_shader)
 
     def fit_to(self, handle: 'AtomHandle') -> 'CircleHandle':
         return super().fit_to(handle)
@@ -203,12 +191,6 @@ class TriangleHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTra
     def z(self, value: float) -> 'TriangleHandle':
         return super().z(value)
 
-    def frag(self, frag_shader: FragShader) -> 'TriangleHandle':
-        return super().frag(frag_shader)
-
-    def poly(self, poly_shader: PolygonShader) -> 'TriangleHandle':
-        return super().poly(poly_shader)
-
     def fit_to(self, handle: 'AtomHandle') -> 'TriangleHandle':
         return super().fit_to(handle)
 
@@ -228,12 +210,6 @@ class LineHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, 
 
     def z(self, value: float) -> 'LineHandle':
         return super().z(value)
-
-    def frag(self, frag_shader: FragShader) -> 'LineHandle':
-        return super().frag(frag_shader)
-
-    def poly(self, poly_shader: PolygonShader) -> 'LineHandle':
-        return super().poly(poly_shader)
 
     def fit_to(self, handle: 'AtomHandle') -> 'LineHandle':
         return super().fit_to(handle)

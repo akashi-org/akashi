@@ -90,12 +90,6 @@ class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
     def z(self, value: float) -> 'TextHandle':
         return super().z(value)
 
-    def frag(self, frag_shader: FragShader) -> 'TextHandle':
-        return super().frag(frag_shader)
-
-    def poly(self, poly_shader: PolygonShader) -> 'TextHandle':
-        return super().poly(poly_shader)
-
     def fit_to(self, handle: 'AtomHandle') -> 'TextHandle':
         return super().fit_to(handle)
 

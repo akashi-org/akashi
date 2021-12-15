@@ -3,11 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from abc import abstractmethod, ABCMeta
 import typing as tp
+from typing import overload
 
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.elem.uuid import UUID, gen_uuid
 from akashi_core.time import sec
 from akashi_core.pysl import FragShader, PolygonShader
+from akashi_core.pysl import EntryFragFn, EntryPolyFn
 
 if tp.TYPE_CHECKING:
     from akashi_core.elem.atom import AtomHandle
@@ -76,15 +78,43 @@ class ShaderField:
     poly_shader: tp.Optional[PolygonShader] = None
 
 
+_TShaderTrait = tp.TypeVar('_TShaderTrait', bound='ShaderTrait')
+
+
 class ShaderTrait(LayerTrait, metaclass=ABCMeta):
-    def frag(self, frag_shader: FragShader):
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(ShaderField, cur_layer).frag_shader = frag_shader
+
+    @overload
+    def frag(self: '_TShaderTrait', *frag_shaders: EntryFragFn) -> '_TShaderTrait':
+        ...
+
+    @overload
+    def frag(self: '_TShaderTrait', *frag_shaders: FragShader) -> '_TShaderTrait':
+        ...
+
+    def frag(self: '_TShaderTrait', *frag_shaders: tp.Any) -> '_TShaderTrait':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShaderField):
+            if isinstance(frag_shaders[0], FragShader):
+                cur_layer.frag_shader = frag_shaders[0]
+            elif callable(frag_shaders[0]):
+                cur_layer.frag_shader = FragShader()
+                cur_layer.frag_shader._inline_shaders = frag_shaders
         return self
 
-    def poly(self, poly_shader: PolygonShader):
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(ShaderField, cur_layer).poly_shader = poly_shader
+    @overload
+    def poly(self: '_TShaderTrait', *poly_shaders: EntryPolyFn) -> '_TShaderTrait':
+        ...
+
+    @overload
+    def poly(self: '_TShaderTrait', *poly_shaders: PolygonShader) -> '_TShaderTrait':
+        ...
+
+    def poly(self: '_TShaderTrait', *poly_shaders: tp.Any) -> '_TShaderTrait':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShaderField):
+            if isinstance(poly_shaders[0], PolygonShader):
+                cur_layer.poly_shader = poly_shaders[0]
+            elif callable(poly_shaders[0]):
+                cur_layer.poly_shader = PolygonShader()
+                cur_layer.poly_shader._inline_shaders = poly_shaders
         return self
 
 

@@ -49,12 +49,6 @@ class ImageHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait)
     def z(self, value: float) -> 'ImageHandle':
         return super().z(value)
 
-    def frag(self, frag_shader: FragShader) -> 'ImageHandle':
-        return super().frag(frag_shader)
-
-    def poly(self, poly_shader: PolygonShader) -> 'ImageHandle':
-        return super().poly(poly_shader)
-
     def fit_to(self, handle: 'AtomHandle') -> 'ImageHandle':
         return super().fit_to(handle)
 

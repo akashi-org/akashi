@@ -1,11 +1,14 @@
+# pyright: reportPrivateUsage=false
 from __future__ import annotations
 from dataclasses import dataclass
 import typing as tp
+from typing import overload
 from abc import abstractmethod, ABCMeta
 
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.time import sec
 from akashi_core.pysl import VideoFragShader, VideoPolygonShader
+from akashi_core.pysl.shader import EntryFragFn, EntryPolyFn
 
 from .base import PositionField, PositionTrait, LayerField, LayerTrait
 from .base import peek_entry, register_entry
@@ -72,14 +75,38 @@ class VideoHandle(PositionTrait, LayerTrait):
             cur_layer.atom_offset = offset
         return self
 
-    def frag(self, frag_shader: VideoFragShader) -> 'VideoHandle':
+    @overload
+    def frag(self, *frag_shaders: EntryFragFn) -> 'VideoHandle':
+        ...
+
+    @overload
+    def frag(self, *frag_shaders: VideoFragShader) -> 'VideoHandle':
+        ...
+
+    def frag(self, *frag_shaders: tp.Any) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.frag_shader = frag_shader
+            if isinstance(frag_shaders[0], VideoFragShader):
+                cur_layer.frag_shader = frag_shaders[0]
+            elif callable(frag_shaders[0]):
+                cur_layer.frag_shader = VideoFragShader()
+                cur_layer.frag_shader._inline_shaders = frag_shaders
         return self
 
-    def poly(self, poly_shader: VideoPolygonShader) -> 'VideoHandle':
+    @overload
+    def poly(self, *poly_shaders: EntryPolyFn) -> 'VideoHandle':
+        ...
+
+    @overload
+    def poly(self, *poly_shaders: VideoPolygonShader) -> 'VideoHandle':
+        ...
+
+    def poly(self, *poly_shaders: tp.Any) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.poly_shader = poly_shader
+            if isinstance(poly_shaders[0], VideoPolygonShader):
+                cur_layer.poly_shader = poly_shaders[0]
+            elif callable(poly_shaders[0]):
+                cur_layer.poly_shader = VideoPolygonShader()
+                cur_layer.poly_shader._inline_shaders = poly_shaders
         return self
 
 

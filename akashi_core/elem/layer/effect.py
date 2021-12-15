@@ -34,12 +34,6 @@ class EffectHandle(FittableDurationTrait, ShaderTrait, LayerTrait):
     def duration(self, duration: sec) -> 'EffectHandle':
         return super().duration(duration)
 
-    def frag(self, frag_shader: FragShader) -> 'EffectHandle':
-        return super().frag(frag_shader)
-
-    def poly(self, poly_shader: PolygonShader) -> 'EffectHandle':
-        return super().poly(poly_shader)
-
     def fit_to(self, handle: 'AtomHandle') -> 'EffectHandle':
         return super().fit_to(handle)
 

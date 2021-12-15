@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import typing as tp
 
 from akashi_core.pysl import _gl
+from akashi_core.pysl._gl_inline import InlineExprKind
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
 from .ast import compile_stmt, compile_expr, compile_shader_staticmethod, from_annotation
 from .utils import can_import2
@@ -16,10 +17,11 @@ import ast
 import sys
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderKind, TEntryFn
+    from akashi_core.pysl.shader import ShaderModule, ShaderKind, TEntryFn
 
-# [XXX] circular import?
-from akashi_core.pysl.shader import FragShader, PolygonShader
+
+class InlineCompileDetectError(CompileError):
+    pass
 
 
 def entry_point(kind: 'ShaderKind', func_body: str) -> str:
@@ -32,22 +34,38 @@ def entry_point(kind: 'ShaderKind', func_body: str) -> str:
         raise NotImplementedError()
 
 
-def get_inline_source(fn: 'TEntryFn') -> ast.expr:
+def get_inline_source(fn: 'TEntryFn', ctx: CompilerContext) -> ast.expr:
 
-    raw_src = inspect.getsource(fn)
+    # [XXX] This function is really buggy. But, the code itself is not the culprit.
+    # The culprit is the current spec or environments surrounded with the spec.
 
     if fn.__name__ != '<lambda>':
         raise CompileError('As for inline pysl, we currently support lambda function only!')
     else:
+        raw_src = inspect.getsource(fn).strip()
+        if raw_src.startswith('.'):
+            raw_src = raw_src[1:]
         root = ast.parse(raw_src.strip())
-        local_ctx = {'content': ast.expr()}
+        local_ctx = {'content': None}
 
         class Visitor(ast.NodeVisitor):
 
             def visit_Lambda(self, node: ast.Lambda):
-                local_ctx['content'] = node.body
+                if len(node.args.args) != 2:
+                    super().visit(node.body)
+
+                exprs = split_exprs(node.body)
+                try:
+                    [detect_expr(e, ctx) for e in exprs]
+                except InlineCompileDetectError:
+                    super().visit(node.body)
+                else:
+                    local_ctx['content'] = node.body  # type: ignore
 
         Visitor().visit(root)
+
+        if not local_ctx['content']:
+            raise CompileError('No lambda found in inline shader')
 
         return local_ctx['content']
 
@@ -69,7 +87,7 @@ def split_exprs(expr_node: ast.expr) -> list[ast.Call]:
         raise CompileError('split_exprs() failed')
 
 
-def parse_expr(raw_expr: ast.Call, ctx: CompilerContext) -> str:
+def detect_expr(raw_expr: ast.Call, ctx: CompilerContext) -> InlineExprKind:
     '''
         input: gl.expr(...) or C(...) (where C is an alias for gl.expr)
         pattern: expr
@@ -86,11 +104,26 @@ def parse_expr(raw_expr: ast.Call, ctx: CompilerContext) -> str:
     # [TODO] any better ways?
     raw_expr_src = ast.unparse(raw_expr)
     head = raw_expr_src.split('(')[0]
+
     if head.endswith('expr'):
-        return parse_gl_expr(raw_expr, ctx)
+        return 'expr'
     elif head.endswith('assign'):
-        return parse_gl_assign(raw_expr, ctx)
+        return 'assign'
     elif head.endswith('let'):
+        return 'let'
+    else:
+        raise InlineCompileDetectError('Invalid pattern found')
+
+
+def parse_expr(raw_expr: ast.Call, ctx: CompilerContext) -> str:
+
+    expr_kind = detect_expr(raw_expr, ctx)
+
+    if expr_kind == 'expr':
+        return parse_gl_expr(raw_expr, ctx)
+    elif expr_kind == 'assign':
+        return parse_gl_assign(raw_expr, ctx)
+    elif expr_kind == 'let':
         return parse_gl_let(raw_expr, ctx)
     else:
         raise CompileError('parse_expr() failed')
@@ -141,14 +174,9 @@ def collect_global_symbols(ctx: CompilerContext, fn: 'TEntryFn'):
 
 
 # Used for argument resolution
-def collect_instance_symbols(ctx: CompilerContext, kind: 'ShaderKind'):
+def collect_instance_symbols(ctx: CompilerContext, sh_mod_fn: tp.Callable[[], 'ShaderModule']):
 
-    if kind == 'FragShader':
-        instance_symbol_analysis(FragShader(), ctx)
-    elif kind == 'PolygonShader':
-        instance_symbol_analysis(PolygonShader(), ctx)
-    else:
-        raise NotImplementedError()
+    instance_symbol_analysis(sh_mod_fn(), ctx)
 
 
 def collect_local_symbols(ctx: CompilerContext, fn: 'TEntryFn'):
@@ -175,8 +203,10 @@ def collect_argument_symbols(ctx: CompilerContext, fn: 'TEntryFn', kind: 'Shader
 
 def compile_inline_shader(
         fns: tuple['TEntryFn', ...],
-        kind: 'ShaderKind',
+        sh_mod_fn: tp.Callable[[], 'ShaderModule'],
         config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
+
+    kind = sh_mod_fn().__kind__
 
     if len(fns) == 0:
         return entry_point(kind, '')
@@ -185,13 +215,13 @@ def compile_inline_shader(
 
     ctx = CompilerContext(config)
     collect_global_symbols(ctx, fns[0])
-    collect_instance_symbols(ctx, kind)
+    collect_instance_symbols(ctx, sh_mod_fn)
 
     for fn in fns:
 
         stmt = []
 
-        expr_node = get_inline_source(fn)
+        expr_node = get_inline_source(fn, ctx)
         exprs = split_exprs(expr_node)
 
         ctx.lambda_args = {}
