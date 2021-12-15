@@ -36,22 +36,6 @@ class ImageEntry(ShaderField, PositionField, LayerField, ImageLocalField):
 @dataclass
 class ImageHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
 
-    def ap(self, *hs: tp.Callable[['ImageHandle'], 'ImageHandle']) -> 'ImageHandle':
-        [h(self) for h in hs]
-        return self
-
-    def duration(self, duration: sec) -> 'ImageHandle':
-        return super().duration(duration)
-
-    def pos(self, x: int, y: int) -> 'ImageHandle':
-        return super().pos(x, y)
-
-    def z(self, value: float) -> 'ImageHandle':
-        return super().z(value)
-
-    def fit_to(self, handle: 'AtomHandle') -> 'ImageHandle':
-        return super().fit_to(handle)
-
     def stretch(self, stretch: bool) -> 'ImageHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ImageEntry):
             cur_layer.stretch = stretch

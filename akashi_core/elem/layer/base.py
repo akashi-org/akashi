@@ -20,6 +20,8 @@ LayerKind = tp.Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE', 'EFFECT', 'SH
 
 ''' Layer Concept '''
 
+_TLayerTrait = tp.TypeVar('_TLayerTrait', bound='LayerTrait')
+
 
 @dataclass
 class LayerField:
@@ -42,13 +44,20 @@ class LayerTrait(metaclass=ABCMeta):
     def __exit__(self, *ext: tp.Any):
         return False
 
-    def duration(self, duration: sec):
+    def duration(self: '_TLayerTrait', duration: sec) -> '_TLayerTrait':
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(LayerField, cur_layer).duration = duration
         return self
 
+    def ap(self: '_TLayerTrait', *hs: tp.Callable[['_TLayerTrait'], '_TLayerTrait']) -> '_TLayerTrait':
+        [h(self) for h in hs]
+        return self
+
 
 ''' Position Concept '''
+
+
+_TPositionTrait = tp.TypeVar('_TPositionTrait', bound='PositionTrait')
 
 
 @dataclass
@@ -58,12 +67,12 @@ class PositionField:
 
 
 class PositionTrait(LayerTrait, metaclass=ABCMeta):
-    def pos(self, x: int, y: int):
+    def pos(self: '_TPositionTrait', x: int, y: int) -> '_TPositionTrait':
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(PositionField, cur_layer).pos = (x, y)
         return self
 
-    def z(self, value: float):
+    def z(self: '_TPositionTrait', value: float) -> '_TPositionTrait':
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(PositionField, cur_layer).z = value
         return self
@@ -71,14 +80,13 @@ class PositionTrait(LayerTrait, metaclass=ABCMeta):
 
 ''' Shader Concept '''
 
+_TShaderTrait = tp.TypeVar('_TShaderTrait', bound='ShaderTrait')
+
 
 @dataclass
 class ShaderField:
     frag_shader: tp.Optional[FragShader] = None
     poly_shader: tp.Optional[PolygonShader] = None
-
-
-_TShaderTrait = tp.TypeVar('_TShaderTrait', bound='ShaderTrait')
 
 
 class ShaderTrait(LayerTrait, metaclass=ABCMeta):
@@ -120,9 +128,11 @@ class ShaderTrait(LayerTrait, metaclass=ABCMeta):
 
 ''' FittableDuration Concept '''
 
+_TFittableDurationTrait = tp.TypeVar('_TFittableDurationTrait', bound='FittableDurationTrait')
+
 
 class FittableDurationTrait(LayerTrait, metaclass=ABCMeta):
-    def fit_to(self, handle: 'AtomHandle'):
+    def fit_to(self: '_TFittableDurationTrait', handle: 'AtomHandle') -> '_TFittableDurationTrait':
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(LayerField, cur_layer).duration = handle
         return self

@@ -77,22 +77,6 @@ class TextEntry(ShaderField, PositionField, LayerField, TextLocalField):
 @dataclass
 class TextHandle(FittableDurationTrait, ShaderTrait, PositionTrait, LayerTrait):
 
-    def ap(self, *hs: tp.Callable[['TextHandle'], 'TextHandle']) -> 'TextHandle':
-        [h(self) for h in hs]
-        return self
-
-    def duration(self, duration: sec) -> 'TextHandle':
-        return super().duration(duration)
-
-    def pos(self, x: int, y: int) -> 'TextHandle':
-        return super().pos(x, y)
-
-    def z(self, value: float) -> 'TextHandle':
-        return super().z(value)
-
-    def fit_to(self, handle: 'AtomHandle') -> 'TextHandle':
-        return super().fit_to(handle)
-
     def text_align(self, align: TextAlign) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.text_align = align
