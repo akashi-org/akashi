@@ -183,6 +183,7 @@ def collect_local_symbols(ctx: CompilerContext, fn: 'TEntryFn'):
 
     for idx, freevar in enumerate(fn.__code__.co_freevars):
         value = fn.__closure__[idx].cell_contents
+        ctx.eval_local_symbol[freevar] = value
         if callable(value):
             raise CompileError('Local symbol in inline shader must be convertible to literals')
         else:

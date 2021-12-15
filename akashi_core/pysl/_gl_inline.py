@@ -7,6 +7,10 @@ _T = TypeVar('_T')
 InlineExprKind = Literal['expr', 'assign', 'let']
 
 
+def eval(_expr: _T) -> _T:
+    return _expr
+
+
 @dataclass
 class expr(Generic[_T]):
 

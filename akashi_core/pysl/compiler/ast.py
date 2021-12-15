@@ -5,6 +5,7 @@ from akashi_core.pysl import _gl
 from .items import CompileError, CompilerConfig, CompilerContext, _TGLSL
 from . import utils as compiler_utils
 from . import transformer
+from . import evaluator
 from .symbol import global_symbol_analysis, class_symbol_analysis
 
 from typing import Callable, Protocol, cast, Type, Union, TypeVar, Any, Optional, TypedDict
@@ -467,6 +468,10 @@ class CallOut(exprOut):
 
 def from_Call(node: ast.Call, ctx: CompilerContext) -> CallOut:
 
+    if ast.unparse(node).startswith('gl.eval'):
+        content = evaluator.eval_node(node.args[0], ctx)
+        return CallOut(node, args=[], content=content)
+
     func_str = compile_expr(node.func, ctx).content
     args = [compile_expr(arg, ctx).content for arg in node.args]
     args_str = ', '.join(args)
@@ -614,13 +619,7 @@ def from_Name(node: ast.Name, ctx: CompilerContext) -> NameOut:
     if not hasattr(node, 'id'):
         content = 'None'
     else:
-        name_str = str(node.id)
-        if name_str in ctx.local_symbol:
-            content = f'{ctx.local_symbol[name_str]}'
-        elif name_str in ctx.global_symbol and type(ctx.global_symbol[name_str]) in [int, float]:
-            content = f'{ctx.global_symbol[name_str]}'
-        else:
-            content = str(node.id)
+        content = str(node.id)
     return NameOut(node, content)
 
 

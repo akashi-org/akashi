@@ -5,6 +5,7 @@ from dataclasses import dataclass as module
 from typing import TypeVar, Generic, overload, cast, Any, Optional, Literal
 
 from ._gl_inline import expr, let, assign
+from ._gl_inline import eval
 
 _T = TypeVar('_T')
 _TNumber = TypeVar('_TNumber', int, float)

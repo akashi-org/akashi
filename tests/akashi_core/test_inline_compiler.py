@@ -39,7 +39,7 @@ class TestInlineExpr(unittest.TestCase):
         speed = 999
 
         def gen1() -> ak.EntryFragFn:
-            return lambda b, c: gl.expr(speed * gl.sin(12))
+            return lambda b, c: gl.expr(gl.eval(speed) * gl.sin(12))
 
         expected = 'void frag_main(inout vec4 _fragColor){(999) * (sin(12));}'
 
@@ -50,7 +50,7 @@ class TestInlineExpr(unittest.TestCase):
         speed = 999
 
         def gen1() -> ak.EntryFragFn:
-            return lambda b, c: gl.expr(global_speed + (speed * gl.sin(12)))
+            return lambda b, c: gl.expr(gl.eval(global_speed) + (gl.eval(speed) * gl.sin(12)))
 
         expected = 'void frag_main(inout vec4 _fragColor){(1890) + ((999) * (sin(12)));}'
 
@@ -61,14 +61,18 @@ class TestInlineExpr(unittest.TestCase):
         speed = 999
 
         def gen1() -> ak.EntryFragFn:
-            return lambda b, c: gl.expr((c.value.y * global_speed) + (b.time.value * speed * gl.sin(12)))
+            return (
+                lambda b, c: gl.expr((c.value.y * gl.eval(global_speed)) + (b.time.value * gl.eval(speed) * gl.sin(12)))
+            )
 
         expected1 = 'void frag_main(inout vec4 _fragColor){((_fragColor.y) * (1890)) + (((time) * (999)) * (sin(12)));}'
 
         self.assertEqual(compile_inline_shader((gen1(),), lambda: ak.FragShader()), expected1)
 
         def gen2() -> ak.EntryPolyFn:
-            return lambda b, p: gl.expr((p.value.y * global_speed) + (b.time.value * speed * gl.sin(12)))
+            return lambda b, p: (
+                gl.expr((p.value.y * gl.eval(global_speed)) + (b.time.value * gl.eval(speed) * gl.sin(12)))
+            )
 
         expected2 = 'void poly_main(inout vec3 pos){((pos.y) * (1890)) + (((time) * (999)) * (sin(12)));}'
 
@@ -79,7 +83,9 @@ class TestInlineExpr(unittest.TestCase):
         speed = 999
 
         def gen1() -> ak.EntryFragFn:
-            return lambda b, c: gl.expr(compiler_fixtures.OuterMod.boost_sub(1, global_speed) + (speed * gl.sin(12)))
+            return lambda b, c: (
+                gl.expr(compiler_fixtures.OuterMod.boost_sub(1, gl.eval(global_speed)) + (gl.eval(speed) * gl.sin(12)))
+            )
 
         expected1 = ''.join([
             'int OuterMod_sub(int a, int b){return (a) - (b);}',
@@ -90,7 +96,7 @@ class TestInlineExpr(unittest.TestCase):
         self.assertEqual(compile_inline_shader((gen1(),), lambda: ak.FragShader()), expected1)
 
         def gen2() -> ak.EntryFragFn:
-            return lambda b, c: gl.expr(PolyMod.boost(1) + (speed * gl.sin(12)))
+            return lambda b, c: gl.expr(PolyMod.boost(1) + (gl.eval(speed) * gl.sin(12)))
 
         with self.assertRaisesRegex(CompileError, 'Forbidden import PolygonShader from FragShader') as _:
             compile_inline_shader((gen2(),), lambda: ak.FragShader())
@@ -100,7 +106,9 @@ class TestInlineExpr(unittest.TestCase):
         speed = 999
 
         def gen1() -> ak.EntryFragFn:
-            return lambda b, c: gl.expr(global_speed + (speed * gl.sin(12))) >> gl.expr(102)
+            return (
+                lambda b, c: gl.expr(gl.eval(global_speed) + (gl.eval(speed) * gl.sin(12))) >> gl.expr(102)
+            )
 
         expected = 'void frag_main(inout vec4 _fragColor){(1890) + ((999) * (sin(12)));102;}'
 
@@ -151,7 +159,7 @@ class TestInlineLet(unittest.TestCase):
         self.assertEqual(compile_inline_shader((gen(),), lambda: ak.FragShader()), expected)
 
         def gen2() -> ak.EntryFragFn:
-            return lambda b, c: gl.let((x := speed)).tp(int)  # noqa: F841
+            return lambda b, c: gl.let((x := gl.eval(speed))).tp(int)  # noqa: F841
 
         expected2 = 'void frag_main(inout vec4 _fragColor){int x = 999;}'
 
@@ -163,7 +171,7 @@ class TestInlineLet(unittest.TestCase):
 
         def gen() -> ak.EntryFragFn:
             return lambda b, c: (
-                gl.assign(c.value.x).eq(speed) >>
+                gl.assign(c.value.x).eq(gl.eval(speed)) >>
                 gl.let(y := 12.1).tp(float) >> gl.expr(y)
             )
 
@@ -182,7 +190,9 @@ class TestInlineMultiple(unittest.TestCase):
             return lambda b, c: gl.let(x := 102).tp(int)  # noqa: F841
 
         def gen2() -> ak.EntryFragFn:
-            return lambda b, c: gl.assign(c.value.x).eq(speed) >> gl.let(y := gl.vec2(1, 2)).tp(gl.vec2) >> gl.expr(y)
+            return lambda b, c: (
+                gl.assign(c.value.x).eq(gl.eval(speed)) >> gl.let(y := gl.vec2(1, 2)).tp(gl.vec2) >> gl.expr(y)
+            )
 
         expected = 'void frag_main(inout vec4 _fragColor){int x = 102;_fragColor.x = 999;vec2 y = vec2(1, 2);y;}'
 
@@ -193,12 +203,14 @@ class TestInlineMultiple(unittest.TestCase):
         speed = 999
 
         def gen1() -> ak.EntryFragFn:
-            return lambda b, c: gl.expr(compiler_fixtures.OuterMod.boost_sub(1, global_speed) + (speed * gl.sin(12)))
+            return lambda b, c: (
+                gl.expr(compiler_fixtures.OuterMod.boost_sub(1, gl.eval(global_speed)) + (gl.eval(speed) * gl.sin(12)))
+            )
 
         def gen2() -> ak.EntryFragFn:
             return lambda b, c: (
-                gl.let(z := speed * gl.sin(b.time.value)).tp(float) >>
-                gl.expr(compiler_fixtures.OuterMod.boost_sub(1, global_speed) + z)
+                gl.let(z := gl.eval(speed) * gl.sin(b.time.value)).tp(float) >>
+                gl.expr(compiler_fixtures.OuterMod.boost_sub(1, gl.eval(global_speed)) + z)
             )
 
         expected = ''.join([
@@ -221,7 +233,7 @@ class TestInlineWithBrace(unittest.TestCase):
 
         def gen() -> ak.EntryFragFn:
             return lambda b, c: ((
-                (gl.assign(c.value.x).eq(speed)) >>
+                (gl.assign(c.value.x).eq(gl.eval(speed))) >>
                 (gl.let(y := 12.1).tp(float) >> gl.expr(y))
             ))
 
