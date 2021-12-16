@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 from __future__ import annotations
 from dataclasses import dataclass, field
 import typing as tp

@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 from dataclasses import dataclass
 import typing as tp
 from abc import abstractmethod, ABCMeta
