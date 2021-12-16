@@ -16,7 +16,7 @@ __all__ = [
 from dataclasses import dataclass
 from dataclasses import dataclass as struct
 from dataclasses import dataclass as module
-from typing import TypeVar, Generic, overload, Any, Optional
+from typing import TypeVar, Generic, overload, Any, Optional, cast
 
 from ._gl_inline import expr, let, assign
 from ._gl_inline import eval
@@ -613,18 +613,18 @@ class gvec4(__4d_prop[_TNumber], Generic[_TNumber]):
         ...
 
     @overload
-    def __mul__(self: vec4[_TNumber], other: _TNumber) -> gvec4[_TNumber]:
+    def __mul__(self: gvec4[_TNumber], other: _TNumber) -> gvec4[_TNumber]:
         ...
 
     @overload
-    def __mul__(self: vec4[_TNumber], other: gvec4[_TNumber]) -> gvec4[_TNumber]:
+    def __mul__(self: gvec4[_TNumber], other: gvec4[_TNumber]) -> gvec4[_TNumber]:
         ...
 
-    def __mul__(self: vec4[_TNumber], other) -> gvec4[_TNumber]:
-        if isinstance(other, gvec4[_TNumber]):
+    def __mul__(self: gvec4[_TNumber], other: Any) -> gvec4[_TNumber]:
+        if isinstance(other, gvec4):
             return gvec4(*[a * b for a, b in zip(self._value(), other._value())])
         elif isinstance(other, int) or isinstance(other, float):
-            return gvec4(*[a * other for a in self._value()])
+            return gvec4(*cast(tuple[_TNumber, _TNumber, _TNumber, _TNumber], (a * other for a in self._value())))
         else:
             raise Exception('__mul__ is not supported')
 
