@@ -3,7 +3,7 @@ import typing as tp
 from dataclasses import dataclass, field
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderModule
+    from akashi_core.pysl.shader import ShaderModule, ShaderKind
 
 
 _TGLSL = str
@@ -45,3 +45,4 @@ class CompilerContext:
     shmod_name: str = field(default='', init=False)
     shmod_inst: tp.Optional['ShaderModule'] = field(default=None, init=False)
     shmod_klass: tp.Optional[tp.Type['ShaderModule']] = field(default=None, init=False)
+    shader_kind: 'ShaderKind' = 'AnyShader'

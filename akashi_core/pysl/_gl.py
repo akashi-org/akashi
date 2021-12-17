@@ -16,13 +16,34 @@ __all__ = [
 from dataclasses import dataclass
 from dataclasses import dataclass as struct
 from dataclasses import dataclass as module
-from typing import TypeVar, Generic, overload, Any, Optional, cast
-
+from typing import (
+    TypeVar,
+    Generic,
+    overload,
+    Any,
+    Optional,
+    cast,
+    ParamSpec,
+    Literal,
+    Callable
+)
 from ._gl_inline import expr, let, assign
 from ._gl_inline import eval
 
 _T = TypeVar('_T')
 _TNumber = TypeVar('_TNumber', int, float)
+
+_NamedFnP = ParamSpec('_NamedFnP')
+_NamedFnR = TypeVar('_NamedFnR')
+_NamedFnStage = Literal['frag', 'poly', 'any']
+
+
+def fn(stage: _NamedFnStage) -> Callable[[Callable[_NamedFnP, _NamedFnR]], Callable[_NamedFnP, _NamedFnR]]:
+    def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
+        def wrapper(_stage: _NamedFnStage = stage, *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
+            return f(*args, **kwargs)
+        return wrapper
+    return deco
 
 
 def test_func(fn):

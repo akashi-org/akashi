@@ -13,7 +13,6 @@ def __reduce_type_name(org_tp_name: str, res_tp_name: str,
     if isinstance(node, ast.Attribute):
         return res_tp_name + node.attr
     if isinstance(node, ast.Subscript):
-
         value_str = __reduce_type_name(org_tp_name, '', ctx, node.value)
         if value_str in ['in_p', 'out_p', 'inout_p']:
             res_tp_name += value_str[:-2] + ' '
@@ -21,6 +20,10 @@ def __reduce_type_name(org_tp_name: str, res_tp_name: str,
             return __reduce_type_name(org_tp_name, res_tp_name, ctx, _node)
         else:
             raise CompileError(f'Invalid generic type `{org_tp_name}` found')
+
+    if isinstance(node, ast.Call):
+        value_str = compile_expr(node.func, ctx).content
+        return res_tp_name + value_str
 
     return res_tp_name + compile_expr(node, ctx).content
 
