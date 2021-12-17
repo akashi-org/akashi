@@ -65,6 +65,24 @@ def collect_local_symbols(ctx: CompilerContext, deco_fn: tp.Callable):
         ctx.eval_local_symbol[freevar] = value
 
 
+def get_mangle_prefix(ctx: CompilerContext, deco_fn: tp.Callable):
+
+    full_mod_name = deco_fn.__module__
+    simple_mod_name = str(full_mod_name).split('.')[-1]
+
+    local_name = ''
+    if deco_fn.__name__ != deco_fn.__qualname__:
+        local_name = '_' + deco_fn.__qualname__.replace('.<locals>', '').replace('.', '_')
+
+    match ctx.config['mangle_mode']:
+        case 'hard':
+            return simple_mod_name + local_name
+        case 'soft':
+            return simple_mod_name
+        case 'none':
+            return ''
+
+
 def compile_named_shader(
         fn: tp.Callable,
         config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
@@ -89,5 +107,5 @@ def compile_named_shader(
     if not is_named_func(func_def, ctx.global_symbol):
         raise CompileError('Named shader function must be decorated properly')
 
-    out = from_FunctionDef(func_def, ctx)
+    out = from_FunctionDef(func_def, ctx, get_mangle_prefix(ctx, deco_fn))
     return out.content

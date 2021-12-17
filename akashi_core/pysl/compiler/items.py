@@ -21,11 +21,14 @@ class CompilerConfig:
         ''' If True, compiler tries to output more human-readable shader code'''
         pretty_compile: bool
 
+        mangle_mode: tp.Literal['hard', 'soft', 'none']
+
     @staticmethod
     def default() -> Config:
 
         return {
-            'pretty_compile': False
+            'pretty_compile': False,
+            'mangle_mode': 'hard'
         }
 
 
@@ -45,4 +48,6 @@ class CompilerContext:
     shmod_name: str = field(default='', init=False)
     shmod_inst: tp.Optional['ShaderModule'] = field(default=None, init=False)
     shmod_klass: tp.Optional[tp.Type['ShaderModule']] = field(default=None, init=False)
+
+    # named shader
     shader_kind: 'ShaderKind' = 'AnyShader'
