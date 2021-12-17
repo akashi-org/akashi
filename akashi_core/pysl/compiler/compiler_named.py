@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
-from .utils import get_source, get_function_def
+from .utils import get_source, get_function_def, can_import2, can_import3
 from .transformer import type_transformer
-from .ast import compile_expr, from_FunctionDef
+from .ast import compile_expr, from_FunctionDef, compile_shader_staticmethod
+
 from .symbol import global_symbol_analysis, instance_symbol_analysis
 
 import typing as tp
@@ -29,6 +30,28 @@ def to_shader_kind(kind_str: str) -> 'ShaderKind':
             raise CompileError(f'Invalid shader kind {kind_str} found')
 
 
+def collect_global_symbols(ctx: CompilerContext, deco_fn: tp.Callable):
+
+    ctx.global_symbol = vars(sys.modules[deco_fn.__module__])
+
+
+def collect_local_symbols(ctx: CompilerContext, deco_fn: tp.Callable) -> list[tp.Callable]:
+
+    imported_named_shader_fn = []
+
+    for idx, freevar in enumerate(deco_fn.__code__.co_freevars):
+        value = deco_fn.__closure__[idx].cell_contents
+
+        if callable(value) and (_fn := unwrap_shader_func(value)):
+            if is_named_func(get_function_def(ast.parse(get_source(_fn))), ctx.global_symbol):
+                imported_named_shader_fn.append(value)
+                continue
+
+        ctx.eval_local_symbol[freevar] = value
+
+    return imported_named_shader_fn
+
+
 def unwrap_shader_func(fn: tp.Callable) -> tp.Callable | None:
 
     if not(hasattr(fn, '__closure__') and fn.__closure__ and len(fn.__closure__) > 0):
@@ -51,18 +74,6 @@ def is_named_func(func_def: ast.FunctionDef, global_symbol: dict) -> bool:
             return True
 
     return False
-
-
-def collect_global_symbols(ctx: CompilerContext, deco_fn: tp.Callable):
-
-    ctx.global_symbol = vars(sys.modules[deco_fn.__module__])
-
-
-def collect_local_symbols(ctx: CompilerContext, deco_fn: tp.Callable):
-
-    for idx, freevar in enumerate(deco_fn.__code__.co_freevars):
-        value = deco_fn.__closure__[idx].cell_contents
-        ctx.eval_local_symbol[freevar] = value
 
 
 def get_mangle_prefix(ctx: CompilerContext, deco_fn: tp.Callable):
@@ -101,11 +112,19 @@ def compile_named_shader(
         raise CompileError('Named shader function must be decorated with its shader kind')
     ctx.shader_kind = shader_kind
     collect_global_symbols(ctx, deco_fn)
-    collect_local_symbols(ctx, deco_fn)
+    imported_named_shader_fns = collect_local_symbols(ctx, deco_fn)
 
     func_def = get_function_def(root)
     if not is_named_func(func_def, ctx.global_symbol):
         raise CompileError('Named shader function must be decorated properly')
 
     out = from_FunctionDef(func_def, ctx, get_mangle_prefix(ctx, deco_fn))
-    return out.content
+
+    imported_strs = []
+    for imp_fn in imported_named_shader_fns:
+        imp_shader_kind = to_shader_kind(tp.cast(tuple, inspect.getfullargspec(imp_fn).defaults)[0])
+        if not can_import3(shader_kind, imp_shader_kind):
+            raise CompileError(f'Forbidden import {imp_shader_kind} from {shader_kind}')
+        imported_strs.append(compile_named_shader(imp_fn, ctx.config))
+
+    return "".join(imported_strs) + out.content

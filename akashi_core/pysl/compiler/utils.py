@@ -96,6 +96,16 @@ def can_import2(kind: 'ShaderKind', imp_mod: tp.Type['ShaderModule']) -> bool:
         return False
 
 
+def can_import3(kind: 'ShaderKind', imp_kind: 'ShaderKind') -> bool:
+
+    if imp_kind == 'AnyShader':
+        return True
+    elif kind == imp_kind:
+        return True
+    else:
+        return False
+
+
 def is_shader_module(obj: tp.Any) -> bool:
     # [TODO] issubclass()?
     return hasattr(obj, '__glsl_version__')

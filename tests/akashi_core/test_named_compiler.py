@@ -31,41 +31,48 @@ class TestBasic(unittest.TestCase):
 
         self.assertEqual(compile_named_shader(add, TEST_CONFIG), expected)
 
-    # def test_undecorated_func(self):
+    def test_undecorated_func(self):
 
-    #     def add(a: int, b: int) -> int:
-    #         return a + b
+        def add(a: int, b: int) -> int:
+            return a + b
 
-    #     with self.assertRaisesRegex(CompileError, 'Named shader function must be decorated properly') as _:
-    #         compile_named_shader(add)
+        with self.assertRaisesRegex(CompileError, 'Named shader function must be decorated properly') as _:
+            compile_named_shader(add)
 
-    #     @gl.fn('error kind')  # type: ignore
-    #     def add2(a: int, b: int) -> int:
-    #         return a + b
+        @gl.fn('error kind')  # type: ignore
+        def add2(a: int, b: int) -> int:
+            return a + b
 
-    #     with self.assertRaisesRegex(CompileError, 'Invalid shader kind') as _:
-    #         compile_named_shader(add2)
+        with self.assertRaisesRegex(CompileError, 'Invalid shader kind') as _:
+            compile_named_shader(add2)
 
-    # def test_import(self):
+    def test_import(self):
 
-    #     @gl.fn('any')
-    #     def add(a: int, b: int) -> int:
-    #         return a + b
+        @gl.fn('frag')
+        def add(a: int, b: int) -> int:
+            return a + b
 
-    #     @gl.fn('any')
-    #     def assign_fn(a: int) -> int:
-    #         c: int = add(a, 2)
-    #         d: int = 90
-    #         d = c = 89
-    #         c += 190 + d
-    #         return c
+        @gl.fn('frag')
+        def assign_fn(a: int) -> int:
+            c: int = add(a, 2)
+            d: int = 90
+            d = c = 89
+            c += 190 + d
+            return c
 
-    #     expected = '\n'.join([
-    #         'int add(int a, int b){return (a) + (b);}',
-    #         'int assign_fn(int a){int c = add(a, 2);int d = 90;d = c = 89;c += (190) + (d);return c;}',
-    #     ])
+        expected = ''.join([
+            'int test_named_compiler_add(int a, int b){return (a) + (b);}',
+            'int test_named_compiler_assign_fn(int a){int c = add(a, 2);int d = 90;d = c = 89;c += (190) + (d);return c;}',
+        ])
 
-    #     self.assertEqual(compile_named_shader(assign_fn), expected)
+        self.assertEqual(compile_named_shader(assign_fn, TEST_CONFIG), expected)
+
+        @gl.fn('any')
+        def error_import(a: int) -> int:
+            return add(a, 12)
+
+        with self.assertRaisesRegex(CompileError, 'Forbidden import FragShader from AnyShader') as _:
+            compile_named_shader(error_import, TEST_CONFIG)
 
     # def test_paren_arith_func(self):
 
