@@ -16,3 +16,13 @@ class OuterMod(ak.FragShader):
     @gl.method
     def frag_main(self, color: gl.inout_p[gl.vec4]) -> None:
         return None
+
+
+@gl.fn('any')
+def boost(v: int) -> int:
+    return v * 1000
+
+
+@gl.fn('any')
+def boost_add(a: int, b: int) -> int:
+    return a + boost(b)
