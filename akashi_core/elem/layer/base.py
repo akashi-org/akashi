@@ -144,7 +144,7 @@ def __is_atom_active(atom_uuid: UUID, raise_exp: bool = True) -> bool:
     cur_atom = gctx.get_ctx().atoms[-1]
     r = atom_uuid == cur_atom.uuid
     if raise_exp and not(r):
-        raise Exception('Update for the inactive atom is forbidden')
+        raise Exception('Update for an inactive atom is forbidden')
     else:
         return r
 

@@ -25,10 +25,16 @@ from typing import (
     cast,
     ParamSpec,
     Literal,
-    Callable
+    Callable,
+    TYPE_CHECKING,
+    Concatenate
 )
 from ._gl_inline import expr, let, assign
 from ._gl_inline import eval
+
+if TYPE_CHECKING:
+    from akashi_core.pysl.shader import ShaderModule
+
 
 _T = TypeVar('_T')
 _TNumber = TypeVar('_TNumber', int, float)
@@ -39,6 +45,17 @@ _NamedFnStage = Literal['frag', 'poly', 'any']
 
 
 def fn(stage: _NamedFnStage) -> Callable[[Callable[_NamedFnP, _NamedFnR]], Callable[_NamedFnP, _NamedFnR]]:
+    def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
+        def wrapper(_stage: _NamedFnStage = stage, *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
+            return f(*args, **kwargs)
+        return wrapper
+    return deco
+
+
+_TBaseBuffer = TypeVar('_TBaseBuffer', bound='ShaderModule')
+
+
+def entry(stage: _NamedFnStage) -> Callable[[Callable[Concatenate['_TBaseBuffer', _NamedFnP], _NamedFnR]], Callable[_NamedFnP, _NamedFnR]]:
     def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
         def wrapper(_stage: _NamedFnStage = stage, *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
             return f(*args, **kwargs)

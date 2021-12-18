@@ -50,3 +50,4 @@ class CompilerContext:
 
     # named shader
     shader_kind: 'ShaderKind' = 'AnyShader'
+    buffers: list = field(default_factory=list[tuple])

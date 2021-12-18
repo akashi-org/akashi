@@ -57,6 +57,27 @@ def collect_global_symbols(ctx: CompilerContext, deco_fn: tp.Callable):
     ctx.global_symbol = vars(sys.modules[deco_fn.__module__])
 
 
+def collect_argument_symbols(ctx: CompilerContext, deco_fn: tp.Callable):
+
+    anno_items = list(deco_fn.__annotations__.items())
+    if len(anno_items) == 0:
+        return
+
+    # [TODO] impl type checks later
+    # if isinstance(anno_items[0][1], BaseBuffer):
+    if (buffer_name := anno_items[0][0]) and buffer_name == 'buffer':
+        buffer_type = anno_items[0][1]
+        ctx.buffers.append((buffer_name, buffer_type))
+
+        for attr_name in resolve_module(buffer_name, deco_fn):
+            attr_type = getattr(buffer_type, attr_name)
+            if isinstance(attr_type, tp._GenericAlias):  # type: ignore
+                basic_tpname: str = str(attr_type.__origin__.__name__)  # type:ignore
+                ctx.cls_symbol[attr_name] = (basic_tpname, attr_type)
+            else:
+                ctx.cls_symbol[attr_name] = (str(type(attr_type).__name__), attr_type)
+
+
 # Expects collect_global_symbols() to be executed before
 def collect_local_symbols(ctx: CompilerContext, deco_fn: tp.Callable) -> list[tp.Callable]:
 
@@ -71,9 +92,9 @@ def collect_local_symbols(ctx: CompilerContext, deco_fn: tp.Callable) -> list[tp
             elif isinstance(value, ModuleType):
                 for attr_name in resolve_module(local_varname, deco_fn):
                     wrap_fn = getattr(value, attr_name)
-                    inner_fn = unwrap_shader_func(wrap_fn)
-                    if is_named_func(get_function_def(ast.parse(get_source(inner_fn))), ctx.global_symbol):
-                        imported_named_shader_fn.append(wrap_fn)
+                    if inspect.isfunction(wrap_fn) and (inner_fn := unwrap_shader_func(wrap_fn)):
+                        if is_named_func(get_function_def(ast.parse(get_source(inner_fn))), ctx.global_symbol):
+                            imported_named_shader_fn.append(wrap_fn)
 
     # variables which are referenced by deco_fn's closure
     for idx, freevar in enumerate(deco_fn.__code__.co_freevars):
@@ -107,7 +128,7 @@ def is_named_func(func_def: ast.FunctionDef, global_symbol: dict) -> bool:
     for deco in func_def.decorator_list:
         deco_node = compile_expr(deco, ctx)
         deco_tpname = type_transformer(deco_node.content, ctx, deco_node.node)
-        if deco_tpname in ['fn']:
+        if deco_tpname in ['fn', 'entry']:
             return True
 
     return False
@@ -149,6 +170,7 @@ def compile_named_shader(
         raise CompileError('Named shader function must be decorated with its shader kind')
     ctx.shader_kind = shader_kind
     collect_global_symbols(ctx, deco_fn)
+    collect_argument_symbols(ctx, deco_fn)
     imported_named_shader_fns = collect_local_symbols(ctx, deco_fn)
 
     func_def = get_function_def(root)

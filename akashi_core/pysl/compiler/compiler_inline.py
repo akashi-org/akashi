@@ -222,7 +222,6 @@ def compile_inline_shader(
         exprs = split_exprs(expr_node)
 
         ctx.lambda_args = {}
-        ctx.local_symbol = {}
         collect_argument_symbols(ctx, fn, kind)
         collect_local_symbols(ctx, fn)
 

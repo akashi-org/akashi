@@ -50,9 +50,9 @@ def from_FunctionDef(node: ast.FunctionDef, ctx: CompilerContext, cls_name: str 
     for deco in node.decorator_list:
         deco_node = compile_expr(deco, ctx)
         deco_tpname = transformer.type_transformer(deco_node.content, ctx, deco_node.node)
-        if deco_tpname not in ['method', 'func', 'test_func', 'fn']:
+        if deco_tpname not in ['method', 'func', 'test_func', 'fn', 'entry']:
             return FunctionDefOut(node, '', False)
-        if deco_tpname == 'method':
+        if deco_tpname == 'method' or len(ctx.buffers) > 0:
             is_method = True
 
     func_name = compiler_utils.mangle_shader_func(cls_name, node.name) if len(cls_name) > 0 else node.name
@@ -563,6 +563,9 @@ def from_Attribute(node: ast.Attribute, ctx: CompilerContext) -> AttributeOut:
         else:
             content = f'{attr_str}'
             return AttributeOut(node, content)
+    if len(ctx.buffers) and value_str == ctx.buffers[0][0]:
+        content = f'{attr_str}'
+        return AttributeOut(node, content)
 
     if value_str in ctx.cls_symbol:
         value_tpname: str = ctx.cls_symbol[value_str][0]
