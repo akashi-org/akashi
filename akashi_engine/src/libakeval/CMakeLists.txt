@@ -1,6 +1,6 @@
 project (akeval CXX)
 
-find_package(PythonLibs 3.9 EXACT REQUIRED)
+find_package(Python 3.10 COMPONENTS Interpreter Development EXACT REQUIRED)
 message("-- Python Found " ${PYTHONLIBS_VERSION_STRING})
 
 FetchContent_Declare(pybind11
