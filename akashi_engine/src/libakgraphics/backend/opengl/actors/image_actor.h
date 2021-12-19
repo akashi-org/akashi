@@ -2,8 +2,6 @@
 
 #include "./actor.h"
 
-struct SDL_Surface;
-
 namespace akashi {
     namespace core {
         class Rational;
@@ -35,7 +33,6 @@ namespace akashi {
 
           private:
             ImageActor::Pass* m_pass = nullptr;
-            std::vector<SDL_Surface*> m_surfaces;
         };
     }
 

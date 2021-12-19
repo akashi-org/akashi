@@ -77,10 +77,6 @@ namespace akashi {
             }
             m_pass = nullptr;
 
-            for (auto&& surface : m_surfaces) {
-                SDL_FreeSurface(surface);
-            }
-            m_surfaces.clear();
             return true;
         }
 
@@ -127,25 +123,41 @@ namespace akashi {
             }
 
             auto num_sprites = m_layer_ctx.image_layer_ctx.srcs.size();
-            m_surfaces.reserve(num_sprites);
-            m_surfaces.resize(num_sprites);
+            std::vector<SDL_Surface*> surfaces(num_sprites, nullptr);
 
-            for (size_t i = 0; i < m_surfaces.size(); i++) {
+            auto image_bits = 0;
+            for (size_t i = 0; i < surfaces.size(); i++) {
                 const auto& image_path = m_layer_ctx.image_layer_ctx.srcs[i];
-                if (ImageLoader::GetInstance().getSurface(m_surfaces[i], image_path.c_str()) !=
+                if (ImageLoader::GetInstance().getSurface(surfaces[i], image_path.c_str()) !=
                     core::ErrorType::OK) {
                     AKLOG_ERROR("Failed to getSurface: {}", image_path.c_str());
                     return false;
                 }
+
+                auto cur_image_bits = surfaces[i]->format->BytesPerPixel;
+                if (i == 0) {
+                    image_bits = cur_image_bits;
+                } else {
+                    if (image_bits != cur_image_bits) {
+                        const auto& first_path = m_layer_ctx.image_layer_ctx.srcs[0];
+                        AKLOG_ERROR("Image channel mismatch found: `{}`(bits={}) != `{}`(bits={})",
+                                    first_path.c_str(), image_bits, image_path.c_str(),
+                                    cur_image_bits);
+                        for (auto&& surface : surfaces) {
+                            SDL_FreeSurface(surface);
+                        }
+                        return false;
+                    }
+                }
             }
 
-            m_pass->tex.width = m_surfaces[0]->w;
-            m_pass->tex.height = m_surfaces[0]->h;
-            m_pass->tex.effective_width = m_surfaces[0]->w;
-            m_pass->tex.effective_height = m_surfaces[0]->h;
-            m_pass->tex.format = (m_surfaces[0]->format->BytesPerPixel == 3) ? GL_RGB : GL_RGBA;
+            m_pass->tex.width = surfaces[0]->w;
+            m_pass->tex.height = surfaces[0]->h;
+            m_pass->tex.effective_width = surfaces[0]->w;
+            m_pass->tex.effective_height = surfaces[0]->h;
+            m_pass->tex.format = (surfaces[0]->format->BytesPerPixel == 3) ? GL_RGB : GL_RGBA;
             m_pass->tex.internal_format =
-                (m_surfaces[0]->format->BytesPerPixel == 3) ? GL_RGB8 : GL_RGBA8;
+                (surfaces[0]->format->BytesPerPixel == 3) ? GL_RGB8 : GL_RGBA8;
             m_pass->tex.target = GL_TEXTURE_2D_ARRAY;
 
             if (m_layer_ctx.image_layer_ctx.stretch) {
@@ -165,7 +177,7 @@ namespace akashi {
 
             // 2. GL4.2+
             glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, m_pass->tex.internal_format, m_pass->tex.width,
-                           m_pass->tex.height, m_surfaces.size());
+                           m_pass->tex.height, surfaces.size());
 
             // GET_GLFUNC(ctx, glGenerateMipmap)(GL_TEXTURE_2D_ARRAY);
 
@@ -174,13 +186,17 @@ namespace akashi {
             glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-            for (size_t i = 0; i < m_surfaces.size(); i++) {
+            for (size_t i = 0; i < surfaces.size(); i++) {
                 glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, m_pass->tex.width,
                                 m_pass->tex.height, 1, m_pass->tex.format, GL_UNSIGNED_BYTE,
-                                m_surfaces[i]->pixels);
+                                surfaces[i]->pixels);
             }
 
             glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+            for (auto&& surface : surfaces) {
+                SDL_FreeSurface(surface);
+            }
 
             return true;
         }
