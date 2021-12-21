@@ -50,7 +50,8 @@ class LayerTrait(metaclass=ABCMeta):
         return self
 
     def ap(self: '_TLayerTrait', *hs: tp.Callable[['_TLayerTrait'], '_TLayerTrait']) -> '_TLayerTrait':
-        [h(self) for h in hs]
+        for h in hs:
+            h(self)
         return self
 
 
