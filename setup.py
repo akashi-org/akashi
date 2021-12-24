@@ -65,6 +65,7 @@ setup(
         'akashi_cli',
         'akashi_core',
         'akashi_core.pysl',
+        'akashi_core.pysl.compiler',
         'akashi_core.elem',
         'akashi_core.elem.layer',
     ],
