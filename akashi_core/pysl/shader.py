@@ -8,8 +8,8 @@ from dataclasses import dataclass, field
 
 ShaderKind = tp.Literal['AnyShader', 'FragShader', 'PolygonShader', 'GeomShader']
 
-EntryFragFn = tp.Callable[['FragShader', _gl.inout_p[_gl.vec4]], _gl.expr]
-EntryPolyFn = tp.Callable[['PolygonShader', _gl.inout_p[_gl.vec3]], _gl.expr]
+EntryFragFn = tp.Callable[['FragShader', _gl.inout_p[_gl.vec4]], _gl.expr | None]
+EntryPolyFn = tp.Callable[['PolygonShader', _gl.inout_p[_gl.vec3]], _gl.expr | None]
 
 EntryFragFnGP = tuple[EntryFragFn, ...]
 EntryPolyFnGP = tuple[EntryPolyFn, ...]

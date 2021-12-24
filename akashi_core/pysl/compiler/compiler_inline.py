@@ -193,11 +193,13 @@ def collect_argument_symbols(ctx: CompilerContext, fn: 'TEntryFn', kind: 'Shader
     buf_arg, var_arg = inspect.getfullargspec(fn).args
     ctx.lambda_args[buf_arg] = ''
     if kind == 'FragShader':
-        ctx.lambda_args[var_arg] = 'color'
+        if var_arg != 'color':
+            ctx.lambda_args[var_arg] = 'color'
+        ctx.symbol['color'] = 'inout vec4'
     elif kind == 'PolygonShader':
-        ctx.lambda_args[var_arg] = 'pos'
-    else:
-        raise NotImplementedError()
+        if var_arg != 'pos':
+            ctx.lambda_args[var_arg] = 'pos'
+        ctx.symbol['pos'] = 'inout vec4'
 
 
 def compile_inline_shader(

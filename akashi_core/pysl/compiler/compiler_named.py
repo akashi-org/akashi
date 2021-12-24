@@ -4,7 +4,7 @@ from __future__ import annotations
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
 from .utils import get_source, get_function_def, can_import2, can_import3
 from .transformer import type_transformer
-from .ast import compile_expr, from_FunctionDef, compile_shader_staticmethod
+from .ast import compile_expr, compile_stmt, from_FunctionDef, compile_shader_staticmethod, from_arguments
 from .symbol import global_symbol_analysis, instance_symbol_analysis
 
 from types import ModuleType
@@ -15,7 +15,21 @@ import ast
 import sys
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderKind, ShaderModule
+    from akashi_core.pysl.shader import ShaderKind, ShaderModule, TEntryFn
+    from akashi_core.pysl._gl import TEntryFnOpaque
+
+
+def entry_point(kind: 'ShaderKind', func_body: str, self_postfix: str = '', next_postfix: str = '') -> str:
+    # [TODO] merge defs with the one in compile_inline.py
+
+    if kind == 'FragShader':
+        chain_str = '' if len(next_postfix) == 0 else f'frag_main{next_postfix}(color);'
+        return f'void frag_main{self_postfix}(inout vec4 color)' + '{' + func_body + chain_str + '}'
+    elif kind == 'PolygonShader':
+        chain_str = '' if len(next_postfix) == 0 else f'poly_main{next_postfix}(pos);'
+        return f'void poly_main{self_postfix}(inout vec3 pos)' + '{' + func_body + chain_str + '}'
+    else:
+        raise NotImplementedError()
 
 
 def to_shader_kind(kind_str: str) -> 'ShaderKind':
@@ -78,6 +92,22 @@ def collect_argument_symbols(ctx: CompilerContext, deco_fn: tp.Callable):
                 ctx.cls_symbol[attr_name] = (str(type(attr_type).__name__), attr_type)
 
 
+def collect_entry_argument_symbols(ctx: CompilerContext, deco_fn: tp.Callable, kind: 'ShaderKind'):
+
+    anno_items = list(deco_fn.__annotations__.items())
+    if len(anno_items) < 2:
+        return
+
+    collect_argument_symbols(ctx, deco_fn)
+
+    var_name = anno_items[1][0]
+    # [TODO] maybe we should use a common name instead of `lambda_args`
+    if kind == 'FragShader' and var_name != 'color':
+        ctx.lambda_args[var_name] = 'color'
+    elif kind == 'PolygonShader' and var_name != 'pos':
+        ctx.lambda_args[var_name] = 'pos'
+
+
 # Expects collect_global_symbols() to be executed before
 def collect_local_symbols(ctx: CompilerContext, deco_fn: tp.Callable) -> list[tp.Callable]:
 
@@ -128,7 +158,7 @@ def is_named_func(func_def: ast.FunctionDef, global_symbol: dict) -> bool:
     for deco in func_def.decorator_list:
         deco_node = compile_expr(deco, ctx)
         deco_tpname = type_transformer(deco_node.content, ctx, deco_node.node)
-        if deco_tpname in ['fn', 'entry']:
+        if deco_tpname in ['fn', 'entry_frag', 'entry_poly']:
             return True
 
     return False
@@ -187,3 +217,62 @@ def compile_named_shader(
         imported_strs.append(compile_named_shader(imp_fn, ctx.config))
 
     return "".join(imported_strs) + out.content
+
+
+def parse_func(node: ast.FunctionDef, ctx: CompilerContext) -> _TGLSL:
+
+    is_method = len(ctx.buffers) > 0
+
+    ctx.top_indent = node.col_offset
+    if not node.returns:
+        raise CompileError('Return type annotation not found')
+
+    args = from_arguments(node.args, ctx, 1 if is_method else 0)
+    for idx, arg in enumerate(args):
+        arg_tpname = type_transformer(arg.content, ctx, arg.node)
+        ctx.symbol[arg.node.arg] = arg_tpname
+
+    body_strs = []
+    for stmt in node.body:
+        out = compile_stmt(stmt, ctx)
+        body_strs.append(out.content)
+
+    return "".join(body_strs)
+
+
+def compile_named_entry_shader(
+        fn: 'TEntryFnOpaque',
+        config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
+
+    ctx = CompilerContext(config)
+
+    deco_fn = unwrap_shader_func(tp.cast(tp.Callable, fn))
+    if not deco_fn:
+        raise CompileError('Named shader function must be decorated properly')
+
+    py_src = get_source(deco_fn)
+    root = ast.parse(py_src)
+
+    shader_kind = to_shader_kind(tp.cast(tuple, inspect.getfullargspec(fn).defaults)[0])
+    if not shader_kind:
+        raise CompileError('Named shader function must be decorated with its shader kind')
+    ctx.shader_kind = shader_kind
+    collect_global_symbols(ctx, deco_fn)
+    collect_entry_argument_symbols(ctx, deco_fn, shader_kind)
+    imported_named_shader_fns = collect_local_symbols(ctx, deco_fn)
+
+    func_def = get_function_def(root)
+    if not is_named_func(func_def, ctx.global_symbol):
+        raise CompileError('Named shader function must be decorated properly')
+
+    stmt = parse_func(func_def, ctx)
+    out = entry_point(shader_kind, ''.join(stmt))
+
+    imported_strs = []
+    for imp_fn in imported_named_shader_fns:
+        imp_shader_kind = to_shader_kind(tp.cast(tuple, inspect.getfullargspec(imp_fn).defaults)[0])
+        if not can_import3(shader_kind, imp_shader_kind):
+            raise CompileError(f'Forbidden import {imp_shader_kind} from {shader_kind}')
+        imported_strs.append(compile_named_shader(imp_fn, ctx.config))
+
+    return "".join(imported_strs) + out

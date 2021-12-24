@@ -1,5 +1,5 @@
 import unittest
-from akashi_core.pysl import compile_named_shader, CompileError, CompilerConfig
+from akashi_core.pysl import compile_named_shader, compile_named_entry_shader, CompileError, CompilerConfig
 from akashi_core import gl, ak
 from . import compiler_fixtures
 import typing as tp
@@ -356,15 +356,15 @@ class TestBuffer(unittest.TestCase):
 
     def test_uniform(self):
 
-        @gl.entry('frag')
+        @gl.entry_frag()
         def vec_attr(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
             color.value.x = buffer.time.value * 12
 
         expected = ''.join([
-            'void test_named_compiler_vec_attr(inout vec4 color){color.x = (time) * (12);}',
+            'void frag_main(inout vec4 color){color.x = (time) * (12);}',
         ])
 
-        self.assertEqual(compile_named_shader(vec_attr, TEST_CONFIG), expected)
+        self.assertEqual(compile_named_entry_shader(vec_attr, TEST_CONFIG), expected)
 
     def test_uniform_import(self):
 
@@ -374,7 +374,7 @@ class TestBuffer(unittest.TestCase):
         def local_add(a: int, b: int) -> int:
             return a + b
 
-        @gl.entry('frag')
+        @gl.entry_frag()
         def vec_attr(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
             color.value.x = buffer.time.value * module_global_add(12, 1) * compiler_fixtures.boost_add(20, gl.eval(ddd))
 
@@ -382,10 +382,12 @@ class TestBuffer(unittest.TestCase):
             'int test_named_compiler_module_global_add(int a, int b){return (a) + (b);}',
             'int compiler_fixtures_boost(int v){return (v) * (1000);}',
             'int compiler_fixtures_boost_add(int a, int b){return (a) + (boost(b));}',
-            'void test_named_compiler_vec_attr(inout vec4 color){color.x = ((time) * (module_global_add(12, 1))) * (boost_add(20, 12));}',
+            'void frag_main(inout vec4 color){color.x = ((time) * (module_global_add(12, 1))) * (boost_add(20, 12));}',
         ])
 
-        self.assertEqual(compile_named_shader(vec_attr, TEST_CONFIG), expected)
+        self.maxDiff = None
+
+        self.assertEqual(compile_named_entry_shader(vec_attr, TEST_CONFIG), expected)
 
     def test_forbidden_import(self):
 
@@ -393,9 +395,24 @@ class TestBuffer(unittest.TestCase):
         def local_add(a: int, b: int) -> int:
             return a + b
 
-        @gl.entry('frag')
+        @gl.entry_frag()
         def vec_attr(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
             color.value.x = local_add(1, 2)
 
         with self.assertRaisesRegex(CompileError, 'Forbidden import PolygonShader from FragShader') as _:
-            compile_named_shader(vec_attr, TEST_CONFIG)
+            compile_named_entry_shader(vec_attr, TEST_CONFIG)
+
+
+class TestEntry(unittest.TestCase):
+
+    def test_basic(self):
+
+        @gl.entry_frag()
+        def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
+            cl.value.x = buffer.time.value * 12
+
+        expected = ''.join([
+            'void frag_main(inout vec4 color){color.x = (time) * (12);}',
+        ])
+
+        self.assertEqual(compile_named_entry_shader(vec_attr, TEST_CONFIG), expected)

@@ -238,8 +238,8 @@ class TestInlineWithBrace(unittest.TestCase):
         speed = 999
 
         def gen() -> ak.EntryFragFn:
-            return lambda b, c: ((
-                (gl.assign(c.value.x).eq(gl.eval(speed))) >>
+            return lambda b, color: ((
+                (gl.assign(color.value.x).eq(gl.eval(speed))) >>
                 (gl.let(y := 12.1).tp(float) >> gl.expr(y))
             ))
 

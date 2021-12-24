@@ -50,7 +50,7 @@ def from_FunctionDef(node: ast.FunctionDef, ctx: CompilerContext, cls_name: str 
     for deco in node.decorator_list:
         deco_node = compile_expr(deco, ctx)
         deco_tpname = transformer.type_transformer(deco_node.content, ctx, deco_node.node)
-        if deco_tpname not in ['method', 'func', 'test_func', 'fn', 'entry']:
+        if deco_tpname not in ['method', 'func', 'test_func', 'fn', 'entry_frag', 'entry_poly']:
             return FunctionDefOut(node, '', False)
         if deco_tpname == 'method' or len(ctx.buffers) > 0:
             is_method = True

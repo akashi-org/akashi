@@ -33,7 +33,7 @@ from ._gl_inline import expr, let, assign
 from ._gl_inline import eval
 
 if TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderModule
+    from akashi_core.pysl.shader import ShaderModule, EntryFragFn, EntryPolyFn
 
 
 _T = TypeVar('_T')
@@ -52,15 +52,26 @@ def fn(stage: _NamedFnStage) -> Callable[[Callable[_NamedFnP, _NamedFnR]], Calla
     return deco
 
 
-_TBaseBuffer = TypeVar('_TBaseBuffer', bound='ShaderModule')
+class TEntryFnOpaque(Generic[_T]):
+    ...
+
+# [TODO] Can we merge entry_*() decorators by using typing.overload?
 
 
-def entry(stage: _NamedFnStage) -> Callable[[Callable[Concatenate['_TBaseBuffer', _NamedFnP], _NamedFnR]], Callable[_NamedFnP, _NamedFnR]]:
+def entry_frag() -> Callable[['EntryFragFn'], TEntryFnOpaque['EntryFragFn']]:
     def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
-        def wrapper(_stage: _NamedFnStage = stage, *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
+        def wrapper(_stage: _NamedFnStage = 'frag', *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
             return f(*args, **kwargs)
         return wrapper
-    return deco
+    return deco  # type: ignore
+
+
+def entry_poly() -> Callable[['EntryPolyFn'], TEntryFnOpaque['EntryPolyFn']]:
+    def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
+        def wrapper(_stage: _NamedFnStage = 'poly', *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
+            return f(*args, **kwargs)
+        return wrapper
+    return deco  # type: ignore
 
 
 def test_func(fn):
