@@ -24,12 +24,14 @@ class InlineCompileDetectError(CompileError):
     pass
 
 
-def entry_point(kind: 'ShaderKind', func_body: str) -> str:
+def entry_point(kind: 'ShaderKind', func_body: str, self_postfix: str = '', next_postfix: str = '') -> str:
 
     if kind == 'FragShader':
-        return 'void frag_main(inout vec4 _fragColor){' + func_body + '}'
+        chain_str = '' if len(next_postfix) == 0 else f'frag_main{next_postfix}(color);'
+        return f'void frag_main{self_postfix}(inout vec4 color)' + '{' + func_body + chain_str + '}'
     elif kind == 'PolygonShader':
-        return 'void poly_main(inout vec3 pos){' + func_body + '}'
+        chain_str = '' if len(next_postfix) == 0 else f'poly_main{next_postfix}(pos);'
+        return f'void poly_main{self_postfix}(inout vec3 pos)' + '{' + func_body + chain_str + '}'
     else:
         raise NotImplementedError()
 
@@ -191,7 +193,7 @@ def collect_argument_symbols(ctx: CompilerContext, fn: 'TEntryFn', kind: 'Shader
     buf_arg, var_arg = inspect.getfullargspec(fn).args
     ctx.lambda_args[buf_arg] = ''
     if kind == 'FragShader':
-        ctx.lambda_args[var_arg] = '_fragColor'
+        ctx.lambda_args[var_arg] = 'color'
     elif kind == 'PolygonShader':
         ctx.lambda_args[var_arg] = 'pos'
     else:
@@ -214,7 +216,7 @@ def compile_inline_shader(
     collect_global_symbols(ctx, fns[0])
     collect_instance_symbols(ctx, sh_mod_fn)
 
-    for fn in fns:
+    for idx, fn in enumerate(fns):
 
         stmt = []
 
@@ -228,7 +230,10 @@ def compile_inline_shader(
         for expr in exprs:
             stmt.append(parse_expr(expr, ctx))
 
-        stmts.append(''.join(stmt))
+        self_postfix = f'_{idx}' if idx > 0 else ''
+        next_postfix = f'_{idx + 1}' if idx != len(fns) - 1 else ''
+
+        stmts.insert(0, entry_point(kind, ''.join(stmt), self_postfix, next_postfix))
 
     imported_strs = []
     for imp in ctx.imported_current.values():
@@ -237,4 +242,4 @@ def compile_inline_shader(
 
         imported_strs.append(compile_shader_staticmethod(imp[0], imp[1], True, ctx.config))
 
-    return "".join(imported_strs) + entry_point(kind, ''.join(stmts))
+    return "".join(imported_strs) + ''.join(stmts)
