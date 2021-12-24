@@ -55,6 +55,9 @@ def fn(stage: _NamedFnStage) -> Callable[[Callable[_NamedFnP, _NamedFnR]], Calla
 class TEntryFnOpaque(Generic[_T]):
     ...
 
+
+TNarrowEntryFnOpaque = TypeVar('TNarrowEntryFnOpaque', TEntryFnOpaque['EntryFragFn'], TEntryFnOpaque['EntryPolyFn'])
+
 # [TODO] Can we merge entry_*() decorators by using typing.overload?
 
 

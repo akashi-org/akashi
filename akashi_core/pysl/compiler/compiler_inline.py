@@ -215,6 +215,7 @@ def compile_inline_shader(
     stmts = []
 
     ctx = CompilerContext(config)
+    # [TODO] maybe we should call this in the loop below
     collect_global_symbols(ctx, fns[0])
     collect_instance_symbols(ctx, sh_mod_fn)
 

@@ -1,5 +1,11 @@
 import unittest
-from akashi_core.pysl import compile_named_shader, compile_named_entry_shader, CompileError, CompilerConfig
+from akashi_core.pysl import (
+    compile_named_shader,
+    compile_named_entry_shader,
+    compile_named_entry_shaders,
+    CompileError,
+    CompilerConfig
+)
 from akashi_core import gl, ak
 from . import compiler_fixtures
 import typing as tp
@@ -416,3 +422,27 @@ class TestEntry(unittest.TestCase):
         ])
 
         self.assertEqual(compile_named_entry_shader(vec_attr, TEST_CONFIG), expected)
+
+    def test_chain(self):
+
+        @gl.entry_frag()
+        def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
+            cl.value.x = buffer.time.value * 12
+
+        @gl.entry_frag()
+        def vec_attr2(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
+            color.value.y = buffer.time.value * 12
+
+        @gl.entry_frag()
+        def vec_attr3(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
+            color.value.z = buffer.time.value * 12
+
+        expected = ''.join([
+            'void frag_main_2(inout vec4 color){color.z = (time) * (12);}',
+            'void frag_main_1(inout vec4 color){color.y = (time) * (12);frag_main_2(color);}',
+            'void frag_main(inout vec4 color){color.x = (time) * (12);frag_main_1(color);}',
+        ])
+
+        self.maxDiff = None
+
+        self.assertEqual(compile_named_entry_shaders((vec_attr, vec_attr2, vec_attr3), TEST_CONFIG), expected)
