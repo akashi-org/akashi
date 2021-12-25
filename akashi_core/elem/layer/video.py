@@ -13,6 +13,9 @@ from akashi_core.pysl.shader import EntryFragFn, EntryPolyFn
 from .base import PositionField, PositionTrait, LayerField, LayerTrait
 from .base import peek_entry, register_entry
 
+if tp.TYPE_CHECKING:
+    from akashi_core.pysl.shader import GEntryFragFn, GEntryPolyFn
+
 
 @dataclass
 class VideoLocalField:
@@ -62,38 +65,14 @@ class VideoHandle(PositionTrait, LayerTrait):
             cur_layer.atom_offset = offset
         return self
 
-    @overload
-    def frag(self, *frag_shaders: EntryFragFn) -> 'VideoHandle':
-        ...
-
-    @overload
-    def frag(self, *frag_shaders: VideoFragShader) -> 'VideoHandle':
-        ...
-
-    def frag(self, *frag_shaders: tp.Any) -> 'VideoHandle':
+    def frag(self, *frag_shaders: 'GEntryFragFn') -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            if isinstance(frag_shaders[0], VideoFragShader):
-                cur_layer.frag_shader = frag_shaders[0]
-            elif callable(frag_shaders[0]):
-                cur_layer.frag_shader = VideoFragShader()
-                cur_layer.frag_shader._inline_shaders = frag_shaders
+            cur_layer.frag_shader = VideoFragShader(frag_shaders)
         return self
 
-    @overload
-    def poly(self, *poly_shaders: EntryPolyFn) -> 'VideoHandle':
-        ...
-
-    @overload
-    def poly(self, *poly_shaders: VideoPolygonShader) -> 'VideoHandle':
-        ...
-
-    def poly(self, *poly_shaders: tp.Any) -> 'VideoHandle':
+    def poly(self, *poly_shaders: 'GEntryPolyFn') -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            if isinstance(poly_shaders[0], VideoPolygonShader):
-                cur_layer.poly_shader = poly_shaders[0]
-            elif callable(poly_shaders[0]):
-                cur_layer.poly_shader = VideoPolygonShader()
-                cur_layer.poly_shader._inline_shaders = poly_shaders
+            cur_layer.poly_shader = VideoPolygonShader(poly_shaders)
         return self
 
 

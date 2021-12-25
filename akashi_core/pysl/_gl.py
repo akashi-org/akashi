@@ -28,7 +28,7 @@ from ._gl_inline import expr, let, assign
 from ._gl_inline import eval
 
 if TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderModule, EntryFragFn, EntryPolyFn
+    from akashi_core.pysl.shader import ShaderModule, EntryFragFn, EntryPolyFn, TEntryFnOpaque
 
 
 _T = TypeVar('_T')
@@ -46,12 +46,6 @@ def fn(stage: _NamedFnStage) -> Callable[[Callable[_NamedFnP, _NamedFnR]], Calla
         return wrapper
     return deco
 
-
-class TEntryFnOpaque(Generic[_T]):
-    ...
-
-
-TNarrowEntryFnOpaque = TypeVar('TNarrowEntryFnOpaque', TEntryFnOpaque['EntryFragFn'], TEntryFnOpaque['EntryPolyFn'])
 
 # [TODO] Can we merge entry_*() decorators by using typing.overload?
 

@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
-from .utils import get_source, get_function_def, can_import2, can_import3
-from .transformer import type_transformer
-from .ast import compile_expr, compile_stmt, from_FunctionDef, from_arguments
+from .utils import get_source, get_function_def, can_import3, has_params_qualifier
+from .transformer import type_transformer, body_transformer
+from .ast import compile_expr, compile_stmt, from_arguments
 from .symbol import global_symbol_analysis, instance_symbol_analysis
 
 from types import ModuleType
@@ -15,8 +15,7 @@ import ast
 import sys
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderKind, ShaderModule, TEntryFn
-    from akashi_core.pysl._gl import TNarrowEntryFnOpaque
+    from akashi_core.pysl.shader import ShaderKind, ShaderModule, TEntryFn, TNarrowEntryFnOpaque
 
 
 def entry_point(kind: 'ShaderKind', func_body: str, self_postfix: str = '', next_postfix: str = '') -> str:
@@ -185,9 +184,9 @@ def get_mangle_prefix(ctx: CompilerContext, deco_fn: tp.Callable):
             return ''
 
 
-def mangled_func_name(ctx: CompilerContext, deco_fn: tp.Callable):
+def mangled_func_name(ctx: CompilerContext, deco_fn: tp.Callable, unwrap: bool = True):
 
-    if (_fn := unwrap_shader_func(deco_fn)):
+    if unwrap and (_fn := unwrap_shader_func(deco_fn)):
         deco_fn = _fn
 
     prefix = get_mangle_prefix(ctx, deco_fn)
@@ -222,8 +221,7 @@ def compile_named_shader(
     if not is_named_func(func_def, ctx.global_symbol):
         raise CompileError('Named shader function must be decorated properly')
 
-    # [TODO] should be replaced other impl like parse_func
-    out = from_FunctionDef(func_def, ctx, get_mangle_prefix(ctx, deco_fn))
+    out = parse_func_all(func_def, ctx, mangled_func_name(ctx, deco_fn, False))
 
     imported_strs = []
     for imp_fn in imported_named_shader_fns:
@@ -232,10 +230,37 @@ def compile_named_shader(
             raise CompileError(f'Forbidden import {imp_shader_kind} from {shader_kind}')
         imported_strs.append(compile_named_shader(imp_fn, ctx.config))
 
-    return "".join(imported_strs) + out.content
+    return "".join(imported_strs) + out
 
 
-def parse_func(node: ast.FunctionDef, ctx: CompilerContext) -> _TGLSL:
+def parse_func_all(node: ast.FunctionDef, ctx: CompilerContext, func_name: str) -> _TGLSL:
+
+    ctx.top_indent = node.col_offset
+
+    if not node.returns:
+        raise CompileError('Return type annotation not found')
+
+    returns = compile_expr(node.returns, ctx)
+    returns_str = type_transformer(returns.content, ctx, returns.node)
+
+    if has_params_qualifier(returns_str):
+        raise CompileError('Return type must not have its parameter qualifier')
+
+    args = from_arguments(node.args, ctx, 0)
+    args_temp = []
+    for idx, arg in enumerate(args):
+        arg_tpname = type_transformer(arg.content, ctx, arg.node)
+        ctx.symbol[arg.node.arg] = arg_tpname
+        args_temp.append(f'{arg_tpname} {arg.node.arg}')
+
+    args_str = ', '.join(args_temp)
+
+    body_str = body_transformer(node.body, ctx, brace_on_ellipsis=False)
+
+    return f'{returns_str} {func_name}({args_str}){body_str}'
+
+
+def parse_func_body(node: ast.FunctionDef, ctx: CompilerContext) -> _TGLSL:
 
     is_method = len(ctx.buffers) > 0
 
@@ -303,8 +328,8 @@ def compile_named_entry_shaders(
         self_postfix = f'_{idx}' if idx > 0 else ''
         next_postfix = f'_{idx + 1}' if idx != len(fns) - 1 else ''
 
-        stmt = parse_func(func_def, ctx)
-        stmts.insert(0, entry_point(shader_kind, ''.join(stmt), self_postfix, next_postfix))
+        func_body = parse_func_body(func_def, ctx)
+        stmts.insert(0, entry_point(shader_kind, ''.join(func_body), self_postfix, next_postfix))
 
     imported_strs = []
     for imp_fn in imported_named_shader_fns_dict.values():
@@ -338,7 +363,6 @@ def compile_named_entry_shader_partial(fn: 'TNarrowEntryFnOpaque', ctx: Compiler
     if not is_named_func(func_def, ctx.global_symbol):
         raise CompileError('Named shader function must be decorated properly')
 
-    stmt = parse_func(func_def, ctx)
-    func_body = ''.join(stmt)
+    func_body = parse_func_body(func_def, ctx)
 
     return (func_body, imported_named_shader_fns)

@@ -43,58 +43,7 @@ class FunctionDefOut(stmtOut):
 
 def from_FunctionDef(node: ast.FunctionDef, ctx: CompilerContext, cls_name: str = '') -> FunctionDefOut:
 
-    is_method = False
-    # [TODO] more efficient way?
-    if len(node.decorator_list) == 0:
-        return FunctionDefOut(node, '', False)
-    for deco in node.decorator_list:
-        deco_node = compile_expr(deco, ctx)
-        deco_tpname = transformer.type_transformer(deco_node.content, ctx, deco_node.node)
-        if deco_tpname not in ['method', 'func', 'test_func', 'fn', 'entry_frag', 'entry_poly']:
-            return FunctionDefOut(node, '', False)
-        if deco_tpname == 'method' or len(ctx.buffers) > 0:
-            is_method = True
-
-    func_name = compiler_utils.mangle_shader_func(cls_name, node.name) if len(cls_name) > 0 else node.name
-
-    ctx.top_indent = node.col_offset
-
-    if not node.returns:
-        raise CompileError('Return type annotation not found')
-
-    returns = compile_expr(node.returns, ctx)
-    returns_str = transformer.type_transformer(returns.content, ctx, returns.node)
-
-    if compiler_utils.has_params_qualifier(returns_str):
-        raise CompileError('Return type must not have its parameter qualifier')
-
-    args = from_arguments(node.args, ctx, 1 if is_method else 0)
-    args_temp = []
-    for idx, arg in enumerate(args):
-        arg_tpname = transformer.type_transformer(arg.content, ctx, arg.node)
-        ctx.symbol[arg.node.arg] = arg_tpname
-        args_temp.append(f'{arg_tpname} {arg.node.arg}')
-
-    args_str = ', '.join(args_temp)
-
-    # [XXX] Now we know the types of arguments, and can utilize them for body compilation
-    body_str = transformer.body_transformer(node.body, ctx, brace_on_ellipsis=False)
-
-    content = f'{returns_str} {func_name}({args_str}){body_str}'
-
-    imported_strs = []
-    for imp in ctx.imported_current.values():
-        if not ctx.shmod_klass:
-            # [TODO] better msg?
-            raise CompileError('ctx.shmod_klass is null')
-        elif not compiler_utils.can_import(ctx.shmod_klass, imp[0]):
-            raise CompileError(f'Forbidden import {imp[0].__kind__} from {ctx.shmod_klass.__kind__}')
-
-        imported_strs.append(compile_shader_staticmethod(imp[0], imp[1], True, ctx.config))
-
-    content = "".join(imported_strs) + content
-
-    return FunctionDefOut(node, content)
+    return FunctionDefOut(node, '', False)
 
 
 @dataclass

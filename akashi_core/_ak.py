@@ -26,8 +26,6 @@ __all__ = [
     "from_relpath",
     "FragShader",
     "VideoFragShader",
-    "GeomShader",
-    "VideoGeomShader",
     "PolygonShader",
     "VideoPolygonShader",
     "AnyShader",
@@ -63,8 +61,6 @@ from .config import (
 from .pysl import (
     FragShader,
     VideoFragShader,
-    GeomShader,
-    VideoGeomShader,
     PolygonShader,
     VideoPolygonShader,
     AnyShader,

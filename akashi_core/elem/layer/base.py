@@ -13,6 +13,7 @@ from akashi_core.pysl import EntryFragFn, EntryPolyFn
 
 if tp.TYPE_CHECKING:
     from akashi_core.elem.atom import AtomHandle
+    from akashi_core.pysl.shader import GEntryFragFn, GEntryPolyFn
 
 
 LayerKind = tp.Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE', 'EFFECT', 'SHAPE', 'FREE']
@@ -92,38 +93,14 @@ class ShaderField:
 
 class ShaderTrait(LayerTrait, metaclass=ABCMeta):
 
-    @overload
-    def frag(self: '_TShaderTrait', *frag_shaders: EntryFragFn) -> '_TShaderTrait':
-        ...
-
-    @overload
-    def frag(self: '_TShaderTrait', *frag_shaders: FragShader) -> '_TShaderTrait':
-        ...
-
-    def frag(self: '_TShaderTrait', *frag_shaders: tp.Any) -> '_TShaderTrait':
+    def frag(self: '_TShaderTrait', *frag_shaders: 'GEntryFragFn') -> '_TShaderTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShaderField):
-            if isinstance(frag_shaders[0], FragShader):
-                cur_layer.frag_shader = frag_shaders[0]
-            elif callable(frag_shaders[0]):
-                cur_layer.frag_shader = FragShader()
-                cur_layer.frag_shader._inline_shaders = frag_shaders
+            cur_layer.frag_shader = FragShader(frag_shaders)
         return self
 
-    @overload
-    def poly(self: '_TShaderTrait', *poly_shaders: EntryPolyFn) -> '_TShaderTrait':
-        ...
-
-    @overload
-    def poly(self: '_TShaderTrait', *poly_shaders: PolygonShader) -> '_TShaderTrait':
-        ...
-
-    def poly(self: '_TShaderTrait', *poly_shaders: tp.Any) -> '_TShaderTrait':
+    def poly(self: '_TShaderTrait', *poly_shaders: 'GEntryPolyFn') -> '_TShaderTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShaderField):
-            if isinstance(poly_shaders[0], PolygonShader):
-                cur_layer.poly_shader = poly_shaders[0]
-            elif callable(poly_shaders[0]):
-                cur_layer.poly_shader = PolygonShader()
-                cur_layer.poly_shader._inline_shaders = poly_shaders
+            cur_layer.poly_shader = PolygonShader(poly_shaders)
         return self
 
 

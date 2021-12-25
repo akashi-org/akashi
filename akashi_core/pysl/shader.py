@@ -1,5 +1,5 @@
 from __future__ import annotations
-from . import compile_inline_shaders, CompilerConfig
+from . import compile_mixed_shaders, CompilerConfig
 from . import _gl
 
 from abc import abstractmethod, ABCMeta
@@ -11,10 +11,23 @@ ShaderKind = tp.Literal['AnyShader', 'FragShader', 'PolygonShader', 'GeomShader'
 EntryFragFn = tp.Callable[['FragShader', _gl.inout_p[_gl.vec4]], _gl.expr | None]
 EntryPolyFn = tp.Callable[['PolygonShader', _gl.inout_p[_gl.vec3]], _gl.expr | None]
 
-EntryFragFnGP = tuple[EntryFragFn, ...]
-EntryPolyFnGP = tuple[EntryPolyFn, ...]
 
 TEntryFn = tp.TypeVar('TEntryFn', 'EntryFragFn', 'EntryPolyFn')
+
+_T = tp.TypeVar('_T')
+
+
+class TEntryFnOpaque(tp.Generic[_T]):
+    ...
+
+
+TNarrowEntryFnOpaque = tp.TypeVar('TNarrowEntryFnOpaque', TEntryFnOpaque['EntryFragFn'], TEntryFnOpaque['EntryPolyFn'])
+
+GEntryFragFn = EntryFragFn | TEntryFnOpaque['EntryFragFn']
+GEntryPolyFn = EntryPolyFn | TEntryFnOpaque['EntryPolyFn']
+
+EntryFragFnGP = tuple[GEntryFragFn, ...]
+EntryPolyFnGP = tuple[GEntryPolyFn, ...]
 
 
 @dataclass
@@ -26,8 +39,6 @@ class ShaderModule(metaclass=ABCMeta):
     __kind__: tp.ClassVar[ShaderKind] = 'AnyShader'
 
     _assemble_cache: tp.Optional[str] = field(default=None, init=False)
-
-    _inline_shaders: tp.Optional[tp.Union[EntryFragFnGP, EntryPolyFnGP]] = field(default=None, init=False)
 
     def _header(self, config: CompilerConfig.Config) -> str:
         if not config['pretty_compile']:
@@ -63,11 +74,6 @@ class AnyShader(ShaderModule):
 
     __kind__: tp.ClassVar[ShaderKind] = 'AnyShader'
 
-    def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
-        # if not self._assemble_cache:
-        #     self._assemble_cache = self._preamble(config) + self._header(config) + compile_shader_module(self, config)
-        return self._assemble_cache
-
 
 @dataclass
 class GS_OUT:
@@ -96,16 +102,12 @@ class FragShader(BasicUniform, ShaderModule):
 
     fs_in: _gl.in_t[GS_OUT] = field(default=_gl.in_t.default(), init=False)
 
+    shaders: EntryFragFnGP = field(default_factory=tuple)
+
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
-            if self._inline_shaders:
-                self._assemble_cache = self._preamble(config) + self._header(config)
-                self._assemble_cache += compile_inline_shaders(
-                    tp.cast(EntryFragFnGP, self._inline_shaders), lambda: self, config
-                )
-            else:
-                self._assemble_cache = self._preamble(config) + self._header(config)
-                # self._assemble_cache += compile_shader_module(self, config)
+            self._assemble_cache = self._preamble(config) + self._header(config)
+            self._assemble_cache += compile_mixed_shaders(self.shaders, lambda: self, config)
         return self._assemble_cache
 
 
@@ -135,22 +137,18 @@ class VideoFragShader(BasicUniform, ShaderModule):
         '} fs_in;'
     ]
 
-    textureY: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
-    textureCb: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
-    textureCr: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
+    textureY: _gl.uniform[_gl.sampler2D] = field(default=_gl.uniform.default(), init=False)
+    textureCb: _gl.uniform[_gl.sampler2D] = field(default=_gl.uniform.default(), init=False)
+    textureCr: _gl.uniform[_gl.sampler2D] = field(default=_gl.uniform.default(), init=False)
 
     fs_in: _gl.in_t[GS_OUT_V] = field(default=_gl.in_t.default(), init=False)
 
+    shaders: EntryFragFnGP = field(default_factory=tuple)
+
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
-            if self._inline_shaders:
-                self._assemble_cache = self._preamble(config) + self._header(config)
-                self._assemble_cache += compile_inline_shaders(
-                    tp.cast(EntryFragFnGP, self._inline_shaders), lambda: self, config
-                )
-            else:
-                self._assemble_cache = self._preamble(config) + self._header(config)
-                # self._assemble_cache += compile_shader_module(self, config)
+            self._assemble_cache = self._preamble(config) + self._header(config)
+            self._assemble_cache += compile_mixed_shaders(self.shaders, lambda: self, config)
         return self._assemble_cache
 
 
@@ -179,16 +177,12 @@ class PolygonShader(BasicUniform, ShaderModule):
 
     vs_out: _gl.out_t[VS_OUT] = field(default=_gl.out_t.default(), init=False)
 
+    shaders: EntryPolyFnGP = field(default_factory=tuple)
+
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
-            if self._inline_shaders:
-                self._assemble_cache = self._preamble(config) + self._header(config)
-                self._assemble_cache += compile_inline_shaders(
-                    tp.cast(EntryPolyFnGP, self._inline_shaders), lambda: self, config
-                )
-            else:
-                self._assemble_cache = self._preamble(config) + self._header(config)
-                # self._assemble_cache += compile_shader_module(self, config)
+            self._assemble_cache = self._preamble(config) + self._header(config)
+            self._assemble_cache += compile_mixed_shaders(self.shaders, lambda: self, config)
         return self._assemble_cache
 
 
@@ -205,73 +199,10 @@ class VideoPolygonShader(BasicUniform, ShaderModule):
         'uniform vec2 resolution;',
     ]
 
+    shaders: EntryPolyFnGP = field(default_factory=tuple)
+
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
-            if self._inline_shaders:
-                self._assemble_cache = self._preamble(config) + self._header(config)
-                self._assemble_cache += compile_inline_shaders(
-                    tp.cast(EntryPolyFnGP, self._inline_shaders), lambda: self, config
-                )
-            else:
-                self._assemble_cache = self._preamble(config) + self._header(config)
-                # self._assemble_cache += compile_shader_module(self, config)
-        return self._assemble_cache
-
-
-class GeomShader(BasicUniform, ShaderModule):
-
-    __kind__: tp.ClassVar[ShaderKind] = 'GeomShader'
-
-    __header__: tp.ClassVar[list[str]] = [
-        'uniform float time;',
-        'uniform float global_time;',
-        'uniform float local_duration;',
-        'uniform float fps;',
-        'uniform vec2 resolution;',
-        'uniform sampler2D texture0;',
-        'in VS_OUT { vec2 vUvs; float sprite_idx; } gs_in[];',
-        'out GS_OUT { vec2 vUvs; float sprite_idx;} gs_out;',
-    ]
-
-    texture0: _gl.uniform[_gl.sampler2D] = field(default=_gl.uniform.default(), init=False)
-
-    def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
-        # if not self._assemble_cache:
-        #     self._assemble_cache = self._preamble(config) + self._header(config) + compile_shader_module(self, config)
-        return self._assemble_cache
-
-
-@dataclass
-class VideoGeomShader(BasicUniform, ShaderModule):
-
-    __kind__: tp.ClassVar[ShaderKind] = 'GeomShader'
-
-    __header__: tp.ClassVar[list[str]] = [
-        'uniform float time;',
-        'uniform float global_time;',
-        'uniform float local_duration;',
-        'uniform float fps;',
-        'uniform vec2 resolution;',
-        'uniform sampler2D textureY;',
-        'uniform sampler2D textureCb;',
-        'uniform sampler2D textureCr;',
-        'in VS_OUT {',
-        '    vec2 vLumaUvs;',
-        '    vec2 vChromaUvs;',
-        '}',
-        'gs_in[];',
-        'out GS_OUT {',
-        '    vec2 vLumaUvs;',
-        '    vec2 vChromaUvs;',
-        '}',
-        'gs_out;',
-    ]
-
-    # textureY: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
-    # textureCb: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
-    # textureCr: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
-
-    def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
-        # if not self._assemble_cache:
-        #     self._assemble_cache = self._preamble(config) + self._header(config) + compile_shader_module(self, config)
+            self._assemble_cache = self._preamble(config) + self._header(config)
+            self._assemble_cache += compile_mixed_shaders(self.shaders, lambda: self, config)
         return self._assemble_cache

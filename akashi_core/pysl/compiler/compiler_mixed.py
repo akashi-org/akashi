@@ -14,8 +14,7 @@ import ast
 import sys
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderModule, ShaderKind, TEntryFn
-    from akashi_core.pysl._gl import TNarrowEntryFnOpaque
+    from akashi_core.pysl.shader import ShaderModule, ShaderKind, TEntryFn, TNarrowEntryFnOpaque
 
 
 def entry_point(kind: 'ShaderKind', func_body: str, self_postfix: str = '', next_postfix: str = '') -> str:
