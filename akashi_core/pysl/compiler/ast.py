@@ -473,6 +473,8 @@ def from_Call(node: ast.Call, ctx: CompilerContext) -> CallOut:
         return CallOut(node, args=[], content=content)
 
     func_str = compile_expr(node.func, ctx).content
+    if func_str in ctx.imported_func_symbol:
+        func_str = ctx.imported_func_symbol[func_str]
     args = [compile_expr(arg, ctx).content for arg in node.args]
     args_str = ', '.join(args)
 

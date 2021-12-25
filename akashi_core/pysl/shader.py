@@ -1,5 +1,5 @@
 from __future__ import annotations
-from . import compile_shader_module, compile_inline_shader, CompilerConfig
+from . import compile_shader_module, compile_inline_shaders, CompilerConfig
 from . import _gl
 
 from abc import abstractmethod, ABCMeta
@@ -104,7 +104,7 @@ class FragShader(BasicUniform, ShaderModule):
         if not self._assemble_cache:
             if self._inline_shaders:
                 self._assemble_cache = self._preamble(config) + self._header(config)
-                self._assemble_cache += compile_inline_shader(
+                self._assemble_cache += compile_inline_shaders(
                     tp.cast(EntryFragFnGP, self._inline_shaders), lambda: self, config
                 )
             else:
@@ -153,7 +153,7 @@ class VideoFragShader(BasicUniform, ShaderModule):
         if not self._assemble_cache:
             if self._inline_shaders:
                 self._assemble_cache = self._preamble(config) + self._header(config)
-                self._assemble_cache += compile_inline_shader(
+                self._assemble_cache += compile_inline_shaders(
                     tp.cast(EntryFragFnGP, self._inline_shaders), lambda: self, config
                 )
             else:
@@ -195,7 +195,7 @@ class PolygonShader(BasicUniform, ShaderModule):
         if not self._assemble_cache:
             if self._inline_shaders:
                 self._assemble_cache = self._preamble(config) + self._header(config)
-                self._assemble_cache += compile_inline_shader(
+                self._assemble_cache += compile_inline_shaders(
                     tp.cast(EntryPolyFnGP, self._inline_shaders), lambda: self, config
                 )
             else:
@@ -225,7 +225,7 @@ class VideoPolygonShader(BasicUniform, ShaderModule):
         if not self._assemble_cache:
             if self._inline_shaders:
                 self._assemble_cache = self._preamble(config) + self._header(config)
-                self._assemble_cache += compile_inline_shader(
+                self._assemble_cache += compile_inline_shaders(
                     tp.cast(EntryPolyFnGP, self._inline_shaders), lambda: self, config
                 )
             else:

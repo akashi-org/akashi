@@ -116,13 +116,16 @@ def collect_local_symbols(ctx: CompilerContext, deco_fn: tp.Callable) -> list[tp
             value = ctx.global_symbol[local_varname]
             if callable(value) and (_fn := unwrap_shader_func(value)):
                 if is_named_func(get_function_def(ast.parse(get_source(_fn))), ctx.global_symbol):
+                    # [TODO] really we need to insert a wrapped func?
                     imported_named_shader_fn.append(value)
+                    ctx.imported_func_symbol[local_varname] = mangled_func_name(ctx, _fn)
             elif isinstance(value, ModuleType):
                 for attr_name in resolve_module(local_varname, deco_fn):
                     wrap_fn = getattr(value, attr_name)
                     if inspect.isfunction(wrap_fn) and (inner_fn := unwrap_shader_func(wrap_fn)):
                         if is_named_func(get_function_def(ast.parse(get_source(inner_fn))), ctx.global_symbol):
                             imported_named_shader_fn.append(wrap_fn)
+                            ctx.imported_func_symbol[attr_name] = mangled_func_name(ctx, inner_fn)
 
     # variables which are referenced by deco_fn's closure
     for idx, freevar in enumerate(deco_fn.__code__.co_freevars):
@@ -131,6 +134,8 @@ def collect_local_symbols(ctx: CompilerContext, deco_fn: tp.Callable) -> list[tp
         if callable(value) and (_fn := unwrap_shader_func(value)):
             if is_named_func(get_function_def(ast.parse(get_source(_fn))), ctx.global_symbol):
                 imported_named_shader_fn.append(value)
+                # [TODO] really we need this?
+                ctx.imported_func_symbol[freevar] = mangled_func_name(ctx, _fn)
                 continue
 
         ctx.eval_local_symbol[freevar] = value
@@ -178,6 +183,18 @@ def get_mangle_prefix(ctx: CompilerContext, deco_fn: tp.Callable):
             return simple_mod_name
         case 'none':
             return ''
+
+
+def mangled_func_name(ctx: CompilerContext, deco_fn: tp.Callable):
+
+    if (_fn := unwrap_shader_func(deco_fn)):
+        deco_fn = _fn
+
+    prefix = get_mangle_prefix(ctx, deco_fn)
+    if len(prefix) == 0:
+        return deco_fn.__name__
+    else:
+        return prefix + '_' + deco_fn.__name__
 
 
 def compile_named_shader(
@@ -238,45 +255,6 @@ def parse_func(node: ast.FunctionDef, ctx: CompilerContext) -> _TGLSL:
     return "".join(body_strs)
 
 
-def compile_named_entry_shader(
-        fn: 'TNarrowEntryFnOpaque',
-        config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
-
-    ctx = CompilerContext(config)
-
-    deco_fn = unwrap_shader_func(tp.cast(tp.Callable, fn))
-    if not deco_fn:
-        raise CompileError('Named shader function must be decorated properly')
-
-    py_src = get_source(deco_fn)
-    root = ast.parse(py_src)
-
-    shader_kind = to_shader_kind(tp.cast(tuple, inspect.getfullargspec(fn).defaults)[0])
-    if not shader_kind:
-        raise CompileError('Named shader function must be decorated with its shader kind')
-    ctx.shader_kind = shader_kind
-    collect_global_symbols(ctx, deco_fn)
-    collect_argument_symbols(ctx, deco_fn)
-    collect_entry_argument_symbols(ctx, deco_fn, shader_kind)
-    imported_named_shader_fns = collect_local_symbols(ctx, deco_fn)
-
-    func_def = get_function_def(root)
-    if not is_named_func(func_def, ctx.global_symbol):
-        raise CompileError('Named shader function must be decorated properly')
-
-    stmt = parse_func(func_def, ctx)
-    out = entry_point(shader_kind, ''.join(stmt))
-
-    imported_strs = []
-    for imp_fn in imported_named_shader_fns:
-        imp_shader_kind = to_shader_kind(tp.cast(tuple, inspect.getfullargspec(imp_fn).defaults)[0])
-        if not can_import3(shader_kind, imp_shader_kind):
-            raise CompileError(f'Forbidden import {imp_shader_kind} from {shader_kind}')
-        imported_strs.append(compile_named_shader(imp_fn, ctx.config))
-
-    return "".join(imported_strs) + out
-
-
 def compile_named_entry_shaders(
         fns: tuple['TNarrowEntryFnOpaque', ...],
         config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
@@ -308,13 +286,14 @@ def compile_named_entry_shaders(
         ctx.eval_local_symbol = {}
         ctx.symbol = {}
         ctx.lambda_args = {}
+        ctx.imported_func_symbol = {}
 
         collect_global_symbols(ctx, deco_fn)
         collect_argument_symbols(ctx, deco_fn)
         collect_entry_argument_symbols(ctx, deco_fn, shader_kind)
         imported_named_shader_fns = collect_local_symbols(ctx, deco_fn)
         for imp_fn in imported_named_shader_fns:
-            imported_named_shader_fns_dict[get_mangle_prefix(ctx, imp_fn)] = imp_fn
+            imported_named_shader_fns_dict[mangled_func_name(ctx, imp_fn)] = imp_fn
 
         func_def = get_function_def(root)
         if not is_named_func(func_def, ctx.global_symbol):
@@ -334,3 +313,31 @@ def compile_named_entry_shaders(
         imported_strs.append(compile_named_shader(imp_fn, ctx.config))
 
     return "".join(imported_strs) + ''.join(stmts)
+
+
+def compile_named_entry_shader_partial(fn: 'TNarrowEntryFnOpaque', ctx: CompilerContext) -> tuple[_TGLSL, list[tp.Callable]]:
+
+    deco_fn = unwrap_shader_func(tp.cast(tp.Callable, fn))
+    if not deco_fn:
+        raise CompileError('Named shader function must be decorated properly')
+
+    py_src = get_source(deco_fn)
+    root = ast.parse(py_src)
+
+    shader_kind = to_shader_kind(tp.cast(tuple, inspect.getfullargspec(fn).defaults)[0])
+    if not shader_kind:
+        raise CompileError('Named shader function must be decorated with its shader kind')
+    ctx.shader_kind = shader_kind
+    collect_global_symbols(ctx, deco_fn)
+    collect_argument_symbols(ctx, deco_fn)
+    collect_entry_argument_symbols(ctx, deco_fn, shader_kind)
+    imported_named_shader_fns = collect_local_symbols(ctx, deco_fn)
+
+    func_def = get_function_def(root)
+    if not is_named_func(func_def, ctx.global_symbol):
+        raise CompileError('Named shader function must be decorated properly')
+
+    stmt = parse_func(func_def, ctx)
+    func_body = ''.join(stmt)
+
+    return (func_body, imported_named_shader_fns)

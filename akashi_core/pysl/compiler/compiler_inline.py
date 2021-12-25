@@ -6,10 +6,12 @@ import typing as tp
 from akashi_core.pysl import _gl
 from akashi_core.pysl._gl_inline import InlineExprKind
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
-from .ast import compile_stmt, compile_expr, compile_shader_staticmethod, from_annotation
-from .utils import can_import2
+from .ast import compile_stmt, compile_expr, from_annotation
+from .utils import can_import2, can_import3
 from .symbol import instance_symbol_analysis
 from .transformer import binop_transformer
+
+from . import compiler_named
 
 import inspect
 import re
@@ -202,7 +204,7 @@ def collect_argument_symbols(ctx: CompilerContext, fn: 'TEntryFn', kind: 'Shader
         ctx.symbol['pos'] = 'inout vec4'
 
 
-def compile_inline_shader(
+def compile_inline_shaders(
         fns: tuple['TEntryFn', ...],
         sh_mod_fn: tp.Callable[[], 'ShaderModule'],
         config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
@@ -213,6 +215,7 @@ def compile_inline_shader(
         return entry_point(kind, '')
 
     stmts = []
+    imported_named_shader_fns_dict = {}
 
     ctx = CompilerContext(config)
     # [TODO] maybe we should call this in the loop below
@@ -228,7 +231,8 @@ def compile_inline_shader(
 
         ctx.lambda_args = {}
         collect_argument_symbols(ctx, fn, kind)
-        collect_local_symbols(ctx, fn)
+        for imp_fn in compiler_named.collect_local_symbols(ctx, fn):
+            imported_named_shader_fns_dict[compiler_named.mangled_func_name(ctx, imp_fn)] = imp_fn
 
         for expr in exprs:
             stmt.append(parse_expr(expr, ctx))
@@ -239,10 +243,35 @@ def compile_inline_shader(
         stmts.insert(0, entry_point(kind, ''.join(stmt), self_postfix, next_postfix))
 
     imported_strs = []
-    for imp in ctx.imported_current.values():
-        if not can_import2(kind, imp[0]):
-            raise CompileError(f'Forbidden import {imp[0].__kind__} from {kind}')
-
-        imported_strs.append(compile_shader_staticmethod(imp[0], imp[1], True, ctx.config))
+    for imp_fn in imported_named_shader_fns_dict.values():
+        imp_shader_kind = compiler_named.to_shader_kind(tp.cast(tuple, inspect.getfullargspec(imp_fn).defaults)[0])
+        if not can_import3(kind, imp_shader_kind):
+            raise CompileError(f'Forbidden import {imp_shader_kind} from {kind}')
+        imported_strs.append(compiler_named.compile_named_shader(imp_fn, ctx.config))
 
     return "".join(imported_strs) + ''.join(stmts)
+
+
+def compile_inline_shader_partial(
+        fn: 'TEntryFn',
+        sh_mod_fn: tp.Callable[[], 'ShaderModule'],
+        ctx: CompilerContext) -> tuple[_TGLSL, list[tp.Callable]]:
+
+    kind = sh_mod_fn().__kind__
+
+    collect_global_symbols(ctx, fn)
+    collect_instance_symbols(ctx, sh_mod_fn)
+
+    expr_node = get_inline_source(fn, ctx)
+    exprs = split_exprs(expr_node)
+
+    collect_argument_symbols(ctx, fn, kind)
+    imported_named_shader_fns = compiler_named.collect_local_symbols(ctx, fn)
+
+    stmt = []
+    for expr in exprs:
+        stmt.append(parse_expr(expr, ctx))
+
+    func_body = ''.join(stmt)
+
+    return (func_body, imported_named_shader_fns)

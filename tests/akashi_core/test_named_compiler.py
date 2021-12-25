@@ -1,7 +1,6 @@
 import unittest
 from akashi_core.pysl import (
     compile_named_shader,
-    compile_named_entry_shader,
     compile_named_entry_shaders,
     CompileError,
     CompilerConfig
@@ -77,9 +76,10 @@ class TestBasic(unittest.TestCase):
         expected = ''.join([
             'int test_named_compiler_module_global_add(int a, int b){return (a) + (b);}',
             'int test_named_compiler_add(int a, int b){return (a) + (b);}',
-            'int test_named_compiler_assign_fn(int a){int c = add(a, 2);int d = module_global_add(90, 2);d = c = 89;c += (190) + (d);return c;}',
+            'int test_named_compiler_assign_fn(int a){int c = test_named_compiler_add(a, 2);int d = test_named_compiler_module_global_add(90, 2);d = c = 89;c += (190) + (d);return c;}',
         ])
 
+        self.maxDiff = None
         self.assertEqual(compile_named_shader(assign_fn, TEST_CONFIG), expected)
 
         @gl.fn('any')
@@ -97,8 +97,8 @@ class TestBasic(unittest.TestCase):
 
         expected = ''.join([
             'int compiler_fixtures_boost(int v){return (v) * (1000);}',
-            'int compiler_fixtures_boost_add(int a, int b){return (a) + (boost(b));}',
-            'int test_named_compiler_add(int a, int b){return boost_add(a, b);}'
+            'int compiler_fixtures_boost_add(int a, int b){return (a) + (compiler_fixtures_boost(b));}',
+            'int test_named_compiler_add(int a, int b){return compiler_fixtures_boost_add(a, b);}'
         ])
 
         self.assertEqual(compile_named_shader(add, TEST_CONFIG), expected)
@@ -152,9 +152,10 @@ class TestBasic(unittest.TestCase):
 
         expected = ''.join([
             'int test_named_compiler_add(int a, int b){return (a) + (b);}',
-            'void test_named_compiler_vec_attr(inout vec4 _fragColor){_fragColor.x = add(12, int(_fragColor.x));}',
+            'void test_named_compiler_vec_attr(inout vec4 _fragColor){_fragColor.x = test_named_compiler_add(12, int(_fragColor.x));}',
         ])
 
+        self.maxDiff = None
         self.assertEqual(compile_named_shader(vec_attr, TEST_CONFIG), expected)
 
         @gl.fn('frag')
@@ -370,7 +371,7 @@ class TestBuffer(unittest.TestCase):
             'void frag_main(inout vec4 color){color.x = (time) * (12);}',
         ])
 
-        self.assertEqual(compile_named_entry_shader(vec_attr, TEST_CONFIG), expected)
+        self.assertEqual(compile_named_entry_shaders((vec_attr,), TEST_CONFIG), expected)
 
     def test_uniform_import(self):
 
@@ -387,13 +388,12 @@ class TestBuffer(unittest.TestCase):
         expected = ''.join([
             'int test_named_compiler_module_global_add(int a, int b){return (a) + (b);}',
             'int compiler_fixtures_boost(int v){return (v) * (1000);}',
-            'int compiler_fixtures_boost_add(int a, int b){return (a) + (boost(b));}',
-            'void frag_main(inout vec4 color){color.x = ((time) * (module_global_add(12, 1))) * (boost_add(20, 12));}',
+            'int compiler_fixtures_boost_add(int a, int b){return (a) + (compiler_fixtures_boost(b));}',
+            'void frag_main(inout vec4 color){color.x = ((time) * (test_named_compiler_module_global_add(12, 1))) * (compiler_fixtures_boost_add(20, 12));}',
         ])
 
         self.maxDiff = None
-
-        self.assertEqual(compile_named_entry_shader(vec_attr, TEST_CONFIG), expected)
+        self.assertEqual(compile_named_entry_shaders((vec_attr, ), TEST_CONFIG), expected)
 
     def test_forbidden_import(self):
 
@@ -406,7 +406,7 @@ class TestBuffer(unittest.TestCase):
             color.value.x = local_add(1, 2)
 
         with self.assertRaisesRegex(CompileError, 'Forbidden import PolygonShader from FragShader') as _:
-            compile_named_entry_shader(vec_attr, TEST_CONFIG)
+            compile_named_entry_shaders((vec_attr, ), TEST_CONFIG)
 
 
 class TestEntry(unittest.TestCase):
@@ -421,7 +421,7 @@ class TestEntry(unittest.TestCase):
             'void frag_main(inout vec4 color){color.x = (time) * (12);}',
         ])
 
-        self.assertEqual(compile_named_entry_shader(vec_attr, TEST_CONFIG), expected)
+        self.assertEqual(compile_named_entry_shaders((vec_attr,), TEST_CONFIG), expected)
 
     def test_chain(self):
 
