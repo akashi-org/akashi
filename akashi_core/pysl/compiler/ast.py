@@ -437,14 +437,18 @@ class AttributeOut(exprOut):
     node: ast.Attribute
     content: str
 
-# [TODO] needs refactoring
-
 
 def from_Attribute(node: ast.Attribute, ctx: CompilerContext) -> AttributeOut:
 
     value_str = compile_expr(node.value, ctx).content
     attr_str = str(node.attr)
 
+    # ignore buffer variable name
+    if len(ctx.buffers) and value_str == ctx.buffers[0][0]:
+        content = f'{attr_str}'
+        return AttributeOut(node, content)
+
+    # local
     # lambda params
     if value_str in ctx.lambda_args:
         resolved_str = ctx.lambda_args[value_str]
@@ -453,45 +457,26 @@ def from_Attribute(node: ast.Attribute, ctx: CompilerContext) -> AttributeOut:
         content = f'{resolved_str}{attr_str}'
         return AttributeOut(node, content)
 
-    # module global
+    # wrapped type symbol
+    if value_str in ctx.local_symbol:
+        value_tpname: str = ctx.local_symbol[value_str]
+        if compiler_utils.is_wrapped_type(value_tpname):
+            if attr_str == 'value':
+                content = f'{value_str}'
+                return AttributeOut(node, content)
+
+    # global
     if value_str in ctx.global_symbol:
 
+        # ignore module variable
         if inspect.ismodule(ctx.global_symbol[value_str]):
             content = f'{attr_str}'
             return AttributeOut(node, content)
 
+        # ignore gl variable
         if value_str == 'gl' and hasattr(_gl, attr_str):
             content = f'{attr_str}'
             return AttributeOut(node, content)
-
-    # method/class global
-    if value_str in ctx.symbol:
-        value_tpname: str = ctx.symbol[value_str]
-        if compiler_utils.has_params_qualifier(value_tpname):
-            # perhaps this cond always holds
-            if attr_str == 'value':
-                attr_str = ''
-                content = f'{value_str}'
-                return AttributeOut(node, content)
-
-    if len(ctx.buffers) and value_str == ctx.buffers[0][0]:
-        content = f'{attr_str}'
-        return AttributeOut(node, content)
-
-    if value_str in ctx.cls_symbol:
-        value_tpname: str = ctx.cls_symbol[value_str][0]
-        if value_tpname.startswith('uniform'):
-            if attr_str == 'value':
-                content = f'{value_str}'
-                return AttributeOut(node, content)
-        elif value_tpname.startswith('out_t'):
-            if attr_str == 'value':
-                content = f'{value_str}'
-                return AttributeOut(node, content)
-        elif value_tpname.startswith('in_t'):
-            if attr_str == 'value':
-                content = f'{value_str}'
-                return AttributeOut(node, content)
 
     content = f'{value_str}.{attr_str}'
     return AttributeOut(node, content)

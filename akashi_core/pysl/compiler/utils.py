@@ -115,6 +115,17 @@ def has_params_qualifier(tp_name: str) -> bool:
     return tp_name.startswith('in ') or tp_name.startswith('out ') or tp_name.startswith('inout ')
 
 
+def is_wrapped_type(tp_name: str) -> bool:
+    return (
+        tp_name.startswith('in ') or
+        tp_name.startswith('out ') or
+        tp_name.startswith('inout ') or
+        tp_name.startswith('in_t') or
+        tp_name.startswith('out_t') or
+        tp_name.startswith('uniform')
+    )
+
+
 def get_stmt_indent(node: ast.AST, ctx: CompilerContext) -> str:
     return (node.col_offset - ctx.top_indent) * ' ' if ctx.config['pretty_compile'] else ''
 

@@ -6,7 +6,7 @@ from akashi_core.pysl._gl_inline import InlineExprKind
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
 from .ast import compile_expr, from_annotation
 from .utils import can_import3
-from .symbol import instance_symbol_analysis
+from .symbol import buffer_symbol_analysis
 
 from . import compiler_named
 
@@ -176,7 +176,7 @@ def collect_global_symbols(ctx: CompilerContext, fn: 'TEntryFn'):
 # Used for argument resolution
 def collect_instance_symbols(ctx: CompilerContext, sh_mod_fn: tp.Callable[[], 'ShaderModule']):
 
-    instance_symbol_analysis(sh_mod_fn(), ctx)
+    buffer_symbol_analysis(sh_mod_fn(), ctx)
 
 
 def collect_local_symbols(ctx: CompilerContext, fn: 'TEntryFn'):
@@ -193,11 +193,11 @@ def collect_argument_symbols(ctx: CompilerContext, fn: 'TEntryFn', kind: 'Shader
     if kind == 'FragShader':
         if var_arg != 'color':
             ctx.lambda_args[var_arg] = 'color'
-        ctx.symbol['color'] = 'inout vec4'
+        ctx.local_symbol['color'] = 'inout vec4'
     elif kind == 'PolygonShader':
         if var_arg != 'pos':
             ctx.lambda_args[var_arg] = 'pos'
-        ctx.symbol['pos'] = 'inout vec4'
+        ctx.local_symbol['pos'] = 'inout vec4'
 
 
 def compile_inline_shaders(

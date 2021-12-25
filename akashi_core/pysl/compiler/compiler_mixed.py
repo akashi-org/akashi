@@ -46,9 +46,8 @@ def compile_mixed_shaders(
         stmt = ''
 
         ctx.global_symbol = {}
-        ctx.cls_symbol = {}
+        ctx.local_symbol = {}
         ctx.eval_local_symbol = {}
-        ctx.symbol = {}
         ctx.lambda_args = {}
         ctx.imported_func_symbol = {}
 

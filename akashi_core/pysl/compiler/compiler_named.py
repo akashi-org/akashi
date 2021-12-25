@@ -85,9 +85,9 @@ def collect_argument_symbols(ctx: CompilerContext, deco_fn: tp.Callable):
             attr_type = getattr(buffer_type, attr_name)
             if isinstance(attr_type, tp._GenericAlias):  # type: ignore
                 basic_tpname: str = str(attr_type.__origin__.__name__)  # type:ignore
-                ctx.cls_symbol[attr_name] = (basic_tpname, attr_type)
+                ctx.local_symbol[attr_name] = basic_tpname
             else:
-                ctx.cls_symbol[attr_name] = (str(type(attr_type).__name__), attr_type)
+                ctx.local_symbol[attr_name] = str(type(attr_type).__name__)
 
 
 def collect_entry_argument_symbols(ctx: CompilerContext, deco_fn: tp.Callable, kind: 'ShaderKind'):
@@ -248,7 +248,7 @@ def parse_func_all(node: ast.FunctionDef, ctx: CompilerContext, func_name: str) 
     args_temp = []
     for idx, arg in enumerate(args):
         arg_tpname = type_transformer(arg.content, ctx, arg.node)
-        ctx.symbol[arg.node.arg] = arg_tpname
+        ctx.local_symbol[arg.node.arg] = arg_tpname
         args_temp.append(f'{arg_tpname} {arg.node.arg}')
 
     args_str = ', '.join(args_temp)
@@ -269,7 +269,7 @@ def parse_func_body(node: ast.FunctionDef, ctx: CompilerContext) -> _TGLSL:
     args = from_arguments(node.args, ctx, 1 if is_method else 0)
     for idx, arg in enumerate(args):
         arg_tpname = type_transformer(arg.content, ctx, arg.node)
-        ctx.symbol[arg.node.arg] = arg_tpname
+        ctx.local_symbol[arg.node.arg] = arg_tpname
 
     body_strs = []
     for stmt in node.body:
@@ -305,9 +305,8 @@ def compile_named_entry_shaders(
         root = ast.parse(py_src)
 
         ctx.global_symbol = {}
-        ctx.cls_symbol = {}
+        ctx.local_symbol = {}
         ctx.eval_local_symbol = {}
-        ctx.symbol = {}
         ctx.lambda_args = {}
         ctx.imported_func_symbol = {}
 
