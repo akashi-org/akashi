@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from akashi_core.pysl import _gl
-from .items import CompileError, CompilerContext
+from .items import CompileError, CompilerContext, CompilerConfig
 from . import utils as compiler_utils
 from . import transformer
 from . import evaluator
@@ -709,3 +709,20 @@ def compile_expr(node: ast.expr, ctx: CompilerContext) -> exprOut:
         raise CompileError(f'The expression `{type(node)}` is forbidden')
 
     raise CompileError(f'Not implemented expression `{type(node)}` found')
+
+
+def is_named_func(func_def: ast.FunctionDef, global_symbol: dict) -> bool:
+
+    ctx = CompilerContext(CompilerConfig.default())
+    ctx.global_symbol = global_symbol
+
+    if len(func_def.decorator_list) == 0:
+        return False
+
+    for deco in func_def.decorator_list:
+        deco_node = compile_expr(deco, ctx)
+        deco_tpname = transformer.type_transformer(deco_node.content, ctx, deco_node.node)
+        if deco_tpname in ['fn', 'entry_frag', 'entry_poly']:
+            return True
+
+    return False

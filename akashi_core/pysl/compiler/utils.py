@@ -21,14 +21,6 @@ def get_source(obj) -> str:
     return '\n'.join([ln[top_indent:] for ln in lines])
 
 
-def unwrap_func(fn: tp.Callable) -> tp.Callable:
-    ''' unwrap func decorated with @gl.func, @gl.method '''
-    if hasattr(fn, '__closure__') and fn.__closure__ and len(fn.__closure__) > 0:
-        return fn.__closure__[0].cell_contents
-    else:
-        return fn
-
-
 def get_function_def(root: ast.AST) -> ast.FunctionDef:
 
     ctx = {'node': None}
@@ -49,54 +41,28 @@ def get_function_def(root: ast.AST) -> ast.FunctionDef:
         return tp.cast(ast.FunctionDef, ctx['node'])
 
 
-def get_class_def(root: ast.AST) -> ast.ClassDef:
+def resolve_module(mod_name: str, deco_fn: tp.Callable) -> list[str]:
 
-    ctx = {'node': None}
+    attr_names = []
 
     class Visitor(ast.NodeVisitor):
+        def visit_Attribute(self, node: ast.Attribute):
+            if isinstance(node.value, ast.Name):
+                value_str = str(node.value.id)
+                if value_str == mod_name:
+                    attr_names.append(str(node.attr))
 
-        def __init__(self, _ctx: dict):
-            self._ctx = _ctx
+            super().visit(node.value)
 
-        def visit_ClassDef(self, node: ast.ClassDef):
-            self._ctx['node'] = node
+    py_src = get_source(deco_fn)
+    root = ast.parse(py_src)
 
-    Visitor(ctx).visit(root)
+    Visitor().visit(root)
 
-    if not ctx['node']:
-        raise CompileError('ast.ClassDef not found')
-    else:
-        return tp.cast(ast.ClassDef, ctx['node'])
-
-
-def mangle_shader_func(shmod_name: str, func_name: str) -> str:
-    if func_name in ['frag_main', 'main', 'poly_main']:
-        return func_name
-    else:
-        return shmod_name + '_' + func_name
+    return attr_names
 
 
-def can_import(from_mod: tp.Type['ShaderModule'], imp_mod: tp.Type['ShaderModule']) -> bool:
-
-    if imp_mod.__kind__ == 'AnyShader':
-        return True
-    elif from_mod.__kind__ == imp_mod.__kind__:
-        return True
-    else:
-        return False
-
-
-def can_import2(kind: 'ShaderKind', imp_mod: tp.Type['ShaderModule']) -> bool:
-
-    if kind == 'AnyShader':
-        return True
-    elif kind == imp_mod.__kind__:
-        return True
-    else:
-        return False
-
-
-def can_import3(kind: 'ShaderKind', imp_kind: 'ShaderKind') -> bool:
+def can_import(kind: 'ShaderKind', imp_kind: 'ShaderKind') -> bool:
 
     if imp_kind == 'AnyShader':
         return True
@@ -104,11 +70,6 @@ def can_import3(kind: 'ShaderKind', imp_kind: 'ShaderKind') -> bool:
         return True
     else:
         return False
-
-
-def is_shader_module(obj: tp.Any) -> bool:
-    # [TODO] issubclass()?
-    return hasattr(obj, '__glsl_version__')
 
 
 def has_params_qualifier(tp_name: str) -> bool:
@@ -128,6 +89,55 @@ def is_wrapped_type(tp_name: str) -> bool:
 
 def get_stmt_indent(node: ast.AST, ctx: CompilerContext) -> str:
     return (node.col_offset - ctx.top_indent) * ' ' if ctx.config['pretty_compile'] else ''
+
+
+def entry_point(kind: 'ShaderKind', func_body: str, self_postfix: str = '', next_postfix: str = '') -> str:
+
+    if kind == 'FragShader':
+        chain_str = '' if len(next_postfix) == 0 else f'frag_main{next_postfix}(color);'
+        return f'void frag_main{self_postfix}(inout vec4 color)' + '{' + func_body + chain_str + '}'
+    elif kind == 'PolygonShader':
+        chain_str = '' if len(next_postfix) == 0 else f'poly_main{next_postfix}(pos);'
+        return f'void poly_main{self_postfix}(inout vec3 pos)' + '{' + func_body + chain_str + '}'
+    else:
+        raise NotImplementedError()
+
+
+def unwrap_shader_func(fn: tp.Callable) -> tp.Callable | None:
+
+    if not(hasattr(fn, '__closure__') and fn.__closure__ and len(fn.__closure__) > 0):
+        return None
+    return fn.__closure__[0].cell_contents
+
+
+def get_mangle_prefix(ctx: CompilerContext, deco_fn: tp.Callable):
+
+    full_mod_name = deco_fn.__module__
+    simple_mod_name = str(full_mod_name).split('.')[-1]
+
+    local_name = ''
+    if deco_fn.__name__ != deco_fn.__qualname__:
+        local_name = '_' + deco_fn.__qualname__.replace('.<locals>', '').replace('.', '_')
+
+    match ctx.config['mangle_mode']:
+        case 'hard':
+            return simple_mod_name + local_name
+        case 'soft':
+            return simple_mod_name
+        case 'none':
+            return ''
+
+
+def mangled_func_name(ctx: CompilerContext, deco_fn: tp.Callable, unwrap: bool = True):
+
+    if unwrap and (_fn := unwrap_shader_func(deco_fn)):
+        deco_fn = _fn
+
+    prefix = get_mangle_prefix(ctx, deco_fn)
+    if len(prefix) == 0:
+        return deco_fn.__name__
+    else:
+        return prefix + '_' + deco_fn.__name__
 
 
 def visit_all(node: ast.AST):

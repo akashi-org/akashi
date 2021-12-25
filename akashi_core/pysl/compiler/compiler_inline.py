@@ -5,10 +5,11 @@ import typing as tp
 from akashi_core.pysl._gl_inline import InlineExprKind
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
 from .ast import compile_expr, from_annotation
-from .utils import can_import3
-from .symbol import buffer_symbol_analysis
+from .utils import can_import, entry_point, mangled_func_name
+from .symbol import collect_global_symbols, collect_buffer_symbols, collect_local_symbols
 
 from . import compiler_named
+
 
 import inspect
 import ast
@@ -20,18 +21,6 @@ if tp.TYPE_CHECKING:
 
 class InlineCompileDetectError(CompileError):
     pass
-
-
-def entry_point(kind: 'ShaderKind', func_body: str, self_postfix: str = '', next_postfix: str = '') -> str:
-
-    if kind == 'FragShader':
-        chain_str = '' if len(next_postfix) == 0 else f'frag_main{next_postfix}(color);'
-        return f'void frag_main{self_postfix}(inout vec4 color)' + '{' + func_body + chain_str + '}'
-    elif kind == 'PolygonShader':
-        chain_str = '' if len(next_postfix) == 0 else f'poly_main{next_postfix}(pos);'
-        return f'void poly_main{self_postfix}(inout vec3 pos)' + '{' + func_body + chain_str + '}'
-    else:
-        raise NotImplementedError()
 
 
 def get_inline_source(fn: 'TEntryFn', ctx: CompilerContext) -> ast.expr:
@@ -168,24 +157,6 @@ def parse_gl_let(let_node: ast.Call, ctx: CompilerContext) -> str:
     return f'{type_str} {lhs} = {rhs};'
 
 
-def collect_global_symbols(ctx: CompilerContext, fn: 'TEntryFn'):
-
-    ctx.global_symbol = vars(sys.modules[fn.__module__])
-
-
-# Used for argument resolution
-def collect_instance_symbols(ctx: CompilerContext, sh_mod_fn: tp.Callable[[], 'ShaderModule']):
-
-    buffer_symbol_analysis(sh_mod_fn(), ctx)
-
-
-def collect_local_symbols(ctx: CompilerContext, fn: 'TEntryFn'):
-
-    for idx, freevar in enumerate(fn.__code__.co_freevars):
-        value = fn.__closure__[idx].cell_contents
-        ctx.eval_local_symbol[freevar] = value
-
-
 def collect_argument_symbols(ctx: CompilerContext, fn: 'TEntryFn', kind: 'ShaderKind'):
 
     buf_arg, var_arg = inspect.getfullargspec(fn).args
@@ -216,7 +187,7 @@ def compile_inline_shaders(
     ctx = CompilerContext(config)
     # [TODO] maybe we should call this in the loop below
     collect_global_symbols(ctx, fns[0])
-    collect_instance_symbols(ctx, sh_mod_fn)
+    collect_buffer_symbols(ctx, sh_mod_fn())
 
     for idx, fn in enumerate(fns):
 
@@ -227,8 +198,8 @@ def compile_inline_shaders(
 
         ctx.lambda_args = {}
         collect_argument_symbols(ctx, fn, kind)
-        for imp_fn in compiler_named.collect_local_symbols(ctx, fn):
-            imported_named_shader_fns_dict[compiler_named.mangled_func_name(ctx, imp_fn)] = imp_fn
+        for imp_fn in collect_local_symbols(ctx, fn):
+            imported_named_shader_fns_dict[mangled_func_name(ctx, imp_fn)] = imp_fn
 
         for expr in exprs:
             stmt.append(parse_expr(expr, ctx))
@@ -241,7 +212,7 @@ def compile_inline_shaders(
     imported_strs = []
     for imp_fn in imported_named_shader_fns_dict.values():
         imp_shader_kind = compiler_named.to_shader_kind(tp.cast(tuple, inspect.getfullargspec(imp_fn).defaults)[0])
-        if not can_import3(kind, imp_shader_kind):
+        if not can_import(kind, imp_shader_kind):
             raise CompileError(f'Forbidden import {imp_shader_kind} from {kind}')
         imported_strs.append(compiler_named.compile_named_shader(imp_fn, ctx.config))
 
@@ -256,13 +227,13 @@ def compile_inline_shader_partial(
     kind = sh_mod_fn().__kind__
 
     collect_global_symbols(ctx, fn)
-    collect_instance_symbols(ctx, sh_mod_fn)
+    collect_buffer_symbols(ctx, sh_mod_fn())
 
     expr_node = get_inline_source(fn, ctx)
     exprs = split_exprs(expr_node)
 
     collect_argument_symbols(ctx, fn, kind)
-    imported_named_shader_fns = compiler_named.collect_local_symbols(ctx, fn)
+    imported_named_shader_fns = collect_local_symbols(ctx, fn)
 
     stmt = []
     for expr in exprs:
