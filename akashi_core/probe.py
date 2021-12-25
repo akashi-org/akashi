@@ -2,7 +2,6 @@ import ctypes
 from os import path
 import os
 import typing as tp
-from dataclasses import dataclass
 
 from akashi_core.time import sec
 

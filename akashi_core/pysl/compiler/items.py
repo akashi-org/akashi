@@ -40,9 +40,6 @@ class CompilerContext:
     global_symbol: dict = field(default_factory=dict)
     eval_local_symbol: dict = field(default_factory=dict)
     lambda_args: dict = field(default_factory=dict)
-    imported: set = field(default_factory=set)
-    imported_current: dict = field(default_factory=dict)
-    on_import_resolution: bool = False
     top_indent: int = field(default=0, init=False)
     shmod_name: str = field(default='', init=False)
     shmod_inst: tp.Optional['ShaderModule'] = field(default=None, init=False)

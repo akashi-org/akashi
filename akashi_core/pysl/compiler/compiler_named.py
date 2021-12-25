@@ -5,7 +5,6 @@ from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
 from .utils import get_source, get_function_def, can_import3, has_params_qualifier
 from .transformer import type_transformer, body_transformer
 from .ast import compile_expr, compile_stmt, from_arguments
-from .symbol import global_symbol_analysis, instance_symbol_analysis
 
 from types import ModuleType
 
@@ -15,7 +14,7 @@ import ast
 import sys
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderKind, ShaderModule, TEntryFn, TNarrowEntryFnOpaque
+    from akashi_core.pysl.shader import ShaderKind, TNarrowEntryFnOpaque
 
 
 def entry_point(kind: 'ShaderKind', func_body: str, self_postfix: str = '', next_postfix: str = '') -> str:
@@ -341,7 +340,8 @@ def compile_named_entry_shaders(
     return "".join(imported_strs) + ''.join(stmts)
 
 
-def compile_named_entry_shader_partial(fn: 'TNarrowEntryFnOpaque', ctx: CompilerContext) -> tuple[_TGLSL, list[tp.Callable]]:
+def compile_named_entry_shader_partial(
+        fn: 'TNarrowEntryFnOpaque', ctx: CompilerContext) -> tuple[_TGLSL, list[tp.Callable]]:
 
     deco_fn = unwrap_shader_func(tp.cast(tp.Callable, fn))
     if not deco_fn:

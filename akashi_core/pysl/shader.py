@@ -2,7 +2,7 @@ from __future__ import annotations
 from . import compile_mixed_shaders, CompilerConfig
 from . import _gl
 
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta
 import typing as tp
 from dataclasses import dataclass, field
 

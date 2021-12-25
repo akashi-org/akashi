@@ -2,10 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 import typing as tp
-from abc import abstractmethod, ABCMeta
 
-from akashi_core.elem.context import _GlobalKronContext as gctx
-from akashi_core.time import sec
 from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
 from akashi_core.pysl import FragShader, PolygonShader

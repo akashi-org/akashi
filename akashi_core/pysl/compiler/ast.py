@@ -2,21 +2,16 @@
 from __future__ import annotations
 
 from akashi_core.pysl import _gl
-from .items import CompileError, CompilerConfig, CompilerContext, _TGLSL
+from .items import CompileError, CompilerContext
 from . import utils as compiler_utils
 from . import transformer
 from . import evaluator
-from .symbol import global_symbol_analysis, class_symbol_analysis
 
-from typing import Callable, Protocol, cast, Type, Union, TypeVar, Any, Optional, TypedDict
 import typing as tp
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import inspect
 import ast
-import pydoc
-
-if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderModule
+# import pydoc
 
 
 @dataclass
@@ -54,24 +49,7 @@ class ClassDefOut(stmtOut):
 
 def from_ClassDef(node: ast.ClassDef, ctx: CompilerContext) -> ClassDefOut:
 
-    body_strs = []
-    for stmt in node.body:
-        if isinstance(stmt, ast.FunctionDef):
-            out = from_FunctionDef(stmt, ctx, node.name)
-            if out.is_shader_func:
-                body_strs.append(out.content)
-            ctx.imported_current.clear()
-
-    body_joiner = '\n\n' if ctx.config['pretty_compile'] else ''
-    body_str = body_joiner.join(body_strs)
-
-    content = ''
-    if body_str == '...':
-        content = ''
-    else:
-        content = body_str
-
-    return ClassDefOut(node, content)
+    raise CompileError('from_ClassDef is not implemented yet')
 
 
 @dataclass
@@ -478,25 +456,13 @@ def from_Attribute(node: ast.Attribute, ctx: CompilerContext) -> AttributeOut:
     # module global
     if value_str in ctx.global_symbol:
 
-        # [TODO] maybe we need to refactor these lines
         if inspect.ismodule(ctx.global_symbol[value_str]):
-            if (m := getattr(ctx.global_symbol[value_str], attr_str)) and compiler_utils.is_shader_module(m):
-                ctx.global_symbol[attr_str] = m
             content = f'{attr_str}'
             return AttributeOut(node, content)
 
-        skip_global_resolution = not(ctx.on_import_resolution) and value_str == ctx.shmod_name
-        if not(skip_global_resolution) and compiler_utils.is_shader_module(ctx.global_symbol[value_str]):
-            shader_func = getattr(ctx.global_symbol[value_str], attr_str)
-            if shader_func not in ctx.imported:
-                ctx.imported.add(shader_func)
-                ctx.imported_current[shader_func] = (ctx.global_symbol[value_str], shader_func)
-            content = compiler_utils.mangle_shader_func(value_str, attr_str)
+        if value_str == 'gl' and hasattr(_gl, attr_str):
+            content = f'{attr_str}'
             return AttributeOut(node, content)
-        elif value_str == 'gl':
-            if hasattr(_gl, attr_str):
-                content = f'{attr_str}'
-                return AttributeOut(node, content)
 
     # method/class global
     if value_str in ctx.symbol:
@@ -507,13 +473,7 @@ def from_Attribute(node: ast.Attribute, ctx: CompilerContext) -> AttributeOut:
                 attr_str = ''
                 content = f'{value_str}'
                 return AttributeOut(node, content)
-    if value_str == 'self':
-        if attr_str in ctx.cls_symbol and ctx.cls_symbol[attr_str][0] == 'instancemethod' and ctx.shmod_name:
-            content = compiler_utils.mangle_shader_func(ctx.shmod_name, attr_str)
-            return AttributeOut(node, content)
-        else:
-            content = f'{attr_str}'
-            return AttributeOut(node, content)
+
     if len(ctx.buffers) and value_str == ctx.buffers[0][0]:
         content = f'{attr_str}'
         return AttributeOut(node, content)
@@ -536,11 +496,6 @@ def from_Attribute(node: ast.Attribute, ctx: CompilerContext) -> AttributeOut:
             if attr_str == 'value':
                 content = f'{value_str}'
                 return AttributeOut(node, content)
-
-    # [TODO] change this impl later for symbol resolution based one
-    if ctx.shmod_name and value_str == ctx.shmod_name:
-        content = compiler_utils.mangle_shader_func(value_str, attr_str)
-        return AttributeOut(node, content)
 
     content = f'{value_str}.{attr_str}'
     return AttributeOut(node, content)
@@ -648,7 +603,7 @@ def from_arg(node: ast.arg, ctx: CompilerContext) -> argOut:
 ''' Others '''
 
 
-def from_annotation(node: Union[ast.Name, ast.Constant, ast.Attribute, ast.expr], ctx: CompilerContext) -> str:
+def from_annotation(node: tp.Union[ast.Name, ast.Constant, ast.Attribute, ast.expr], ctx: CompilerContext) -> str:
     tp_name: str = ''
     if isinstance(node, ast.Name):
         tp_name = from_Name(node, ctx).content

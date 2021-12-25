@@ -5,7 +5,6 @@ from .items import CompilerContext
 
 import typing as tp
 import inspect
-import ast
 import sys
 
 if tp.TYPE_CHECKING:

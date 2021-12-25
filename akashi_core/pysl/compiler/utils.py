@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .items import CompilerConfig, CompileError, CompilerContext
+from .items import CompileError, CompilerContext
 
 import typing as tp
 import inspect

@@ -1,8 +1,6 @@
-import typing as tp
 import sys
 import re
 import os
-from .config import AKConf
 
 
 def version_check() -> tuple[bool, str]:

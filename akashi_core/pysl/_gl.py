@@ -21,14 +21,13 @@ from typing import (
     ParamSpec,
     Literal,
     Callable,
-    TYPE_CHECKING,
-    Concatenate
+    TYPE_CHECKING
 )
 from ._gl_inline import expr, let, assign
 from ._gl_inline import eval
 
 if TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderModule, EntryFragFn, EntryPolyFn, TEntryFnOpaque
+    from akashi_core.pysl.shader import EntryFragFn, EntryPolyFn, TEntryFnOpaque
 
 
 _T = TypeVar('_T')

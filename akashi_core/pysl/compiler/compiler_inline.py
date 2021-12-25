@@ -1,20 +1,16 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
-from dataclasses import dataclass
 import typing as tp
 
-from akashi_core.pysl import _gl
 from akashi_core.pysl._gl_inline import InlineExprKind
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
-from .ast import compile_stmt, compile_expr, from_annotation
-from .utils import can_import2, can_import3
+from .ast import compile_expr, from_annotation
+from .utils import can_import3
 from .symbol import instance_symbol_analysis
-from .transformer import binop_transformer
 
 from . import compiler_named
 
 import inspect
-import re
 import ast
 import sys
 

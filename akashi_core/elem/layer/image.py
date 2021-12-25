@@ -2,11 +2,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import typing as tp
-from abc import abstractmethod, ABCMeta
-
-from akashi_core.elem.context import _GlobalKronContext as gctx
-from akashi_core.time import sec
-from akashi_core.pysl import FragShader, PolygonShader
 
 from .base import (
     FittableDurationTrait,
@@ -18,9 +13,6 @@ from .base import (
     LayerTrait
 )
 from .base import peek_entry, register_entry
-
-if tp.TYPE_CHECKING:
-    from akashi_core.elem.atom import AtomHandle
 
 
 @dataclass

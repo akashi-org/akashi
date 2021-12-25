@@ -1,15 +1,13 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
 from dataclasses import dataclass
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta
 import typing as tp
-from typing import overload
 
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.elem.uuid import UUID, gen_uuid
 from akashi_core.time import sec
 from akashi_core.pysl import FragShader, PolygonShader
-from akashi_core.pysl import EntryFragFn, EntryPolyFn
 
 if tp.TYPE_CHECKING:
     from akashi_core.elem.atom import AtomHandle

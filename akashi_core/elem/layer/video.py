@@ -2,13 +2,9 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import typing as tp
-from typing import overload
-from abc import abstractmethod, ABCMeta
 
-from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.time import sec
 from akashi_core.pysl import VideoFragShader, VideoPolygonShader
-from akashi_core.pysl.shader import EntryFragFn, EntryPolyFn
 
 from .base import PositionField, PositionTrait, LayerField, LayerTrait
 from .base import peek_entry, register_entry

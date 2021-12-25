@@ -1,6 +1,5 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
-from dataclasses import dataclass
 import typing as tp
 
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
@@ -9,9 +8,6 @@ from .compiler_named import compile_named_shader, to_shader_kind, compile_named_
 from .compiler_inline import compile_inline_shader_partial
 
 import inspect
-import re
-import ast
-import sys
 
 if tp.TYPE_CHECKING:
     from akashi_core.pysl.shader import ShaderModule, ShaderKind, TEntryFn, TNarrowEntryFnOpaque
