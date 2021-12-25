@@ -41,11 +41,7 @@ class CompilerContext:
     eval_local_symbol: dict = field(default_factory=dict)
     lambda_args: dict = field(default_factory=dict)
     top_indent: int = field(default=0, init=False)
-    shmod_name: str = field(default='', init=False)
-    shmod_inst: tp.Optional['ShaderModule'] = field(default=None, init=False)
-    shmod_klass: tp.Optional[tp.Type['ShaderModule']] = field(default=None, init=False)
 
     # named shader
-    shader_kind: 'ShaderKind' = 'AnyShader'
     buffers: list = field(default_factory=list[tuple])
     imported_func_symbol: dict = field(default_factory=dict)

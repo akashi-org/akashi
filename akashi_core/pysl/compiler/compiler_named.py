@@ -211,7 +211,6 @@ def compile_named_shader(
     shader_kind = to_shader_kind(tp.cast(tuple, inspect.getfullargspec(fn).defaults)[0])
     if not shader_kind:
         raise CompileError('Named shader function must be decorated with its shader kind')
-    ctx.shader_kind = shader_kind
     collect_global_symbols(ctx, deco_fn)
     collect_argument_symbols(ctx, deco_fn)
     imported_named_shader_fns = collect_local_symbols(ctx, deco_fn)
@@ -292,7 +291,6 @@ def compile_named_entry_shaders(
         raise CompileError('Named shader function must be decorated with its shader kind')
 
     ctx = CompilerContext(config)
-    ctx.shader_kind = shader_kind
 
     stmts = []
     imported_named_shader_fns_dict = {}
@@ -353,7 +351,6 @@ def compile_named_entry_shader_partial(
     shader_kind = to_shader_kind(tp.cast(tuple, inspect.getfullargspec(fn).defaults)[0])
     if not shader_kind:
         raise CompileError('Named shader function must be decorated with its shader kind')
-    ctx.shader_kind = shader_kind
     collect_global_symbols(ctx, deco_fn)
     collect_argument_symbols(ctx, deco_fn)
     collect_entry_argument_symbols(ctx, deco_fn, shader_kind)

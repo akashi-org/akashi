@@ -484,10 +484,6 @@ def from_Attribute(node: ast.Attribute, ctx: CompilerContext) -> AttributeOut:
             if attr_str == 'value':
                 content = f'{value_str}'
                 return AttributeOut(node, content)
-        elif value_tpname.startswith('dynamic'):
-            if attr_str == 'value' and ctx.shmod_inst:
-                content = str(getattr(getattr(ctx.shmod_inst, value_str), 'value'))
-                return AttributeOut(node, content)
         elif value_tpname.startswith('out_t'):
             if attr_str == 'value':
                 content = f'{value_str}'
