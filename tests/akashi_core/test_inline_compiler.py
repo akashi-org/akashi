@@ -1,5 +1,5 @@
 import unittest
-from akashi_core.pysl import CompileError, compile_inline_shaders
+from akashi_core.pysl import CompileError, compile_shaders
 from akashi_core import gl, ak
 from . import compiler_fixtures
 import typing as tp
@@ -26,7 +26,7 @@ class TestInlineExpr(unittest.TestCase):
 
         expected = 'void frag_main(inout vec4 color){12;}'
 
-        self.assertEqual(compile_inline_shaders((gen(),), lambda: ak.FragShader()), expected)
+        self.assertEqual(compile_shaders((gen(),), lambda: ak.FragShader()), expected)
 
     def test_basic_resolution(self):
 
@@ -35,7 +35,7 @@ class TestInlineExpr(unittest.TestCase):
 
         expected = 'void frag_main(inout vec4 color){sin(12);}'
 
-        self.assertEqual(compile_inline_shaders((gen(),), lambda: ak.FragShader()), expected)
+        self.assertEqual(compile_shaders((gen(),), lambda: ak.FragShader()), expected)
 
     def test_local_resolution(self):
 
@@ -46,7 +46,7 @@ class TestInlineExpr(unittest.TestCase):
 
         expected = 'void frag_main(inout vec4 color){(999) * (sin(12));}'
 
-        self.assertEqual(compile_inline_shaders((gen1(),), lambda: ak.FragShader()), expected)
+        self.assertEqual(compile_shaders((gen1(),), lambda: ak.FragShader()), expected)
 
     def test_global_resolution(self):
 
@@ -57,7 +57,7 @@ class TestInlineExpr(unittest.TestCase):
 
         expected = 'void frag_main(inout vec4 color){(1890) + ((999) * (sin(12)));}'
 
-        self.assertEqual(compile_inline_shaders((gen1(),), lambda: ak.FragShader()), expected)
+        self.assertEqual(compile_shaders((gen1(),), lambda: ak.FragShader()), expected)
 
     def test_argument_resolution(self):
 
@@ -70,7 +70,7 @@ class TestInlineExpr(unittest.TestCase):
 
         expected1 = 'void frag_main(inout vec4 color){((color.y) * (1890)) + (((time) * (999)) * (sin(12)));}'
 
-        self.assertEqual(compile_inline_shaders((gen1(),), lambda: ak.FragShader()), expected1)
+        self.assertEqual(compile_shaders((gen1(),), lambda: ak.FragShader()), expected1)
 
         def gen2() -> ak.EntryPolyFn:
             return lambda b, p: (
@@ -79,7 +79,7 @@ class TestInlineExpr(unittest.TestCase):
 
         expected2 = 'void poly_main(inout vec3 pos){((pos.y) * (1890)) + (((time) * (999)) * (sin(12)));}'
 
-        self.assertEqual(compile_inline_shaders((gen2(),), lambda: ak.PolygonShader()), expected2)
+        self.assertEqual(compile_shaders((gen2(),), lambda: ak.PolygonShader()), expected2)
 
     def test_import_resolution(self):
 
@@ -96,13 +96,13 @@ class TestInlineExpr(unittest.TestCase):
             'void frag_main(inout vec4 color){(compiler_fixtures_boost_add(1, 1890)) + ((999) * (sin(12)));}'
         ])
 
-        self.assertEqual(compile_inline_shaders((gen1(),), lambda: ak.FragShader()), expected1)
+        self.assertEqual(compile_shaders((gen1(),), lambda: ak.FragShader()), expected1)
 
         def gen2() -> ak.EntryFragFn:
             return lambda b, c: gl.expr(module_global_poly(1, 2) + (gl.eval(speed) * gl.sin(12)))
 
         with self.assertRaisesRegex(CompileError, 'Forbidden import PolygonShader from FragShader') as _:
-            compile_inline_shaders((gen2(),), lambda: ak.FragShader())
+            compile_shaders((gen2(),), lambda: ak.FragShader())
 
     def test_import2(self):
 
@@ -114,7 +114,7 @@ class TestInlineExpr(unittest.TestCase):
             'void frag_main(inout vec4 color){test_inline_compiler_module_global_add(1, 2);}'
         ])
 
-        self.assertEqual(compile_inline_shaders((gen(),), lambda: ak.FragShader()), expected1)
+        self.assertEqual(compile_shaders((gen(),), lambda: ak.FragShader()), expected1)
 
     def test_merge(self):
 
@@ -127,7 +127,7 @@ class TestInlineExpr(unittest.TestCase):
 
         expected = 'void frag_main(inout vec4 color){(1890) + ((999) * (sin(12)));102;}'
 
-        self.assertEqual(compile_inline_shaders((gen1(),), lambda: ak.FragShader()), expected)
+        self.assertEqual(compile_shaders((gen1(),), lambda: ak.FragShader()), expected)
 
 
 class TestInlineAssign(unittest.TestCase):
@@ -139,7 +139,7 @@ class TestInlineAssign(unittest.TestCase):
 
         expected = 'void frag_main(inout vec4 color){color.x = sin(12);}'
 
-        self.assertEqual(compile_inline_shaders((gen(),), lambda: ak.FragShader()), expected)
+        self.assertEqual(compile_shaders((gen(),), lambda: ak.FragShader()), expected)
 
     def test_op(self):
 
@@ -148,7 +148,7 @@ class TestInlineAssign(unittest.TestCase):
 
         expected = 'void frag_main(inout vec4 color){color.x += (resolution.x) + (sin(12));}'
 
-        self.assertEqual(compile_inline_shaders((gen(),), lambda: ak.FragShader()), expected)
+        self.assertEqual(compile_shaders((gen(),), lambda: ak.FragShader()), expected)
 
     def test_merge(self):
 
@@ -157,7 +157,7 @@ class TestInlineAssign(unittest.TestCase):
 
         expected = 'void frag_main(inout vec4 color){color.x += (resolution.x) + (sin(12));12;}'
 
-        self.assertEqual(compile_inline_shaders((gen(),), lambda: ak.FragShader()), expected)
+        self.assertEqual(compile_shaders((gen(),), lambda: ak.FragShader()), expected)
 
 
 class TestInlineLet(unittest.TestCase):
@@ -171,14 +171,14 @@ class TestInlineLet(unittest.TestCase):
 
         expected = 'void frag_main(inout vec4 color){int x = 102;}'
 
-        self.assertEqual(compile_inline_shaders((gen(),), lambda: ak.FragShader()), expected)
+        self.assertEqual(compile_shaders((gen(),), lambda: ak.FragShader()), expected)
 
         def gen2() -> ak.EntryFragFn:
             return lambda b, c: gl.let((x := gl.eval(speed))).tp(int)  # noqa: F841
 
         expected2 = 'void frag_main(inout vec4 color){int x = 999;}'
 
-        self.assertEqual(compile_inline_shaders((gen2(),), lambda: ak.FragShader()), expected2)
+        self.assertEqual(compile_shaders((gen2(),), lambda: ak.FragShader()), expected2)
 
     def test_merge(self):
 
@@ -192,7 +192,7 @@ class TestInlineLet(unittest.TestCase):
 
         expected = 'void frag_main(inout vec4 color){color.x = 999;float y = 12.1;y;}'
 
-        self.assertEqual(compile_inline_shaders((gen(),), lambda: ak.FragShader()), expected)
+        self.assertEqual(compile_shaders((gen(),), lambda: ak.FragShader()), expected)
 
 
 class TestInlineMultiple(unittest.TestCase):
@@ -220,7 +220,7 @@ class TestInlineMultiple(unittest.TestCase):
             'void frag_main(inout vec4 color){int x = 102;frag_main_1(color);}'
         ])
 
-        self.assertEqual(compile_inline_shaders((gen(), gen2(), gen3()), lambda: ak.FragShader()), expected)
+        self.assertEqual(compile_shaders((gen(), gen2(), gen3()), lambda: ak.FragShader()), expected)
 
     def test_imports(self):
 
@@ -245,7 +245,7 @@ class TestInlineMultiple(unittest.TestCase):
         ])
 
         self.maxDiff = None
-        self.assertEqual(compile_inline_shaders((gen1(), gen2()), lambda: ak.FragShader()), expected)
+        self.assertEqual(compile_shaders((gen1(), gen2()), lambda: ak.FragShader()), expected)
 
 
 class TestInlineWithBrace(unittest.TestCase):
@@ -262,7 +262,7 @@ class TestInlineWithBrace(unittest.TestCase):
 
         expected = 'void frag_main(inout vec4 color){color.x = 999;float y = 12.1;y;}'
 
-        self.assertEqual(compile_inline_shaders((gen(),), lambda: ak.FragShader()), expected)
+        self.assertEqual(compile_shaders((gen(),), lambda: ak.FragShader()), expected)
 
 
 # class TestInlineOther(unittest.TestCase):

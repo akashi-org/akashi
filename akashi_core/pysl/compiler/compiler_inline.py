@@ -8,8 +8,6 @@ from .ast import compile_expr, from_annotation
 from .utils import can_import, entry_point, mangled_func_name
 from .symbol import collect_global_symbols, collect_buffer_symbols, collect_local_symbols
 
-from . import compiler_named
-
 
 import inspect
 import ast
@@ -169,54 +167,6 @@ def collect_argument_symbols(ctx: CompilerContext, fn: 'TEntryFn', kind: 'Shader
         if var_arg != 'pos':
             ctx.lambda_args[var_arg] = 'pos'
         ctx.local_symbol['pos'] = 'inout vec4'
-
-
-def compile_inline_shaders(
-        fns: tuple['TEntryFn', ...],
-        sh_mod_fn: tp.Callable[[], 'ShaderModule'],
-        config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
-
-    kind = sh_mod_fn().__kind__
-
-    if len(fns) == 0:
-        return entry_point(kind, '')
-
-    stmts = []
-    imported_named_shader_fns_dict = {}
-
-    ctx = CompilerContext(config)
-    # [TODO] maybe we should call this in the loop below
-    collect_global_symbols(ctx, fns[0])
-    collect_buffer_symbols(ctx, sh_mod_fn())
-
-    for idx, fn in enumerate(fns):
-
-        stmt = []
-
-        expr_node = get_inline_source(fn, ctx)
-        exprs = split_exprs(expr_node)
-
-        ctx.lambda_args = {}
-        collect_argument_symbols(ctx, fn, kind)
-        for imp_fn in collect_local_symbols(ctx, fn):
-            imported_named_shader_fns_dict[mangled_func_name(ctx, imp_fn)] = imp_fn
-
-        for expr in exprs:
-            stmt.append(parse_expr(expr, ctx))
-
-        self_postfix = f'_{idx}' if idx > 0 else ''
-        next_postfix = f'_{idx + 1}' if idx != len(fns) - 1 else ''
-
-        stmts.insert(0, entry_point(kind, ''.join(stmt), self_postfix, next_postfix))
-
-    imported_strs = []
-    for imp_fn in imported_named_shader_fns_dict.values():
-        imp_shader_kind = compiler_named.to_shader_kind(tp.cast(tuple, inspect.getfullargspec(imp_fn).defaults)[0])
-        if not can_import(kind, imp_shader_kind):
-            raise CompileError(f'Forbidden import {imp_shader_kind} from {kind}')
-        imported_strs.append(compiler_named.compile_named_shader(imp_fn, ctx.config))
-
-    return "".join(imported_strs) + ''.join(stmts)
 
 
 def compile_inline_shader_partial(

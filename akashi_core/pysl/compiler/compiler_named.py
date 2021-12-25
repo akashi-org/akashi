@@ -158,64 +158,6 @@ def compile_named_shader(
     return "".join(imported_strs) + out
 
 
-def compile_named_entry_shaders(
-        fns: tuple['TNarrowEntryFnOpaque', ...],
-        config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
-
-    if len(fns) == 0:
-        return ''
-
-    shader_kind = to_shader_kind(tp.cast(tuple, inspect.getfullargspec(fns[0]).defaults)[0])
-    if not shader_kind:
-        raise CompileError('Named shader function must be decorated with its shader kind')
-
-    ctx = CompilerContext(config)
-
-    stmts = []
-    imported_named_shader_fns_dict = {}
-
-    for idx, fn in enumerate(fns):
-
-        deco_fn = unwrap_shader_func(tp.cast(tp.Callable, fn))
-        if not deco_fn:
-            raise CompileError('Named shader function must be decorated properly')
-
-        py_src = get_source(deco_fn)
-        root = ast.parse(py_src)
-
-        ctx.global_symbol = {}
-        ctx.local_symbol = {}
-        ctx.eval_local_symbol = {}
-        ctx.lambda_args = {}
-        ctx.imported_func_symbol = {}
-
-        collect_global_symbols(ctx, deco_fn)
-        collect_argument_symbols(ctx, deco_fn)
-        collect_entry_argument_symbols(ctx, deco_fn, shader_kind)
-        imported_named_shader_fns = collect_local_symbols(ctx, deco_fn)
-        for imp_fn in imported_named_shader_fns:
-            imported_named_shader_fns_dict[mangled_func_name(ctx, imp_fn)] = imp_fn
-
-        func_def = get_function_def(root)
-        if not is_named_func(func_def, ctx.global_symbol):
-            raise CompileError('Named shader function must be decorated properly')
-
-        self_postfix = f'_{idx}' if idx > 0 else ''
-        next_postfix = f'_{idx + 1}' if idx != len(fns) - 1 else ''
-
-        func_body = parse_func_body(func_def, ctx)
-        stmts.insert(0, entry_point(shader_kind, ''.join(func_body), self_postfix, next_postfix))
-
-    imported_strs = []
-    for imp_fn in imported_named_shader_fns_dict.values():
-        imp_shader_kind = to_shader_kind(tp.cast(tuple, inspect.getfullargspec(imp_fn).defaults)[0])
-        if not can_import(shader_kind, imp_shader_kind):
-            raise CompileError(f'Forbidden import {imp_shader_kind} from {shader_kind}')
-        imported_strs.append(compile_named_shader(imp_fn, ctx.config))
-
-    return "".join(imported_strs) + ''.join(stmts)
-
-
 def compile_named_entry_shader_partial(
         fn: 'TNarrowEntryFnOpaque', ctx: CompilerContext) -> tuple[_TGLSL, list[tp.Callable]]:
 

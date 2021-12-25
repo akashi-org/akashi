@@ -1,10 +1,7 @@
 import unittest
-from akashi_core.pysl import (
-    compile_named_shader,
-    compile_named_entry_shaders,
-    CompileError,
-    CompilerConfig
-)
+from akashi_core.pysl import compile_shaders, CompileError, CompilerConfig
+from akashi_core.pysl.compiler.compiler_named import compile_named_shader
+
 from akashi_core import gl, ak
 from . import compiler_fixtures
 import typing as tp
@@ -371,7 +368,7 @@ class TestBuffer(unittest.TestCase):
             'void frag_main(inout vec4 color){color.x = (time) * (12);}',
         ])
 
-        self.assertEqual(compile_named_entry_shaders((vec_attr,), TEST_CONFIG), expected)
+        self.assertEqual(compile_shaders((vec_attr,), lambda: ak.FragShader(), TEST_CONFIG), expected)
 
     def test_uniform_import(self):
 
@@ -393,7 +390,7 @@ class TestBuffer(unittest.TestCase):
         ])
 
         self.maxDiff = None
-        self.assertEqual(compile_named_entry_shaders((vec_attr, ), TEST_CONFIG), expected)
+        self.assertEqual(compile_shaders((vec_attr, ), lambda: ak.FragShader(), TEST_CONFIG), expected)
 
     def test_forbidden_import(self):
 
@@ -406,7 +403,7 @@ class TestBuffer(unittest.TestCase):
             color.value.x = local_add(1, 2)
 
         with self.assertRaisesRegex(CompileError, 'Forbidden import PolygonShader from FragShader') as _:
-            compile_named_entry_shaders((vec_attr, ), TEST_CONFIG)
+            compile_shaders((vec_attr, ), lambda: ak.FragShader(), TEST_CONFIG)
 
 
 class TestEntry(unittest.TestCase):
@@ -421,7 +418,7 @@ class TestEntry(unittest.TestCase):
             'void frag_main(inout vec4 color){color.x = (time) * (12);}',
         ])
 
-        self.assertEqual(compile_named_entry_shaders((vec_attr,), TEST_CONFIG), expected)
+        self.assertEqual(compile_shaders((vec_attr,), lambda: ak.FragShader(), TEST_CONFIG), expected)
 
     def test_chain(self):
 
@@ -445,4 +442,5 @@ class TestEntry(unittest.TestCase):
 
         self.maxDiff = None
 
-        self.assertEqual(compile_named_entry_shaders((vec_attr, vec_attr2, vec_attr3), TEST_CONFIG), expected)
+        self.assertEqual(compile_shaders((vec_attr, vec_attr2, vec_attr3),
+                         lambda: ak.FragShader(), TEST_CONFIG), expected)

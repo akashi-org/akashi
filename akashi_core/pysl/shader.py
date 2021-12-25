@@ -1,5 +1,5 @@
 from __future__ import annotations
-from . import compile_mixed_shaders, CompilerConfig
+from . import compile_shaders, CompilerConfig
 from . import _gl
 
 from abc import ABCMeta
@@ -107,7 +107,7 @@ class FragShader(BasicUniform, ShaderModule):
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
             self._assemble_cache = self._preamble(config) + self._header(config)
-            self._assemble_cache += compile_mixed_shaders(self.shaders, lambda: self, config)
+            self._assemble_cache += compile_shaders(self.shaders, lambda: self, config)
         return self._assemble_cache
 
 
@@ -148,7 +148,7 @@ class VideoFragShader(BasicUniform, ShaderModule):
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
             self._assemble_cache = self._preamble(config) + self._header(config)
-            self._assemble_cache += compile_mixed_shaders(self.shaders, lambda: self, config)
+            self._assemble_cache += compile_shaders(self.shaders, lambda: self, config)
         return self._assemble_cache
 
 
@@ -182,7 +182,7 @@ class PolygonShader(BasicUniform, ShaderModule):
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
             self._assemble_cache = self._preamble(config) + self._header(config)
-            self._assemble_cache += compile_mixed_shaders(self.shaders, lambda: self, config)
+            self._assemble_cache += compile_shaders(self.shaders, lambda: self, config)
         return self._assemble_cache
 
 
@@ -204,5 +204,5 @@ class VideoPolygonShader(BasicUniform, ShaderModule):
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
             self._assemble_cache = self._preamble(config) + self._header(config)
-            self._assemble_cache += compile_mixed_shaders(self.shaders, lambda: self, config)
+            self._assemble_cache += compile_shaders(self.shaders, lambda: self, config)
         return self._assemble_cache
