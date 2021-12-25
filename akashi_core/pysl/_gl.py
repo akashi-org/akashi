@@ -827,11 +827,6 @@ class uniform(Generic[_T]):
         return uniform[_T](None)
 
 
-@dataclass
-class dynamic(Generic[_T]):
-    value: _T
-
-
 @dataclass(frozen=True)
 class in_t(Generic[_T]):
     value: _T
