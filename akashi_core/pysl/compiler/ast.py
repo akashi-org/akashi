@@ -824,26 +824,3 @@ def compile_expr(node: ast.expr, ctx: CompilerContext) -> exprOut:
         raise CompileError(f'The expression `{type(node)}` is forbidden')
 
     raise CompileError(f'Not implemented expression `{type(node)}` found')
-
-
-def compile_shader_staticmethod(
-        klass: tp.Type['ShaderModule'],
-        method: tp.Callable,
-        on_import_resolution: bool,
-        config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
-
-    py_src = compiler_utils.get_source(method)
-    root = ast.parse(py_src)
-    func_def = compiler_utils.get_function_def(root)
-
-    ctx = CompilerContext(config)
-    ctx.on_import_resolution = on_import_resolution
-
-    ctx.shmod_name = klass.__name__
-    ctx.shmod_klass = klass
-    global_symbol_analysis(klass, ctx)
-    class_symbol_analysis(klass, ctx)
-
-    out = from_FunctionDef(func_def, ctx, ctx.shmod_name)
-
-    return out.content

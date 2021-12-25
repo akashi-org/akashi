@@ -1,5 +1,5 @@
 from __future__ import annotations
-from . import compile_shader_module, compile_inline_shaders, CompilerConfig
+from . import compile_inline_shaders, CompilerConfig
 from . import _gl
 
 from abc import abstractmethod, ABCMeta
@@ -64,8 +64,8 @@ class AnyShader(ShaderModule):
     __kind__: tp.ClassVar[ShaderKind] = 'AnyShader'
 
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
-        if not self._assemble_cache:
-            self._assemble_cache = self._preamble(config) + self._header(config) + compile_shader_module(self, config)
+        # if not self._assemble_cache:
+        #     self._assemble_cache = self._preamble(config) + self._header(config) + compile_shader_module(self, config)
         return self._assemble_cache
 
 
@@ -96,10 +96,6 @@ class FragShader(BasicUniform, ShaderModule):
 
     fs_in: _gl.in_t[GS_OUT] = field(default=_gl.in_t.default(), init=False)
 
-    @_gl.method
-    def frag_main(self, color: _gl.inout_p[_gl.vec4]) -> None:
-        return
-
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
             if self._inline_shaders:
@@ -109,7 +105,7 @@ class FragShader(BasicUniform, ShaderModule):
                 )
             else:
                 self._assemble_cache = self._preamble(config) + self._header(config)
-                self._assemble_cache += compile_shader_module(self, config)
+                # self._assemble_cache += compile_shader_module(self, config)
         return self._assemble_cache
 
 
@@ -145,10 +141,6 @@ class VideoFragShader(BasicUniform, ShaderModule):
 
     fs_in: _gl.in_t[GS_OUT_V] = field(default=_gl.in_t.default(), init=False)
 
-    @_gl.method
-    def frag_main(self, color: _gl.inout_p[_gl.vec4]) -> None:
-        return
-
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
             if self._inline_shaders:
@@ -158,7 +150,7 @@ class VideoFragShader(BasicUniform, ShaderModule):
                 )
             else:
                 self._assemble_cache = self._preamble(config) + self._header(config)
-                self._assemble_cache += compile_shader_module(self, config)
+                # self._assemble_cache += compile_shader_module(self, config)
         return self._assemble_cache
 
 
@@ -187,10 +179,6 @@ class PolygonShader(BasicUniform, ShaderModule):
 
     vs_out: _gl.out_t[VS_OUT] = field(default=_gl.out_t.default(), init=False)
 
-    @_gl.method
-    def poly_main(self, position: _gl.inout_p[_gl.vec3]) -> None:
-        return
-
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
             if self._inline_shaders:
@@ -200,7 +188,7 @@ class PolygonShader(BasicUniform, ShaderModule):
                 )
             else:
                 self._assemble_cache = self._preamble(config) + self._header(config)
-                self._assemble_cache += compile_shader_module(self, config)
+                # self._assemble_cache += compile_shader_module(self, config)
         return self._assemble_cache
 
 
@@ -217,10 +205,6 @@ class VideoPolygonShader(BasicUniform, ShaderModule):
         'uniform vec2 resolution;',
     ]
 
-    @_gl.method
-    def poly_main(self, position: _gl.inout_p[_gl.vec3]) -> None:
-        return
-
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
             if self._inline_shaders:
@@ -230,7 +214,7 @@ class VideoPolygonShader(BasicUniform, ShaderModule):
                 )
             else:
                 self._assemble_cache = self._preamble(config) + self._header(config)
-                self._assemble_cache += compile_shader_module(self, config)
+                # self._assemble_cache += compile_shader_module(self, config)
         return self._assemble_cache
 
 
@@ -251,13 +235,9 @@ class GeomShader(BasicUniform, ShaderModule):
 
     texture0: _gl.uniform[_gl.sampler2D] = field(default=_gl.uniform.default(), init=False)
 
-    @_gl.method
-    def main(self) -> None:
-        return
-
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
-        if not self._assemble_cache:
-            self._assemble_cache = self._preamble(config) + self._header(config) + compile_shader_module(self, config)
+        # if not self._assemble_cache:
+        #     self._assemble_cache = self._preamble(config) + self._header(config) + compile_shader_module(self, config)
         return self._assemble_cache
 
 
@@ -291,11 +271,7 @@ class VideoGeomShader(BasicUniform, ShaderModule):
     # textureCb: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
     # textureCr: _gl.uniform[_gl.sampler2D] = _gl.uniform.default()
 
-    @_gl.method
-    def main(self) -> None:
-        return
-
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
-        if not self._assemble_cache:
-            self._assemble_cache = self._preamble(config) + self._header(config) + compile_shader_module(self, config)
+        # if not self._assemble_cache:
+        #     self._assemble_cache = self._preamble(config) + self._header(config) + compile_shader_module(self, config)
         return self._assemble_cache

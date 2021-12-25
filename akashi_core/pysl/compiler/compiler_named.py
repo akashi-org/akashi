@@ -4,7 +4,7 @@ from __future__ import annotations
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
 from .utils import get_source, get_function_def, can_import2, can_import3
 from .transformer import type_transformer
-from .ast import compile_expr, compile_stmt, from_FunctionDef, compile_shader_staticmethod, from_arguments
+from .ast import compile_expr, compile_stmt, from_FunctionDef, from_arguments
 from .symbol import global_symbol_analysis, instance_symbol_analysis
 
 from types import ModuleType
@@ -222,6 +222,7 @@ def compile_named_shader(
     if not is_named_func(func_def, ctx.global_symbol):
         raise CompileError('Named shader function must be decorated properly')
 
+    # [TODO] should be replaced other impl like parse_func
     out = from_FunctionDef(func_def, ctx, get_mangle_prefix(ctx, deco_fn))
 
     imported_strs = []

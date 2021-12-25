@@ -14,8 +14,6 @@ __all__ = [
 
 
 from dataclasses import dataclass
-from dataclasses import dataclass as struct
-from dataclasses import dataclass as module
 from typing import (
     TypeVar,
     Generic,
@@ -77,21 +75,7 @@ def entry_poly() -> Callable[['EntryPolyFn'], TEntryFnOpaque['EntryPolyFn']]:
     return deco  # type: ignore
 
 
-def test_func(fn):
-    def inner(*args, **kwargs):
-        fn(*args, **kwargs)
-    return inner
-
-
-def method(fn):
-    def inner(*args, **kwargs):
-        fn(*args, **kwargs)
-    return inner
-
-
-func = staticmethod
-
-
+# [TODO] should we wrap it with NewType?
 uint = int
 
 ''' Builtin Functions '''
