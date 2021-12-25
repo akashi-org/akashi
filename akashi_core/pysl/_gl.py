@@ -1,13 +1,10 @@
 from __future__ import annotations
 
 __all__ = [
-    "struct",
-    "module",
     "expr",
     "let",
     "assign",
     "eval",
-    "func",
     "uint",
     "gl_FragCoord"
 ]
