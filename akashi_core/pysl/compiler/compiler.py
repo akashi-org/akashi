@@ -32,11 +32,7 @@ def compile_shaders(
 
         stmt = ''
 
-        ctx.global_symbol = {}
-        ctx.local_symbol = {}
-        ctx.eval_local_symbol = {}
-        ctx.lambda_args = {}
-        ctx.imported_func_symbol = {}
+        ctx.clear_symbols()
 
         if fn.__name__ == '<lambda>':
             stmt, imported_named_shader_fns = compile_inline_shader_partial(

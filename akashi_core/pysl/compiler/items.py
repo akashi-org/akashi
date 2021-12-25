@@ -35,12 +35,21 @@ class CompilerConfig:
 @dataclass
 class CompilerContext:
     config: CompilerConfig.Config
-    local_symbol: dict = field(default_factory=dict)
-    global_symbol: dict = field(default_factory=dict)
-    eval_local_symbol: dict = field(default_factory=dict)
-    lambda_args: dict = field(default_factory=dict)
     top_indent: int = field(default=0, init=False)
 
-    # named shader
-    buffers: list = field(default_factory=list[tuple])
+    global_symbol: dict = field(default_factory=dict)
+    local_symbol: dict = field(default_factory=dict)
+    eval_local_symbol: dict = field(default_factory=dict)
+    lambda_args: dict = field(default_factory=dict)
     imported_func_symbol: dict = field(default_factory=dict)
+
+    buffers: list = field(default_factory=list[tuple])
+
+    def clear_symbols(self):
+        self.global_symbol = {}
+        self.local_symbol = {}
+        self.eval_local_symbol = {}
+        self.lambda_args = {}
+        self.imported_func_symbol = {}
+
+        self.buffers = []
