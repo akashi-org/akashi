@@ -78,9 +78,6 @@ def has_params_qualifier(tp_name: str) -> bool:
 
 def is_wrapped_type(tp_name: str) -> bool:
     return (
-        tp_name.startswith('in ') or
-        tp_name.startswith('out ') or
-        tp_name.startswith('inout ') or
         tp_name.startswith('in_t') or
         tp_name.startswith('out_t') or
         tp_name.startswith('uniform')

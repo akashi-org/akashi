@@ -66,7 +66,7 @@ class TestInlineExpr(unittest.TestCase):
 
         def gen1() -> ak.EntryFragFn:
             return (
-                lambda e, b, c: e((c.value.y * gl.eval(global_speed)) + (b.time.value * gl.eval(speed) * gl.sin(12)))
+                lambda e, b, c: e((c.y * gl.eval(global_speed)) + (b.time.value * gl.eval(speed) * gl.sin(12)))
             )
 
         expected1 = 'void frag_main(inout vec4 color){((color.y) * (1890)) + (((time) * (999)) * (sin(12)));}'
@@ -75,7 +75,7 @@ class TestInlineExpr(unittest.TestCase):
 
         def gen2() -> ak.EntryPolyFn:
             return lambda e, b, p: (
-                e((p.value.y * gl.eval(global_speed)) + (b.time.value * gl.eval(speed) * gl.sin(12)))
+                e((p.y * gl.eval(global_speed)) + (b.time.value * gl.eval(speed) * gl.sin(12)))
             )
 
         expected2 = 'void poly_main(inout vec3 pos){((pos.y) * (1890)) + (((time) * (999)) * (sin(12)));}'
@@ -134,7 +134,7 @@ class TestInlineAssign(unittest.TestCase):
     def test_eq(self):
 
         def gen() -> ak.EntryFragFn:
-            return lambda e, b, c: e(c.value.x) << e(gl.sin(12))
+            return lambda e, b, c: e(c.x) << e(gl.sin(12))
 
         expected = 'void frag_main(inout vec4 color){color.x = sin(12);}'
 
@@ -143,7 +143,7 @@ class TestInlineAssign(unittest.TestCase):
     def test_merge(self):
 
         def gen() -> ak.EntryFragFn:
-            return lambda e, b, c: e(c.value.x) << e(c.value.x + b.resolution.value.x + gl.sin(12)) | e(12)
+            return lambda e, b, c: e(c.x) << e(c.x + b.resolution.value.x + gl.sin(12)) | e(12)
 
         expected = 'void frag_main(inout vec4 color){color.x = ((color.x) + (resolution.x)) + (sin(12));12;}'
 
@@ -175,7 +175,7 @@ class TestInlineLet(unittest.TestCase):
         speed = 999
 
         def gen() -> ak.EntryFragFn:
-            return lambda e, b, c: e(c.value.x) << e(gl.eval(speed)) | e(y := 12.1).tp(float) | e(y)
+            return lambda e, b, c: e(c.x) << e(gl.eval(speed)) | e(y := 12.1).tp(float) | e(y)
 
         expected = 'void frag_main(inout vec4 color){color.x = 999;float y = 12.1;y;}'
 
@@ -192,10 +192,10 @@ class TestInlineMultiple(unittest.TestCase):
             return lambda e, b, c: e(x := 102).tp(int)  # noqa: F841
 
         def gen2() -> ak.EntryFragFn:
-            return lambda e, b, c: e(c.value.x) << e(gl.eval(speed)) | e(y := gl.vec2(1, 2)).tp(gl.vec2) | e(y)
+            return lambda e, b, c: e(c.x) << e(gl.eval(speed)) | e(y := gl.vec2(1, 2)).tp(gl.vec2) | e(y)
 
         def gen3() -> ak.EntryFragFn:
-            return lambda e, b, c: e(c.value.y) << e(1.0)
+            return lambda e, b, c: e(c.y) << e(1.0)
 
         expected = ''.join([
             'void frag_main_2(inout vec4 color){color.y = 1.0;}',
@@ -239,7 +239,7 @@ class TestInlineWithBrace(unittest.TestCase):
 
         def gen() -> ak.EntryFragFn:
             return lambda e, b, color: ((
-                (e(color.value.x) << e(gl.eval(speed))) |
+                (e(color.x) << e(gl.eval(speed))) |
                 (e(y := 12.1).tp(float) | e(y))
             ))
 

@@ -482,7 +482,11 @@ def from_Attribute(node: ast.Attribute, ctx: CompilerContext) -> AttributeOut:
             content = f'{attr_str}'
             return AttributeOut(node, content)
 
-    content = f'{value_str}.{attr_str}'
+    if len(value_str) == 0:
+        content = f'{attr_str}'
+    else:
+        content = f'{value_str}.{attr_str}'
+
     return AttributeOut(node, content)
 
 
@@ -514,6 +518,8 @@ def from_Name(node: ast.Name, ctx: CompilerContext) -> NameOut:
         content = 'None'
     else:
         content = str(node.id)
+        if content in ctx.lambda_args:
+            content = ctx.lambda_args[content]
     return NameOut(node, content)
 
 

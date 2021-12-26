@@ -19,6 +19,7 @@ from typing import (
     ParamSpec,
     Literal,
     Callable,
+    Annotated,
     TYPE_CHECKING
 )
 
@@ -403,19 +404,11 @@ def texture(sampler, P, Q=0) -> Any: ...
 # https://www.khronos.org/opengl/wiki/Core_Language_(GLSL)#Parameters
 
 
-@dataclass
-class in_p(Generic[_T]):
-    value: _T
+in_p = Annotated[_T, 'in_p']
 
+out_p = Annotated[_T, 'out_p']
 
-@dataclass
-class out_p(Generic[_T]):
-    value: _T
-
-
-@dataclass
-class inout_p(Generic[_T]):
-    value: _T
+inout_p = Annotated[_T, 'inout_p']
 
 
 @dataclass

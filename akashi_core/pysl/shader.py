@@ -10,8 +10,12 @@ from dataclasses import dataclass, field
 
 ShaderKind = tp.Literal['AnyShader', 'FragShader', 'PolygonShader', 'GeomShader']
 
-EntryFragFn = tp.Callable[[tp.Type[_gl_inline.expr], 'FragShader', _gl.inout_p[_gl.vec4]], _gl_inline.expr]
-EntryPolyFn = tp.Callable[[tp.Type[_gl_inline.expr], 'PolygonShader', _gl.inout_p[_gl.vec3]], _gl_inline.expr]
+# [TODO] The type `gl.inout_p[gl.vec4]` is misinterpreted as generic type by pyright!
+# EntryFragFn = tp.Callable[[tp.Type[_gl_inline.expr], 'FragShader', _gl.inout_p[_gl.vec4]], _gl_inline.expr]
+# EntryPolyFn = tp.Callable[[tp.Type[_gl_inline.expr], 'PolygonShader', _gl.inout_p[_gl.vec3]], _gl_inline.expr]
+
+EntryFragFn = tp.Callable[[tp.Type[_gl_inline.expr], 'FragShader', _gl.vec4], _gl_inline.expr]
+EntryPolyFn = tp.Callable[[tp.Type[_gl_inline.expr], 'PolygonShader', _gl.vec3], _gl_inline.expr]
 
 
 TEntryFn = tp.TypeVar('TEntryFn', 'EntryFragFn', 'EntryPolyFn')
@@ -23,8 +27,8 @@ class _TEntryFnOpaque(tp.Generic[_T]):
     ...
 
 
-_NamedEntryFragFn = tp.Callable[['FragShader', _gl.inout_p[_gl.vec4]], None]
-_NamedEntryPolyFn = tp.Callable[['PolygonShader', _gl.inout_p[_gl.vec3]], None]
+_NamedEntryFragFn = tp.Callable[['FragShader', _gl.vec4], None]
+_NamedEntryPolyFn = tp.Callable[['PolygonShader', _gl.vec3], None]
 
 NEntryFragFn = _TEntryFnOpaque['_NamedEntryFragFn']
 NEntryPolyFn = _TEntryFnOpaque['_NamedEntryPolyFn']

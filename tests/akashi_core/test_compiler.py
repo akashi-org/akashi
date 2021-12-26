@@ -26,12 +26,12 @@ class TestMixed(unittest.TestCase):
 
         @gl.entry('frag')
         def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
-            cl.value.x = buffer.time.value * 12
+            cl.x = buffer.time.value * 12
 
         def named_gen(arg_value: int) -> ak.NEntryFragFn:
             @gl.entry('frag')
             def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
-                cl.value.x = buffer.time.value * 12 + gl.eval(arg_value)
+                cl.x = buffer.time.value * 12 + gl.eval(arg_value)
             return vec_attr
 
         expected = ''.join([
@@ -46,7 +46,7 @@ class TestMixed(unittest.TestCase):
             gen(),
             vec_attr,
             named_gen(180),
-            lambda e, b, c: e(c.value.x) << e(900)
+            lambda e, b, c: e(c.x) << e(900)
         ), lambda: ak.FragShader(), TEST_CONFIG), expected)
 
     def test_import(self):
@@ -58,7 +58,7 @@ class TestMixed(unittest.TestCase):
 
         @gl.entry('frag')
         def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
-            cl.value.x = module_global_add(1, 2)
+            cl.x = module_global_add(1, 2)
 
         expected = ''.join([
             'int test_compiler_module_global_add(int a, int b){return (a) + (b);}',
@@ -70,4 +70,21 @@ class TestMixed(unittest.TestCase):
         self.assertEqual(compile_shaders((
             gen(),
             vec_attr
+        ), lambda: ak.FragShader(), TEST_CONFIG), expected)
+
+
+class TestOther(unittest.TestCase):
+
+    def test_buffer_direct_assign(self):
+
+        def gen() -> ak.EntryFragFn:
+            return lambda e, b, c: e(c) << e(c)
+
+        expected = ''.join([
+            'void frag_main(inout vec4 color){color = color;}'
+        ])
+
+        self.maxDiff = None
+        self.assertEqual(compile_shaders((
+            gen(),
         ), lambda: ak.FragShader(), TEST_CONFIG), expected)
