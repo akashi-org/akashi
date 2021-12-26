@@ -5,7 +5,7 @@ import typing as tp
 
 from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
-from akashi_core.pysl import FragShader, PolygonShader
+from akashi_core.pysl.shader import FragShader, PolygonShader
 
 from .base import (
     FittableDurationTrait,

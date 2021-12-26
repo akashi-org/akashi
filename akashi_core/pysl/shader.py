@@ -1,5 +1,6 @@
 from __future__ import annotations
-from . import compile_shaders, CompilerConfig
+from .compiler.items import CompilerConfig
+from .compiler.compiler import compile_shaders
 from . import _gl
 from . import _gl_inline
 
@@ -18,21 +19,23 @@ TEntryFn = tp.TypeVar('TEntryFn', 'EntryFragFn', 'EntryPolyFn')
 _T = tp.TypeVar('_T')
 
 
-class TEntryFnOpaque(tp.Generic[_T]):
+class _TEntryFnOpaque(tp.Generic[_T]):
     ...
 
 
-NamedEntryFragFn = tp.Callable[['FragShader', _gl.inout_p[_gl.vec4]], None]
-NamedEntryPolyFn = tp.Callable[['PolygonShader', _gl.inout_p[_gl.vec3]], None]
+_NamedEntryFragFn = tp.Callable[['FragShader', _gl.inout_p[_gl.vec4]], None]
+_NamedEntryPolyFn = tp.Callable[['PolygonShader', _gl.inout_p[_gl.vec3]], None]
 
-TNarrowEntryFnOpaque = tp.TypeVar(
-    'TNarrowEntryFnOpaque', TEntryFnOpaque['NamedEntryFragFn'], TEntryFnOpaque['NamedEntryPolyFn'])
+NEntryFragFn = _TEntryFnOpaque['_NamedEntryFragFn']
+NEntryPolyFn = _TEntryFnOpaque['_NamedEntryPolyFn']
 
-GEntryFragFn = EntryFragFn | TEntryFnOpaque['NamedEntryFragFn']
-GEntryPolyFn = EntryPolyFn | TEntryFnOpaque['NamedEntryPolyFn']
+_TNarrowedEntryFnOpaque = tp.TypeVar('_TNarrowedEntryFnOpaque', NEntryFragFn, NEntryPolyFn)
 
-EntryFragFnGP = tuple[GEntryFragFn, ...]
-EntryPolyFnGP = tuple[GEntryPolyFn, ...]
+_GEntryFragFn = EntryFragFn | NEntryFragFn
+_GEntryPolyFn = EntryPolyFn | NEntryPolyFn
+
+_EntryFragFnGP = tuple[_GEntryFragFn, ...]
+_EntryPolyFnGP = tuple[_GEntryPolyFn, ...]
 
 
 @dataclass
@@ -107,7 +110,7 @@ class FragShader(BasicUniform, ShaderModule):
 
     fs_in: _gl.in_t[GS_OUT] = field(default=_gl.in_t.default(), init=False)
 
-    shaders: EntryFragFnGP = field(default_factory=tuple)
+    shaders: _EntryFragFnGP = field(default_factory=tuple)
 
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
@@ -148,7 +151,7 @@ class VideoFragShader(BasicUniform, ShaderModule):
 
     fs_in: _gl.in_t[GS_OUT_V] = field(default=_gl.in_t.default(), init=False)
 
-    shaders: EntryFragFnGP = field(default_factory=tuple)
+    shaders: _EntryFragFnGP = field(default_factory=tuple)
 
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
@@ -182,7 +185,7 @@ class PolygonShader(BasicUniform, ShaderModule):
 
     vs_out: _gl.out_t[VS_OUT] = field(default=_gl.out_t.default(), init=False)
 
-    shaders: EntryPolyFnGP = field(default_factory=tuple)
+    shaders: _EntryPolyFnGP = field(default_factory=tuple)
 
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
@@ -204,7 +207,7 @@ class VideoPolygonShader(BasicUniform, ShaderModule):
         'uniform vec2 resolution;',
     ]
 
-    shaders: EntryPolyFnGP = field(default_factory=tuple)
+    shaders: _EntryPolyFnGP = field(default_factory=tuple)
 
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:

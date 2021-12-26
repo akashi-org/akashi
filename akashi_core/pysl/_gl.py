@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 from __future__ import annotations
 
 __all__ = [
@@ -22,7 +23,7 @@ from typing import (
 )
 
 if TYPE_CHECKING:
-    from akashi_core.pysl.shader import NamedEntryFragFn, NamedEntryPolyFn, TEntryFnOpaque
+    from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
 
 
 _T = TypeVar('_T')
@@ -44,7 +45,7 @@ def fn(stage: _NamedFnStage) -> Callable[[Callable[_NamedFnP, _NamedFnR]], Calla
 # [TODO] Can we merge entry_*() decorators by using typing.overload?
 
 
-def entry_frag() -> Callable[['NamedEntryFragFn'], TEntryFnOpaque['NamedEntryFragFn']]:
+def entry_frag() -> Callable[['_NamedEntryFragFn'], _TEntryFnOpaque['_NamedEntryFragFn']]:
     def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
         def wrapper(_stage: _NamedFnStage = 'frag', *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
             return f(*args, **kwargs)
@@ -52,7 +53,7 @@ def entry_frag() -> Callable[['NamedEntryFragFn'], TEntryFnOpaque['NamedEntryFra
     return deco  # type: ignore
 
 
-def entry_poly() -> Callable[['NamedEntryPolyFn'], TEntryFnOpaque['NamedEntryPolyFn']]:
+def entry_poly() -> Callable[['_NamedEntryPolyFn'], _TEntryFnOpaque['_NamedEntryPolyFn']]:
     def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
         def wrapper(_stage: _NamedFnStage = 'poly', *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
             return f(*args, **kwargs)

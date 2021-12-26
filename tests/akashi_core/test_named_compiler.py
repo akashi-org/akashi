@@ -1,7 +1,7 @@
 import unittest
-from akashi_core.pysl import compile_shaders, CompileError, CompilerConfig
+from akashi_core.pysl.compiler.items import CompileError, CompilerConfig
+from akashi_core.pysl.compiler.compiler import compile_shaders
 from akashi_core.pysl.compiler.compiler_named import compile_named_shader
-
 from akashi_core import gl, ak
 from . import compiler_fixtures
 import typing as tp
@@ -444,3 +444,20 @@ class TestEntry(unittest.TestCase):
 
         self.assertEqual(compile_shaders((vec_attr, vec_attr2, vec_attr3),
                          lambda: ak.FragShader(), TEST_CONFIG), expected)
+
+
+class TestClosure(unittest.TestCase):
+
+    def test_basic(self):
+
+        def gen(arg_value: int) -> ak.NEntryFragFn:
+            @gl.entry_frag()
+            def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
+                cl.value.x = buffer.time.value * 12 + gl.eval(arg_value)
+            return vec_attr
+
+        expected = ''.join([
+            'void frag_main(inout vec4 color){color.x = ((time) * (12)) + (999);}',
+        ])
+
+        self.assertEqual(compile_shaders((gen(999),), lambda: ak.FragShader(), TEST_CONFIG), expected)

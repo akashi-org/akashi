@@ -10,11 +10,11 @@ from .compiler_inline import compile_inline_shader_partial
 import inspect
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderModule, ShaderKind, TEntryFn, TNarrowEntryFnOpaque
+    from akashi_core.pysl.shader import ShaderModule, ShaderKind, TEntryFn, _TNarrowedEntryFnOpaque
 
 
 def compile_shaders(
-        fns: tuple['TEntryFn' | 'TNarrowEntryFnOpaque', ...],
+        fns: tuple['TEntryFn' | '_TNarrowedEntryFnOpaque', ...],
         sh_mod_fn: tp.Callable[[], 'ShaderModule'],
         config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
 
@@ -39,7 +39,7 @@ def compile_shaders(
                 fn, sh_mod_fn, ctx)
         else:
             stmt, imported_named_shader_fns = compile_named_entry_shader_partial(
-                tp.cast('TNarrowEntryFnOpaque', fn), ctx)
+                tp.cast('_TNarrowedEntryFnOpaque', fn), ctx)
 
         for imp_fn in imported_named_shader_fns:
             imported_named_shader_fns_dict[mangled_func_name(ctx, imp_fn)] = imp_fn

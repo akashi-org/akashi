@@ -30,7 +30,9 @@ __all__ = [
     "VideoPolygonShader",
     "AnyShader",
     "EntryFragFn",
-    "EntryPolyFn"
+    "EntryPolyFn",
+    "NEntryFragFn",
+    "NEntryPolyFn"
 ]
 
 
@@ -58,12 +60,14 @@ from .config import (
     from_relpath,
 )
 
-from .pysl import (
+from .pysl.shader import (
     FragShader,
     VideoFragShader,
     PolygonShader,
     VideoPolygonShader,
     AnyShader,
     EntryFragFn,
-    EntryPolyFn
+    EntryPolyFn,
+    NEntryFragFn,
+    NEntryPolyFn
 )

@@ -23,7 +23,7 @@ import ast
 import sys
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderKind, TNarrowEntryFnOpaque
+    from akashi_core.pysl.shader import ShaderKind, _TNarrowedEntryFnOpaque
 
 
 def to_shader_kind(kind_str: str) -> 'ShaderKind':
@@ -159,7 +159,7 @@ def compile_named_shader(
 
 
 def compile_named_entry_shader_partial(
-        fn: 'TNarrowEntryFnOpaque', ctx: CompilerContext) -> tuple[_TGLSL, list[tp.Callable]]:
+        fn: '_TNarrowedEntryFnOpaque', ctx: CompilerContext) -> tuple[_TGLSL, list[tp.Callable]]:
 
     deco_fn = unwrap_shader_func(tp.cast(tp.Callable, fn))
     if not deco_fn:

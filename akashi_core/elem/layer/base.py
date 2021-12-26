@@ -7,11 +7,11 @@ import typing as tp
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.elem.uuid import UUID, gen_uuid
 from akashi_core.time import sec
-from akashi_core.pysl import FragShader, PolygonShader
+from akashi_core.pysl.shader import FragShader, PolygonShader
 
 if tp.TYPE_CHECKING:
     from akashi_core.elem.atom import AtomHandle
-    from akashi_core.pysl.shader import GEntryFragFn, GEntryPolyFn
+    from akashi_core.pysl.shader import _GEntryFragFn, _GEntryPolyFn
 
 
 LayerKind = tp.Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE', 'EFFECT', 'SHAPE', 'FREE']
@@ -91,12 +91,12 @@ class ShaderField:
 
 class ShaderTrait(LayerTrait, metaclass=ABCMeta):
 
-    def frag(self: '_TShaderTrait', *frag_shaders: 'GEntryFragFn') -> '_TShaderTrait':
+    def frag(self: '_TShaderTrait', *frag_shaders: '_GEntryFragFn') -> '_TShaderTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShaderField):
             cur_layer.frag_shader = FragShader(frag_shaders)
         return self
 
-    def poly(self: '_TShaderTrait', *poly_shaders: 'GEntryPolyFn') -> '_TShaderTrait':
+    def poly(self: '_TShaderTrait', *poly_shaders: '_GEntryPolyFn') -> '_TShaderTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShaderField):
             cur_layer.poly_shader = PolygonShader(poly_shaders)
         return self

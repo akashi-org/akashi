@@ -4,13 +4,13 @@ from dataclasses import dataclass
 import typing as tp
 
 from akashi_core.time import sec
-from akashi_core.pysl import VideoFragShader, VideoPolygonShader
+from akashi_core.pysl.shader import VideoFragShader, VideoPolygonShader
 
 from .base import PositionField, PositionTrait, LayerField, LayerTrait
 from .base import peek_entry, register_entry
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import GEntryFragFn, GEntryPolyFn
+    from akashi_core.pysl.shader import _GEntryFragFn, _GEntryPolyFn
 
 
 @dataclass
@@ -61,12 +61,12 @@ class VideoHandle(PositionTrait, LayerTrait):
             cur_layer.atom_offset = offset
         return self
 
-    def frag(self, *frag_shaders: 'GEntryFragFn') -> 'VideoHandle':
+    def frag(self, *frag_shaders: '_GEntryFragFn') -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.frag_shader = VideoFragShader(frag_shaders)
         return self
 
-    def poly(self, *poly_shaders: 'GEntryPolyFn') -> 'VideoHandle':
+    def poly(self, *poly_shaders: '_GEntryPolyFn') -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.poly_shader = VideoPolygonShader(poly_shaders)
         return self

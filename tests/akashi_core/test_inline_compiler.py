@@ -1,5 +1,6 @@
 import unittest
-from akashi_core.pysl import CompileError, compile_shaders
+from akashi_core.pysl.compiler.items import CompileError
+from akashi_core.pysl.compiler.compiler import compile_shaders
 from akashi_core import gl, ak
 from . import compiler_fixtures
 import typing as tp
