@@ -13,7 +13,7 @@ TEST_CONFIG: CompilerConfig.Config = {
 }
 
 
-@gl.fn('any')
+@gl.lib('any')
 def module_global_add(a: int, b: int) -> int:
     return a + b
 
@@ -22,7 +22,7 @@ class TestBasic(unittest.TestCase):
 
     def test_func_decl(self):
 
-        @gl.fn('any')
+        @gl.lib('any')
         def decl_func(a: int, b: int) -> int: ...
 
         expected = 'int test_named_compiler_decl_func(int a, int b);'
@@ -31,7 +31,7 @@ class TestBasic(unittest.TestCase):
 
     def test_inline_func(self):
 
-        @gl.fn('any')
+        @gl.lib('any')
         def add(a: int, b: int) -> int:
             return a + b
 
@@ -49,7 +49,7 @@ class TestBasic(unittest.TestCase):
         with self.assertRaisesRegex(CompileError, 'Named shader function must be decorated properly') as _:
             compile_named_shader(add)
 
-        @gl.fn('error kind')  # type: ignore
+        @gl.lib('error kind')  # type: ignore
         def add2(a: int, b: int) -> int:
             return a + b
 
@@ -58,11 +58,11 @@ class TestBasic(unittest.TestCase):
 
     def test_import(self):
 
-        @gl.fn('frag')
+        @gl.lib('frag')
         def add(a: int, b: int) -> int:
             return a + b
 
-        @gl.fn('frag')
+        @gl.lib('frag')
         def assign_fn(a: int) -> int:
             c: int = add(a, 2)
             d: int = module_global_add(90, 2)
@@ -79,7 +79,7 @@ class TestBasic(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(compile_named_shader(assign_fn, TEST_CONFIG), expected)
 
-        @gl.fn('any')
+        @gl.lib('any')
         def error_import(a: int) -> int:
             return add(a, 12)
 
@@ -88,7 +88,7 @@ class TestBasic(unittest.TestCase):
 
     def test_module_import(self):
 
-        @gl.fn('frag')
+        @gl.lib('frag')
         def add(a: int, b: int) -> int:
             return compiler_fixtures.boost_add(a, b)
 
@@ -102,7 +102,7 @@ class TestBasic(unittest.TestCase):
 
     def test_paren_arith_func(self):
 
-        @gl.fn('any')
+        @gl.lib('any')
         def paren_arith(a: int, b: int) -> int:
             return (100 - int(((12 * 90) + a) / b))
 
@@ -114,7 +114,7 @@ class TestBasic(unittest.TestCase):
 
     def test_vec_attr(self):
 
-        @gl.fn('frag')
+        @gl.lib('frag')
         def vec_attr(_fragColor: gl.vec4) -> None:
             _fragColor.x = 12
 
@@ -126,7 +126,7 @@ class TestBasic(unittest.TestCase):
 
         vec4 = gl.vec4
 
-        @gl.fn('frag')
+        @gl.lib('frag')
         def vec_attr2(_fragColor: vec4) -> gl.vec4:
             _fragColor.x = 12
             return _fragColor
@@ -139,11 +139,11 @@ class TestBasic(unittest.TestCase):
 
     def test_params_qualifier(self):
 
-        @gl.fn('any')
+        @gl.lib('any')
         def add(a: int, b: int) -> int:
             return a + b
 
-        @gl.fn('frag')
+        @gl.lib('frag')
         def vec_attr(_fragColor: gl.inout_p[gl.vec4]) -> None:
             _fragColor.value.x = add(12, int(_fragColor.value.x))
 
@@ -155,7 +155,7 @@ class TestBasic(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(compile_named_shader(vec_attr, TEST_CONFIG), expected)
 
-        @gl.fn('frag')
+        @gl.lib('frag')
         def vec_attr2(_fragColor: gl.out_p[gl.vec4]) -> gl.out_p[gl.vec4]:
             return _fragColor
 
@@ -167,7 +167,7 @@ class TestControl(unittest.TestCase):
 
     def test_if(self):
 
-        @gl.fn('any')
+        @gl.lib('any')
         def add(a: int, b: int) -> int:
             if bool(a):
                 return -1
@@ -177,7 +177,7 @@ class TestControl(unittest.TestCase):
 
         self.assertEqual(compile_named_shader(add, TEST_CONFIG), expected)
 
-        @gl.fn('any')
+        @gl.lib('any')
         def add2(a: int, b: int) -> int:
             if bool(a):
                 return -1
@@ -188,7 +188,7 @@ class TestControl(unittest.TestCase):
 
         self.assertEqual(compile_named_shader(add2, TEST_CONFIG), expected2)
 
-        @gl.fn('any')
+        @gl.lib('any')
         def add3(a: int, b: int) -> int:
             if bool(a):
                 return -1
@@ -201,7 +201,7 @@ class TestControl(unittest.TestCase):
 
         self.assertEqual(compile_named_shader(add3, TEST_CONFIG), expected3)
 
-        @gl.fn('any')
+        @gl.lib('any')
         def add4(a: int, b: int) -> int:
             if bool(a):
                 ...
@@ -213,7 +213,7 @@ class TestControl(unittest.TestCase):
 
     def test_ternary_op(self):
 
-        @gl.fn('any')
+        @gl.lib('any')
         def add(a: int, b: int) -> int:
             return a + b if bool(a) else 12
 
@@ -221,7 +221,7 @@ class TestControl(unittest.TestCase):
 
         self.assertEqual(compile_named_shader(add, TEST_CONFIG), expected)
 
-        @gl.fn('any')
+        @gl.lib('any')
         def add2(a: int, b: int) -> int:
             return a + b if bool(a) else 900 if bool(b) else 12
 
@@ -231,7 +231,7 @@ class TestControl(unittest.TestCase):
 
     def test_compare_and_bool_op(self):
 
-        @gl.fn('any')
+        @gl.lib('any')
         def add(a: int, b: int) -> int:
             if a > 1:
                 return -1
@@ -241,7 +241,7 @@ class TestControl(unittest.TestCase):
 
         self.assertEqual(compile_named_shader(add, TEST_CONFIG), expected)
 
-        @gl.fn('any')
+        @gl.lib('any')
         def add2(a: int, b: int) -> int:
             if 1 <= a < 12:
                 return -1
@@ -250,7 +250,7 @@ class TestControl(unittest.TestCase):
         with self.assertRaisesRegex(CompileError, 'Multiple comparison operators in one expression') as _:
             compile_named_shader(add2)
 
-        @gl.fn('any')
+        @gl.lib('any')
         def add3(a: int, b: int) -> int:
             if (1 <= a and a < 12) or b > 100 or a < -100:
                 return -1
@@ -266,7 +266,7 @@ class TestControl(unittest.TestCase):
 
     def test_while(self):
 
-        @gl.fn('any')
+        @gl.lib('any')
         def count() -> int:
             res: int = 0
             while res < 10:
@@ -282,7 +282,7 @@ class TestControl(unittest.TestCase):
 
         self.assertEqual(compile_named_shader(count, TEST_CONFIG), expected)
 
-        @gl.fn('any')
+        @gl.lib('any')
         def count2() -> int:
             res: int = 0
             while res < 10:
@@ -294,7 +294,7 @@ class TestControl(unittest.TestCase):
         with self.assertRaisesRegex(CompileError, 'Else with while is not supported') as _:
             compile_named_shader(count2)
 
-        @gl.fn('any')
+        @gl.lib('any')
         def count3() -> int:
             res: int = 0
             while True:
@@ -317,7 +317,7 @@ class TestControl(unittest.TestCase):
 
     def test_for(self):
 
-        @gl.fn('any')
+        @gl.lib('any')
         def count() -> int:
             res: int = 0
             for i in range(1, 10, 2):
@@ -333,7 +333,7 @@ class TestControl(unittest.TestCase):
 
         self.assertEqual(compile_named_shader(count, TEST_CONFIG), expected)
 
-        @gl.fn('any')
+        @gl.lib('any')
         def count2() -> int:
             res: int = 0
             for arr in [1, 2, 3]:
@@ -343,7 +343,7 @@ class TestControl(unittest.TestCase):
         with self.assertRaisesRegex(CompileError, '^On For statement') as _:
             compile_named_shader(count2)
 
-        @gl.fn('any')
+        @gl.lib('any')
         def count3() -> int:
             res: int = 0
             for i in range(10):
@@ -374,7 +374,7 @@ class TestBuffer(unittest.TestCase):
 
         ddd = 12
 
-        @gl.fn('poly')
+        @gl.lib('poly')
         def local_add(a: int, b: int) -> int:
             return a + b
 
@@ -394,7 +394,7 @@ class TestBuffer(unittest.TestCase):
 
     def test_forbidden_import(self):
 
-        @gl.fn('poly')
+        @gl.lib('poly')
         def local_add(a: int, b: int) -> int:
             return a + b
 

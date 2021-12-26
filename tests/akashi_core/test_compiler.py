@@ -12,7 +12,7 @@ TEST_CONFIG: CompilerConfig.Config = {
 }
 
 
-@gl.fn('any')
+@gl.lib('any')
 def module_global_add(a: int, b: int) -> int:
     return a + b
 

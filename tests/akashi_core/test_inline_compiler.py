@@ -8,12 +8,12 @@ import typing as tp
 global_speed = 1890
 
 
-@gl.fn('any')
+@gl.lib('any')
 def module_global_add(a: int, b: int) -> int:
     return a + b
 
 
-@gl.fn('poly')
+@gl.lib('poly')
 def module_global_poly(a: int, b: int) -> int:
     return a + b
 
