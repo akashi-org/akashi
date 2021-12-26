@@ -1,9 +1,6 @@
 from __future__ import annotations
 
 __all__ = [
-    "expr",
-    "let",
-    "assign",
     "eval",
     "uint",
     "gl_FragCoord"
@@ -23,11 +20,9 @@ from typing import (
     Callable,
     TYPE_CHECKING
 )
-from ._gl_inline import expr, let, assign
-from ._gl_inline import eval
 
 if TYPE_CHECKING:
-    from akashi_core.pysl.shader import EntryFragFn, EntryPolyFn, TEntryFnOpaque
+    from akashi_core.pysl.shader import NamedEntryFragFn, NamedEntryPolyFn, TEntryFnOpaque
 
 
 _T = TypeVar('_T')
@@ -49,7 +44,7 @@ def fn(stage: _NamedFnStage) -> Callable[[Callable[_NamedFnP, _NamedFnR]], Calla
 # [TODO] Can we merge entry_*() decorators by using typing.overload?
 
 
-def entry_frag() -> Callable[['EntryFragFn'], TEntryFnOpaque['EntryFragFn']]:
+def entry_frag() -> Callable[['NamedEntryFragFn'], TEntryFnOpaque['NamedEntryFragFn']]:
     def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
         def wrapper(_stage: _NamedFnStage = 'frag', *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
             return f(*args, **kwargs)
@@ -57,12 +52,16 @@ def entry_frag() -> Callable[['EntryFragFn'], TEntryFnOpaque['EntryFragFn']]:
     return deco  # type: ignore
 
 
-def entry_poly() -> Callable[['EntryPolyFn'], TEntryFnOpaque['EntryPolyFn']]:
+def entry_poly() -> Callable[['NamedEntryPolyFn'], TEntryFnOpaque['NamedEntryPolyFn']]:
     def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
         def wrapper(_stage: _NamedFnStage = 'poly', *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
             return f(*args, **kwargs)
         return wrapper
     return deco  # type: ignore
+
+
+def eval(_expr: _T) -> _T:
+    return _expr
 
 
 # [TODO] should we wrap it with NewType?

@@ -21,7 +21,7 @@ class TestBasic(unittest.TestCase):
     def test_basic(self):
 
         def gen() -> ak.EntryFragFn:
-            return lambda b, c: gl.expr(12)
+            return lambda e, b, c: e(12)
 
         @gl.entry_frag()
         def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
@@ -36,7 +36,7 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(compile_shaders((
             gen(),
             vec_attr,
-            lambda b, c: gl.assign(c.value.x).eq(900)
+            lambda e, b, c: e(c.value.x) << e(900)
         ), lambda: ak.FragShader(), TEST_CONFIG), expected)
 
     def test_import(self):
@@ -44,7 +44,7 @@ class TestBasic(unittest.TestCase):
         outer_value = 102
 
         def gen() -> ak.EntryFragFn:
-            return lambda b, c: gl.expr(module_global_add(1, 2) * gl.eval(outer_value))
+            return lambda e, b, c: e(module_global_add(1, 2) * gl.eval(outer_value))
 
         @gl.entry_frag()
         def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:

@@ -123,6 +123,10 @@ class AugAssignOut(stmtOut):
 def from_AugAssign(node: ast.AugAssign, ctx: CompilerContext) -> AugAssignOut:
 
     target_str = compile_expr(node.target, ctx).content
+
+    if isinstance(node.op, ast.LShift):
+        raise CompileError('operator `<<=` is forbidden in pysl')
+
     op_str = transformer.binop_transformer(node.op)
     value_str = compile_expr(node.value, ctx).content
 

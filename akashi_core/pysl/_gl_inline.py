@@ -1,14 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Type, Generic, Literal, Any, TypeVar
+from typing import Type, Generic, TypeVar
 
 _T = TypeVar('_T')
-
-InlineExprKind = Literal['expr', 'assign', 'let']
-
-
-def eval(_expr: _T) -> _T:
-    return _expr
 
 
 @dataclass
@@ -16,29 +10,13 @@ class expr(Generic[_T]):
 
     v: _T
 
-    def __rshift__(self, other: 'expr[Any]') -> 'expr[Any]':
+    def tp(self, _tp: Type[_T]) -> 'expr[_T]':
+        return self
+
+    # [XXX] concats multiple exprs
+    def __or__(self, other: 'expr') -> 'expr':
         return other
 
-
-_ASSIGN_OP = Literal['=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '|=', '^=', '&=']
-
-
-@dataclass
-class assign(Generic[_T]):
-
-    v: _T
-
-    def eq(self, other: '_T') -> 'expr[_T]':
-        return expr(other)
-
-    def op(self, _op: _ASSIGN_OP, other: '_T') -> 'expr[_T]':
-        return expr(other)
-
-
-@dataclass
-class let(Generic[_T]):
-
-    v: _T
-
-    def tp(self, _tp: Type[_T]) -> 'expr[_T]':
-        return expr(self.v)
+    # [XXX] substitutes for assignment(=)
+    def __lshift__(self, other: 'expr[_T]') -> 'expr[_T]':
+        return self

@@ -74,7 +74,7 @@ def collect_entry_argument_symbols(ctx: CompilerContext, deco_fn: tp.Callable, k
         ctx.lambda_args[var_name] = 'pos'
 
 
-def parse_func_all(node: ast.FunctionDef, ctx: CompilerContext, func_name: str) -> _TGLSL:
+def compile_func_all(node: ast.FunctionDef, ctx: CompilerContext, func_name: str) -> _TGLSL:
 
     ctx.top_indent = node.col_offset
 
@@ -101,7 +101,7 @@ def parse_func_all(node: ast.FunctionDef, ctx: CompilerContext, func_name: str) 
     return f'{returns_str} {func_name}({args_str}){body_str}'
 
 
-def parse_func_body(node: ast.FunctionDef, ctx: CompilerContext) -> _TGLSL:
+def compile_func_body(node: ast.FunctionDef, ctx: CompilerContext) -> _TGLSL:
 
     is_method = len(ctx.buffers) > 0
 
@@ -146,7 +146,7 @@ def compile_named_shader(
     if not is_named_func(func_def, ctx.global_symbol):
         raise CompileError('Named shader function must be decorated properly')
 
-    out = parse_func_all(func_def, ctx, mangled_func_name(ctx, deco_fn, False))
+    out = compile_func_all(func_def, ctx, mangled_func_name(ctx, deco_fn, False))
 
     imported_strs = []
     for imp_fn in imported_named_shader_fns:
@@ -180,6 +180,6 @@ def compile_named_entry_shader_partial(
     if not is_named_func(func_def, ctx.global_symbol):
         raise CompileError('Named shader function must be decorated properly')
 
-    func_body = parse_func_body(func_def, ctx)
+    func_body = compile_func_body(func_def, ctx)
 
     return (func_body, imported_named_shader_fns)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 from . import compile_shaders, CompilerConfig
 from . import _gl
+from . import _gl_inline
 
 from abc import ABCMeta
 import typing as tp
@@ -8,8 +9,8 @@ from dataclasses import dataclass, field
 
 ShaderKind = tp.Literal['AnyShader', 'FragShader', 'PolygonShader', 'GeomShader']
 
-EntryFragFn = tp.Callable[['FragShader', _gl.inout_p[_gl.vec4]], _gl.expr | None]
-EntryPolyFn = tp.Callable[['PolygonShader', _gl.inout_p[_gl.vec3]], _gl.expr | None]
+EntryFragFn = tp.Callable[[tp.Type[_gl_inline.expr], 'FragShader', _gl.inout_p[_gl.vec4]], _gl_inline.expr]
+EntryPolyFn = tp.Callable[[tp.Type[_gl_inline.expr], 'PolygonShader', _gl.inout_p[_gl.vec3]], _gl_inline.expr]
 
 
 TEntryFn = tp.TypeVar('TEntryFn', 'EntryFragFn', 'EntryPolyFn')
@@ -21,10 +22,14 @@ class TEntryFnOpaque(tp.Generic[_T]):
     ...
 
 
-TNarrowEntryFnOpaque = tp.TypeVar('TNarrowEntryFnOpaque', TEntryFnOpaque['EntryFragFn'], TEntryFnOpaque['EntryPolyFn'])
+NamedEntryFragFn = tp.Callable[['FragShader', _gl.inout_p[_gl.vec4]], None]
+NamedEntryPolyFn = tp.Callable[['PolygonShader', _gl.inout_p[_gl.vec3]], None]
 
-GEntryFragFn = EntryFragFn | TEntryFnOpaque['EntryFragFn']
-GEntryPolyFn = EntryPolyFn | TEntryFnOpaque['EntryPolyFn']
+TNarrowEntryFnOpaque = tp.TypeVar(
+    'TNarrowEntryFnOpaque', TEntryFnOpaque['NamedEntryFragFn'], TEntryFnOpaque['NamedEntryPolyFn'])
+
+GEntryFragFn = EntryFragFn | TEntryFnOpaque['NamedEntryFragFn']
+GEntryPolyFn = EntryPolyFn | TEntryFnOpaque['NamedEntryPolyFn']
 
 EntryFragFnGP = tuple[GEntryFragFn, ...]
 EntryPolyFnGP = tuple[GEntryPolyFn, ...]
