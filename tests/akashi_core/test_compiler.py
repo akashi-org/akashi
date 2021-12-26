@@ -24,12 +24,12 @@ class TestMixed(unittest.TestCase):
         def gen() -> ak.EntryFragFn:
             return lambda e, b, c: e(12)
 
-        @gl.entry_frag()
+        @gl.entry('frag')
         def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
             cl.value.x = buffer.time.value * 12
 
         def named_gen(arg_value: int) -> ak.NEntryFragFn:
-            @gl.entry_frag()
+            @gl.entry('frag')
             def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
                 cl.value.x = buffer.time.value * 12 + gl.eval(arg_value)
             return vec_attr
@@ -56,7 +56,7 @@ class TestMixed(unittest.TestCase):
         def gen() -> ak.EntryFragFn:
             return lambda e, b, c: e(module_global_add(1, 2) * gl.eval(outer_value))
 
-        @gl.entry_frag()
+        @gl.entry('frag')
         def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
             cl.value.x = module_global_add(1, 2)
 

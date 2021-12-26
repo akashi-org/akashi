@@ -360,7 +360,7 @@ class TestBuffer(unittest.TestCase):
 
     def test_uniform(self):
 
-        @gl.entry_frag()
+        @gl.entry('frag')
         def vec_attr(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
             color.value.x = buffer.time.value * 12
 
@@ -378,7 +378,7 @@ class TestBuffer(unittest.TestCase):
         def local_add(a: int, b: int) -> int:
             return a + b
 
-        @gl.entry_frag()
+        @gl.entry('frag')
         def vec_attr(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
             color.value.x = buffer.time.value * module_global_add(12, 1) * compiler_fixtures.boost_add(20, gl.eval(ddd))
 
@@ -398,7 +398,7 @@ class TestBuffer(unittest.TestCase):
         def local_add(a: int, b: int) -> int:
             return a + b
 
-        @gl.entry_frag()
+        @gl.entry('frag')
         def vec_attr(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
             color.value.x = local_add(1, 2)
 
@@ -410,7 +410,7 @@ class TestEntry(unittest.TestCase):
 
     def test_basic(self):
 
-        @gl.entry_frag()
+        @gl.entry('frag')
         def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
             cl.value.x = buffer.time.value * 12
 
@@ -422,15 +422,15 @@ class TestEntry(unittest.TestCase):
 
     def test_chain(self):
 
-        @gl.entry_frag()
+        @gl.entry('frag')
         def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
             cl.value.x = buffer.time.value * 12
 
-        @gl.entry_frag()
+        @gl.entry('frag')
         def vec_attr2(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
             color.value.y = buffer.time.value * 12
 
-        @gl.entry_frag()
+        @gl.entry('frag')
         def vec_attr3(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
             color.value.z = buffer.time.value * 12
 
@@ -441,7 +441,6 @@ class TestEntry(unittest.TestCase):
         ])
 
         self.maxDiff = None
-
         self.assertEqual(compile_shaders((vec_attr, vec_attr2, vec_attr3),
                          lambda: ak.FragShader(), TEST_CONFIG), expected)
 
@@ -451,7 +450,7 @@ class TestClosure(unittest.TestCase):
     def test_basic(self):
 
         def gen(arg_value: int) -> ak.NEntryFragFn:
-            @gl.entry_frag()
+            @gl.entry('frag')
             def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
                 cl.value.x = buffer.time.value * 12 + gl.eval(arg_value)
             return vec_attr

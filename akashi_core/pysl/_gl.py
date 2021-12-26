@@ -42,10 +42,27 @@ def fn(stage: _NamedFnStage) -> Callable[[Callable[_NamedFnP, _NamedFnR]], Calla
     return deco
 
 
-# [TODO] Can we merge entry_*() decorators by using typing.overload?
+@overload
+def entry(stage: Literal['frag']) -> Callable[['_NamedEntryFragFn'], _TEntryFnOpaque['_NamedEntryFragFn']]:
+    ...
 
 
-def entry_frag() -> Callable[['_NamedEntryFragFn'], _TEntryFnOpaque['_NamedEntryFragFn']]:
+@overload
+def entry(stage: Literal['poly']) -> Callable[['_NamedEntryPolyFn'], _TEntryFnOpaque['_NamedEntryPolyFn']]:
+    ...
+
+
+def entry(stage: _NamedFnStage) -> Any:
+    match stage:
+        case 'frag':
+            return _entry_frag()
+        case 'poly':
+            return _entry_poly()
+        case _:
+            raise NotImplementedError()
+
+
+def _entry_frag() -> Callable[['_NamedEntryFragFn'], _TEntryFnOpaque['_NamedEntryFragFn']]:
     def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
         def wrapper(_stage: _NamedFnStage = 'frag', *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
             return f(*args, **kwargs)
@@ -53,7 +70,7 @@ def entry_frag() -> Callable[['_NamedEntryFragFn'], _TEntryFnOpaque['_NamedEntry
     return deco  # type: ignore
 
 
-def entry_poly() -> Callable[['_NamedEntryPolyFn'], _TEntryFnOpaque['_NamedEntryPolyFn']]:
+def _entry_poly() -> Callable[['_NamedEntryPolyFn'], _TEntryFnOpaque['_NamedEntryPolyFn']]:
     def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
         def wrapper(_stage: _NamedFnStage = 'poly', *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
             return f(*args, **kwargs)

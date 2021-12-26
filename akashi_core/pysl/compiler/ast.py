@@ -726,7 +726,7 @@ def is_named_func(func_def: ast.FunctionDef, global_symbol: dict) -> bool:
     for deco in func_def.decorator_list:
         deco_node = compile_expr(deco, ctx)
         deco_tpname = transformer.type_transformer(deco_node.content, ctx, deco_node.node)
-        if deco_tpname in ['fn', 'entry_frag', 'entry_poly']:
+        if deco_tpname in ['fn', 'entry']:
             return True
 
     return False
