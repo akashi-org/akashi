@@ -140,15 +140,6 @@ class TestInlineAssign(unittest.TestCase):
 
         self.assertEqual(compile_shaders((gen(),), lambda: ak.FragShader()), expected)
 
-    def test_op(self):
-
-        def gen() -> ak.EntryFragFn:
-            return lambda e, b, c: e(c.value.x) << e(c.value.x + b.resolution.value.x + gl.sin(12))
-
-        expected = 'void frag_main(inout vec4 color){color.x = ((color.x) + (resolution.x)) + (sin(12));}'
-
-        self.assertEqual(compile_shaders((gen(),), lambda: ak.FragShader()), expected)
-
     def test_merge(self):
 
         def gen() -> ak.EntryFragFn:
