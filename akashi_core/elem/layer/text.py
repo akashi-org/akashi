@@ -17,7 +17,7 @@ from .base import (
 from .base import peek_entry, register_entry, frag, poly
 from akashi_core.pysl import _gl as gl
 from akashi_core.pysl.shader import ShaderCompiler, _frag_shader_header, _poly_shader_header
-from akashi_core.pysl.shader import EntryFragFn, EntryPolyFn
+from akashi_core.pysl.shader import LEntryFragFn, LEntryPolyFn
 from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
 
 
@@ -36,8 +36,8 @@ class TextPolyBuffer(poly, TextUniform, gl._LayerPolyOutput):
     ...
 
 
-_TextFragFn = EntryFragFn[TextFragBuffer] | _TEntryFnOpaque[_NamedEntryFragFn[TextFragBuffer]]
-_TextPolyFn = EntryPolyFn[TextPolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn[TextPolyBuffer]]
+_TextFragFn = LEntryFragFn[TextFragBuffer] | _TEntryFnOpaque[_NamedEntryFragFn[TextFragBuffer]]
+_TextPolyFn = LEntryPolyFn[TextPolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn[TextPolyBuffer]]
 
 
 TextAlign = tp.Literal['left', 'center', 'right']

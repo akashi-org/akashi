@@ -24,8 +24,8 @@ __all__ = [
     "EncodeConf",
     "AKConf",
     "from_relpath",
-    "EntryFragFn",
-    "EntryPolyFn",
+    "LEntryFragFn",
+    "LEntryPolyFn",
     "frag",
     "poly"
 ]
@@ -57,6 +57,6 @@ from .config import (
 )
 
 from .pysl.shader import (
-    EntryFragFn,
-    EntryPolyFn,
+    LEntryFragFn,
+    LEntryPolyFn,
 )

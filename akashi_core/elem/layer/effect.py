@@ -11,7 +11,7 @@ from .base import (
 from .base import register_entry, peek_entry, frag, poly
 from akashi_core.pysl import _gl as gl
 from akashi_core.pysl.shader import ShaderCompiler, _frag_shader_header, _poly_shader_header
-from akashi_core.pysl.shader import EntryFragFn, EntryPolyFn
+from akashi_core.pysl.shader import LEntryFragFn, LEntryPolyFn
 from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
 
 
@@ -35,8 +35,8 @@ class EffectEntry(ShaderField, LayerField):
     ...
 
 
-_EffectFragFn = EntryFragFn[EffectFragBuffer] | _TEntryFnOpaque[_NamedEntryFragFn[EffectFragBuffer]]
-_EffectPolyFn = EntryPolyFn[EffectPolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn[EffectPolyBuffer]]
+_EffectFragFn = LEntryFragFn[EffectFragBuffer] | _TEntryFnOpaque[_NamedEntryFragFn[EffectFragBuffer]]
+_EffectPolyFn = LEntryPolyFn[EffectPolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn[EffectPolyBuffer]]
 
 
 @dataclass

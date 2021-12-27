@@ -21,7 +21,7 @@ class TestMixed(unittest.TestCase):
 
     def test_basic(self):
 
-        def gen() -> ak.EntryFragFn:
+        def gen() -> ak.LEntryFragFn:
             return lambda e, b, c: e(12)
 
         @gl.entry(ak.frag)
@@ -53,7 +53,7 @@ class TestMixed(unittest.TestCase):
 
         outer_value = 102
 
-        def gen() -> ak.EntryFragFn:
+        def gen() -> ak.LEntryFragFn:
             return lambda e, b, c: e(module_global_add(1, 2) * gl.eval(outer_value))
 
         @gl.entry(ak.frag)
@@ -77,7 +77,7 @@ class TestOther(unittest.TestCase):
 
     def test_buffer_direct_assign(self):
 
-        def gen() -> ak.EntryFragFn:
+        def gen() -> ak.LEntryFragFn:
             return lambda e, b, c: e(c) << e(c)
 
         expected = ''.join([
