@@ -50,6 +50,11 @@ if(NOT spdlog_POPULATED)
   )
 
   add_subdirectory(${spdlog_SOURCE_DIR} ${spdlog_BINARY_DIR})
+
+  set_target_properties(spdlog PROPERTIES
+    POSITION_INDEPENDENT_CODE ON # force adding -fPIC
+  )
+
   link_directories(
     ${spdlog_BINARY_DIR}
   )
@@ -87,6 +92,7 @@ file(GLOB INTERFACE_HEADERS
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES 
   PUBLIC_HEADER "${INTERFACE_HEADERS}" # [XXX] we need double quotes here!
+  POSITION_INDEPENDENT_CODE ON # force adding -fPIC
 )
 
 target_compile_definitions(${PROJECT_NAME}

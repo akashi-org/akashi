@@ -1,4 +1,4 @@
-from .utils import BIN_PATH, ENCODER_BIN_PATH, KERNEL_BIN_PATH, LIBRARY_PATH
+from .utils import BIN_PATH, ENCODER_BIN_PATH, KERNEL_BIN_PATH, LIBRARY_PATH, libpython_path
 from .parser import argument_parse, ParsedOption
 
 import signal
@@ -99,6 +99,11 @@ def akashi_cli() -> None:
         os.environ['LD_LIBRARY_PATH'] += os.pathsep + LIBRARY_PATH
     else:
         os.environ['LD_LIBRARY_PATH'] = LIBRARY_PATH
+
+    if 'LD_PRELOAD' in os.environ.keys():
+        os.environ['LD_PRELOAD'] += os.pathsep + libpython_path()
+    else:
+        os.environ['LD_PRELOAD'] = libpython_path()
 
     if 'QT_LOGGING_RULES' not in os.environ.keys():
         os.environ['QT_LOGGING_RULES'] = '*=false;*.critical=true'

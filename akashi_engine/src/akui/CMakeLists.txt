@@ -35,6 +35,10 @@ add_executable(${PROJECT_NAME}
   ${RESOURCES}
 )
 
+set_target_properties(${PROJECT_NAME} PROPERTIES
+  LINK_FLAGS "-Wl,--allow-shlib-undefined" # for libpython.so
+)
+
 target_compile_definitions(${PROJECT_NAME}
   PRIVATE "QT_NO_KEYWORDS" # for avoiding issues with other libraries like Python.h, Boost
 )

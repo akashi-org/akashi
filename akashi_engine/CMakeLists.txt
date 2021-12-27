@@ -83,7 +83,12 @@ set_target_properties(akprobe PROPERTIES
 add_subdirectory("./src/libakbuffer")
 add_subdirectory("./src/libakaudio")
 add_subdirectory("./src/libakgraphics")
+
 add_subdirectory("./src/libakeval")
+set_target_properties(akeval PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 add_subdirectory("./src/libakwatch")
 add_subdirectory("./src/libakserver")
 add_subdirectory("./src/libakstate")

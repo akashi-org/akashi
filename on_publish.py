@@ -4,22 +4,20 @@ from distutils.dir_util import remove_tree, mkpath
 import os
 from os import path
 
-_T = TypeVar('_T', bound=Command)
-
-
 SDIST_TEMP = 'sdist_temp'
 CLI_DIRNAME = 'akashi_cli'
 BIN_NAME = 'akashi_renderer'
 ENCODER_BIN_NAME = 'akashi_encoder'
 KERNEL_BIN_NAME = 'akashi_kernel'
 LIBAKPROBE_NAME = 'libakprobe.so'
+LIBAKEVAL_NAME = 'libakeval.so'
 
 
-def _get_package_name(sdist_cmd: _T) -> str:
+def _get_package_name(sdist_cmd: Command) -> str:
     return sdist_cmd.distribution.get_name().replace('-', '_')  # type: ignore
 
 
-def _exec_cmake_build(sdist_cmd: _T):
+def _exec_cmake_build(sdist_cmd: Command):
     mkpath(SDIST_TEMP)
 
     cmake_build_dir = path.join(SDIST_TEMP, 'cmake_build')
@@ -59,16 +57,17 @@ def _exec_cmake_build(sdist_cmd: _T):
     sdist_lib_dir = path.join(SDIST_TEMP, 'lib')
     mkpath(sdist_lib_dir)
     sdist_cmd.copy_tree(path.join(SDIST_TEMP, 'vendor', 'lib'), sdist_lib_dir)
+    sdist_cmd.copy_file(path.join(cmake_build_dir, LIBAKEVAL_NAME), sdist_lib_dir)
 
     remove_tree(cmake_build_dir)
     remove_tree(path.join(SDIST_TEMP, "vendor"))
     remove_tree(path.join(SDIST_TEMP, "shared_temp"))
 
 
-def pre_sdist(sdist_cmd: _T) -> None:
+def pre_sdist(sdist_cmd: Command) -> None:
     _exec_cmake_build(sdist_cmd)
 
 
-def post_sdist(sdist_cmd: _T) -> None:
+def post_sdist(sdist_cmd: Command) -> None:
     # remove egg-info
     remove_tree(_get_package_name(sdist_cmd) + '.egg-info')

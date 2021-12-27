@@ -1,6 +1,7 @@
 from typing import Final
 from os import path
 import os
+import sysconfig
 
 
 def from_relpath(bpath: str, tpath: str) -> str:
@@ -26,3 +27,14 @@ KERNEL_BIN_PATH: Final[str] = (
 )
 
 LIBRARY_PATH: Final[str] = from_relpath(__file__, './lib')
+
+
+def libpython_path() -> str:
+
+    libdir = sysconfig.get_config_var("LIBDIR")
+    libname = sysconfig.get_config_var("LDLIBRARY")
+
+    if libdir and libname:
+        return os.path.join(libdir, libname)
+    else:
+        raise Exception(f'Failed to find libpython.so: LIBDIR: {libdir}, LDLIBRARY: {libname}')

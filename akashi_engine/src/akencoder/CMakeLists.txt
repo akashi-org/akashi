@@ -36,6 +36,10 @@ add_executable(${PROJECT_NAME}
   ./audio_renderer.cpp
 )
 
+set_target_properties(${PROJECT_NAME} PROPERTIES
+  LINK_FLAGS "-Wl,--allow-shlib-undefined" # for libpython.so
+)
+
 target_include_directories(${PROJECT_NAME}
   PRIVATE ${glfw_SOURCE_DIR}/include/
   PRIVATE "../../src"

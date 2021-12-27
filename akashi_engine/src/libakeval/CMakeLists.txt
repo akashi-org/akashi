@@ -1,12 +1,12 @@
 project (akeval CXX)
 
-find_package(Python 3.10 COMPONENTS Interpreter Development EXACT REQUIRED)
-message("-- Python Found " ${PYTHONLIBS_VERSION_STRING})
+find_package(Python 3.10 COMPONENTS Interpreter Development REQUIRED)
+message("-- Python Found " ${Python_VERSION})
+message("-- Python INCLUDE_DIRS " ${Python_INCLUDE_DIRS})
 
 FetchContent_Declare(pybind11
-  # GIT_REPOSITORY https://github.com/nlohmann/json
   GIT_REPOSITORY https://github.com/pybind/pybind11
-  GIT_TAG v2.6.2
+  GIT_TAG v2.6.2 # use v2.6.2 for avoiding segv due to the change introduced by https://github.com/pybind/pybind11/pull/2919
   GIT_SHALLOW TRUE
   GIT_PROGRESS TRUE
 )
@@ -15,13 +15,13 @@ if(NOT pybind11_POPULATED)
   FetchContent_Populate(pybind11)
   set(PYBIND11_INSTALL ON CACHE BOOL "")
   set(PYBIND11_TEST OFF CACHE BOOL "")
-  # set(PYBIND11_NOPYTHON OFF CACHE BOOL "")
+  set(PYBIND11_NOPYTHON ON CACHE BOOL "")
   add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
   file(COPY ${pybind11_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_BINARY_DIR}/../vendor/credits/pybind11/)
 endif()
 
 
-add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
+add_library(${PROJECT_NAME} SHARED
   "./akeval.cpp"
 
   "./backend/python/context.cpp"
@@ -41,14 +41,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 target_include_directories(${PROJECT_NAME}
   PRIVATE "../../src"
-  PUBLIC ${PYTHON_INCLUDE_DIRS} # [TODO] PUBLIC => PRIVATE ?
+  PRIVATE ${Python_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
   PRIVATE akcore
   PRIVATE akstate
-  PRIVATE ${PYTHON_LIBRARIES}
-  PRIVATE pybind11::embed
+  PRIVATE pybind11::headers
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
