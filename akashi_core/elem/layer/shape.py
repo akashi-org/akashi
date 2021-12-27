@@ -11,11 +11,33 @@ from .base import (
     PositionField,
     PositionTrait,
     ShaderField,
-    ShaderTrait,
     LayerField,
     LayerTrait
 )
-from .base import peek_entry, register_entry
+from .base import peek_entry, register_entry, frag, poly
+from akashi_core.pysl import _gl as gl
+from akashi_core.pysl.shader import ShaderCompiler, _frag_shader_header, _poly_shader_header
+from akashi_core.pysl.shader import EntryFragFn, EntryPolyFn
+from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
+
+
+@dataclass
+class ShapeUniform:
+    texture0: tp.Final[gl.uniform[gl.sampler2D]] = gl._uniform_default()
+
+
+@dataclass
+class ShapeFragBuffer(frag, ShapeUniform, gl._LayerFragInput):
+    ...
+
+
+@dataclass
+class ShapePolyBuffer(poly, ShapeUniform, gl._LayerPolyOutput):
+    ...
+
+
+_ShapeFragFn = EntryFragFn[ShapeFragBuffer] | _TEntryFnOpaque[_NamedEntryFragFn[ShapeFragBuffer]]
+_ShapePolyFn = EntryPolyFn[ShapePolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn[ShapePolyBuffer]]
 
 
 @dataclass
@@ -68,6 +90,16 @@ class ShapeField:
 
 class ShapeTrait(LayerTrait, metaclass=ABCMeta):
 
+    def frag(self: '_TShapeLayer', *frag_fns: _ShapeFragFn, preamble: tuple[str, ...] = tuple()) -> '_TShapeLayer':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
+            cur_layer.frag_shader = ShaderCompiler(frag_fns, ShapeFragBuffer, _frag_shader_header, preamble)
+        return self
+
+    def poly(self: '_TShapeLayer', *poly_fns: _ShapePolyFn, preamble: tuple[str, ...] = tuple()) -> '_TShapeLayer':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
+            cur_layer.poly_shader = ShaderCompiler(poly_fns, ShapePolyBuffer, _poly_shader_header, preamble)
+        return self
+
     def fill(self: '_TShapeLayer', enable_fill: bool) -> '_TShapeLayer':
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(ShapeField, cur_layer).fill = enable_fill
@@ -100,12 +132,12 @@ class ShapeEntry(LayerField, ShaderField, PositionField, ShapeField):
 
 
 @dataclass
-class RectHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, LayerTrait):
+class RectHandle(FittableDurationTrait, PositionTrait, ShapeTrait, LayerTrait):
     ...
 
 
 @dataclass
-class CircleHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, LayerTrait):
+class CircleHandle(FittableDurationTrait, PositionTrait, ShapeTrait, LayerTrait):
 
     def lod(self, value: int) -> 'CircleHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
@@ -114,12 +146,12 @@ class CircleHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait
 
 
 @dataclass
-class TriangleHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, LayerTrait):
+class TriangleHandle(FittableDurationTrait, PositionTrait, ShapeTrait, LayerTrait):
     ...
 
 
 @dataclass
-class LineHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, LayerTrait):
+class LineHandle(FittableDurationTrait, PositionTrait, ShapeTrait, LayerTrait):
 
     def color(self, color: tp.Union[str, 'ColorEnum']) -> 'LineHandle':
         return super().color(color)
@@ -140,34 +172,54 @@ class LineHandle(FittableDurationTrait, ShaderTrait, PositionTrait, ShapeTrait, 
         return self
 
 
-def rect(width: int, height: int, key: str = '') -> RectHandle:
+class rect(object):
 
-    entry = ShapeEntry('RECT')
-    entry.rect.width = width
-    entry.rect.height = height
-    idx = register_entry(entry, 'SHAPE', key)
-    return RectHandle(idx)
+    frag: tp.ClassVar[tp.Type[ShapeFragBuffer]] = ShapeFragBuffer
+    poly: tp.ClassVar[tp.Type[ShapePolyBuffer]] = ShapePolyBuffer
 
+    def __new__(cls, width: int, height: int, key: str = '') -> RectHandle:
 
-def circle(radius: float, key: str = '') -> CircleHandle:
-
-    entry = ShapeEntry('CIRCLE')
-    entry.circle.circle_radius = radius
-    idx = register_entry(entry, 'SHAPE', key)
-    return CircleHandle(idx)
+        entry = ShapeEntry('RECT')
+        entry.rect.width = width
+        entry.rect.height = height
+        idx = register_entry(entry, 'SHAPE', key)
+        return RectHandle(idx)
 
 
-def tri(side: float, key: str = '') -> TriangleHandle:
+class circle(object):
 
-    entry = ShapeEntry('TRIANGLE')
-    entry.tri.side = side
-    idx = register_entry(entry, 'SHAPE', key)
-    return TriangleHandle(idx)
+    frag: tp.ClassVar[tp.Type[ShapeFragBuffer]] = ShapeFragBuffer
+    poly: tp.ClassVar[tp.Type[ShapePolyBuffer]] = ShapePolyBuffer
+
+    def __new__(cls, radius: float, key: str = '') -> CircleHandle:
+
+        entry = ShapeEntry('CIRCLE')
+        entry.circle.circle_radius = radius
+        idx = register_entry(entry, 'SHAPE', key)
+        return CircleHandle(idx)
 
 
-def line(size: float, key: str = '') -> LineHandle:
+class tri(object):
 
-    entry = ShapeEntry('LINE')
-    entry.line.size = size
-    idx = register_entry(entry, 'SHAPE', key)
-    return LineHandle(idx)
+    frag: tp.ClassVar[tp.Type[ShapeFragBuffer]] = ShapeFragBuffer
+    poly: tp.ClassVar[tp.Type[ShapePolyBuffer]] = ShapePolyBuffer
+
+    def __new__(cls, side: float, key: str = '') -> TriangleHandle:
+
+        entry = ShapeEntry('TRIANGLE')
+        entry.tri.side = side
+        idx = register_entry(entry, 'SHAPE', key)
+        return TriangleHandle(idx)
+
+
+class line(object):
+
+    frag: tp.ClassVar[tp.Type[ShapeFragBuffer]] = ShapeFragBuffer
+    poly: tp.ClassVar[tp.Type[ShapePolyBuffer]] = ShapePolyBuffer
+
+    def __new__(cls, size: float, key: str = '') -> LineHandle:
+
+        entry = ShapeEntry('LINE')
+        entry.line.size = size
+        idx = register_entry(entry, 'SHAPE', key)
+        return LineHandle(idx)

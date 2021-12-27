@@ -4,8 +4,9 @@ import typing as tp
 
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
 from .ast import compile_expr, from_annotation
-from .utils import can_import, entry_point, mangled_func_name
+from .utils import can_import, entry_point, mangled_func_name, get_shader_kind_from_buffer
 from .symbol import collect_global_symbols, collect_buffer_symbols, collect_local_symbols
+from akashi_core.pysl import _gl
 
 
 import inspect
@@ -13,10 +14,10 @@ import ast
 import sys
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderModule, ShaderKind, TEntryFn
+    from akashi_core.pysl.shader import ShaderCompiler, ShaderKind
 
 
-def parse_inline_expr(fn: 'TEntryFn', ctx: CompilerContext) -> ast.expr:
+def parse_inline_expr(fn: tp.Callable, ctx: CompilerContext) -> ast.expr:
 
     if fn.__name__ != '<lambda>':
         raise CompileError('For inline shader, we currently support lambda function only!')
@@ -95,7 +96,7 @@ def compile_let_expr(node: ast.Call, ctx: CompilerContext) -> str:
     return f'{type_str} {lhs} = {rhs}'
 
 
-def collect_argument_symbols(ctx: CompilerContext, fn: 'TEntryFn', kind: 'ShaderKind'):
+def collect_argument_symbols(ctx: CompilerContext, fn: tp.Callable, kind: 'ShaderKind'):
 
     _, buf_arg, var_arg = inspect.getfullargspec(fn).args
     ctx.lambda_args[buf_arg] = ''
@@ -113,14 +114,14 @@ def collect_argument_symbols(ctx: CompilerContext, fn: 'TEntryFn', kind: 'Shader
 
 
 def compile_inline_shader_partial(
-        fn: 'TEntryFn',
-        sh_mod_fn: tp.Callable[[], 'ShaderModule'],
+        fn: tp.Callable,
+        buffer_type: tp.Type[_gl._buffer_type],
         ctx: CompilerContext) -> tuple[_TGLSL, list[tp.Callable]]:
 
-    kind = sh_mod_fn().__kind__
+    kind = get_shader_kind_from_buffer(buffer_type)
 
     collect_global_symbols(ctx, fn)
-    collect_buffer_symbols(ctx, sh_mod_fn())
+    collect_buffer_symbols(ctx, buffer_type)
     collect_argument_symbols(ctx, fn, kind)
     imported_named_shader_fns = collect_local_symbols(ctx, fn)
 

@@ -7,9 +7,11 @@ from .utils import (
     mangled_func_name,
     get_function_def,
     get_source,
-    resolve_module
+    resolve_module,
+    get_shader_kind_from_buffer
 )
 from .ast import is_named_func
+from akashi_core.pysl import _gl
 
 from types import ModuleType
 import typing as tp
@@ -18,7 +20,7 @@ import sys
 import ast
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderModule
+    from akashi_core.pysl.shader import ShaderCompiler
 
 
 def collect_global_symbols(ctx: CompilerContext, fn: tp.Callable):
@@ -62,8 +64,8 @@ def collect_local_symbols(ctx: CompilerContext, deco_fn: tp.Callable) -> list[tp
     return imported_named_shader_fn
 
 
-def collect_buffer_symbols(ctx: CompilerContext, sh_mod: 'ShaderModule'):
+def collect_buffer_symbols(ctx: CompilerContext, buffer_type: tp.Type[_gl._buffer_type]):
 
-    for mem_name, mem in inspect.getmembers(sh_mod):
+    for mem_name, mem in inspect.getmembers(buffer_type):
         if not(callable(mem)):
             ctx.local_symbol[mem_name] = str(type(mem).__name__)

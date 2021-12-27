@@ -1,6 +1,8 @@
+# pyright: reportPrivateUsage=false
 from __future__ import annotations
 
 from .items import CompileError, CompilerContext
+from akashi_core.pysl import _gl
 
 import typing as tp
 import inspect
@@ -8,7 +10,7 @@ import ast
 import re
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderModule, ShaderKind
+    from akashi_core.pysl.shader import ShaderCompiler, ShaderKind
 
 
 def get_source(obj) -> str:
@@ -135,6 +137,16 @@ def mangled_func_name(ctx: CompilerContext, deco_fn: tp.Callable, unwrap: bool =
         return deco_fn.__name__
     else:
         return prefix + '_' + deco_fn.__name__
+
+
+def get_shader_kind_from_buffer(buffer_type: tp.Type[_gl._buffer_type]) -> 'ShaderKind':
+
+    if issubclass(buffer_type, _gl._frag):
+        return 'FragShader'
+    elif issubclass(buffer_type, _gl._poly):
+        return 'PolygonShader'
+    else:
+        raise NotImplementedError()
 
 
 def visit_all(node: ast.AST):

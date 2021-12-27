@@ -24,21 +24,17 @@ __all__ = [
     "EncodeConf",
     "AKConf",
     "from_relpath",
-    "FragShader",
-    "VideoFragShader",
-    "PolygonShader",
-    "VideoPolygonShader",
-    "AnyShader",
     "EntryFragFn",
     "EntryPolyFn",
-    "NEntryFragFn",
-    "NEntryPolyFn"
+    "frag",
+    "poly"
 ]
 
 
 from .elem.context import entry
 from .elem.atom import atom
 from .elem.lane import lane
+from .elem.layer.base import frag, poly
 from .elem.layer.video import video
 from .elem.layer.audio import audio
 from .elem.layer.image import image
@@ -61,13 +57,6 @@ from .config import (
 )
 
 from .pysl.shader import (
-    FragShader,
-    VideoFragShader,
-    PolygonShader,
-    VideoPolygonShader,
-    AnyShader,
     EntryFragFn,
     EntryPolyFn,
-    NEntryFragFn,
-    NEntryPolyFn
 )

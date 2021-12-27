@@ -24,13 +24,13 @@ class TestMixed(unittest.TestCase):
         def gen() -> ak.EntryFragFn:
             return lambda e, b, c: e(12)
 
-        @gl.entry('frag')
-        def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
+        @gl.entry(ak.frag)
+        def vec_attr(buffer: ak.frag, cl: gl.inout_p[gl.vec4]) -> None:
             cl.x = buffer.time.value * 12
 
-        def named_gen(arg_value: int) -> ak.NEntryFragFn:
-            @gl.entry('frag')
-            def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
+        def named_gen(arg_value: int):
+            @gl.entry(ak.frag)
+            def vec_attr(buffer: ak.frag, cl: gl.inout_p[gl.vec4]) -> None:
                 cl.x = buffer.time.value * 12 + gl.eval(arg_value)
             return vec_attr
 
@@ -47,7 +47,7 @@ class TestMixed(unittest.TestCase):
             vec_attr,
             named_gen(180),
             lambda e, b, c: e(c.x) << e(900)
-        ), lambda: ak.FragShader(), TEST_CONFIG), expected)
+        ), ak.frag, TEST_CONFIG), expected)
 
     def test_import(self):
 
@@ -56,8 +56,8 @@ class TestMixed(unittest.TestCase):
         def gen() -> ak.EntryFragFn:
             return lambda e, b, c: e(module_global_add(1, 2) * gl.eval(outer_value))
 
-        @gl.entry('frag')
-        def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
+        @gl.entry(ak.frag)
+        def vec_attr(buffer: ak.frag, cl: gl.inout_p[gl.vec4]) -> None:
             cl.x = module_global_add(1, 2)
 
         expected = ''.join([
@@ -70,7 +70,7 @@ class TestMixed(unittest.TestCase):
         self.assertEqual(compile_shaders((
             gen(),
             vec_attr
-        ), lambda: ak.FragShader(), TEST_CONFIG), expected)
+        ), ak.frag, TEST_CONFIG), expected)
 
 
 class TestOther(unittest.TestCase):
@@ -87,4 +87,4 @@ class TestOther(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(compile_shaders((
             gen(),
-        ), lambda: ak.FragShader(), TEST_CONFIG), expected)
+        ), ak.frag, TEST_CONFIG), expected)

@@ -20,63 +20,17 @@ from typing import (
     Literal,
     Callable,
     Annotated,
+    Type,
+    Final,
     TYPE_CHECKING
 )
 
 if TYPE_CHECKING:
-    from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
+    from .shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
 
 
 _T = TypeVar('_T')
 _TNumber = TypeVar('_TNumber', int, float)
-
-_NamedFnP = ParamSpec('_NamedFnP')
-_NamedFnR = TypeVar('_NamedFnR')
-_NamedFnStage = Literal['frag', 'poly', 'any']
-
-
-def lib(stage: _NamedFnStage) -> Callable[[Callable[_NamedFnP, _NamedFnR]], Callable[_NamedFnP, _NamedFnR]]:
-    def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
-        def wrapper(_stage: _NamedFnStage = stage, *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
-            return f(*args, **kwargs)
-        return wrapper
-    return deco
-
-
-@overload
-def entry(stage: Literal['frag']) -> Callable[['_NamedEntryFragFn'], _TEntryFnOpaque['_NamedEntryFragFn']]:
-    ...
-
-
-@overload
-def entry(stage: Literal['poly']) -> Callable[['_NamedEntryPolyFn'], _TEntryFnOpaque['_NamedEntryPolyFn']]:
-    ...
-
-
-def entry(stage: _NamedFnStage) -> Any:
-    match stage:
-        case 'frag':
-            return _entry_frag()
-        case 'poly':
-            return _entry_poly()
-        case _:
-            raise NotImplementedError()
-
-
-def _entry_frag() -> Callable[['_NamedEntryFragFn'], _TEntryFnOpaque['_NamedEntryFragFn']]:
-    def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
-        def wrapper(_stage: _NamedFnStage = 'frag', *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
-            return f(*args, **kwargs)
-        return wrapper
-    return deco  # type: ignore
-
-
-def _entry_poly() -> Callable[['_NamedEntryPolyFn'], _TEntryFnOpaque['_NamedEntryPolyFn']]:
-    def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
-        def wrapper(_stage: _NamedFnStage = 'poly', *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
-            return f(*args, **kwargs)
-        return wrapper
-    return deco  # type: ignore
 
 
 def eval(_expr: _T) -> _T:
@@ -818,6 +772,10 @@ ivec2 = gvec2[int]
 uvec2 = gvec2[uint]
 
 
+def _default() -> Any:
+    return 1.0
+
+
 @dataclass(frozen=True)
 class uniform(Generic[_T]):
     value: _T
@@ -825,6 +783,10 @@ class uniform(Generic[_T]):
     @staticmethod
     def default() -> Any:
         return uniform[_T](None)
+
+
+def _uniform_default() -> uniform[Any]:
+    return uniform(None)
 
 
 @dataclass(frozen=True)
@@ -836,6 +798,10 @@ class in_t(Generic[_T]):
         return in_t[_T](None)
 
 
+def _in_t_default() -> in_t[Any]:
+    return in_t(None)
+
+
 @dataclass(frozen=True)
 class out_t(Generic[_T]):
     value: _T
@@ -843,6 +809,10 @@ class out_t(Generic[_T]):
     @staticmethod
     def default() -> Any:
         return out_t[_T](None)
+
+
+def _out_t_default() -> out_t[Any]:
+    return out_t(None)
 
 
 ''' Samplers '''
@@ -1026,3 +996,102 @@ out int   gl_SampleMask[];
 '''
 
 gl_FragCoord = vec4(1, 1, 1, 1)  # temporary
+
+''' Misc '''
+
+
+@dataclass
+class _LayerUniform:
+
+    time: Final['uniform'[float]] = _uniform_default()
+    global_time: Final['uniform'[float]] = _uniform_default()
+    local_duration: Final['uniform'[float]] = _uniform_default()
+    fps: Final['uniform'[float]] = _uniform_default()
+    resolution: Final['uniform'['vec2']] = _uniform_default()
+
+
+@dataclass
+class _GS_OUT:
+    vUvs: 'vec2' = _default()
+    sprite_idx: float = _default()
+
+
+@dataclass
+class _LayerFragInput:
+    fs_in: Final['in_t'[_GS_OUT]] = _in_t_default()
+
+
+@dataclass
+class _frag(_LayerUniform):
+    ...
+
+
+@dataclass
+class _VS_OUT:
+    vUvs: 'vec2' = _default()
+    sprite_idx: float = _default()
+
+
+@dataclass
+class _LayerPolyOutput:
+    vs_out: 'out_t'[_VS_OUT] = _out_t_default()
+
+
+@dataclass
+class _poly(_LayerUniform):
+    ...
+
+
+_buffer_type = _frag | _poly
+
+_NamedFnP = ParamSpec('_NamedFnP')
+_NamedFnR = TypeVar('_NamedFnR')
+_NamedFnStage = Literal['frag', 'poly', 'any']
+
+
+def lib(stage: _NamedFnStage) -> Callable[[Callable[_NamedFnP, _NamedFnR]], Callable[_NamedFnP, _NamedFnR]]:
+    def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
+        def wrapper(_stage: _NamedFnStage = stage, *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
+            return f(*args, **kwargs)
+        return wrapper
+    return deco
+
+
+_TFragBuffer = TypeVar('_TFragBuffer', bound='_frag')
+_TPolyBuffer = TypeVar('_TPolyBuffer', bound='_poly')
+
+
+@overload
+def entry(buffer_type: Type[_TFragBuffer]) -> Callable[['_NamedEntryFragFn'['_TFragBuffer']], _TEntryFnOpaque['_NamedEntryFragFn'['_TFragBuffer']]]:
+    ...
+
+
+@overload
+def entry(buffer_type: Type[_TPolyBuffer]) -> Callable[['_NamedEntryPolyFn'['_TPolyBuffer']], _TEntryFnOpaque['_NamedEntryPolyFn'['_TPolyBuffer']]]:
+    ...
+
+
+def entry(buffer_type) -> Any:
+
+    if issubclass(buffer_type, _frag):
+        return _entry_frag()
+    if issubclass(buffer_type, _poly):
+        return _entry_poly()
+    else:
+        raise NotImplementedError()
+
+
+def _entry_frag() -> Callable[['_NamedEntryFragFn'], _TEntryFnOpaque['_NamedEntryFragFn']]:
+    def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
+        def wrapper(_stage: _NamedFnStage = 'frag', *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
+            return f(*args, **kwargs)
+        return wrapper
+    return deco  # type: ignore
+
+
+def _entry_poly() -> Callable[['_NamedEntryPolyFn'], _TEntryFnOpaque['_NamedEntryPolyFn']]:
+    def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
+        def wrapper(_stage: _NamedFnStage = 'poly', *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
+            return f(*args, **kwargs)
+        return wrapper
+    return deco  # type: ignore

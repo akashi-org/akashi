@@ -360,15 +360,15 @@ class TestBuffer(unittest.TestCase):
 
     def test_uniform(self):
 
-        @gl.entry('frag')
-        def vec_attr(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
+        @gl.entry(ak.frag)
+        def vec_attr(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
             color.x = buffer.time.value * 12
 
         expected = ''.join([
             'void frag_main(inout vec4 color){color.x = (time) * (12);}',
         ])
 
-        self.assertEqual(compile_shaders((vec_attr,), lambda: ak.FragShader(), TEST_CONFIG), expected)
+        self.assertEqual(compile_shaders((vec_attr,), ak.frag, TEST_CONFIG), expected)
 
     def test_uniform_import(self):
 
@@ -378,8 +378,8 @@ class TestBuffer(unittest.TestCase):
         def local_add(a: int, b: int) -> int:
             return a + b
 
-        @gl.entry('frag')
-        def vec_attr(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
+        @gl.entry(ak.frag)
+        def vec_attr(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
             color.x = buffer.time.value * module_global_add(12, 1) * compiler_fixtures.boost_add(20, gl.eval(ddd))
 
         expected = ''.join([
@@ -390,7 +390,7 @@ class TestBuffer(unittest.TestCase):
         ])
 
         self.maxDiff = None
-        self.assertEqual(compile_shaders((vec_attr, ), lambda: ak.FragShader(), TEST_CONFIG), expected)
+        self.assertEqual(compile_shaders((vec_attr, ), ak.frag, TEST_CONFIG), expected)
 
     def test_forbidden_import(self):
 
@@ -398,40 +398,40 @@ class TestBuffer(unittest.TestCase):
         def local_add(a: int, b: int) -> int:
             return a + b
 
-        @gl.entry('frag')
-        def vec_attr(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
+        @gl.entry(ak.frag)
+        def vec_attr(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
             color.x = local_add(1, 2)
 
         with self.assertRaisesRegex(CompileError, 'Forbidden import PolygonShader from FragShader') as _:
-            compile_shaders((vec_attr, ), lambda: ak.FragShader(), TEST_CONFIG)
+            compile_shaders((vec_attr, ), ak.frag, TEST_CONFIG)
 
 
 class TestEntry(unittest.TestCase):
 
     def test_basic(self):
 
-        @gl.entry('frag')
-        def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
+        @gl.entry(ak.frag)
+        def vec_attr(buffer: ak.frag, cl: gl.inout_p[gl.vec4]) -> None:
             cl.x = buffer.time.value * 12
 
         expected = ''.join([
             'void frag_main(inout vec4 color){color.x = (time) * (12);}',
         ])
 
-        self.assertEqual(compile_shaders((vec_attr,), lambda: ak.FragShader(), TEST_CONFIG), expected)
+        self.assertEqual(compile_shaders((vec_attr,), ak.frag, TEST_CONFIG), expected)
 
     def test_chain(self):
 
-        @gl.entry('frag')
-        def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
+        @gl.entry(ak.frag)
+        def vec_attr(buffer: ak.frag, cl: gl.inout_p[gl.vec4]) -> None:
             cl.x = buffer.time.value * 12
 
-        @gl.entry('frag')
-        def vec_attr2(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
+        @gl.entry(ak.frag)
+        def vec_attr2(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
             color.y = buffer.time.value * 12
 
-        @gl.entry('frag')
-        def vec_attr3(buffer: ak.FragShader, color: gl.inout_p[gl.vec4]) -> None:
+        @gl.entry(ak.frag)
+        def vec_attr3(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
             color.z = buffer.time.value * 12
 
         expected = ''.join([
@@ -442,16 +442,16 @@ class TestEntry(unittest.TestCase):
 
         self.maxDiff = None
         self.assertEqual(compile_shaders((vec_attr, vec_attr2, vec_attr3),
-                         lambda: ak.FragShader(), TEST_CONFIG), expected)
+                         ak.frag, TEST_CONFIG), expected)
 
 
 class TestClosure(unittest.TestCase):
 
     def test_basic(self):
 
-        def gen(arg_value: int) -> ak.NEntryFragFn:
-            @gl.entry('frag')
-            def vec_attr(buffer: ak.FragShader, cl: gl.inout_p[gl.vec4]) -> None:
+        def gen(arg_value: int):
+            @gl.entry(ak.frag)
+            def vec_attr(buffer: ak.frag, cl: gl.inout_p[gl.vec4]) -> None:
                 cl.x = buffer.time.value * 12 + gl.eval(arg_value)
             return vec_attr
 
@@ -459,4 +459,4 @@ class TestClosure(unittest.TestCase):
             'void frag_main(inout vec4 color){color.x = ((time) * (12)) + (999);}',
         ])
 
-        self.assertEqual(compile_shaders((gen(999),), lambda: ak.FragShader(), TEST_CONFIG), expected)
+        self.assertEqual(compile_shaders((gen(999),), ak.frag, TEST_CONFIG), expected)

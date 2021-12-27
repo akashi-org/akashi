@@ -3,22 +3,23 @@ from __future__ import annotations
 import typing as tp
 
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
-from .utils import can_import, entry_point, mangled_func_name
+from .utils import can_import, entry_point, mangled_func_name, get_shader_kind_from_buffer
 from .compiler_named import compile_named_shader, to_shader_kind, compile_named_entry_shader_partial
 from .compiler_inline import compile_inline_shader_partial
+from akashi_core.pysl import _gl
 
 import inspect
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderModule, ShaderKind, TEntryFn, _TNarrowedEntryFnOpaque
+    from akashi_core.pysl.shader import ShaderCompiler, ShaderKind, _TEntryFnOpaque
 
 
 def compile_shaders(
-        fns: tuple['TEntryFn' | '_TNarrowedEntryFnOpaque', ...],
-        sh_mod_fn: tp.Callable[[], 'ShaderModule'],
+        fns: tuple,
+        buffer_type: tp.Type[_gl._buffer_type],
         config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
 
-    kind = sh_mod_fn().__kind__
+    kind = get_shader_kind_from_buffer(buffer_type)
 
     if len(fns) == 0:
         return entry_point(kind, '')
@@ -28,7 +29,7 @@ def compile_shaders(
 
     ctx = CompilerContext(config)
 
-    for idx, fn in enumerate(tp.cast(tuple['TEntryFn', ...], fns)):
+    for idx, fn in enumerate(fns):
 
         stmt = ''
 
@@ -36,10 +37,10 @@ def compile_shaders(
 
         if fn.__name__ == '<lambda>':
             stmt, imported_named_shader_fns = compile_inline_shader_partial(
-                fn, sh_mod_fn, ctx)
+                fn, buffer_type, ctx)
         else:
             stmt, imported_named_shader_fns = compile_named_entry_shader_partial(
-                tp.cast('_TNarrowedEntryFnOpaque', fn), ctx)
+                tp.cast('_TEntryFnOpaque', fn), ctx)
 
         for imp_fn in imported_named_shader_fns:
             imported_named_shader_fns_dict[mangled_func_name(ctx, imp_fn)] = imp_fn

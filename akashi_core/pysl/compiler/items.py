@@ -3,7 +3,7 @@ import typing as tp
 from dataclasses import dataclass, field
 
 if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import ShaderModule, ShaderKind
+    from akashi_core.pysl.shader import ShaderCompiler, ShaderKind
 
 
 _TGLSL = str

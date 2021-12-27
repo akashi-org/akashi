@@ -4,13 +4,57 @@ from dataclasses import dataclass
 import typing as tp
 
 from akashi_core.time import sec
-from akashi_core.pysl.shader import VideoFragShader, VideoPolygonShader
 
 from .base import PositionField, PositionTrait, LayerField, LayerTrait
-from .base import peek_entry, register_entry
+from .base import peek_entry, register_entry, frag, poly
 
-if tp.TYPE_CHECKING:
-    from akashi_core.pysl.shader import _GEntryFragFn, _GEntryPolyFn
+from akashi_core.pysl import _gl as gl
+from akashi_core.pysl.shader import ShaderCompiler, _video_frag_shader_header, _video_poly_shader_header
+from akashi_core.pysl.shader import EntryFragFn, EntryPolyFn
+from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
+
+
+@dataclass
+class GS_OUT_V:
+    vLumaUvs: gl.vec2 = gl._default()
+    vChromaUvs: gl.vec2 = gl._default()
+
+
+@dataclass
+class VideoFragInput:
+    fs_in: tp.Final['gl.in_t'[GS_OUT_V]] = gl._in_t_default()
+
+
+@dataclass
+class VS_OUT_V:
+    vLumaUvs: gl.vec2 = gl._default()
+    vChromaUvs: gl.vec2 = gl._default()
+
+
+@dataclass
+class VideoPolyOutput:
+    vs_out: 'gl.out_t'[VS_OUT_V] = gl._out_t_default()
+
+
+@dataclass
+class VideoUniform:
+    textureY: tp.Final[gl.uniform[gl.sampler2D]] = gl._uniform_default()
+    textureCb: tp.Final[gl.uniform[gl.sampler2D]] = gl._uniform_default()
+    textureCr: tp.Final[gl.uniform[gl.sampler2D]] = gl._uniform_default()
+
+
+@dataclass
+class VideoFragBuffer(frag, VideoUniform, VideoFragInput):
+    ...
+
+
+@dataclass
+class VideoPolyBuffer(poly, VideoUniform, VideoPolyOutput):
+    ...
+
+
+_VideoFragFn = EntryFragFn[VideoFragBuffer] | _TEntryFnOpaque[_NamedEntryFragFn[VideoFragBuffer]]
+_VideoPolyFn = EntryPolyFn[VideoPolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn[VideoPolyBuffer]]
 
 
 @dataclass
@@ -21,11 +65,8 @@ class VideoLocalField:
     stretch: bool = False
     start: sec = sec(0)  # temporary
     atom_offset: sec = sec(0)
-    frag_shader: tp.Optional[VideoFragShader] = None
-    poly_shader: tp.Optional[VideoPolygonShader] = None
-
-
-# [TODO] remove DurationConcept later?
+    frag_shader: tp.Optional[ShaderCompiler] = None
+    poly_shader: tp.Optional[ShaderCompiler] = None
 
 
 @dataclass
@@ -61,19 +102,24 @@ class VideoHandle(PositionTrait, LayerTrait):
             cur_layer.atom_offset = offset
         return self
 
-    def frag(self, *frag_shaders: '_GEntryFragFn') -> 'VideoHandle':
+    def frag(self, *frag_fns: _VideoFragFn, preamble: tuple[str, ...] = tuple()) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.frag_shader = VideoFragShader(frag_shaders)
+            cur_layer.frag_shader = ShaderCompiler(frag_fns, VideoFragBuffer, _video_frag_shader_header, preamble)
         return self
 
-    def poly(self, *poly_shaders: '_GEntryPolyFn') -> 'VideoHandle':
+    def poly(self, *poly_fns: _VideoPolyFn, preamble: tuple[str, ...] = tuple()) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.poly_shader = VideoPolygonShader(poly_shaders)
+            cur_layer.poly_shader = ShaderCompiler(poly_fns, VideoPolyBuffer, _video_poly_shader_header, preamble)
         return self
 
 
-def video(src: str, key: str = '') -> VideoHandle:
+class video(object):
 
-    entry = VideoEntry(src)
-    idx = register_entry(entry, 'VIDEO', key)
-    return VideoHandle(idx)
+    frag: tp.ClassVar[tp.Type[VideoFragBuffer]] = VideoFragBuffer
+    poly: tp.ClassVar[tp.Type[VideoPolyBuffer]] = VideoPolyBuffer
+
+    def __new__(cls, src: str, key: str = '') -> VideoHandle:
+
+        entry = VideoEntry(src)
+        idx = register_entry(entry, 'VIDEO', key)
+        return VideoHandle(idx)
