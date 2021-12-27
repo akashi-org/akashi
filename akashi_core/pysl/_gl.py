@@ -33,8 +33,8 @@ _T = TypeVar('_T')
 _TNumber = TypeVar('_TNumber', int, float)
 
 
-def eval(_expr: _T) -> _T:
-    return _expr
+def eval(__expr: _T) -> _T:
+    return __expr
 
 
 # [TODO] should we wrap it with NewType?
@@ -980,6 +980,23 @@ out int   gl_SampleMask[];
 gl_FragCoord = vec4(1, 1, 1, 1)  # temporary
 
 ''' Misc '''
+
+
+@dataclass
+class _expr(Generic[_T]):
+
+    v: _T
+
+    def tp(self, _tp: Type[_T]) -> '_expr[_T]':
+        return self
+
+    # [XXX] concats multiple exprs
+    def __or__(self, other: '_expr') -> '_expr':
+        return other
+
+    # [XXX] substitutes for assignment(=)
+    def __lshift__(self, other: '_expr[_T]') -> '_expr[_T]':
+        return self
 
 
 @dataclass

@@ -5,8 +5,9 @@ import typing as tp
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
 from .utils import can_import, entry_point, mangled_func_name, get_shader_kind_from_buffer
 from .compiler_named import compile_named_shader, to_shader_kind, compile_named_entry_shader_partial
-from .compiler_inline import compile_inline_shader_partial
+from .compiler_lambda import compile_lambda_shader_partial
 from akashi_core.pysl import _gl
+
 
 import inspect
 
@@ -36,7 +37,7 @@ def compile_shaders(
         ctx.clear_symbols()
 
         if fn.__name__ == '<lambda>':
-            stmt, imported_named_shader_fns = compile_inline_shader_partial(
+            stmt, imported_named_shader_fns = compile_lambda_shader_partial(
                 fn, buffer_type, ctx)
         else:
             stmt, imported_named_shader_fns = compile_named_entry_shader_partial(

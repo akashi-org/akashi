@@ -17,10 +17,10 @@ if tp.TYPE_CHECKING:
     from akashi_core.pysl.shader import ShaderCompiler, ShaderKind
 
 
-def parse_inline_expr(fn: tp.Callable, ctx: CompilerContext) -> ast.expr:
+def parse_lambda_expr(fn: tp.Callable, ctx: CompilerContext) -> ast.expr:
 
     if fn.__name__ != '<lambda>':
-        raise CompileError('For inline shader, we currently support lambda function only!')
+        raise CompileError('No lambda found in lambda shader')
     else:
         raw_src = inspect.getsource(fn).strip()
         if raw_src.startswith('.'):
@@ -38,7 +38,7 @@ def parse_inline_expr(fn: tp.Callable, ctx: CompilerContext) -> ast.expr:
         Visitor().visit(root)
 
         if not local_ctx['content']:
-            raise CompileError('No lambda found in inline shader')
+            raise CompileError('No lambda found in lambda shader')
 
         return local_ctx['content']
 
@@ -57,7 +57,7 @@ def maybe_let_expr(node: ast.Call) -> bool:
         return False
 
 
-def compile_inline_expr(node: ast.expr, ctx: CompilerContext) -> list[str]:
+def compile_lambda_expr(node: ast.expr, ctx: CompilerContext) -> list[str]:
 
     match node:
         case ast.Call():
@@ -66,8 +66,8 @@ def compile_inline_expr(node: ast.expr, ctx: CompilerContext) -> list[str]:
             else:
                 return [compile_expr(node.args[0], ctx).content]
         case ast.BinOp():
-            lhs = compile_inline_expr(node.left, ctx)
-            rhs = compile_inline_expr(node.right, ctx)
+            lhs = compile_lambda_expr(node.left, ctx)
+            rhs = compile_lambda_expr(node.right, ctx)
             if isinstance(node.op, ast.BitOr):
                 return lhs + rhs
             elif isinstance(node.op, ast.LShift):
@@ -111,7 +111,7 @@ def collect_argument_symbols(ctx: CompilerContext, fn: tp.Callable, kind: 'Shade
             raise CompileError(f'Invalid kind {kind} found')
 
 
-def compile_inline_shader_partial(
+def compile_lambda_shader_partial(
         fn: tp.Callable,
         buffer_type: tp.Type[_gl._buffer_type],
         ctx: CompilerContext) -> tuple[_TGLSL, list[tp.Callable]]:
@@ -122,8 +122,8 @@ def compile_inline_shader_partial(
     collect_argument_symbols(ctx, fn, kind)
     imported_named_shader_fns = collect_local_symbols(ctx, fn)
 
-    expr_node = parse_inline_expr(fn, ctx)
-    stmts = compile_inline_expr(expr_node, ctx)
+    expr_node = parse_lambda_expr(fn, ctx)
+    stmts = compile_lambda_expr(expr_node, ctx)
     func_body = ''.join([stmt + ';' for stmt in stmts])
 
     return (func_body, imported_named_shader_fns)

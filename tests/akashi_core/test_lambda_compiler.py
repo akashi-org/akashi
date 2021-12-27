@@ -111,8 +111,8 @@ class TestInlineExpr(unittest.TestCase):
             return lambda e, b, c: e(module_global_add(1, 2))
 
         expected1 = ''.join([
-            'int test_inline_compiler_module_global_add(int a, int b){return (a) + (b);}',
-            'void frag_main(inout vec4 color){test_inline_compiler_module_global_add(1, 2);}'
+            'int test_lambda_compiler_module_global_add(int a, int b){return (a) + (b);}',
+            'void frag_main(inout vec4 color){test_lambda_compiler_module_global_add(1, 2);}'
         ])
 
         self.assertEqual(compile_shaders((gen(),), ak.frag), expected1)

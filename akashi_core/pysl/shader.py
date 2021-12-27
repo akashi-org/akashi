@@ -3,7 +3,6 @@ from __future__ import annotations
 from .compiler.items import CompilerConfig
 from .compiler.compiler import compile_shaders
 from . import _gl
-from . import _gl_inline
 
 import typing as tp
 from dataclasses import dataclass, field
@@ -14,8 +13,8 @@ ShaderKind = tp.Literal['AnyShader', 'FragShader', 'PolygonShader', 'GeomShader'
 # EntryFragFn = tp.Callable[[tp.Type[_gl_inline.expr], '_gl._TFragBuffer', _gl.inout_p[_gl.vec4]], _gl_inline.expr]
 # EntryPolyFn = tp.Callable[[tp.Type[_gl_inline.expr], '_gl._TPolyBuffer', _gl.inout_p[_gl.vec3]], _gl_inline.expr]
 
-EntryFragFn = tp.Callable[[tp.Type[_gl_inline.expr], _gl._TFragBuffer, _gl.vec4], _gl_inline.expr]
-EntryPolyFn = tp.Callable[[tp.Type[_gl_inline.expr], _gl._TPolyBuffer, _gl.vec3], _gl_inline.expr]
+EntryFragFn = tp.Callable[[tp.Type[_gl._expr], _gl._TFragBuffer, _gl.vec4], _gl._expr]
+EntryPolyFn = tp.Callable[[tp.Type[_gl._expr], _gl._TPolyBuffer, _gl.vec3], _gl._expr]
 
 
 _T_co = tp.TypeVar('_T_co', covariant=True)
