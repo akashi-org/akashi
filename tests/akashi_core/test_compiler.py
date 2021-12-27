@@ -26,12 +26,12 @@ class TestMixed(unittest.TestCase):
 
         @gl.entry(ak.frag)
         def vec_attr(buffer: ak.frag, cl: gl.inout_p[gl.vec4]) -> None:
-            cl.x = buffer.time.value * 12
+            cl.x = buffer.time * 12
 
         def named_gen(arg_value: int):
             @gl.entry(ak.frag)
             def vec_attr(buffer: ak.frag, cl: gl.inout_p[gl.vec4]) -> None:
-                cl.x = buffer.time.value * 12 + gl.eval(arg_value)
+                cl.x = buffer.time * 12 + gl.eval(arg_value)
             return vec_attr
 
         expected = ''.join([

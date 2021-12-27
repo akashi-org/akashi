@@ -62,10 +62,3 @@ def collect_local_symbols(ctx: CompilerContext, deco_fn: tp.Callable) -> list[tp
         ctx.eval_local_symbol[freevar] = value
 
     return imported_named_shader_fn
-
-
-def collect_buffer_symbols(ctx: CompilerContext, buffer_type: tp.Type[_gl._buffer_type]):
-
-    for mem_name, mem in inspect.getmembers(buffer_type):
-        if not(callable(mem)):
-            ctx.local_symbol[mem_name] = str(type(mem).__name__)

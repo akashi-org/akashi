@@ -5,7 +5,7 @@ import typing as tp
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
 from .ast import compile_expr, from_annotation
 from .utils import can_import, entry_point, mangled_func_name, get_shader_kind_from_buffer
-from .symbol import collect_global_symbols, collect_buffer_symbols, collect_local_symbols
+from .symbol import collect_global_symbols, collect_local_symbols
 from akashi_core.pysl import _gl
 
 
@@ -104,11 +104,9 @@ def collect_argument_symbols(ctx: CompilerContext, fn: tp.Callable, kind: 'Shade
         case 'FragShader':
             if var_arg != 'color':
                 ctx.lambda_args[var_arg] = 'color'
-            ctx.local_symbol['color'] = 'inout vec4'
         case 'PolygonShader':
             if var_arg != 'pos':
                 ctx.lambda_args[var_arg] = 'pos'
-            ctx.local_symbol['pos'] = 'inout vec4'
         case _:
             raise CompileError(f'Invalid kind {kind} found')
 
@@ -121,7 +119,6 @@ def compile_inline_shader_partial(
     kind = get_shader_kind_from_buffer(buffer_type)
 
     collect_global_symbols(ctx, fn)
-    collect_buffer_symbols(ctx, buffer_type)
     collect_argument_symbols(ctx, fn, kind)
     imported_named_shader_fns = collect_local_symbols(ctx, fn)
 

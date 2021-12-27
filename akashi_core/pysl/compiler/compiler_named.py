@@ -51,14 +51,6 @@ def collect_argument_symbols(ctx: CompilerContext, deco_fn: tp.Callable):
         buffer_type = anno_items[0][1]
         ctx.buffers.append((buffer_name, buffer_type))
 
-        for attr_name in resolve_module(buffer_name, deco_fn):
-            attr_type = getattr(buffer_type, attr_name)
-            if isinstance(attr_type, tp._GenericAlias):  # type: ignore
-                basic_tpname: str = str(attr_type.__origin__.__name__)  # type:ignore
-                ctx.local_symbol[attr_name] = basic_tpname
-            else:
-                ctx.local_symbol[attr_name] = str(type(attr_type).__name__)
-
 
 def collect_entry_argument_symbols(ctx: CompilerContext, deco_fn: tp.Callable, kind: 'ShaderKind'):
 
@@ -91,7 +83,6 @@ def compile_func_all(node: ast.FunctionDef, ctx: CompilerContext, func_name: str
     args_temp = []
     for idx, arg in enumerate(args):
         arg_tpname = type_transformer(arg.content, ctx, arg.node)
-        ctx.local_symbol[arg.node.arg] = arg_tpname
         args_temp.append(f'{arg_tpname} {arg.node.arg}')
 
     args_str = ', '.join(args_temp)
@@ -112,7 +103,6 @@ def compile_func_body(node: ast.FunctionDef, ctx: CompilerContext) -> _TGLSL:
     args = from_arguments(node.args, ctx, 1 if is_method else 0)
     for idx, arg in enumerate(args):
         arg_tpname = type_transformer(arg.content, ctx, arg.node)
-        ctx.local_symbol[arg.node.arg] = arg_tpname
 
     body_strs = []
     for stmt in node.body:

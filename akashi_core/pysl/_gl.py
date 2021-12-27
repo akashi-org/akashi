@@ -776,43 +776,25 @@ def _default() -> Any:
     return 1.0
 
 
-@dataclass(frozen=True)
-class uniform(Generic[_T]):
-    value: _T
-
-    @staticmethod
-    def default() -> Any:
-        return uniform[_T](None)
+uniform = Annotated[_T, 'uniform']
 
 
 def _uniform_default() -> uniform[Any]:
-    return uniform(None)
+    return 1.0
 
 
-@dataclass(frozen=True)
-class in_t(Generic[_T]):
-    value: _T
-
-    @staticmethod
-    def default() -> Any:
-        return in_t[_T](None)
+in_t = Annotated[_T, 'in_t']
 
 
 def _in_t_default() -> in_t[Any]:
-    return in_t(None)
+    return 1.0
 
 
-@dataclass(frozen=True)
-class out_t(Generic[_T]):
-    value: _T
-
-    @staticmethod
-    def default() -> Any:
-        return out_t[_T](None)
+out_t = Annotated[_T, 'out_t']
 
 
 def _out_t_default() -> out_t[Any]:
-    return out_t(None)
+    return 1.0
 
 
 ''' Samplers '''

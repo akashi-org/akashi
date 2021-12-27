@@ -456,18 +456,8 @@ def from_Attribute(node: ast.Attribute, ctx: CompilerContext) -> AttributeOut:
     # lambda params
     if value_str in ctx.lambda_args:
         resolved_str = ctx.lambda_args[value_str]
-        if attr_str == 'value':
-            attr_str = ''
         content = f'{resolved_str}{attr_str}'
         return AttributeOut(node, content)
-
-    # wrapped type symbol
-    if value_str in ctx.local_symbol:
-        value_tpname: str = ctx.local_symbol[value_str]
-        if compiler_utils.is_wrapped_type(value_tpname):
-            if attr_str == 'value':
-                content = f'{value_str}'
-                return AttributeOut(node, content)
 
     # global
     if value_str in ctx.global_symbol:

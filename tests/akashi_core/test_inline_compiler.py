@@ -66,7 +66,7 @@ class TestInlineExpr(unittest.TestCase):
 
         def gen1() -> ak.EntryFragFn:
             return (
-                lambda e, b, c: e((c.y * gl.eval(global_speed)) + (b.time.value * gl.eval(speed) * gl.sin(12)))
+                lambda e, b, c: e((c.y * gl.eval(global_speed)) + (b.time * gl.eval(speed) * gl.sin(12)))
             )
 
         expected1 = 'void frag_main(inout vec4 color){((color.y) * (1890)) + (((time) * (999)) * (sin(12)));}'
@@ -75,7 +75,7 @@ class TestInlineExpr(unittest.TestCase):
 
         def gen2() -> ak.EntryPolyFn:
             return lambda e, b, p: (
-                e((p.y * gl.eval(global_speed)) + (b.time.value * gl.eval(speed) * gl.sin(12)))
+                e((p.y * gl.eval(global_speed)) + (b.time * gl.eval(speed) * gl.sin(12)))
             )
 
         expected2 = 'void poly_main(inout vec3 pos){((pos.y) * (1890)) + (((time) * (999)) * (sin(12)));}'
@@ -143,7 +143,7 @@ class TestInlineAssign(unittest.TestCase):
     def test_merge(self):
 
         def gen() -> ak.EntryFragFn:
-            return lambda e, b, c: e(c.x) << e(c.x + b.resolution.value.x + gl.sin(12)) | e(12)
+            return lambda e, b, c: e(c.x) << e(c.x + b.resolution.x + gl.sin(12)) | e(12)
 
         expected = 'void frag_main(inout vec4 color){color.x = ((color.x) + (resolution.x)) + (sin(12));12;}'
 
@@ -216,7 +216,7 @@ class TestInlineMultiple(unittest.TestCase):
 
         def gen2() -> ak.EntryFragFn:
             return lambda e, b, c: (
-                e(z := gl.eval(speed) * gl.sin(b.time.value)).tp(float) |
+                e(z := gl.eval(speed) * gl.sin(b.time)).tp(float) |
                 e(compiler_fixtures.boost_add(1, gl.eval(global_speed)) + z)
             )
 

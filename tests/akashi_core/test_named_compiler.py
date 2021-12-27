@@ -362,7 +362,7 @@ class TestBuffer(unittest.TestCase):
 
         @gl.entry(ak.frag)
         def vec_attr(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
-            color.x = buffer.time.value * 12
+            color.x = buffer.time * 12
 
         expected = ''.join([
             'void frag_main(inout vec4 color){color.x = (time) * (12);}',
@@ -380,7 +380,7 @@ class TestBuffer(unittest.TestCase):
 
         @gl.entry(ak.frag)
         def vec_attr(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
-            color.x = buffer.time.value * module_global_add(12, 1) * compiler_fixtures.boost_add(20, gl.eval(ddd))
+            color.x = buffer.time * module_global_add(12, 1) * compiler_fixtures.boost_add(20, gl.eval(ddd))
 
         expected = ''.join([
             'int test_named_compiler_module_global_add(int a, int b){return (a) + (b);}',
@@ -412,7 +412,7 @@ class TestEntry(unittest.TestCase):
 
         @gl.entry(ak.frag)
         def vec_attr(buffer: ak.frag, cl: gl.inout_p[gl.vec4]) -> None:
-            cl.x = buffer.time.value * 12
+            cl.x = buffer.time * 12
 
         expected = ''.join([
             'void frag_main(inout vec4 color){color.x = (time) * (12);}',
@@ -424,15 +424,15 @@ class TestEntry(unittest.TestCase):
 
         @gl.entry(ak.frag)
         def vec_attr(buffer: ak.frag, cl: gl.inout_p[gl.vec4]) -> None:
-            cl.x = buffer.time.value * 12
+            cl.x = buffer.time * 12
 
         @gl.entry(ak.frag)
         def vec_attr2(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
-            color.y = buffer.time.value * 12
+            color.y = buffer.time * 12
 
         @gl.entry(ak.frag)
         def vec_attr3(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
-            color.z = buffer.time.value * 12
+            color.z = buffer.time * 12
 
         expected = ''.join([
             'void frag_main_2(inout vec4 color){color.z = (time) * (12);}',
@@ -452,7 +452,7 @@ class TestClosure(unittest.TestCase):
         def gen(arg_value: int):
             @gl.entry(ak.frag)
             def vec_attr(buffer: ak.frag, cl: gl.inout_p[gl.vec4]) -> None:
-                cl.x = buffer.time.value * 12 + gl.eval(arg_value)
+                cl.x = buffer.time * 12 + gl.eval(arg_value)
             return vec_attr
 
         expected = ''.join([
