@@ -9,12 +9,8 @@ from dataclasses import dataclass, field
 
 ShaderKind = tp.Literal['AnyShader', 'FragShader', 'PolygonShader', 'GeomShader']
 
-# [TODO] The type `gl.inout_p[gl.vec4]` is misinterpreted as generic type by pyright!
-# EntryFragFn = tp.Callable[[tp.Type[_gl_inline.expr], '_gl._TFragBuffer', _gl.inout_p[_gl.vec4]], _gl_inline.expr]
-# EntryPolyFn = tp.Callable[[tp.Type[_gl_inline.expr], '_gl._TPolyBuffer', _gl.inout_p[_gl.vec3]], _gl_inline.expr]
-
-LEntryFragFn = tp.Callable[[tp.Type[_gl._expr], _gl._TFragBuffer, _gl.vec4], _gl._expr]
-LEntryPolyFn = tp.Callable[[tp.Type[_gl._expr], _gl._TPolyBuffer, _gl.vec3], _gl._expr]
+LEntryFragFn = tp.Callable[[tp.Type[_gl._expr], _gl._TFragBuffer, _gl.frag_color], _gl._expr]
+LEntryPolyFn = tp.Callable[[tp.Type[_gl._expr], _gl._TPolyBuffer, _gl.poly_pos], _gl._expr]
 
 
 _T_co = tp.TypeVar('_T_co', covariant=True)
@@ -24,8 +20,8 @@ class _TEntryFnOpaque(tp.Generic[_T_co]):
     ...
 
 
-_NamedEntryFragFn = tp.Callable[[_gl._TFragBuffer, _gl.vec4], None]
-_NamedEntryPolyFn = tp.Callable[[_gl._TPolyBuffer, _gl.vec3], None]
+_NamedEntryFragFn = tp.Callable[[_gl._TFragBuffer, _gl.frag_color], None]
+_NamedEntryPolyFn = tp.Callable[[_gl._TPolyBuffer, _gl.poly_pos], None]
 
 
 @dataclass
