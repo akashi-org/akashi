@@ -4,7 +4,7 @@ from __future__ import annotations
 from akashi_core.pysl import _gl
 from .items import CompileError, CompilerContext, CompilerConfig
 from . import utils as compiler_utils
-from . import transformer
+from . import converter
 from . import evaluator
 
 import typing as tp
@@ -127,7 +127,7 @@ def from_AugAssign(node: ast.AugAssign, ctx: CompilerContext) -> AugAssignOut:
     if isinstance(node.op, ast.LShift):
         raise CompileError('operator `<<=` is forbidden in pysl')
 
-    op_str = transformer.binop_transformer(node.op)
+    op_str = converter.binop_converter(node.op)
     value_str = compile_expr(node.value, ctx).content
 
     content = compiler_utils.get_stmt_indent(node, ctx) + f'{target_str} {op_str}= {value_str};'
@@ -193,7 +193,7 @@ def from_For(node: ast.For, ctx: CompilerContext) -> ForOut:
 
     idx = compile_expr(node.target, ctx).content
 
-    body_str = transformer.body_transformer(node.body, ctx)
+    body_str = converter.body_converter(node.body, ctx)
 
     content = compiler_utils.get_stmt_indent(node, ctx) + \
         f'for(int {idx}=({idx_start});{idx}<({idx_length});{idx}+=({idx_step})){body_str}'
@@ -213,7 +213,7 @@ def from_While(node: ast.While, ctx: CompilerContext) -> WhileOut:
         raise CompileError('Else with while is not supported')
 
     test_str = compile_expr(node.test, ctx).content
-    body_str = transformer.body_transformer(node.body, ctx)
+    body_str = converter.body_converter(node.body, ctx)
 
     content = compiler_utils.get_stmt_indent(node, ctx) + f'while({test_str}){body_str}'
 
@@ -229,12 +229,12 @@ class IfOut(stmtOut):
 def from_If(node: ast.If, ctx: CompilerContext) -> IfOut:
 
     test_str = compile_expr(node.test, ctx).content
-    body_str = transformer.body_transformer(node.body, ctx)
+    body_str = converter.body_converter(node.body, ctx)
 
     content = f'if({test_str}){body_str}'
 
     if len(node.orelse) > 0:
-        else_str = transformer.body_transformer(node.orelse, ctx)
+        else_str = converter.body_converter(node.orelse, ctx)
         content += f'else{else_str}'
 
     content = compiler_utils.get_stmt_indent(node, ctx) + content
@@ -298,7 +298,7 @@ class BoolOpOut(exprOut):
 
 def from_BoolOp(node: ast.BoolOp, ctx: CompilerContext) -> BoolOpOut:
 
-    op_str = transformer.boolop_transformer(node.op)
+    op_str = converter.boolop_converter(node.op)
 
     value_strs = []
     for value in node.values:
@@ -316,7 +316,7 @@ class UnaryOpOut(exprOut):
 
 def from_UnaryOp(node: ast.UnaryOp, ctx: CompilerContext) -> UnaryOpOut:
 
-    op_str = transformer.unaryop_transformer(node.op)
+    op_str = converter.unaryop_converter(node.op)
     operand_str = compile_expr(node.operand, ctx).content
     content = f'{op_str}{operand_str}'
 
@@ -331,7 +331,7 @@ class BinOpOut(exprOut):
 
 def from_BinOp(node: ast.BinOp, ctx: CompilerContext) -> BinOpOut:
 
-    op_str = transformer.binop_transformer(node.op)
+    op_str = converter.binop_converter(node.op)
 
     # 1. All non single terms are parenthesized.
     # left_str = compile_expr(node.left).content
@@ -381,7 +381,7 @@ def from_Compare(node: ast.Compare, ctx: CompilerContext) -> CompareOut:
             'Consider split the expression like `1 <= a < 10` ==> `1 <= a and a < 10`.'
         ))
 
-    op_str = transformer.cmpop_transformer(node.ops[0])
+    op_str = converter.cmpop_converter(node.ops[0])
 
     left_str = compile_expr(node.left, ctx).content
     right_str = compile_expr(node.comparators[0], ctx).content
@@ -721,7 +721,7 @@ def is_named_func(func_def: ast.FunctionDef, global_symbol: dict) -> bool:
 
     for deco in func_def.decorator_list:
         deco_node = compile_expr(deco, ctx)
-        deco_tpname = transformer.type_transformer(deco_node.content, ctx, deco_node.node)
+        deco_tpname = converter.type_converter(deco_node.content, ctx, deco_node.node)
         if deco_tpname in ['lib', 'entry']:
             return True
 

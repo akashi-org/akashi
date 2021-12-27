@@ -12,7 +12,7 @@ from .utils import (
     mangled_func_name,
     resolve_module
 )
-from .transformer import type_transformer, body_transformer
+from .converter import type_converter, body_converter
 from .ast import compile_expr, compile_stmt, from_arguments, is_named_func
 from .symbol import collect_global_symbols, collect_local_symbols
 
@@ -74,7 +74,7 @@ def compile_func_all(node: ast.FunctionDef, ctx: CompilerContext, func_name: str
         raise CompileError('Return type annotation not found')
 
     returns = compile_expr(node.returns, ctx)
-    returns_str = type_transformer(returns.content, ctx, returns.node)
+    returns_str = type_converter(returns.content, ctx, returns.node)
 
     if has_params_qualifier(returns_str):
         raise CompileError('Return type must not have its parameter qualifier')
@@ -82,12 +82,12 @@ def compile_func_all(node: ast.FunctionDef, ctx: CompilerContext, func_name: str
     args = from_arguments(node.args, ctx, 0)
     args_temp = []
     for idx, arg in enumerate(args):
-        arg_tpname = type_transformer(arg.content, ctx, arg.node)
+        arg_tpname = type_converter(arg.content, ctx, arg.node)
         args_temp.append(f'{arg_tpname} {arg.node.arg}')
 
     args_str = ', '.join(args_temp)
 
-    body_str = body_transformer(node.body, ctx, brace_on_ellipsis=False)
+    body_str = body_converter(node.body, ctx, brace_on_ellipsis=False)
 
     return f'{returns_str} {func_name}({args_str}){body_str}'
 
@@ -102,7 +102,7 @@ def compile_func_body(node: ast.FunctionDef, ctx: CompilerContext) -> _TGLSL:
 
     args = from_arguments(node.args, ctx, 1 if is_method else 0)
     for idx, arg in enumerate(args):
-        arg_tpname = type_transformer(arg.content, ctx, arg.node)
+        arg_tpname = type_converter(arg.content, ctx, arg.node)
 
     body_strs = []
     for stmt in node.body:

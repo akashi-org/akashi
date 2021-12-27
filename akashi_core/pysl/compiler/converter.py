@@ -28,7 +28,7 @@ def __reduce_type_name(org_tp_name: str, res_tp_name: str,
     return res_tp_name + compile_expr(node, ctx).content
 
 
-def type_transformer(tp_name: str, ctx: CompilerContext, node: tp.Optional[ast.AST] = None) -> str:
+def type_converter(tp_name: str, ctx: CompilerContext, node: tp.Optional[ast.AST] = None) -> str:
 
     __tp_name = tp_name
     if node and isinstance(node, ast.arg):
@@ -44,7 +44,7 @@ def type_transformer(tp_name: str, ctx: CompilerContext, node: tp.Optional[ast.A
     return __tp_name
 
 
-def boolop_transformer(op: ast.boolop) -> str:
+def boolop_converter(op: ast.boolop) -> str:
 
     if isinstance(op, ast.And):
         return '&&'
@@ -54,7 +54,7 @@ def boolop_transformer(op: ast.boolop) -> str:
         raise CompileError(f'Unexpected operator `{op}` found')
 
 
-def unaryop_transformer(op: ast.unaryop) -> str:
+def unaryop_converter(op: ast.unaryop) -> str:
 
     if isinstance(op, ast.UAdd):
         return '+'
@@ -68,7 +68,7 @@ def unaryop_transformer(op: ast.unaryop) -> str:
         raise CompileError(f'Unexpected operator `{op}` found')
 
 
-def binop_transformer(op: ast.operator) -> str:
+def binop_converter(op: ast.operator) -> str:
 
     if isinstance(op, ast.Add):
         return '+'
@@ -100,7 +100,7 @@ def binop_transformer(op: ast.operator) -> str:
         raise CompileError(f'Unexpected operator `{op}` found')
 
 
-def cmpop_transformer(op: ast.cmpop) -> str:
+def cmpop_converter(op: ast.cmpop) -> str:
     if isinstance(op, ast.Eq):
         return '=='
     elif isinstance(op, ast.NotEq):
@@ -117,7 +117,7 @@ def cmpop_transformer(op: ast.cmpop) -> str:
         raise CompileError(f'Operator `{op}` is not supported')
 
 
-def body_transformer(body: list[ast.stmt], ctx: CompilerContext, brace_on_ellipsis: bool = True) -> str:
+def body_converter(body: list[ast.stmt], ctx: CompilerContext, brace_on_ellipsis: bool = True) -> str:
 
     body_strs = []
     for stmt in body:
