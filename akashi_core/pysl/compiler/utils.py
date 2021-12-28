@@ -97,7 +97,7 @@ def entry_point(kind: 'ShaderKind', func_body: str, self_postfix: str = '', next
         return f'void frag_main{self_postfix}(inout vec4 color)' + '{' + func_body + chain_str + '}'
     elif kind == 'PolygonShader':
         chain_str = '' if len(next_postfix) == 0 else f'poly_main{next_postfix}(pos);'
-        return f'void poly_main{self_postfix}(inout vec3 pos)' + '{' + func_body + chain_str + '}'
+        return f'void poly_main{self_postfix}(inout vec4 pos)' + '{' + func_body + chain_str + '}'
     else:
         raise NotImplementedError()
 

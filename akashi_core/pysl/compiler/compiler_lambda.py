@@ -33,7 +33,8 @@ def parse_lambda_expr(fn: tp.Callable, ctx: CompilerContext) -> ast.expr:
             def visit_Lambda(self, node: ast.Lambda):
                 if len(node.args.args) != 3:
                     super().visit(node.body)
-                local_ctx['content'] = node.body  # type: ignore
+                else:
+                    local_ctx['content'] = node.body  # type: ignore
 
         Visitor().visit(root)
 
@@ -46,7 +47,7 @@ def parse_lambda_expr(fn: tp.Callable, ctx: CompilerContext) -> ast.expr:
 def maybe_let_expr(node: ast.Call) -> bool:
 
     # complete case: e(...).tp(...)
-    if isinstance(node.func, ast.Attribute):
+    if isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Call):
         return True
     # incomplete case: e(...)
     elif len(node.args) == 1 and isinstance(node.args[0], ast.NamedExpr):

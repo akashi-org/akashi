@@ -29,14 +29,14 @@ static constexpr const char* vshader_src = u8R"(
         vec2 vChromaUvs;
     } vs_out;
 
-    void poly_main(inout vec3 pos);
+    void poly_main(inout vec4 pos);
     
     void main(void){
         vs_out.vLumaUvs = lumaUvs;
         vs_out.vChromaUvs = chromaUvs;
-        vec3 t_vertices = vertices;
+        vec4 t_vertices = vec4(vertices, 1.0);
         poly_main(t_vertices);
-        gl_Position = mvpMatrix * vec4(t_vertices, 1.0);
+        gl_Position = mvpMatrix * t_vertices;
     }
 )";
 
@@ -128,7 +128,7 @@ static constexpr const char* default_user_pshader_src = u8R"(
     uniform float local_duration;
     uniform float fps;
     uniform vec2 resolution;
-    void poly_main(inout vec3 position){
+    void poly_main(inout vec4 position){
     }
 )";
 

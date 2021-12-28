@@ -983,7 +983,7 @@ gl_FragCoord = vec4(1, 1, 1, 1)  # temporary
 
 frag_color: Type[inout_p[vec4]] = inout_p[vec4]
 
-poly_pos: Type[inout_p[vec3]] = inout_p[vec3]
+poly_pos: Type[inout_p[vec4]] = inout_p[vec4]
 
 
 @dataclass

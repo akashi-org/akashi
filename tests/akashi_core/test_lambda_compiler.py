@@ -18,7 +18,7 @@ def module_global_poly(a: int, b: int) -> int:
     return a + b
 
 
-class TestInlineExpr(unittest.TestCase):
+class TestLambdaExpr(unittest.TestCase):
 
     def test_easy(self):
 
@@ -78,7 +78,7 @@ class TestInlineExpr(unittest.TestCase):
                 e((p.y * gl.eval(global_speed)) + (b.time * gl.eval(speed) * gl.sin(12)))
             )
 
-        expected2 = 'void poly_main(inout vec3 pos){((pos.y) * (1890)) + (((time) * (999)) * (sin(12)));}'
+        expected2 = 'void poly_main(inout vec4 pos){((pos.y) * (1890)) + (((time) * (999)) * (sin(12)));}'
 
         self.assertEqual(compile_shaders((gen2(),), ak.poly), expected2)
 
@@ -129,7 +129,7 @@ class TestInlineExpr(unittest.TestCase):
         self.assertEqual(compile_shaders((gen1(),), ak.frag), expected)
 
 
-class TestInlineAssign(unittest.TestCase):
+class TestLambdaAssign(unittest.TestCase):
 
     def test_eq(self):
 
@@ -150,7 +150,7 @@ class TestInlineAssign(unittest.TestCase):
         self.assertEqual(compile_shaders((gen(),), ak.frag), expected)
 
 
-class TestInlineLet(unittest.TestCase):
+class TestLambdaLet(unittest.TestCase):
 
     def test_easy(self):
 
@@ -182,7 +182,7 @@ class TestInlineLet(unittest.TestCase):
         self.assertEqual(compile_shaders((gen(),), ak.frag), expected)
 
 
-class TestInlineMultiple(unittest.TestCase):
+class TestLambdaMultiple(unittest.TestCase):
 
     def test_easy(self):
 
@@ -231,7 +231,7 @@ class TestInlineMultiple(unittest.TestCase):
         self.assertEqual(compile_shaders((gen1(), gen2()), ak.frag), expected)
 
 
-class TestInlineWithBrace(unittest.TestCase):
+class TestLambdaWithBrace(unittest.TestCase):
 
     def test_easy(self):
 
@@ -248,13 +248,13 @@ class TestInlineWithBrace(unittest.TestCase):
         self.assertEqual(compile_shaders((gen(),), ak.frag), expected)
 
 
-# class TestInlineOther(unittest.TestCase):
-#
-#     def test_nested_lambdas2(self):
-#
-#         def gen() -> tp.Callable[[int], ak.LEntryFragFn]:
-#             return lambda h: lambda e, b, c: gl.expr(12)
-#
-#         expected = 'void frag_main(inout vec4 color){12;}'
-#
-#         self.assertEqual(compile_shaders((gen()(99),), ak.frag), expected)
+class TestLambdaOther(unittest.TestCase):
+
+    def test_nested_lambdas(self):
+
+        def gen() -> tp.Callable[[int], ak.LEntryFragFn]:
+            return lambda h: lambda e, b, c: e(12)
+
+        expected = 'void frag_main(inout vec4 color){12;}'
+
+        self.assertEqual(compile_shaders((gen()(99),), ak.frag), expected)
