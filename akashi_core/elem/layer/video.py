@@ -94,14 +94,14 @@ class VideoHandle(PositionTrait, LayerTrait):
             cur_layer.stretch = stretch
         return self
 
-    def start(self, start: sec) -> 'VideoHandle':
+    def start(self, start: sec | float) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.start = start
+            cur_layer.start = sec(start)
         return self
 
-    def offset(self, offset: sec) -> 'VideoHandle':
+    def offset(self, offset: sec | float) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.atom_offset = offset
+            cur_layer.atom_offset = sec(offset)
         return self
 
     def frag(self, *frag_fns: _VideoFragFn, preamble: tuple[str, ...] = tuple()) -> 'VideoHandle':

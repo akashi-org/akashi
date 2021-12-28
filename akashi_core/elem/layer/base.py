@@ -44,9 +44,9 @@ class LayerTrait(metaclass=ABCMeta):
     def __exit__(self, *ext: tp.Any):
         return False
 
-    def duration(self: '_TLayerTrait', duration: sec) -> '_TLayerTrait':
+    def duration(self: '_TLayerTrait', duration: sec | float) -> '_TLayerTrait':
         if (cur_layer := peek_entry(self._idx)):
-            tp.cast(LayerField, cur_layer).duration = duration
+            tp.cast(LayerField, cur_layer).duration = sec(duration)
         return self
 
     def ap(self: '_TLayerTrait', *hs: tp.Callable[['_TLayerTrait'], '_TLayerTrait']) -> '_TLayerTrait':

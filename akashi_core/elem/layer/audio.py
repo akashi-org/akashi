@@ -30,9 +30,9 @@ class AudioHandle(LayerTrait):
             cur_layer.gain = gain
         return self
 
-    def start(self, start: sec) -> 'AudioHandle':
+    def start(self, start: sec | float) -> 'AudioHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, AudioEntry):
-            cur_layer.start = start
+            cur_layer.start = sec(start)
         return self
 
 
