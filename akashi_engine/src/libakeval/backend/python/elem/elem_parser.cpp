@@ -166,10 +166,7 @@ namespace akashi {
                 layer_ctx.type = static_cast<int>(core::LayerType::AUDIO);
                 layer_ctx.audio_layer_ctx.src = layer_params.attr("src").cast<std::string>();
                 layer_ctx.audio_layer_ctx.gain = layer_params.attr("gain").cast<double>();
-
-                // layer_ctx.audio_layer_ctx.start =
-                //     to_rational(layer_params.attr("start")).to_fraction();
-                layer_ctx.audio_layer_ctx.start = core::Rational(0l);
+                layer_ctx.audio_layer_ctx.start = to_rational(layer_params.attr("start"));
 
             } else if (type_str == "IMAGE") {
                 layer_ctx.type = static_cast<int>(core::LayerType::IMAGE);
