@@ -1,6 +1,7 @@
 from __future__ import annotations
 import typing as tp
 from enum import Enum
+import colorsys
 
 # color = tp.NewType('color', str)
 _color_type = str
@@ -16,6 +17,12 @@ def rgb(r: int, g: int, b: int) -> _color_type:
 
 def rgba(r: int, g: int, b: int, a: int) -> _color_type:
     return _color_type('#' + to_hex(r) + to_hex(g) + to_hex(b) + to_hex(a))
+
+
+def hsv(h: int, s: int, v: int) -> _color_type:
+    ''' h <- [0, 360], s <- [0, 100], v <- [0, 100] '''
+    r, g, b = colorsys.hsv_to_rgb(h / 360, s / 100, v / 100)
+    return rgb(int(r * 255), int(g * 255), int(b * 255))
 
 
 class Color(Enum):

@@ -14,6 +14,7 @@ __all__ = [
     "sec",
     "rgba",
     "rgb",
+    "hsv",
     "Color",
     "config",
     "GenerelConf",
@@ -43,7 +44,7 @@ from .elem.layer.effect import effect
 from .elem.layer.shape import rect, circle, tri, line
 
 from .time import sec
-from .color import rgba, rgb, Color
+from .color import rgba, rgb, hsv, Color
 from .config import config
 from .config import (
     GenerelConf,
