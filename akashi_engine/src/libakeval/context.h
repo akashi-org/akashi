@@ -25,6 +25,10 @@ namespace akashi {
             explicit EvalContext(core::borrowed_ptr<state::AKState>){};
             virtual ~EvalContext(){};
 
+            virtual void load(void) = 0;
+
+            virtual bool loaded(void) const = 0;
+
             virtual void exit(void) = 0;
 
             virtual core::FrameContext eval_kron(const char* module_path,

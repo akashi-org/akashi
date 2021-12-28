@@ -41,6 +41,7 @@ namespace akashi {
 
           private:
             core::owned_ptr<EvalContext> m_eval_ctx;
+            core::borrowed_ptr<state::AKState> m_state;
             std::thread::id m_tid;
         };
 

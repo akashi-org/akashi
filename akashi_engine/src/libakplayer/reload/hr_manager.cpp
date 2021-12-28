@@ -62,6 +62,10 @@ namespace akashi {
                 atom_profiles = state->m_prop.render_prof.atom_profiles;
             }
 
+            if (atom_profiles.size() == 0) {
+                return;
+            }
+
             while (true) {
                 const auto atom_profile = atom_profiles[current_atom_index];
                 if (atom_profile.from <= current_time && current_time <= atom_profile.to) {

@@ -34,6 +34,10 @@ namespace akashi {
             explicit PyEvalContext(core::borrowed_ptr<state::AKState> state);
             virtual ~PyEvalContext(void) noexcept;
 
+            void load(void) override;
+
+            bool loaded(void) const override { return m_loaded; }
+
             core::FrameContext eval_kron(const char* module_path, const KronArg& kron_arg) override;
 
             std::vector<core::FrameContext>
@@ -59,6 +63,7 @@ namespace akashi {
             core::borrowed_ptr<state::AKState> m_state;
             core::owned_ptr<GlobalContext> m_gctx;
             bool m_exited = false;
+            bool m_loaded = false;
         };
 
     }

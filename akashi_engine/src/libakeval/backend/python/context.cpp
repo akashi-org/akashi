@@ -60,10 +60,19 @@ namespace akashi {
             // if (!res.cast<py::tuple>()[0].cast<bool>()) {
             //     AKLOG_WARN("{}", res.cast<py::tuple>()[1].cast<std::string>().c_str());
             // }
+        };
 
+        void PyEvalContext::load(void) {
+            if (m_loaded) {
+                AKLOG_WARNN("Already loaded.");
+            }
+
+            auto config = this->config();
             this->load_module(config.entry_path, config.include_dir);
             this->register_deps_module(config.entry_path, config.include_dir);
-        };
+
+            m_loaded = true;
+        }
 
         PyEvalContext::~PyEvalContext(void) noexcept { this->exit(); };
 
@@ -145,38 +154,12 @@ namespace akashi {
                 elem = it->second->mod.attr("__akashi_export_elem_fn")();
             }
 
-            // if (elem_name.empty()) {
-            //     if (py::hasattr(it->second->mod, "__akashi_export_elem_fn")) {
-            //         elem = it->second->mod.attr("__akashi_export_elem_fn")();
-            //     }
-            // } else {
-            //     // std::string ret_sig;
-            //     // try {
-            //     //     elem = it->second->mod.attr(elem_name.c_str())();
-            //     //     ret_sig = elem.attr("__annotations__")["return"].cast<std::string>();
-            //     // } catch (const std::exception& e) {
-            //     //     AKLOG_ERROR("{}", e.what());
-            //     //     return render_prof;
-            //     // }
-            //     // // sanity check
-            //     // if (!(ret_sig == "Literal['ROOT']" || ret_sig == "Literal['SCENE']" ||
-            //     //       ret_sig == "Literal['ATOM']")) {
-            //     //     AKLOG_ERRORN("Elem not found");
-            //     //     return render_prof;
-            //     // }
-            // }
-            // assert(!elem.is_none());
-            // assert(py::hasattr(elem, "__call__"));
-
-            // core::Timer timer;
-            // timer.start();
-            // AKLOG_DEBUGN("get_render_profile() start");
-
-            m_gctx = global_eval(elem, m_state->m_prop.fps);
-
-            // timer.stop();
-            // AKLOG_DEBUG("get_render_profile() end, time: {} microseconds",
-            //             timer.current_time_micro().to_decimal());
+            try {
+                m_gctx = global_eval(elem, m_state->m_prop.fps);
+            } catch (const std::exception& e) {
+                AKLOG_ERROR("{}", e.what());
+                return render_prof;
+            }
 
             render_prof.uuid = m_gctx->uuid;
             render_prof.duration = m_gctx->duration;

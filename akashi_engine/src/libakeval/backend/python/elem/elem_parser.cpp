@@ -37,7 +37,12 @@ namespace akashi {
 
         static std::string parse_shader(const pybind11::object& shader_obj) {
             if (!shader_obj.is_none()) {
-                return shader_obj.attr("_assemble")().cast<std::string>();
+                try {
+                    return shader_obj.attr("_assemble")().cast<std::string>();
+                } catch (const std::exception& e) {
+                    AKLOG_ERROR("{}", e.what());
+                    return "";
+                }
             }
             return "";
         }
