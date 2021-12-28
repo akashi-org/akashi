@@ -2,6 +2,7 @@ include MANIFEST.in
 include LICENSE.md
 include LICENSE.Apachev2
 include LICENSE.GPLv3
+include LICENSE.LGPLv3
 include README
 include on_install.py
 include on_publish.py
