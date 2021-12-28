@@ -29,7 +29,7 @@ class LayerField:
     atom_uuid: UUID = UUID('')
     kind: LayerKind = 'LAYER'
     key: str = ''
-    duration: tp.Union[sec, 'AtomHandle'] = sec(0)
+    duration: tp.Union[sec, 'AtomHandle'] = sec(5)
     atom_offset: sec = sec(0)
 
 

@@ -71,7 +71,9 @@ class VideoLocalField:
 
 @dataclass
 class VideoEntry(PositionField, LayerField, VideoLocalField):
-    ...
+
+    def __post_init__(self):
+        self.duration = sec(-1)
 
 
 @dataclass

@@ -17,7 +17,9 @@ class AudioLocalField:
 
 @dataclass
 class AudioEntry(LayerField, AudioLocalField):
-    ...
+
+    def __post_init__(self):
+        self.duration = sec(-1)
 
 
 @dataclass
