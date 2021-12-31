@@ -43,7 +43,7 @@ class TestLambdaExpr(unittest.TestCase):
         speed = 999
 
         def gen1() -> ak.LEntryFragFn:
-            return lambda e, b, c: e(gl.eval(speed) * gl.sin(12))
+            return lambda e, b, c: e(gl.outer(speed) * gl.sin(12))
 
         expected = 'void frag_main(inout vec4 color){(999) * (sin(12));}'
 
@@ -54,7 +54,7 @@ class TestLambdaExpr(unittest.TestCase):
         speed = 999
 
         def gen1() -> ak.LEntryFragFn:
-            return lambda e, b, c: e(gl.eval(global_speed) + (gl.eval(speed) * gl.sin(12)))
+            return lambda e, b, c: e(gl.outer(global_speed) + (gl.outer(speed) * gl.sin(12)))
 
         expected = 'void frag_main(inout vec4 color){(1890) + ((999) * (sin(12)));}'
 
@@ -66,7 +66,7 @@ class TestLambdaExpr(unittest.TestCase):
 
         def gen1() -> ak.LEntryFragFn:
             return (
-                lambda e, b, c: e((c.y * gl.eval(global_speed)) + (b.time * gl.eval(speed) * gl.sin(12)))
+                lambda e, b, c: e((c.y * gl.outer(global_speed)) + (b.time * gl.outer(speed) * gl.sin(12)))
             )
 
         expected1 = 'void frag_main(inout vec4 color){((color.y) * (1890)) + (((time) * (999)) * (sin(12)));}'
@@ -75,7 +75,7 @@ class TestLambdaExpr(unittest.TestCase):
 
         def gen2() -> ak.LEntryPolyFn:
             return lambda e, b, p: (
-                e((p.y * gl.eval(global_speed)) + (b.time * gl.eval(speed) * gl.sin(12)))
+                e((p.y * gl.outer(global_speed)) + (b.time * gl.outer(speed) * gl.sin(12)))
             )
 
         expected2 = 'void poly_main(inout vec4 pos){((pos.y) * (1890)) + (((time) * (999)) * (sin(12)));}'
@@ -88,7 +88,7 @@ class TestLambdaExpr(unittest.TestCase):
 
         def gen1() -> ak.LEntryFragFn:
             return lambda e, b, c: (
-                e(compiler_fixtures.boost_add(1, gl.eval(global_speed)) + (gl.eval(speed) * gl.sin(12)))
+                e(compiler_fixtures.boost_add(1, gl.outer(global_speed)) + (gl.outer(speed) * gl.sin(12)))
             )
 
         expected1 = ''.join([
@@ -100,7 +100,7 @@ class TestLambdaExpr(unittest.TestCase):
         self.assertEqual(compile_shaders((gen1(),), ak.frag), expected1)
 
         def gen2() -> ak.LEntryFragFn:
-            return lambda e, b, c: e(module_global_poly(1, 2) + (gl.eval(speed) * gl.sin(12)))
+            return lambda e, b, c: e(module_global_poly(1, 2) + (gl.outer(speed) * gl.sin(12)))
 
         with self.assertRaisesRegex(CompileError, 'Forbidden import PolygonShader from FragShader') as _:
             compile_shaders((gen2(),), ak.frag)
@@ -122,7 +122,7 @@ class TestLambdaExpr(unittest.TestCase):
         speed = 999
 
         def gen1() -> ak.LEntryFragFn:
-            return lambda e, b, c: e(gl.eval(global_speed) + (gl.eval(speed) * gl.sin(12))) | e(102)
+            return lambda e, b, c: e(gl.outer(global_speed) + (gl.outer(speed) * gl.sin(12))) | e(102)
 
         expected = 'void frag_main(inout vec4 color){(1890) + ((999) * (sin(12)));102;}'
 
@@ -164,7 +164,7 @@ class TestLambdaLet(unittest.TestCase):
         self.assertEqual(compile_shaders((gen(),), ak.frag), expected)
 
         def gen2() -> ak.LEntryFragFn:
-            return lambda e, b, c: e((x := gl.eval(speed))).tp(int)  # noqa: F841
+            return lambda e, b, c: e((x := gl.outer(speed))).tp(int)  # noqa: F841
 
         expected2 = 'void frag_main(inout vec4 color){int x = 999;}'
 
@@ -175,7 +175,7 @@ class TestLambdaLet(unittest.TestCase):
         speed = 999
 
         def gen() -> ak.LEntryFragFn:
-            return lambda e, b, c: e(c.x) << e(gl.eval(speed)) | e(y := 12.1).tp(float) | e(y)
+            return lambda e, b, c: e(c.x) << e(gl.outer(speed)) | e(y := 12.1).tp(float) | e(y)
 
         expected = 'void frag_main(inout vec4 color){color.x = 999;float y = 12.1;y;}'
 
@@ -192,7 +192,7 @@ class TestLambdaMultiple(unittest.TestCase):
             return lambda e, b, c: e(x := 102).tp(int)  # noqa: F841
 
         def gen2() -> ak.LEntryFragFn:
-            return lambda e, b, c: e(c.x) << e(gl.eval(speed)) | e(y := gl.vec2(1, 2)).tp(gl.vec2) | e(y)
+            return lambda e, b, c: e(c.x) << e(gl.outer(speed)) | e(y := gl.vec2(1, 2)).tp(gl.vec2) | e(y)
 
         def gen3() -> ak.LEntryFragFn:
             return lambda e, b, c: e(c.y) << e(1.0)
@@ -211,13 +211,13 @@ class TestLambdaMultiple(unittest.TestCase):
 
         def gen1() -> ak.LEntryFragFn:
             return lambda e, b, c: (
-                e(compiler_fixtures.boost_add(1, gl.eval(global_speed)) + (gl.eval(speed) * gl.sin(12)))
+                e(compiler_fixtures.boost_add(1, gl.outer(global_speed)) + (gl.outer(speed) * gl.sin(12)))
             )
 
         def gen2() -> ak.LEntryFragFn:
             return lambda e, b, c: (
-                e(z := gl.eval(speed) * gl.sin(b.time)).tp(float) |
-                e(compiler_fixtures.boost_add(1, gl.eval(global_speed)) + z)
+                e(z := gl.outer(speed) * gl.sin(b.time)).tp(float) |
+                e(compiler_fixtures.boost_add(1, gl.outer(global_speed)) + z)
             )
 
         expected = ''.join([
@@ -239,7 +239,7 @@ class TestLambdaWithBrace(unittest.TestCase):
 
         def gen() -> ak.LEntryFragFn:
             return lambda e, b, color: ((
-                (e(color.x) << e(gl.eval(speed))) |
+                (e(color.x) << e(gl.outer(speed))) |
                 (e(y := 12.1).tp(float) | e(y))
             ))
 

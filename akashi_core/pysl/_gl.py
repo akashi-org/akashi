@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 __all__ = [
-    "eval",
+    "outer",
     "uint",
     "gl_FragCoord"
 ]
@@ -33,7 +33,7 @@ _T = TypeVar('_T')
 _TNumber = TypeVar('_TNumber', int, float)
 
 
-def eval(__expr: _T) -> _T:
+def outer(__expr: _T) -> _T:
     return __expr
 
 

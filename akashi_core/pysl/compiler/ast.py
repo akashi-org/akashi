@@ -399,7 +399,7 @@ class CallOut(exprOut):
 
 def from_Call(node: ast.Call, ctx: CompilerContext) -> CallOut:
 
-    if ast.unparse(node).startswith('gl.eval'):
+    if ast.unparse(node).startswith('gl.outer'):
         content = evaluator.eval_node(node.args[0], ctx)
         return CallOut(node, args=[], content=content)
 
