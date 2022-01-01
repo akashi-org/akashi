@@ -227,27 +227,27 @@ namespace akashi {
                 EGLuint64KHR modifier = m_hwctx->desc.objects[obj_idx].drm_format_modifier;
 
                 // clang-format off
-                    EGLint attribs[] = {
-                        EGL_WIDTH, tex.width,
-                        EGL_HEIGHT, tex.height,
-                        EGL_LINUX_DRM_FOURCC_EXT, (EGLint)m_hwctx->desc.layers[i].drm_format,
-                        EGL_DMA_BUF_PLANE0_FD_EXT, m_hwctx->desc.objects[obj_idx].fd,
-                        EGL_DMA_BUF_PLANE0_OFFSET_EXT, (EGLint)m_hwctx->desc.layers[i].offset[0], // singleplane layer
-                        EGL_DMA_BUF_PLANE0_PITCH_EXT, (EGLint)m_hwctx->desc.layers[i].pitch[0], // singleplane layer
-                        EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT, (EGLint)(modifier & 0xffffffff),
-                        EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT, (EGLint)(modifier >> 32),
-                        EGL_NONE
-                    };
+                EGLint attribs[] = {
+                    EGL_WIDTH, tex.width,
+                    EGL_HEIGHT, tex.height,
+                    EGL_LINUX_DRM_FOURCC_EXT, (EGLint)m_hwctx->desc.layers[i].drm_format,
+                    EGL_DMA_BUF_PLANE0_FD_EXT, m_hwctx->desc.objects[obj_idx].fd,
+                    EGL_DMA_BUF_PLANE0_OFFSET_EXT, (EGLint)m_hwctx->desc.layers[i].offset[0], // singleplane layer
+                    EGL_DMA_BUF_PLANE0_PITCH_EXT, (EGLint)m_hwctx->desc.layers[i].pitch[0], // singleplane layer
+                    EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT, (EGLint)(modifier & 0xffffffff),
+                    EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT, (EGLint)(modifier >> 32),
+                    EGL_NONE
+                };
                 // clang-format on
 
                 // clang-format off
-                    m_hwctx->egl_images[i] =  eglCreateImageKHR(
-                      eglGetCurrentDisplay(),
-                        EGL_NO_CONTEXT,
-                        EGL_LINUX_DMA_BUF_EXT,
-                        nullptr,
-                        attribs
-                    );
+                m_hwctx->egl_images[i] = eglCreateImageKHR(
+                    eglGetCurrentDisplay(),
+                    EGL_NO_CONTEXT,
+                    EGL_LINUX_DMA_BUF_EXT,
+                    nullptr,
+                    attribs
+                );
                 // clang-format on
 
                 if (!m_hwctx->egl_images[i]) {
