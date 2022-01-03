@@ -66,7 +66,11 @@ namespace akashi {
                                                 const std::string& elem_name) {
             if (m_eval_ctx->loaded()) {
                 ASSERT();
-                return m_eval_ctx->render_prof(module_path, elem_name);
+                try {
+                    return m_eval_ctx->render_prof(module_path, elem_name);
+                } catch (const std::exception& e) {
+                    AKLOG_ERROR("{}", e.what());
+                }
             }
 
             RenderProfile render_prof;
