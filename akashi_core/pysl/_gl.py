@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 __all__ = [
-    "eval",
+    "outer",
     "uint",
     "gl_FragCoord"
 ]
@@ -33,7 +33,7 @@ _T = TypeVar('_T')
 _TNumber = TypeVar('_TNumber', int, float)
 
 
-def eval(__expr: _T) -> _T:
+def outer(__expr: _T) -> _T:
     return __expr
 
 
@@ -1065,12 +1065,14 @@ _TPolyBuffer = TypeVar('_TPolyBuffer', bound='_poly')
 
 
 @overload
-def entry(buffer_type: Type[_TFragBuffer]) -> Callable[['_NamedEntryFragFn'['_TFragBuffer']], _TEntryFnOpaque['_NamedEntryFragFn'['_TFragBuffer']]]:
+def entry(buffer_type: Type[_TFragBuffer]) -> Callable[['_NamedEntryFragFn'['_TFragBuffer']], _TEntryFnOpaque['_NamedEntryFragFn'['_TFragBuffer']]]:  # noqa: E501
+
     ...
 
 
 @overload
-def entry(buffer_type: Type[_TPolyBuffer]) -> Callable[['_NamedEntryPolyFn'['_TPolyBuffer']], _TEntryFnOpaque['_NamedEntryPolyFn'['_TPolyBuffer']]]:
+def entry(buffer_type: Type[_TPolyBuffer]) -> Callable[['_NamedEntryPolyFn'['_TPolyBuffer']], _TEntryFnOpaque['_NamedEntryPolyFn'['_TPolyBuffer']]]:  # noqa: E501
+
     ...
 
 

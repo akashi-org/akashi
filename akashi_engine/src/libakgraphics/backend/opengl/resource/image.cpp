@@ -12,8 +12,9 @@ namespace akashi {
     namespace graphics {
 
         ImageLoader::ImageLoader(void) {
-            auto flags = IMG_INIT_PNG;
-            if ((IMG_Init(IMG_INIT_PNG) & flags) != flags) {
+            auto flags = IMG_INIT_PNG | IMG_INIT_JPG | IMG_INIT_TIF | IMG_INIT_WEBP;
+            auto initted = IMG_Init(flags);
+            if ((initted & flags) != flags) {
                 AKLOG_ERROR("ImageLoader::ImageLoader: IMG_Init failed\n{}", IMG_GetError());
                 throw std::runtime_error("Failed to init ImageLoader");
             }

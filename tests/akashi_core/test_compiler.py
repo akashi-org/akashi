@@ -31,7 +31,7 @@ class TestMixed(unittest.TestCase):
         def named_gen(arg_value: int):
             @gl.entry(ak.frag)
             def vec_attr(buffer: ak.frag, cl: gl.inout_p[gl.vec4]) -> None:
-                cl.x = buffer.time * 12 + gl.eval(arg_value)
+                cl.x = buffer.time * 12 + gl.outer(arg_value)
             return vec_attr
 
         expected = ''.join([
@@ -54,7 +54,7 @@ class TestMixed(unittest.TestCase):
         outer_value = 102
 
         def gen() -> ak.LEntryFragFn:
-            return lambda e, b, c: e(module_global_add(1, 2) * gl.eval(outer_value))
+            return lambda e, b, c: e(module_global_add(1, 2) * gl.outer(outer_value))
 
         @gl.entry(ak.frag)
         def vec_attr(buffer: ak.frag, cl: gl.inout_p[gl.vec4]) -> None:

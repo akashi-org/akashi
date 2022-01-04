@@ -94,15 +94,9 @@ def compile_func_all(node: ast.FunctionDef, ctx: CompilerContext, func_name: str
 
 def compile_func_body(node: ast.FunctionDef, ctx: CompilerContext) -> _TGLSL:
 
-    is_method = len(ctx.buffers) > 0
-
     ctx.top_indent = node.col_offset
     if not node.returns:
         raise CompileError('Return type annotation not found')
-
-    args = from_arguments(node.args, ctx, 1 if is_method else 0)
-    for idx, arg in enumerate(args):
-        arg_tpname = type_converter(arg.content, ctx, arg.node)
 
     body_strs = []
     for stmt in node.body:
