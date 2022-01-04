@@ -68,7 +68,9 @@ namespace akashi {
 
         bool ShapeActor::destroy(const OGLRenderContext& /*ctx */) {
             if (m_pass) {
-                m_pass->mesh->destroy();
+                if (m_pass->mesh) {
+                    m_pass->mesh->destroy();
+                }
                 glDeleteProgram(m_pass->prog);
                 delete m_pass;
             }
