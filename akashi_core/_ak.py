@@ -28,11 +28,15 @@ __all__ = [
     "LEntryFragFn",
     "LEntryPolyFn",
     "frag",
-    "poly"
+    "poly",
+    "cur_config",
+    "width",
+    "height",
+    "center"
 ]
 
 
-from .elem.context import entry
+from .elem.context import entry, cur_config, width, height, center
 from .elem.atom import atom
 from .elem.lane import lane
 from .elem.layer.base import frag, poly
