@@ -32,13 +32,17 @@ __all__ = [
     "cur_config",
     "width",
     "height",
-    "center"
+    "center",
+    "LayoutInfo",
+    "vstack",
+    "hstack"
 ]
 
 
 from .elem.context import entry, cur_config, width, height, center
 from .elem.atom import atom
 from .elem.lane import lane
+from .elem.layout import LayoutInfo, vstack, hstack
 from .elem.layer.base import frag, poly
 from .elem.layer.video import video
 from .elem.layer.audio import audio
