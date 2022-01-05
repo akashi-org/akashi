@@ -12,17 +12,20 @@ namespace akashi {
             explicit CircleMesh() : BaseMesh(){};
             virtual ~CircleMesh() = default;
 
-            bool create(const GLfloat radius, const int lod, const GLuint vertices_loc);
+            bool create(const std::array<GLfloat, 2>& size, const int lod,
+                        const GLuint vertices_loc);
 
-            bool create_border(const GLfloat radius, const int lod, const GLfloat border_width,
-                               const GLuint vertices_loc);
+            bool create_border(const std::array<GLfloat, 2>& size, const int lod,
+                               const GLfloat border_width, const GLuint vertices_loc);
 
             void destroy() override;
 
           private:
-            bool load_circle_mesh(const GLuint vertices_loc, GLfloat radius, int lod);
+            bool load_circle_mesh(const GLuint vertices_loc, const std::array<GLfloat, 2>& size,
+                                  int lod);
 
-            bool load_circle_border_mesh(const GLuint vertices_loc, GLfloat radius, int lod,
+            bool load_circle_border_mesh(const GLuint vertices_loc,
+                                         const std::array<GLfloat, 2>& size, int lod,
                                          const GLfloat border_width);
         };
 

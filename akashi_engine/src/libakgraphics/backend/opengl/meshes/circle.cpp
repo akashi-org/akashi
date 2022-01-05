@@ -10,16 +10,18 @@ namespace akashi {
 
         namespace priv {
 
-            static std::vector<GLfloat> circle_mesh_vertices(const GLfloat radius, const int lod) {
+            static std::vector<GLfloat> circle_mesh_vertices(const std::array<GLfloat, 2>& size,
+                                                             const GLfloat border_width,
+                                                             const int lod) {
                 std::vector<GLfloat> vertices(lod * 3, 0);
 
                 auto delta = (2 * M_PI) / lod;
                 size_t v_index = 0;
                 for (int i = 0; i < lod; i++) {
                     auto rad = delta * i;
-                    vertices[v_index++] = (double)cos(rad) * radius; // x
-                    vertices[v_index++] = (double)sin(rad) * radius; // y
-                    vertices[v_index++] = 0;                         // z
+                    vertices[v_index++] = (double)cos(rad) * ((size[0] * 0.5f) + border_width); // x
+                    vertices[v_index++] = (double)sin(rad) * ((size[1] * 0.5f) + border_width); // y
+                    vertices[v_index++] = 0;                                                    // z
                 }
 
                 return vertices;
@@ -29,12 +31,13 @@ namespace akashi {
 
         /* Circle */
 
-        bool CircleMesh::create(const GLfloat radius, const int lod, const GLuint vertices_loc) {
+        bool CircleMesh::create(const std::array<GLfloat, 2>& size, const int lod,
+                                const GLuint vertices_loc) {
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);
 
-            CHECK_AK_ERROR2(this->load_circle_mesh(vertices_loc, radius, lod));
+            CHECK_AK_ERROR2(this->load_circle_mesh(vertices_loc, size, lod));
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
@@ -42,13 +45,13 @@ namespace akashi {
             return true;
         }
 
-        bool CircleMesh::create_border(const GLfloat radius, const int lod,
+        bool CircleMesh::create_border(const std::array<GLfloat, 2>& size, const int lod,
                                        const GLfloat border_width, const GLuint vertices_loc) {
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);
 
-            CHECK_AK_ERROR2(this->load_circle_border_mesh(vertices_loc, radius, lod, border_width));
+            CHECK_AK_ERROR2(this->load_circle_border_mesh(vertices_loc, size, lod, border_width));
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
@@ -58,7 +61,8 @@ namespace akashi {
 
         void CircleMesh::destroy() {}
 
-        bool CircleMesh::load_circle_mesh(const GLuint vertices_loc, GLfloat radius, int lod) {
+        bool CircleMesh::load_circle_mesh(const GLuint vertices_loc,
+                                          const std::array<GLfloat, 2>& size, int lod) {
             std::array<GLfloat, 3> center_pos = {0.0, 0.0, 0.0};
 
             size_t vertice_point_length = lod + 1;
@@ -68,7 +72,7 @@ namespace akashi {
             vertices[1] = center_pos[1];
             vertices[2] = center_pos[2];
 
-            auto part_vertices = priv::circle_mesh_vertices(radius, lod);
+            auto part_vertices = priv::circle_mesh_vertices(size, 0, lod);
             for (size_t i = 0; i < part_vertices.size(); i++) {
                 vertices[3 + i] = part_vertices[i];
             }
@@ -105,10 +109,11 @@ namespace akashi {
             return true;
         }
 
-        bool CircleMesh::load_circle_border_mesh(const GLuint vertices_loc, GLfloat radius, int lod,
+        bool CircleMesh::load_circle_border_mesh(const GLuint vertices_loc,
+                                                 const std::array<GLfloat, 2>& size, int lod,
                                                  const GLfloat border_width) {
-            auto inner_vertices = priv::circle_mesh_vertices(radius, lod);
-            auto outer_vertices = priv::circle_mesh_vertices(radius + border_width, lod);
+            auto inner_vertices = priv::circle_mesh_vertices(size, 0, lod);
+            auto outer_vertices = priv::circle_mesh_vertices(size, border_width, lod);
 
             size_t vertice_point_length = lod * 2;
 

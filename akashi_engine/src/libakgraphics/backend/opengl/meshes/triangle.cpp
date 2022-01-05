@@ -10,13 +10,13 @@ namespace akashi {
 
         namespace priv {
 
-            static std::vector<GLfloat> tri_mesh_vertices(const GLfloat side) {
-                float SQRT3 = sqrt(3);
+            static std::vector<GLfloat> tri_mesh_vertices(const std::array<GLfloat, 2>& size,
+                                                          const GLfloat border_width) {
                 // clang-format off
                 std::vector<GLfloat> vertices = {
-                    0, (SQRT3 / 3.0f) * side, 0, // top
-                    -0.5f * side, (SQRT3/ -6.0f) * side, 0, // left
-                    0.5f * side, (SQRT3/ -6.0f) * side, 0 // right
+                    0, 0.5f * (size[1] + border_width), 0, // top
+                    -0.5f * (size[0] + border_width), -0.5f * (size[1] + border_width), 0, // left
+                    0.5f * (size[0] + border_width), -0.5f  * (size[1] + border_width), 0 // right
                 };
                 // clang-format on
                 return vertices;
@@ -26,12 +26,12 @@ namespace akashi {
 
         /* Triangle */
 
-        bool TriangleMesh::create(const GLfloat side, const GLuint vertices_loc) {
+        bool TriangleMesh::create(const std::array<GLfloat, 2>& size, const GLuint vertices_loc) {
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);
 
-            CHECK_AK_ERROR2(this->load_tri_mesh(vertices_loc, side));
+            CHECK_AK_ERROR2(this->load_tri_mesh(vertices_loc, size));
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
@@ -39,13 +39,13 @@ namespace akashi {
             return true;
         }
 
-        bool TriangleMesh::create_border(const GLfloat side, const GLfloat border_width,
-                                         const GLuint vertices_loc) {
+        bool TriangleMesh::create_border(const std::array<GLfloat, 2>& size,
+                                         const GLfloat border_width, const GLuint vertices_loc) {
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);
 
-            CHECK_AK_ERROR2(this->load_tri_border_mesh(vertices_loc, side, border_width));
+            CHECK_AK_ERROR2(this->load_tri_border_mesh(vertices_loc, size, border_width));
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
@@ -55,8 +55,9 @@ namespace akashi {
 
         void TriangleMesh::destroy() {}
 
-        bool TriangleMesh::load_tri_mesh(const GLuint vertices_loc, GLfloat side) {
-            auto vertices = priv::tri_mesh_vertices(side);
+        bool TriangleMesh::load_tri_mesh(const GLuint vertices_loc,
+                                         const std::array<GLfloat, 2>& size) {
+            auto vertices = priv::tri_mesh_vertices(size, 0);
 
             GLuint vertices_vbo;
             create_buffer(vertices_vbo, GL_ARRAY_BUFFER, vertices.data(),
@@ -75,10 +76,11 @@ namespace akashi {
             return true;
         }
 
-        bool TriangleMesh::load_tri_border_mesh(const GLuint vertices_loc, GLfloat side,
+        bool TriangleMesh::load_tri_border_mesh(const GLuint vertices_loc,
+                                                const std::array<GLfloat, 2>& size,
                                                 const GLfloat border_width) {
-            auto inner_vertices = priv::tri_mesh_vertices(side);
-            auto outer_vertices = priv::tri_mesh_vertices(side + border_width);
+            auto inner_vertices = priv::tri_mesh_vertices(size, 0);
+            auto outer_vertices = priv::tri_mesh_vertices(size, border_width);
 
             size_t vertice_point_length = 3 * 2;
 
