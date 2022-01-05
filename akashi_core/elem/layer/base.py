@@ -65,9 +65,11 @@ _TPositionTrait = tp.TypeVar('_TPositionTrait', bound='PositionTrait')
 class PositionField:
     pos: tuple[int, int] = (0, 0)
     z: float = 0.0
+    layer_size: tuple[int, int] = (-1, -1)
 
 
 class PositionTrait(LayerTrait, metaclass=ABCMeta):
+
     def pos(self: '_TPositionTrait', x: int, y: int) -> '_TPositionTrait':
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(PositionField, cur_layer).pos = (x, y)
@@ -76,6 +78,11 @@ class PositionTrait(LayerTrait, metaclass=ABCMeta):
     def z(self: '_TPositionTrait', value: float) -> '_TPositionTrait':
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(PositionField, cur_layer).z = value
+        return self
+
+    def layer_size(self: '_TPositionTrait', width: int, height: int) -> '_TPositionTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(PositionField, cur_layer).layer_size = (width, height)
         return self
 
 

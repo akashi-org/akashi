@@ -137,33 +137,40 @@ namespace akashi {
             auto shape_kind = shape_params.shape_kind;
             switch (shape_kind) {
                 case core::ShapeKind::RECT: {
+                    std::array<float, 2> mesh_size = {(float)shape_params.rect.width,
+                                                      (float)shape_params.rect.height};
+                    if (m_layer_ctx.layer_size[0] > 0) {
+                        mesh_size[0] = m_layer_ctx.layer_size[0];
+                    }
+                    if (m_layer_ctx.layer_size[1] > 0) {
+                        mesh_size[1] = m_layer_ctx.layer_size[1];
+                    }
+
                     if (shape_params.edge_radius > 0) {
                         m_pass->mesh = new RoundRectMesh;
                         if (shape_params.fill || !(shape_params.border_size > 0)) {
                             static_cast<RoundRectMesh*>(m_pass->mesh)
-                                ->create({(float)shape_params.rect.width,
-                                          (float)shape_params.rect.height},
-                                         shape_params.edge_radius, vertices_loc);
+                                ->create(mesh_size, shape_params.edge_radius, vertices_loc);
                         } else {
                             static_cast<RoundRectMesh*>(m_pass->mesh)
-                                ->create_border({(float)shape_params.rect.width,
-                                                 (float)shape_params.rect.height},
-                                                shape_params.edge_radius, shape_params.border_size,
-                                                vertices_loc);
+                                ->create_border(
+                                    {mesh_size[0] - (float)shape_params.border_size * 2,
+                                     mesh_size[1] - (float)shape_params.border_size * 2},
+                                    shape_params.edge_radius, shape_params.border_size,
+                                    vertices_loc);
                         }
                     } else {
                         m_pass->mesh = new RectMesh;
                         if (shape_params.fill || !(shape_params.border_size > 0)) {
                             CHECK_AK_ERROR2(static_cast<RectMesh*>(m_pass->mesh)
-                                                ->create({(float)shape_params.rect.width,
-                                                          (float)shape_params.rect.height},
-                                                         vertices_loc));
+                                                ->create(mesh_size, vertices_loc));
                         } else {
-                            CHECK_AK_ERROR2(static_cast<RectMesh*>(m_pass->mesh)
-                                                ->create_border({(float)shape_params.rect.width,
-                                                                 (float)shape_params.rect.height},
-                                                                shape_params.border_size,
-                                                                vertices_loc));
+                            CHECK_AK_ERROR2(
+                                static_cast<RectMesh*>(m_pass->mesh)
+                                    ->create_border(
+                                        {mesh_size[0] - (float)shape_params.border_size * 2,
+                                         mesh_size[1] - (float)shape_params.border_size * 2},
+                                        shape_params.border_size, vertices_loc));
                         }
                     }
                     break;

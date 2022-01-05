@@ -40,7 +40,6 @@ _ImagePolyFn = LEntryPolyFn[ImagePolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn
 @dataclass
 class ImageLocalField:
     srcs: list[str]
-    stretch: bool = False
 
 
 @dataclass
@@ -59,11 +58,6 @@ class ImageHandle(FittableDurationTrait, PositionTrait, LayerTrait):
     def poly(self, *poly_fns: _ImagePolyFn, preamble: tuple[str, ...] = tuple()) -> 'ImageHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ImageEntry):
             cur_layer.poly_shader = ShaderCompiler(poly_fns, ImagePolyBuffer, _poly_shader_header, preamble)
-        return self
-
-    def stretch(self, stretch: bool) -> 'ImageHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ImageEntry):
-            cur_layer.stretch = stretch
         return self
 
 

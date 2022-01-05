@@ -289,11 +289,8 @@ namespace akashi {
             auto luma_uvs_loc = glGetAttribLocation(m_pass->prog, "lumaUvs");
             auto chroma_uvs_loc = glGetAttribLocation(m_pass->prog, "chromaUvs");
 
-            std::array<float, 2> mesh_size = {(float)m_pass->vtex.info().video_width,
-                                              (float)m_pass->vtex.info().video_height};
-            if (m_layer_ctx.video_layer_ctx.stretch) {
-                mesh_size = {(float)ctx.fbo().info().width, (float)ctx.fbo().info().height};
-            }
+            std::array<float, 2> mesh_size = layer_commons::get_mesh_size(
+                m_layer_ctx, {m_pass->vtex.info().video_width, m_pass->vtex.info().video_height});
 
             CHECK_AK_ERROR2(m_pass->mesh.create(mesh_size, m_pass->vtex.info(), vertices_loc,
                                                 luma_uvs_loc, chroma_uvs_loc));

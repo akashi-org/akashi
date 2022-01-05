@@ -25,26 +25,11 @@ namespace akashi {
 
         enum class TextAlign { LEFT = 0, CENTER, RIGHT, LENGTH };
 
-        struct TextLabel {
-            std::string color;
-            std::string src;
-            double radius;
-            std::string frag;
-            std::string poly;
-        };
-
-        struct TextBorder {
-            std::string color;
-            uint32_t size;
-            double radius;
-        };
-
         struct VideoLayerContext {
             std::string src;
             Rational start = core::Rational(0, 1);
             double scale;
             double gain;
-            bool stretch = false;
             std::string frag;
             std::string poly;
         };
@@ -57,9 +42,7 @@ namespace akashi {
 
         struct TextLayerContext {
             std::string text;
-            TextLabel label;
             TextAlign text_align;
-            TextBorder border;
             std::array<int32_t, 4> pad; // left, right, top, bottom
             int32_t line_span;
             double scale;
@@ -70,7 +53,6 @@ namespace akashi {
 
         struct ImageLayerContext {
             std::vector<std::string> srcs;
-            bool stretch = false;
             double scale;
             std::string frag;
             std::string poly;
@@ -124,6 +106,7 @@ namespace akashi {
             double x;
             double y;
             double z = 0.0;
+            std::array<long, 2> layer_size = {-1, -1};
             Rational from = core::Rational(0, 1);
             Rational to = core::Rational(0, 1);
             int type;

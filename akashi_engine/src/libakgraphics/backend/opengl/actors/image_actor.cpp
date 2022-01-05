@@ -104,9 +104,10 @@ namespace akashi {
 
             CHECK_AK_ERROR2(this->load_texture(ctx));
 
-            CHECK_AK_ERROR2(m_pass->mesh.create(
-                {(float)m_pass->tex.effective_width, (float)m_pass->tex.effective_height},
-                vertices_loc, uvs_loc));
+            auto mesh_size = layer_commons::get_mesh_size(
+                m_layer_ctx, {m_pass->tex.effective_width, m_pass->tex.effective_height});
+
+            CHECK_AK_ERROR2(m_pass->mesh.create(mesh_size, vertices_loc, uvs_loc));
 
             m_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
@@ -116,7 +117,7 @@ namespace akashi {
             return true;
         }
 
-        bool ImageActor::load_texture(const OGLRenderContext& ctx) {
+        bool ImageActor::load_texture(const OGLRenderContext& /* ctx */) {
             if (m_layer_ctx.image_layer_ctx.srcs.empty()) {
                 AKLOG_ERRORN("Failed to getSurface. `image_layer_ctx.srcs` is null");
                 return false;
@@ -159,11 +160,6 @@ namespace akashi {
             m_pass->tex.internal_format =
                 (surfaces[0]->format->BytesPerPixel == 3) ? GL_RGB8 : GL_RGBA8;
             m_pass->tex.target = GL_TEXTURE_2D_ARRAY;
-
-            if (m_layer_ctx.image_layer_ctx.stretch) {
-                m_pass->tex.effective_width = ctx.fbo().info().width;
-                m_pass->tex.effective_height = ctx.fbo().info().height;
-            }
 
             glGenTextures(1, &m_pass->tex.buffer);
 

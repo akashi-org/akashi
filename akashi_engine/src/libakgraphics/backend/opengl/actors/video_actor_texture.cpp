@@ -118,11 +118,6 @@ namespace akashi {
                 tex.effective_width = i == 0 ? buf_data.prop().width : buf_data.prop().chroma_width;
                 tex.effective_height = tex.height;
 
-                if (vlayer_ctx.stretch) {
-                    tex.effective_width = ctx.fbo().info().width;
-                    tex.effective_height = ctx.fbo().info().height;
-                }
-
                 tex.format = GL_RED;
                 tex.internal_format = GL_R8;
 
@@ -210,11 +205,6 @@ namespace akashi {
                     }
                 }
 
-                if (vlayer_ctx.stretch) {
-                    tex.effective_width = ctx.fbo().info().width;
-                    tex.effective_height = ctx.fbo().info().height;
-                }
-
                 glBindTexture(GL_TEXTURE_2D, tex.buffer);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -274,11 +264,6 @@ namespace akashi {
                 tex.height = i == 0 ? buf_data.prop().height : buf_data.prop().chroma_height;
                 tex.effective_width = i == 0 ? buf_data.prop().width : buf_data.prop().chroma_width;
                 tex.effective_height = tex.height;
-
-                if (vlayer_ctx.stretch) {
-                    tex.effective_width = ctx.fbo().info().width;
-                    tex.effective_height = ctx.fbo().info().height;
-                }
 
                 tex.format = i == 0 ? GL_RED : GL_RG;
                 tex.internal_format = i == 0 ? GL_R8 : GL_RG8;
