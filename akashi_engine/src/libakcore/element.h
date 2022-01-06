@@ -127,11 +127,6 @@ namespace akashi {
             ShapeLayerContext shape_layer_ctx;
         };
 
-        struct FrameContext {
-            Rational pts;
-            std::vector<LayerContext> layer_ctxs;
-        };
-
         struct LayerProfile {
             LayerType type;
             Rational from = core::Rational(0, 1);
@@ -147,7 +142,18 @@ namespace akashi {
             Rational to = core::Rational(0, 1);
             Rational duration = core::Rational(0, 1);
             std::string uuid;
+            std::string bg_color;
             std::vector<LayerProfile> layers;
+        };
+
+        struct AtomStaticProfile {
+            std::string bg_color;
+        };
+
+        struct FrameContext {
+            Rational pts;
+            AtomStaticProfile atom_static_profile;
+            std::vector<LayerContext> layer_ctxs;
         };
 
         struct RenderProfile {

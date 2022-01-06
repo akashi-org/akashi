@@ -48,6 +48,7 @@ namespace akashi {
                 return frame_ctx;
             }
             frame_ctx.layer_ctxs = ctx.atom_proxies[proxy_idx]->eval(arg);
+            frame_ctx.atom_static_profile = ctx.atom_proxies[proxy_idx]->static_profile();
             return frame_ctx;
         }
 

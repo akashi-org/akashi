@@ -39,6 +39,7 @@ namespace akashi {
                 atom_ctx.atom_duration = to_rational(atom.attr("_duration"));
 
                 atom_ctx.atom_profile.uuid = atom.attr("uuid").cast<std::string>();
+                atom_ctx.atom_profile.bg_color = atom.attr("bg_color").cast<std::string>();
 
                 for (const auto& layer_idx : atom.attr("layer_indices").cast<py::list>()) {
                     LayerTracerContext layer_trace_ctx = {

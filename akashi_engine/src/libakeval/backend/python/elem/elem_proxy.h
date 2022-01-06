@@ -45,6 +45,8 @@ namespace akashi {
 
             core::AtomProfile computed_profile() const;
 
+            core::AtomStaticProfile static_profile() const;
+
             const std::vector<core::owned_ptr<LayerProxy>>& layer_proxies() const;
 
           private:

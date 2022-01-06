@@ -36,7 +36,7 @@ namespace akashi {
 
           private:
             void init_gl();
-            void init_renderer(const FBInfo& info);
+            void init_renderer(const FBInfo& info, const core::FrameContext* frame_ctx = nullptr);
             bool render_layers(OGLRenderContext& ctx, const core::FrameContext& frame_ctx);
             bool add_layer(OGLRenderContext& ctx, const core::LayerContext& layer_ctx);
 
