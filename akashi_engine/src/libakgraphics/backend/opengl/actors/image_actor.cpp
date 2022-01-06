@@ -104,10 +104,31 @@ namespace akashi {
 
             CHECK_AK_ERROR2(this->load_texture(ctx));
 
-            auto mesh_size = layer_commons::get_mesh_size(
-                m_layer_ctx, {m_pass->tex.effective_width, m_pass->tex.effective_height});
+            std::array<long, 2> mesh_orig_size = {m_pass->tex.effective_width,
+                                                  m_pass->tex.effective_height};
 
-            CHECK_AK_ERROR2(m_pass->mesh.create(mesh_size, vertices_loc, uvs_loc));
+            QuadMeshCrop mesh_crop;
+            auto crop_end = m_layer_ctx.image_layer_ctx.crop.end;
+            bool do_crop = crop_end[0] != 0 || crop_end[1] != 0;
+            if (do_crop) {
+                auto crop_begin = m_layer_ctx.image_layer_ctx.crop.begin;
+                auto crop_width = crop_end[0] - crop_begin[0];
+                auto crop_height = crop_end[1] - crop_begin[1];
+                if (crop_width > 0 and crop_height > 0) {
+                    mesh_orig_size[0] = crop_width;
+                    mesh_orig_size[1] = crop_height;
+                }
+
+                mesh_crop.begin = crop_begin;
+                mesh_crop.end = crop_end;
+                mesh_crop.orig_width = m_pass->tex.effective_width;
+                mesh_crop.orig_height = m_pass->tex.effective_height;
+            }
+
+            auto mesh_size = layer_commons::get_mesh_size(m_layer_ctx, mesh_orig_size);
+
+            CHECK_AK_ERROR2(m_pass->mesh.create(mesh_size, vertices_loc, uvs_loc, false,
+                                                do_crop ? &mesh_crop : nullptr));
 
             m_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});

@@ -162,6 +162,16 @@ namespace akashi {
 
                 layer_ctx.image_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
                 layer_ctx.image_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
+
+                const auto& crop_begin =
+                    layer_params.attr("crop_begin").cast<std::tuple<long, long>>();
+                layer_ctx.image_layer_ctx.crop.begin[0] = std::get<0>(crop_begin);
+                layer_ctx.image_layer_ctx.crop.begin[1] = std::get<1>(crop_begin);
+
+                const auto& crop_end = layer_params.attr("crop_end").cast<std::tuple<long, long>>();
+                layer_ctx.image_layer_ctx.crop.end[0] = std::get<0>(crop_end);
+                layer_ctx.image_layer_ctx.crop.end[1] = std::get<1>(crop_end);
+
             } else if (type_str == "TEXT") {
                 layer_ctx.type = static_cast<int>(core::LayerType::TEXT);
                 layer_ctx.text_layer_ctx.text = layer_params.attr("text").cast<std::string>();

@@ -111,6 +111,31 @@ class FittableDurationTrait(LayerTrait, metaclass=ABCMeta):
         return self
 
 
+''' Crop Concept '''
+
+
+_TCropTrait = tp.TypeVar('_TCropTrait', bound='CropTrait')
+
+
+@dataclass
+class CropField:
+    crop_begin: tuple[int, int] = (0, 0)
+    crop_end: tuple[int, int] = (0, 0)
+
+
+class CropTrait(LayerTrait, metaclass=ABCMeta):
+
+    def crop_begin(self: '_TCropTrait', x: int, y: int) -> '_TCropTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(CropField, cur_layer).crop_begin = (x, y)
+        return self
+
+    def crop_end(self: '_TCropTrait', x: int, y: int) -> '_TCropTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(CropField, cur_layer).crop_end = (x, y)
+        return self
+
+
 def __is_atom_active(atom_uuid: UUID, raise_exp: bool = True) -> bool:
 
     cur_atom = gctx.get_ctx().atoms[-1]

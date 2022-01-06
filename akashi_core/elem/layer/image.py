@@ -9,7 +9,9 @@ from .base import (
     PositionTrait,
     ShaderField,
     LayerField,
-    LayerTrait
+    LayerTrait,
+    CropField,
+    CropTrait
 )
 from .base import peek_entry, register_entry, frag, poly
 from akashi_core.pysl import _gl as gl
@@ -43,12 +45,12 @@ class ImageLocalField:
 
 
 @dataclass
-class ImageEntry(ShaderField, PositionField, LayerField, ImageLocalField):
+class ImageEntry(CropField, ShaderField, PositionField, LayerField, ImageLocalField):
     ...
 
 
 @dataclass
-class ImageHandle(FittableDurationTrait, PositionTrait, LayerTrait):
+class ImageHandle(CropTrait, FittableDurationTrait, PositionTrait, LayerTrait):
 
     def frag(self, *frag_fns: _ImageFragFn, preamble: tuple[str, ...] = tuple()) -> 'ImageHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ImageEntry):

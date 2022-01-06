@@ -11,6 +11,11 @@ namespace akashi {
 
         enum class LayerType { VIDEO = 0, AUDIO, TEXT, IMAGE, EFFECT, SHAPE, LENGTH };
 
+        struct CropInfo {
+            std::array<long, 2> begin;
+            std::array<long, 2> end;
+        };
+
         struct Style {
             std::string font_path;
             uint32_t fg_size;
@@ -56,6 +61,7 @@ namespace akashi {
             double scale;
             std::string frag;
             std::string poly;
+            CropInfo crop;
         };
 
         struct EffectLayerContext {
