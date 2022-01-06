@@ -21,9 +21,8 @@ class AtomLayoutHandle:
     __layout_fn: 'LayoutFn'
     __layout_lane_idx: int = field(default=-1, init=False)
 
-    def __enter__(self) -> 'AtomLayoutHandle':
+    def __enter__(self):
         self.begin()
-        return self
 
     def __exit__(self, *ext: tp.Any):
         self.end()
