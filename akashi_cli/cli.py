@@ -5,9 +5,6 @@ import signal
 import threading
 from subprocess import Popen
 
-# for http-asp
-import requests
-import json
 
 import os
 
@@ -35,52 +32,18 @@ class ServerThread(threading.Thread):
             raise Exception(f'invalid action `{self.action}`type found')
 
     def __debug_run(self):
-
-        # [XXX] To avoid deadlock issues, stderr must be redirected to /dev/null
-        # self.proc = Popen(
-        #     [BIN_PATH, *args],
-        #     stdin=PIPE, stdout=PIPE, stderr=DEVNULL, env=os.environ
-        # )
-
         self.proc = Popen(
             [BIN_PATH, self.akconf, self.conf_path], env=os.environ
         )
-
-        while True:
-            try:
-                input_str = input()
-            except BrokenPipeError as e:
-                print(e)
-                break
-
-            # self.proc.stdin.write((input_str + '\n').encode('utf-8'))
-            # self.proc.stdin.flush()
-            # stdout_v = self.proc.stdout.readline()
-            # print(stdout_v.decode('utf-8'))
-
-            # pyright:reportUnknownMemberType=false
-            resp = requests.get("http://localhost:1234/asp", json=json.loads(input_str))
-            print(resp.json())
+        self.proc.communicate()
 
     def __build_run(self):
-        # [XXX] To avoid deadlock issues, stderr must be redirected to /dev/null
-        # self.proc = Popen(
-        #     [ENCODER_BIN_PATH, *args],
-        #     stdin=PIPE, stdout=PIPE, stderr=DEVNULL, env=os.environ
-        # )
-
         self.proc = Popen(
             [ENCODER_BIN_PATH, self.akconf, self.conf_path], env=os.environ
         )
         self.proc.communicate()
 
     def __kernel_run(self):
-        # [XXX] To avoid deadlock issues, stderr must be redirected to /dev/null
-        # self.proc = Popen(
-        #     [ENCODER_BIN_PATH, *args],
-        #     stdin=PIPE, stdout=PIPE, stderr=DEVNULL, env=os.environ
-        # )
-
         self.proc = Popen(
             [KERNEL_BIN_PATH, self.akconf, BIN_PATH, self.conf_path, self.asp_port], env=os.environ
         )
