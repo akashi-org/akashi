@@ -4,8 +4,6 @@ from .parser import argument_parse, ParsedOption
 import signal
 import threading
 from subprocess import Popen
-
-
 import os
 
 

@@ -8,10 +8,14 @@ from importlib.machinery import SourceFileLoader
 from typing import Any
 from dataclasses import dataclass
 from subprocess import Popen, PIPE
-import pkg_resources
 
 
 def _version_string():
+    # NB: pkg_resources is quite slow to import, so we import it only when it is really needed
+    if '--version' not in sys.argv:
+        return ''
+
+    import pkg_resources
     py_ver = pkg_resources.get_distribution('akashi-engine').version
     _, err = Popen([KERNEL_BIN_PATH, "--version"], stderr=PIPE).communicate()
     engine_ver = err.decode('utf-8').split(' ')[-1]
