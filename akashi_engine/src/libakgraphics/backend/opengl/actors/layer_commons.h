@@ -235,6 +235,26 @@ namespace akashi {
                 return glm::vec3((a_x - c_x).to_decimal(), -(a_y - c_y).to_decimal(), layer_pos[2]);
             }
 
+            inline std::array<float, 2> get_mesh_size(const core::LayerContext& layer_ctx,
+                                                      const std::array<long, 2>& orig_size) {
+                auto aspect_ratio =
+                    core::Rational(orig_size[0], 1) / core::Rational(orig_size[1], 1);
+
+                if (layer_ctx.layer_size[0] > 0 && layer_ctx.layer_size[1] > 0) {
+                    return {(float)layer_ctx.layer_size[0], (float)layer_ctx.layer_size[1]};
+                } else if (layer_ctx.layer_size[0] > 0) {
+                    return {(float)layer_ctx.layer_size[0],
+                            (float)(core::Rational(layer_ctx.layer_size[0], 1) / aspect_ratio)
+                                .to_decimal()};
+                } else if (layer_ctx.layer_size[1] > 0) {
+                    return {(float)(core::Rational(layer_ctx.layer_size[1], 1) * aspect_ratio)
+                                .to_decimal(),
+                            (float)layer_ctx.layer_size[1]};
+                }
+
+                return {(float)orig_size[0], (float)orig_size[1]};
+            }
+
         }
 
     }

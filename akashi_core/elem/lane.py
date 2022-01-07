@@ -21,12 +21,14 @@ class LanePad:
 @dataclass
 class LaneEntry:
 
+    key: str = field(default='')
     items: list[tp.Union[LayerField, LanePad]] = field(default_factory=list)
 
 
 @dataclass
 class LaneHandle:
 
+    __key: str = field(default='')
     __lane_idx: int = field(default=-1, init=False)
 
     def __enter__(self) -> 'LaneHandle':
@@ -34,7 +36,7 @@ class LaneHandle:
         if cur_atom._on_lane:
             raise Exception('Nested lanes is prohibited')
         cur_atom._on_lane = True
-        cur_atom._lanes.append(LaneEntry())
+        cur_atom._lanes.append(LaneEntry(self.__key))
         self.__lane_idx = len(cur_atom._lanes) - 1
         return self
 
@@ -81,6 +83,6 @@ class LaneHandle:
         cur_atom._lanes[self.__lane_idx].items.append(LanePad(pad_sec))
 
 
-def lane() -> LaneHandle:
+def lane(key: str = '') -> LaneHandle:
 
-    return LaneHandle()
+    return LaneHandle(key)

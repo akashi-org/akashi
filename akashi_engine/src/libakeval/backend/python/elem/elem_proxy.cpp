@@ -126,6 +126,12 @@ namespace akashi {
             return computed;
         }
 
+        core::AtomStaticProfile AtomProxy::static_profile() const {
+            core::AtomStaticProfile static_profile;
+            static_profile.bg_color = m_profile.bg_color;
+            return static_profile;
+        }
+
         const std::vector<core::owned_ptr<LayerProxy>>& AtomProxy::layer_proxies() const {
             return m_layer_proxies;
         }

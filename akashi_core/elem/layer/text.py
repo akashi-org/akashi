@@ -57,27 +57,9 @@ class TextStyle:
 
 
 @dataclass
-class TextLabel:
-    color: str = "#ffffff00"  # "#rrggbb" or "#rrggbbaa"
-    src: str = ""  # expects image path
-    radius: float = 0
-    frag_shader: tp.Optional[ShaderCompiler] = None
-    poly_shader: tp.Optional[ShaderCompiler] = None
-
-
-@dataclass
-class TextBorder:
-    color: str = "#ffffff00"  # "#rrggbb" or "#rrggbbaa"
-    size: int = 0  # [TODO] float?
-    radius: float = 0
-
-
-@dataclass
 class TextLocalField:
     text: str
     style: TextStyle = field(init=False)
-    label: TextLabel = field(init=False)
-    border: TextBorder = field(init=False)
     text_align: TextAlign = 'left'
     pad: tuple[int, int, int, int] = (0, 0, 0, 0)  # left, right, top, bottom
     line_span: int = 0
@@ -88,8 +70,6 @@ class TextEntry(ShaderField, PositionField, LayerField, TextLocalField):
 
     def __post_init__(self):
         self.style = TextStyle()
-        self.label = TextLabel()
-        self.border = TextBorder()
 
 
 @dataclass
@@ -154,38 +134,6 @@ class TextHandle(FittableDurationTrait, PositionTrait, LayerTrait):
             cur_layer.style.use_shadow = True
             cur_layer.style.shadow_color = color_value(shadow_color)
             cur_layer.style.shadow_size = shadow_size
-        return self
-
-    def border(self, color: tp.Union[str, ColorEnum], size: int, radius: float = 0) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.border.color = color_value(color)
-            cur_layer.border.size = size
-            cur_layer.border.radius = radius
-        return self
-
-    def label_color(self, color: tp.Union[str, ColorEnum]) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.label.color = color_value(color)
-        return self
-
-    def label_src(self, src: str) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.label.src = src
-        return self
-
-    def label_radius(self, radius: float) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.label.radius = radius
-        return self
-
-    def label_frag(self, *frag_fns: _TextFragFn, preamble: tuple[str, ...] = tuple()) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.label.frag_shader = ShaderCompiler(frag_fns, TextFragBuffer, _frag_shader_header, preamble)
-        return self
-
-    def label_poly(self, *poly_fns: _TextPolyFn, preamble: tuple[str, ...] = tuple()) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.label.poly_shader = ShaderCompiler(poly_fns, TextPolyBuffer, _poly_shader_header, preamble)
         return self
 
 

@@ -41,7 +41,8 @@ namespace akashi {
             }
 
             // Expects a suitable vao to be binded before calling this function
-            static void load_uvs(const GLuint uvs_loc, const bool flip_uv) {
+            static void load_uvs(const GLuint uvs_loc, const bool flip_uv,
+                                 const QuadMeshCrop* crop = nullptr) {
                 std::array<GLfloat, 2 * 4> uvs;
                 uvs = {
                     0.0, 0.0, // left-top
@@ -50,12 +51,23 @@ namespace akashi {
                     1.0, 1.0  // right-bottom
                 };
 
+                if (crop) {
+                    // clang-format off
+                    uvs = {
+                        (float)crop->begin[0] / crop->orig_width, (float)crop->begin[1] / crop->orig_height, // left-top
+                        (float)crop->end[0] / crop->orig_width, (float)crop->begin[1] / crop->orig_height, // right-top
+                        (float)crop->begin[0] / crop->orig_width, (float)crop->end[1] / crop->orig_height, // left-bottom
+                        (float)crop->end[0] / crop->orig_width, (float)crop->end[1] / crop->orig_height  // right-bottom
+                    };
+                    // clang-format on
+                }
+
                 if (flip_uv) {
                     uvs = {
-                        0.0, 1.0, // left-bottom
-                        1.0, 1.0, // right-bottom
-                        0.0, 0.0, // left-top
-                        1.0, 0.0  // right-top
+                        uvs[4], uvs[5], // left-bottom
+                        uvs[6], uvs[7], // right-bottom
+                        uvs[0], uvs[1], // left-top
+                        uvs[2], uvs[3]  // right-top
                     };
                 }
 
@@ -126,13 +138,13 @@ namespace akashi {
         }
 
         bool QuadMesh::create(const std::array<float, 2>& size, const GLuint vertices_loc,
-                              const GLuint uvs_loc, const bool flip_uv) {
+                              const GLuint uvs_loc, const bool flip_uv, const QuadMeshCrop* crop) {
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);
 
             priv::load_vertices(vertices_loc, size[0], size[1]);
-            priv::load_uvs(uvs_loc, flip_uv);
+            priv::load_uvs(uvs_loc, flip_uv, crop);
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);

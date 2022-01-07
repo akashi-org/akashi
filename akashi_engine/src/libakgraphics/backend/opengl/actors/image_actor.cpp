@@ -104,9 +104,31 @@ namespace akashi {
 
             CHECK_AK_ERROR2(this->load_texture(ctx));
 
-            CHECK_AK_ERROR2(m_pass->mesh.create(
-                {(float)m_pass->tex.effective_width, (float)m_pass->tex.effective_height},
-                vertices_loc, uvs_loc));
+            std::array<long, 2> mesh_orig_size = {m_pass->tex.effective_width,
+                                                  m_pass->tex.effective_height};
+
+            QuadMeshCrop mesh_crop;
+            auto crop_end = m_layer_ctx.image_layer_ctx.crop.end;
+            bool do_crop = crop_end[0] != 0 || crop_end[1] != 0;
+            if (do_crop) {
+                auto crop_begin = m_layer_ctx.image_layer_ctx.crop.begin;
+                auto crop_width = crop_end[0] - crop_begin[0];
+                auto crop_height = crop_end[1] - crop_begin[1];
+                if (crop_width > 0 and crop_height > 0) {
+                    mesh_orig_size[0] = crop_width;
+                    mesh_orig_size[1] = crop_height;
+                }
+
+                mesh_crop.begin = crop_begin;
+                mesh_crop.end = crop_end;
+                mesh_crop.orig_width = m_pass->tex.effective_width;
+                mesh_crop.orig_height = m_pass->tex.effective_height;
+            }
+
+            auto mesh_size = layer_commons::get_mesh_size(m_layer_ctx, mesh_orig_size);
+
+            CHECK_AK_ERROR2(m_pass->mesh.create(mesh_size, vertices_loc, uvs_loc, false,
+                                                do_crop ? &mesh_crop : nullptr));
 
             m_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
@@ -116,7 +138,7 @@ namespace akashi {
             return true;
         }
 
-        bool ImageActor::load_texture(const OGLRenderContext& ctx) {
+        bool ImageActor::load_texture(const OGLRenderContext& /* ctx */) {
             if (m_layer_ctx.image_layer_ctx.srcs.empty()) {
                 AKLOG_ERRORN("Failed to getSurface. `image_layer_ctx.srcs` is null");
                 return false;
@@ -159,11 +181,6 @@ namespace akashi {
             m_pass->tex.internal_format =
                 (surfaces[0]->format->BytesPerPixel == 3) ? GL_RGB8 : GL_RGBA8;
             m_pass->tex.target = GL_TEXTURE_2D_ARRAY;
-
-            if (m_layer_ctx.image_layer_ctx.stretch) {
-                m_pass->tex.effective_width = ctx.fbo().info().width;
-                m_pass->tex.effective_height = ctx.fbo().info().height;
-            }
 
             glGenTextures(1, &m_pass->tex.buffer);
 

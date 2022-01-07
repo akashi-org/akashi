@@ -65,9 +65,11 @@ _TPositionTrait = tp.TypeVar('_TPositionTrait', bound='PositionTrait')
 class PositionField:
     pos: tuple[int, int] = (0, 0)
     z: float = 0.0
+    layer_size: tuple[int, int] = (-1, -1)
 
 
 class PositionTrait(LayerTrait, metaclass=ABCMeta):
+
     def pos(self: '_TPositionTrait', x: int, y: int) -> '_TPositionTrait':
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(PositionField, cur_layer).pos = (x, y)
@@ -76,6 +78,11 @@ class PositionTrait(LayerTrait, metaclass=ABCMeta):
     def z(self: '_TPositionTrait', value: float) -> '_TPositionTrait':
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(PositionField, cur_layer).z = value
+        return self
+
+    def layer_size(self: '_TPositionTrait', width: int, height: int) -> '_TPositionTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(PositionField, cur_layer).layer_size = (width, height)
         return self
 
 
@@ -101,6 +108,31 @@ class FittableDurationTrait(LayerTrait, metaclass=ABCMeta):
     def fit_to(self: '_TFittableDurationTrait', handle: 'AtomHandle') -> '_TFittableDurationTrait':
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(LayerField, cur_layer).duration = handle
+        return self
+
+
+''' Crop Concept '''
+
+
+_TCropTrait = tp.TypeVar('_TCropTrait', bound='CropTrait')
+
+
+@dataclass
+class CropField:
+    crop_begin: tuple[int, int] = (0, 0)
+    crop_end: tuple[int, int] = (0, 0)
+
+
+class CropTrait(LayerTrait, metaclass=ABCMeta):
+
+    def crop_begin(self: '_TCropTrait', x: int, y: int) -> '_TCropTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(CropField, cur_layer).crop_begin = (x, y)
+        return self
+
+    def crop_end(self: '_TCropTrait', x: int, y: int) -> '_TCropTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(CropField, cur_layer).crop_end = (x, y)
         return self
 
 

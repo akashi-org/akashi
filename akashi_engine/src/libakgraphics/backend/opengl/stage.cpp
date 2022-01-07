@@ -1,6 +1,7 @@
 #include "./stage.h"
 
 #include "./core/glc.h"
+#include "./core/color.h"
 #include "./render_context.h"
 #include "./fbo.h"
 #include "./camera.h"
@@ -72,14 +73,18 @@ namespace akashi {
             glEnable(GL_MULTISAMPLE);
         }
 
-        void Stage::init_renderer(const FBInfo& info) {
+        void Stage::init_renderer(const FBInfo& info, const core::FrameContext* frame_ctx) {
             glBindFramebuffer(GL_FRAMEBUFFER, info.fbo);
             glViewport(0.0, 0.0, info.width, info.height);
             glScissor(0.0, 0.0, info.width, info.height);
 
             glEnable(GL_SCISSOR_TEST);
 
-            glClearColor(0.0, 0.0, 0.0, 1.0);
+            std::array<double, 4> color = {0, 0, 0, 1};
+            if (frame_ctx) {
+                color = to_rgba_double(frame_ctx->atom_static_profile.bg_color);
+            }
+            glClearColor(color[0], color[1], color[2], color[3]);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             glDisable(GL_SCISSOR_TEST);
@@ -100,7 +105,7 @@ namespace akashi {
             }
 
             // activate fbo
-            this->init_renderer(ctx.fbo().info());
+            this->init_renderer(ctx.fbo().info(), &frame_ctx);
 
             // ctx.mut_camera()->update(ctx.fbo().info());
 
