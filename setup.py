@@ -77,9 +77,7 @@ setup(
         'sdist': SdistCommand,
         'install': InstallCommand
     },
-    install_requires=[
-        'requests'
-    ],
+    install_requires=[],
     python_requires='>=3.10,<3.12',
     entry_points={
         'console_scripts': [
