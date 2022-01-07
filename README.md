@@ -140,7 +140,7 @@ def main():
     with ak.atom() as a1:
         with ak.layout(layout):
 
-            with ak.lane() as _:
+            with ak.lane('subtitle') as _:
                 subtitle('Lorem ipsum dolor sit amet', 3)
                 subtitle('At magnam natus ut mollitia reprehenderit', 3)
 
@@ -151,7 +151,7 @@ def main():
                     lambda h: h.fit_to(a1),
                 )
 
-            with ak.lane() as _:
+            with ak.lane('main_video') as _:
                 ak.video('./blue_city.mp4').duration(3)
                 ak.video('./cherry.mp4').duration(3)
 ```
