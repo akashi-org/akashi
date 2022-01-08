@@ -20,28 +20,28 @@ class ServerThread(threading.Thread):
 
     def run(self):
 
-        if self.action == 'debug':
-            self.__debug_run()
+        if self.action == 'run':
+            self.__run_start()
         elif self.action == 'build':
-            self.__build_run()
+            self.__build_start()
         elif self.action == 'kernel':
-            self.__kernel_run()
+            self.__kernel_start()
         else:
             raise Exception(f'invalid action `{self.action}`type found')
 
-    def __debug_run(self):
+    def __run_start(self):
         self.proc = Popen(
             [BIN_PATH, self.akconf, self.conf_path], env=os.environ
         )
         self.proc.communicate()
 
-    def __build_run(self):
+    def __build_start(self):
         self.proc = Popen(
             [ENCODER_BIN_PATH, self.akconf, self.conf_path], env=os.environ
         )
         self.proc.communicate()
 
-    def __kernel_run(self):
+    def __kernel_start(self):
         self.proc = Popen(
             [KERNEL_BIN_PATH, self.akconf, BIN_PATH, self.conf_path, self.asp_port], env=os.environ
         )

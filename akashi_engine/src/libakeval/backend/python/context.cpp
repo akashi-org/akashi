@@ -149,9 +149,15 @@ namespace akashi {
                 return render_prof;
             }
 
+            std::string conf_path;
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+                conf_path = m_state->m_conf_path.to_str();
+            }
+
             py::object elem;
             if (py::hasattr(it->second->mod, "__akashi_export_elem_fn")) {
-                elem = it->second->mod.attr("__akashi_export_elem_fn")();
+                elem = it->second->mod.attr("__akashi_export_elem_fn")(conf_path);
             }
 
             try {

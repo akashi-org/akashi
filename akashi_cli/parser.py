@@ -1,10 +1,11 @@
 from .utils import KERNEL_BIN_PATH
 
+from akashi_core.config import config_parse
+
 import argparse
 from argparse import RawTextHelpFormatter
 import sys
 from os import path
-from importlib.machinery import SourceFileLoader
 from typing import Any
 from dataclasses import dataclass
 from subprocess import Popen, PIPE
@@ -40,16 +41,12 @@ def argument_parse() -> ParsedOption:
 
     parser.add_argument(
         "action",
-        choices=['debug', 'build', 'kernel'],
+        choices=['run', 'build', 'kernel'],
     )
 
     parser.add_argument(
-        "--conf_path",
-        "-c",
-        help="config file path",
-        type=str,
-        default="./akconf.py",  # temporary
-        required=False
+        "conf_path",
+        type=str
     )
 
     parser.add_argument(
@@ -74,15 +71,7 @@ def argument_parse() -> ParsedOption:
 
     return ParsedOption(
         args_dict['action'],
-        _akconf_parse(args_dict["conf_path"]),
+        config_parse(args_dict["conf_path"]).to_json(),
         path.abspath(args_dict["conf_path"]),
         args_dict['port'] if 'port' in args_dict else 1234
     )
-
-
-def _akconf_parse(conf_path: str) -> str:
-
-    akconf: Any = SourceFileLoader("akconf", path.abspath(conf_path)).load_module()  # type: ignore
-    if not hasattr(akconf, '__akashi_export_config_fn'):
-        raise Exception('No config function found. Perhaps you forget to add the export decorator?')
-    return getattr(akconf, '__akashi_export_config_fn')().to_json()

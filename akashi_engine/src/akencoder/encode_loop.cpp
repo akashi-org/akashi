@@ -76,14 +76,17 @@ namespace akashi {
                 entry_path = ctx.state->m_prop.eval_state.config.entry_path;
                 elem_name = ctx.state->m_prop.eval_state.config.elem_name;
                 fps = ctx.state->m_prop.fps;
-                profile = eval->render_prof(entry_path.to_abspath().to_str(), elem_name);
                 video_width = ctx.state->m_prop.video_width;
                 video_height = ctx.state->m_prop.video_height;
-
-                ctx.state->m_prop.render_prof = profile;
-
                 encode_audio_spec = ctx.state->m_atomic_state.encode_audio_spec.load();
                 audio_max_queue_size = ctx.state->m_prop.audio_max_queue_size;
+            }
+
+            // NB: locking is used inside
+            profile = eval->render_prof(entry_path.to_abspath().to_str(), elem_name);
+            {
+                std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
+                ctx.state->m_prop.render_prof = profile;
             }
 
             ctx.state->set_decode_layers_not_empty(core::has_layers(profile), true);
