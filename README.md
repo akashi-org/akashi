@@ -21,8 +21,6 @@ Akashi is still in the very early stages of development, and **not ready for pro
 ```python
 from akashi_core import ak, gl
 
-...
-
 @ak.entry(akconfig())
 def main():
     with ak.atom() as a1:
@@ -113,7 +111,6 @@ https://user-images.githubusercontent.com/70841910/148137328-02665a2e-962a-4d82-
 ```python
 
 from akashi_core import ak, gl
-from .config import akconfig
 
 def subtitle(msg: str, dur: float):
     ak.text(msg).ap(
@@ -135,7 +132,7 @@ def layout(lane_ctx: ak.LaneContext):
         case _:
             return None
 
-@ak.entry(akconfig())
+@ak.entry()
 def main():
     with ak.atom() as a1:
         with ak.layout(layout):
@@ -164,7 +161,6 @@ https://user-images.githubusercontent.com/70841910/148137358-bd784005-84e2-48c7-
 
 ```python
 from akashi_core import ak, gl
-from .config import akconfig
 import random
 random.seed(102)
 
@@ -172,10 +168,10 @@ def random_radius() -> float:
     return random.choice([10, 20, 40, 80, 120])
 
 def random_pos() -> tuple[int, int]:
-    return (random.randrange(0, ak.width()), random.randrange(0, ak.height() * 2))
+    return (random.randint(0, ak.width()), random.randint(0, ak.height() * 2))
 
 def random_color() -> str:
-    return ak.hsv(random.randrange(0, 360), 50, 100)
+    return ak.hsv(random.randint(0, 360), 50, 100)
 
 def circle_lane(radius: float, pos: tuple[int, int], color: str):
     with ak.lane() as _:
@@ -189,7 +185,7 @@ def circle_lane(radius: float, pos: tuple[int, int], color: str):
             lambda h: h.poly(fly)
         )
 
-@ak.entry(akconfig())
+@ak.entry()
 def main():
     with ak.atom() as a1:
         a1.bg_color(ak.Color.White)
