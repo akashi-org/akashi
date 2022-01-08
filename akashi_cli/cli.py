@@ -1,5 +1,6 @@
 from .utils import BIN_PATH, ENCODER_BIN_PATH, KERNEL_BIN_PATH, LIBRARY_PATH, libpython_path
 from .parser import argument_parse, ParsedOption
+from .action_init import do_init
 
 import signal
 import threading
@@ -54,6 +55,9 @@ class ServerThread(threading.Thread):
 def akashi_cli() -> None:
     # [XXX] argument_parse() must be called before configuring signals, or weird bugs occur
     parsed_option = argument_parse()
+
+    if parsed_option.action == 'init':
+        return do_init(parsed_option)
 
     if 'LD_LIBRARY_PATH' in os.environ.keys():
         os.environ['LD_LIBRARY_PATH'] += os.pathsep + LIBRARY_PATH

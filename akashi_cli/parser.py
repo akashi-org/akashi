@@ -41,12 +41,7 @@ def argument_parse() -> ParsedOption:
 
     parser.add_argument(
         "action",
-        choices=['run', 'build', 'kernel'],
-    )
-
-    parser.add_argument(
-        "conf_path",
-        type=str
+        choices=['init', 'run', 'build', 'kernel'],
     )
 
     parser.add_argument(
@@ -54,6 +49,12 @@ def argument_parse() -> ParsedOption:
         action='version',
         version=_version_string()
     )
+
+    if len(sys.argv) > 1 and sys.argv[1] in ['run', 'build', 'kernel']:
+        parser.add_argument(
+            "conf_path",
+            type=str
+        )
 
     if len(sys.argv) > 1 and sys.argv[1] == 'kernel':
         parser.add_argument(
@@ -79,8 +80,8 @@ def argument_parse() -> ParsedOption:
 
     return ParsedOption(
         args_dict['action'],
-        config_parse(args_dict["conf_path"]).to_json(),
-        path.abspath(args_dict["conf_path"]),
+        config_parse(args_dict["conf_path"]).to_json() if 'conf_path' in args_dict else '',
+        path.abspath(args_dict["conf_path"] if 'conf_path' in args_dict else ''),
         args_dict['port'] if 'port' in args_dict else 1234,
         args_dict['out'] if 'out' in args_dict else ''
     )
