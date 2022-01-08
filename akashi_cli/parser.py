@@ -1,6 +1,5 @@
 from .utils import KERNEL_BIN_PATH
-
-from akashi_core.config import config_parse
+from .config_parser import config_parse
 
 import argparse
 from argparse import RawTextHelpFormatter

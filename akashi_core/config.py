@@ -7,10 +7,11 @@ from typing import (
 )
 from .time import sec
 from dataclasses import dataclass, asdict, field
-from importlib.machinery import SourceFileLoader
 from os import path
 import json
 import sys
+
+from akashi_cli.config_parser import config_parse
 
 
 """
@@ -119,11 +120,3 @@ def config() -> Callable[[ConfFn], ConfFn]:
         sys.modules[fn.__module__].__akashi_export_config_fn = fn  # type: ignore
         return fn
     return inner
-
-
-def config_parse(conf_path: str) -> AKConf:
-
-    akconf: Any = SourceFileLoader("akconfig", path.abspath(conf_path)).load_module()  # type: ignore
-    if not hasattr(akconf, '__akashi_export_config_fn'):
-        raise Exception('No config function found. Perhaps you forget to add the export decorator?')
-    return getattr(akconf, '__akashi_export_config_fn')()

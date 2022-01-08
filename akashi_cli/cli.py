@@ -27,19 +27,22 @@ class ServerThread(threading.Thread):
 
     def __run_start(self):
         self.proc = Popen(
-            [BIN_PATH, self.option.akconf, self.option.conf_path], env=os.environ
+            [BIN_PATH, self.option.akconf, self.option.conf_path],
+            env=os.environ
         )
         self.proc.communicate()
 
     def __build_start(self):
         self.proc = Popen(
-            [ENCODER_BIN_PATH, self.option.akconf, self.option.conf_path, self.option.out_fpath], env=os.environ
+            [ENCODER_BIN_PATH, self.option.akconf, self.option.conf_path, self.option.out_fpath],
+            env=os.environ
         )
         self.proc.communicate()
 
     def __kernel_start(self):
         self.proc = Popen(
-            [KERNEL_BIN_PATH, self.option.akconf, BIN_PATH, self.option.conf_path, str(self.option.asp_port)], env=os.environ
+            [KERNEL_BIN_PATH, self.option.akconf, BIN_PATH, self.option.conf_path, str(self.option.asp_port)],
+            env=os.environ
         )
         self.proc.communicate()
 
