@@ -21,7 +21,7 @@ Akashi is still in the very early stages of development, and **not ready for pro
 ```python
 from akashi_core import ak, gl
 
-@ak.entry(akconfig())
+@ak.entry()
 def main():
     with ak.atom() as a1:
 
