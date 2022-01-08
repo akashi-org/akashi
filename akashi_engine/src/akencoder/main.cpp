@@ -50,6 +50,7 @@ int main(int argc, char** argv) {
     create_logger(cap);
 
     auto akconf = akashi::core::parse_akconfig(argv[1]);
+    akconf.encode.out_fname = argv[3];
     akashi::state::AKState state(akconf, argv[2]);
     akashi::encoder::EncodeLoop encode_loop;
     encode_loop.run({akashi::core::borrowed_ptr(&state)});

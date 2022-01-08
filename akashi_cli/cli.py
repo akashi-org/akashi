@@ -12,38 +12,34 @@ class ServerThread(threading.Thread):
     def __init__(self, option: ParsedOption):
         super().__init__()
         self.daemon = True
-        self.action = option.action
-        self.akconf = option.akconf
-        self.conf_path = option.conf_path
-        self.asp_port = str(option.asp_port)
+        self.option = option
         self.proc = None
 
     def run(self):
-
-        if self.action == 'run':
+        if self.option.action == 'run':
             self.__run_start()
-        elif self.action == 'build':
+        elif self.option.action == 'build':
             self.__build_start()
-        elif self.action == 'kernel':
+        elif self.option.action == 'kernel':
             self.__kernel_start()
         else:
-            raise Exception(f'invalid action `{self.action}`type found')
+            raise Exception(f'invalid action `{self.option.action}`type found')
 
     def __run_start(self):
         self.proc = Popen(
-            [BIN_PATH, self.akconf, self.conf_path], env=os.environ
+            [BIN_PATH, self.option.akconf, self.option.conf_path], env=os.environ
         )
         self.proc.communicate()
 
     def __build_start(self):
         self.proc = Popen(
-            [ENCODER_BIN_PATH, self.akconf, self.conf_path], env=os.environ
+            [ENCODER_BIN_PATH, self.option.akconf, self.option.conf_path, self.option.out_fpath], env=os.environ
         )
         self.proc.communicate()
 
     def __kernel_start(self):
         self.proc = Popen(
-            [KERNEL_BIN_PATH, self.akconf, BIN_PATH, self.conf_path, self.asp_port], env=os.environ
+            [KERNEL_BIN_PATH, self.option.akconf, BIN_PATH, self.option.conf_path, str(self.option.asp_port)], env=os.environ
         )
         self.proc.communicate()
 

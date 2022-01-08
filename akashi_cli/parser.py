@@ -29,6 +29,7 @@ class ParsedOption:
     akconf: str
     conf_path: str
     asp_port: int
+    out_fpath: str
 
 
 def argument_parse() -> ParsedOption:
@@ -64,6 +65,14 @@ def argument_parse() -> ParsedOption:
             required=False
         )
 
+    if len(sys.argv) > 1 and sys.argv[1] == 'build':
+        parser.add_argument(
+            "-o", "--out",
+            help="output file path",
+            type=str,
+            required=True
+        )
+
     args_dict = vars(parser.parse_args())
     if len(args_dict) == 0:
         parser.print_help(sys.stderr)
@@ -73,5 +82,6 @@ def argument_parse() -> ParsedOption:
         args_dict['action'],
         config_parse(args_dict["conf_path"]).to_json(),
         path.abspath(args_dict["conf_path"]),
-        args_dict['port'] if 'port' in args_dict else 1234
+        args_dict['port'] if 'port' in args_dict else 1234,
+        args_dict['out'] if 'out' in args_dict else ''
     )

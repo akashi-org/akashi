@@ -6,7 +6,7 @@ from typing import (
     Callable
 )
 from .time import sec
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from importlib.machinery import SourceFileLoader
 from os import path
 import json
@@ -72,13 +72,13 @@ class UIConf:
 VideoEncodeMethod = Literal['', 'sw']
 
 
-@dataclass(frozen=True)
+@dataclass
 class EncodeConf:
-    out_fname: str = ''
     video_codec: str = ''
     audio_codec: str = ''
     encode_max_queue_count: int = 10  # max queue element counts
     encode_method: VideoEncodeMethod = 'sw'
+    out_fname: str = field(default='', init=False)
 
 
 @dataclass(frozen=True)
