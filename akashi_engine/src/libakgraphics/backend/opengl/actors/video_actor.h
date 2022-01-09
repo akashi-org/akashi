@@ -35,8 +35,6 @@ namespace akashi {
 
             bool load_shaders();
 
-            void update_model_mat();
-
           private:
             VideoActor::Pass* m_pass = nullptr;
             core::Rational m_current_pts = core::Rational(-1, 1);

@@ -125,7 +125,7 @@ namespace akashi {
 
             m_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
-            this->update_model_mat();
+            layer_commons::update_model_mat(m_pass);
 
             return true;
         }
@@ -239,11 +239,6 @@ namespace akashi {
             }
 
             return true;
-        }
-
-        void ShapeActor::update_model_mat() {
-            m_pass->model_mat = glm::translate(m_pass->model_mat, m_pass->trans_vec);
-            m_pass->model_mat = glm::scale(m_pass->model_mat, m_pass->scale_vec);
         }
 
     }

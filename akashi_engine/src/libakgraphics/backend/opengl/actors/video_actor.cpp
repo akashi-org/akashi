@@ -298,7 +298,7 @@ namespace akashi {
             m_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
             m_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.video_layer_ctx.scale;
-            this->update_model_mat();
+            layer_commons::update_model_mat(m_pass);
 
             return true;
         }
@@ -326,11 +326,6 @@ namespace akashi {
 
             CHECK_AK_ERROR2(link_shader(m_pass->prog));
             return true;
-        }
-
-        void VideoActor::update_model_mat() {
-            m_pass->model_mat = glm::translate(m_pass->model_mat, m_pass->trans_vec);
-            m_pass->model_mat = glm::scale(m_pass->model_mat, m_pass->scale_vec);
         }
 
     }

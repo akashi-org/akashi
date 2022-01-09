@@ -29,8 +29,6 @@ namespace akashi {
 
             bool load_texture(const OGLRenderContext& ctx);
 
-            void update_model_mat();
-
           private:
             ImageActor::Pass* m_pass = nullptr;
         };

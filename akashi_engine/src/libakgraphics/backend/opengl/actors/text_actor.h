@@ -32,8 +32,6 @@ namespace akashi {
             bool render_pass(const TextActor::Pass& pass, OGLRenderContext& ctx,
                              const core::Rational& pts);
 
-            void update_model_mat(TextActor::Pass& pass);
-
           private:
             TextActor::Pass* m_pass = nullptr;
         };

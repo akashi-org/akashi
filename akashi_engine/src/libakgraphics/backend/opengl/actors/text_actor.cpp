@@ -94,7 +94,7 @@ namespace akashi {
             m_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
             m_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.text_layer_ctx.scale;
-            this->update_model_mat(*m_pass);
+            layer_commons::update_model_mat(m_pass);
 
             return true;
         }
@@ -186,11 +186,6 @@ namespace akashi {
             glBindVertexArray(0);
 
             return true;
-        }
-
-        void TextActor::update_model_mat(TextActor::Pass& pass) {
-            pass.model_mat = glm::translate(pass.model_mat, pass.trans_vec);
-            pass.model_mat = glm::scale(pass.model_mat, pass.scale_vec);
         }
 
     }
