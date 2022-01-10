@@ -10,5 +10,5 @@ def config_parse(conf_path: str) -> 'AKConf':
 
     akconf: Any = SourceFileLoader("akconfig", path.abspath(conf_path)).load_module()  # type: ignore
     if not hasattr(akconf, '__akashi_export_config_fn'):
-        raise Exception('No config function found. Perhaps you forget to add the export decorator?')
+        raise Exception('akashi: error: No config function found. Perhaps you forget to add the export decorator?')
     return getattr(akconf, '__akashi_export_config_fn')()

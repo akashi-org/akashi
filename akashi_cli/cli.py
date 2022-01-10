@@ -24,7 +24,7 @@ class ServerThread(threading.Thread):
         elif self.option.action == 'kernel':
             self.__kernel_start()
         else:
-            raise Exception(f'invalid action `{self.option.action}`type found')
+            raise Exception(f'akashi: error: Invalid action `{self.option.action}` type found')
 
     def __run_start(self):
         self.proc = Popen(

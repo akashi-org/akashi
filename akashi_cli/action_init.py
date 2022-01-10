@@ -11,7 +11,7 @@ MAIN_FNAME = 'main.py'
 def file_exists(fpath: str):
 
     if path.exists(fpath):
-        raise Exception(f'akashi-init failed: `{fpath}` already exists in the current directory')
+        raise Exception(f'akashi-init: error: `{fpath}` already exists in the current directory')
 
 
 def copy_file(src_fpath: str, dst_fpath: str):

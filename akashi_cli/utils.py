@@ -37,4 +37,4 @@ def libpython_path() -> str:
     if libdir and libname:
         return os.path.join(libdir, libname)
     else:
-        raise Exception(f'Failed to find libpython.so: LIBDIR: {libdir}, LDLIBRARY: {libname}')
+        raise Exception(f'akashi: error: libpython.so not found: LIBDIR: {libdir}, LDLIBRARY: {libname}')
