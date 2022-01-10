@@ -69,7 +69,7 @@ def vstack(item_width: int = -1, layout_height: int | None = None, item_offsets:
         py = int((layout_height // lane_ctx.num_lanes) * (lane_ctx.idx + 0.5)) + \
             ((ak_height() - layout_height) // 2) + item_offsets[1]
         layer_size = (item_width, (layout_height // lane_ctx.num_lanes))
-        return LayoutInfo((px, py), 0, layer_size)
+        return LayoutInfo(pos=(px, py), layer_size=layer_size)
     return layout
 
 
@@ -82,7 +82,7 @@ def hstack(item_height: int = -1, layout_width: int | None = None, item_offsets:
             ((ak_width() - layout_width) // 2) + item_offsets[0]
         py = (ak_height() // 2) + item_offsets[1]
         layer_size = ((layout_width // lane_ctx.num_lanes), item_height)
-        return LayoutInfo((px, py), 0, layer_size)
+        return LayoutInfo(pos=(px, py), layer_size=layer_size)
     return layout
 
 
