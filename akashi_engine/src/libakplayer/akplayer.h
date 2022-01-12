@@ -51,6 +51,8 @@ namespace akashi {
 
             void relative_seek(const double ratio);
 
+            void frame_seek(int nframes);
+
             void frame_step(void);
 
             void frame_back_step(void);

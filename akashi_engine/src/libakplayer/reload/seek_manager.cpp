@@ -171,7 +171,7 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 duration = m_state->m_prop.render_prof.duration;
-                seek_completed = m_state->get_seek_completed();
+                seek_completed = m_state->get_seek_completed(); // [TODO] do we need lock here?
             }
 
             if (!seek_completed) {

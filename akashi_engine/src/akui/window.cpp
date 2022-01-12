@@ -2,6 +2,7 @@
 
 #include "./container/ControlArea.h"
 #include "./container/MonitorArea.h"
+#include "./container/OSCArea.h"
 
 #include <libakcore/rational.h>
 #include <libakcore/element.h>
@@ -16,6 +17,8 @@
 #include <QResizeEvent>
 
 #include <QSizeGrip>
+
+#include <QTimer>
 
 using namespace akashi::core;
 
@@ -59,6 +62,15 @@ namespace akashi {
             this->m_monitorArea = new MonitorArea(borrowed_ptr(m_state), this);
             this->m_controlArea = new ControlArea(borrowed_ptr(m_state), this);
 
+            // [XXX] temporary for debugging
+            this->m_controlArea->hide();
+
+            this->m_oscArea = new OSCArea(borrowed_ptr(m_state), this);
+            this->m_oscArea->show();
+
+            auto [init_w, init_h] = state->m_ui_conf.resolution;
+            this->m_oscArea->move((init_w - (init_w * 0.8)) / 2, (init_h / 2));
+
             switch (m_state->m_ui_conf.window_mode) {
                 case core::WindowMode::SPLIT: {
                     this->setTransparent(true);
@@ -88,6 +100,7 @@ namespace akashi {
             this->m_mainLayout->setSpacing(0);
             // [XXX] keep it align unset, or the expansion does not work properly
             this->m_mainLayout->addWidget(this->m_monitorArea, 0, 0, -1, -1);
+            // this->m_mainLayout->addWidget(this->m_oscArea, 0, 0, -1, -1, Qt::AlignCenter);
             this->m_mainLayout->addWidget(this->m_controlArea, 0, 0, -1, -1, Qt::AlignBottom);
 
             this->m_mainLayout->addWidget(m_exitBtn, 0, 0, -1, -1, Qt::AlignTop | Qt::AlignLeft);
@@ -236,6 +249,41 @@ namespace akashi {
             }
         }
 
+        void Window::on_seekbar_pressed(const akashi::core::Rational& time) {
+            m_state->m_atomic_state.last_play_state.store(
+                m_state->m_atomic_state.icon_play_state.load());
+            this->changePlayState(akashi::state::PlayState::PAUSED);
+
+            // [TODO] ugly hack
+            QTimer::singleShot(100, [this, time] { this->on_seekbar_moved(time); });
+        }
+
+        void Window::on_seekbar_moved(const akashi::core::Rational& time) {
+            if (can_seek(m_state)) {
+                m_state->m_atomic_state.ui_can_seek.store(false);
+                this->m_controlArea->set_slider_movable(false);
+                this->m_monitorArea->seek(time);
+                m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
+                Q_EMIT this->state_changed(m_state->m_atomic_state.icon_play_state.load());
+            }
+        }
+
+        void Window::on_seekbar_released(const akashi::core::Rational& /*time*/) {
+            if (m_state->m_atomic_state.last_play_state == state::PlayState::PLAYING) {
+                this->changePlayState(akashi::state::PlayState::PLAYING);
+            }
+        }
+
+        void Window::on_frame_seek(int nframes) {
+            if (can_seek(m_state)) {
+                m_state->m_atomic_state.ui_can_seek.store(false);
+                this->m_controlArea->set_slider_movable(false);
+                this->m_monitorArea->frame_seek(nframes);
+                m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
+                Q_EMIT this->state_changed(m_state->m_atomic_state.icon_play_state.load());
+            }
+        }
+
         void Window::on_frame_step(void) {
             if (can_seek(m_state)) {
                 m_state->m_atomic_state.ui_can_seek.store(false);
@@ -328,6 +376,11 @@ namespace akashi {
         void Window::on_seek_completed(void) {
             m_state->m_atomic_state.ui_can_seek.store(true);
             this->m_controlArea->set_slider_movable(true);
+        }
+
+        void Window::on_volume_changed(double gain) {
+            m_state->m_atomic_state.volume = gain;
+            Q_EMIT this->volume_changed(gain);
         }
     }
 }

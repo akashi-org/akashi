@@ -125,6 +125,16 @@ namespace akashi {
             this->seek(seek_time);
         }
 
+        void AKPlayer::frame_seek(int nframes) {
+            Rational seek_time;
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+                seek_time =
+                    m_state->m_prop.current_time + (Rational(nframes, 1) / m_state->m_prop.fps);
+            }
+            this->seek(seek_time);
+        }
+
         void AKPlayer::frame_step(void) {
             Rational seek_time;
             {

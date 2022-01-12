@@ -20,6 +20,7 @@ namespace akashi {
             FrameBufferHandle default_fb;
             int screen_width;
             int screen_height;
+            std::array<int, 2> mouse_pos = {-1, -1};
         };
 
         struct EncodeRenderParams {

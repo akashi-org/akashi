@@ -31,6 +31,10 @@ add_executable(${PROJECT_NAME}
   components/PlayerWidget/PlayerWidget.cpp
   components/SliderSection/SliderSection.cpp
   components/WidgetSection/WidgetSection.cpp
+
+  components/OSCWidget/OSCWidget.cpp
+  container/OSCArea.cpp
+
   ${UI_FILES}
   ${RESOURCES}
 )

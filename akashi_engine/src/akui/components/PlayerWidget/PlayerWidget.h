@@ -35,6 +35,7 @@ namespace akashi {
             void pause(void);
             void seek(const akashi::core::Rational& pos);
             void relative_seek(const double ratio);
+            void frame_seek(int nframes);
             void frame_step(void);
             void frame_back_step(void);
             core::Rational current_time(void);

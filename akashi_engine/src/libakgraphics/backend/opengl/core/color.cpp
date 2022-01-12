@@ -26,13 +26,13 @@ namespace akashi {
             return color;
         }
 
-        std::array<double, 4> to_rgba_double(std::string color_str) {
+        std::array<float, 4> to_rgba_float(std::string color_str) {
             auto color = to_rgba_int(color_str);
 
-            return {core::Rational(color[0], 255).to_decimal(),
-                    core::Rational(color[1], 255).to_decimal(),
-                    core::Rational(color[2], 255).to_decimal(),
-                    core::Rational(color[3], 255).to_decimal()};
+            return {static_cast<float>(core::Rational(color[0], 255).to_decimal()),
+                    static_cast<float>(core::Rational(color[1], 255).to_decimal()),
+                    static_cast<float>(core::Rational(color[2], 255).to_decimal()),
+                    static_cast<float>(core::Rational(color[3], 255).to_decimal())};
         }
 
     }

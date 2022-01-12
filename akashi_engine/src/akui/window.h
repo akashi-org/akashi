@@ -24,6 +24,7 @@ namespace akashi {
     namespace ui {
         class ControlArea;
         class MonitorArea;
+        class OSCArea;
 
         class ExitButton final : public QLabel {
             Q_OBJECT
@@ -62,6 +63,7 @@ namespace akashi {
           private:
             MonitorArea* m_monitorArea;
             ControlArea* m_controlArea;
+            OSCArea* m_oscArea;
             QGridLayout* m_mainLayout;
             ExitButton* m_exitBtn;
             QSizeGrip* m_sizeGrip;
@@ -72,10 +74,18 @@ namespace akashi {
           Q_SIGNALS:
             void state_changed(const akashi::state::PlayState& playState);
             void time_changed(const akashi::core::Rational& time);
+            void volume_changed(double);
             void render_prof_changed(const akashi::core::RenderProfile& render_prof);
             void window_activated(void);
           public Q_SLOTS:
             void on_seek(const akashi::core::Rational&);
+
+            void on_seekbar_pressed(const akashi::core::Rational&);
+            void on_seekbar_moved(const akashi::core::Rational&);
+            void on_seekbar_released(const akashi::core::Rational&);
+
+            void on_frame_seek(int nframes);
+
             void on_frame_step(void);
             void on_frame_back_step(void);
             void on_forward_jump(const double);
@@ -86,6 +96,7 @@ namespace akashi {
             void on_time_change(const akashi::core::Rational&);
             void on_render_prof_updated(const akashi::core::RenderProfile&);
             void on_seek_completed(void);
+            void on_volume_changed(double);
         };
 
     }
