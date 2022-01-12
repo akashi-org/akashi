@@ -131,7 +131,8 @@ namespace akashi {
                 switch (m_state->m_ui_conf.window_mode) {
                     case core::WindowMode::SPLIT:
                     case core::WindowMode::INDEPENDENT: {
-                        this->setWindowOpacity(0.75);
+                        // this->setWindowOpacity(0.75);
+                        this->setWindowOpacity(1.0); // [TODO] temporary
                         break;
                     }
                     case core::WindowMode::IMMERSIVE: {
