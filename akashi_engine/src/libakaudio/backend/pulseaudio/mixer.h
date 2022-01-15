@@ -12,7 +12,7 @@ namespace akashi {
         void mix_layer(uint8_t* buffer, const size_t bytes_to_fill, uint8_t* audio_data,
                        const core::LayerProfile& layer);
 
-        void adjust_volume(uint8_t* buffer, const size_t buf_size, const double volume);
+        double adjust_volume(uint8_t* buffer, const size_t buf_size, const double volume);
 
     }
 }

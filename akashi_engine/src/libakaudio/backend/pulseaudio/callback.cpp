@@ -260,7 +260,11 @@ namespace akashi {
                 }
             }
 
-            adjust_volume(s_mask_buf.buf, requested_bytes, cb_ctx->volume());
+            double rms = adjust_volume(s_mask_buf.buf, requested_bytes, cb_ctx->volume());
+            if (std::isnan(rms)) {
+                AKLOG_ERRORN("RMS is nan");
+                memset(s_mask_buf.buf, 0, requested_bytes);
+            }
 
             if (pa_stream_write(stream, s_mask_buf.buf, requested_bytes, NULL, 0,
                                 PA_SEEK_RELATIVE) < 0) {
