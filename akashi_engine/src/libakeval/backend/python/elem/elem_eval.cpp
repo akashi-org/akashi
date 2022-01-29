@@ -18,7 +18,7 @@ namespace akashi {
         core::owned_ptr<GlobalContext> global_eval(const pybind11::object& elem,
                                                    const core::Rational& fps) {
             auto ctx = core::make_owned<GlobalContext>();
-            ctx->interval = core::Rational(1l) / fps;
+            ctx->sec_per_frame = core::Rational(1l) / fps;
             ctx->duration = core::Rational(0l);
             ctx->uuid = core::uuid();
             assert(ctx->atom_proxies.empty());
