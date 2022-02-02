@@ -53,7 +53,7 @@ namespace akashi {
             return true;
         }
 
-        void TriangleMesh::destroy() {}
+        void TriangleMesh::destroy_inner() {}
 
         bool TriangleMesh::load_tri_mesh(const GLuint vertices_loc,
                                          const std::array<GLfloat, 2>& size) {

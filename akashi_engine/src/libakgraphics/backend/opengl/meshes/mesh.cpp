@@ -9,6 +9,11 @@ namespace akashi {
             m_ibo_length = 0;
         }
 
+        void BaseMesh::destroy() {
+            this->destroy_inner();
+            this->destroy_base();
+        }
+
         void create_buffer(GLuint& buffer, GLenum target, void* data, size_t data_size,
                            GLenum usage) {
             glGenBuffers(1, &buffer);

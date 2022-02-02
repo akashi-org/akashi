@@ -17,7 +17,8 @@ namespace akashi {
             bool create_border(const std::array<float, 2>& size, const GLfloat border_width,
                                const GLuint vertices_loc);
 
-            void destroy() override;
+          protected:
+            void destroy_inner() override;
         };
 
         class RoundRectMesh final : public BaseMesh {
@@ -31,7 +32,8 @@ namespace akashi {
             bool create_border(const std::array<float, 2>& size, const GLfloat radius,
                                const GLfloat border_width, const GLuint vertices_loc);
 
-            void destroy() override;
+          protected:
+            void destroy_inner() override;
         };
 
     }
