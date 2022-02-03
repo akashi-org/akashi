@@ -41,8 +41,6 @@ namespace akashi {
 
                 bool load_texture();
 
-                bool update_texture();
-
                 bool load_mesh();
 
               private:

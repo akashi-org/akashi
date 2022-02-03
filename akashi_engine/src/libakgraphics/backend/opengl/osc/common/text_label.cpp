@@ -98,7 +98,8 @@ namespace akashi {
 
         bool TextLabel::render(OSCRenderContext& render_ctx, const RenderParams& /*params*/) {
             if (m_dirty) {
-                this->update_texture();
+                free_ogl_texture(m_ctx->tex);
+                this->load_texture();
                 // [TODO]  translate?
                 m_dirty = false;
             }
@@ -213,18 +214,6 @@ namespace akashi {
 
             // SDL_FreeSurface((SDL_Surface*)surface);
 
-            return true;
-        }
-
-        bool TextLabel::update_texture() {
-            SDL_FreeSurface((SDL_Surface*)m_ctx->tex.surface);
-            CHECK_AK_ERROR2(this->create_ogl_texture(m_ctx->tex));
-
-            glBindTexture(GL_TEXTURE_2D, m_ctx->tex.buffer);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_ctx->tex.width, m_ctx->tex.height,
-                            m_ctx->tex.format, GL_UNSIGNED_BYTE, m_ctx->tex.image);
-
-            glBindTexture(GL_TEXTURE_2D, 0);
             return true;
         }
 
