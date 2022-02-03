@@ -21,7 +21,7 @@ namespace akashi {
             GLFWwindow* window = nullptr;
         };
 
-        Window::Window() {
+        Window::Window(int msaa) {
             glfwInit();
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
@@ -35,6 +35,12 @@ namespace akashi {
             // glfwWindowHint(GLFW_CONTEXT_NO_ERROR, GLFW_TRUE);
 
             glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
+            if (msaa < 2) {
+                glfwWindowHint(GLFW_SAMPLES, 2);
+            } else {
+                glfwWindowHint(GLFW_SAMPLES, msaa);
+            }
 
             m_window = make_owned<PrivWindow>();
 

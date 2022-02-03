@@ -9,7 +9,7 @@ namespace akashi {
 
         class Window final {
           public:
-            explicit Window();
+            explicit Window(int msaa);
             virtual ~Window();
 
           public:

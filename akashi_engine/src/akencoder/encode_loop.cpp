@@ -71,6 +71,7 @@ namespace akashi {
             int video_height = -1;
             core::AKAudioSpec encode_audio_spec;
             size_t audio_max_queue_size = 1;
+            int msaa = 1;
             {
                 std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
                 entry_path = ctx.state->m_prop.eval_state.config.entry_path;
@@ -80,6 +81,7 @@ namespace akashi {
                 video_height = ctx.state->m_prop.video_height;
                 encode_audio_spec = ctx.state->m_atomic_state.encode_audio_spec.load();
                 audio_max_queue_size = ctx.state->m_prop.audio_max_queue_size;
+                msaa = ctx.state->m_video_conf.msaa;
             }
 
             // NB: locking is used inside
@@ -107,7 +109,7 @@ namespace akashi {
             encode_ctx->abuffer =
                 make_owned<buffer::AudioBuffer>(encode_audio_spec, audio_max_queue_size);
             encode_ctx->gfx = nullptr;
-            encode_ctx->window = make_owned<Window>();
+            encode_ctx->window = make_owned<Window>(msaa);
 
             return encode_ctx;
         }
