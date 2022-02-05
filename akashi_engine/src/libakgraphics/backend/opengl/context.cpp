@@ -73,6 +73,12 @@ namespace akashi {
 
                 glPixelStorei(GL_PACK_ALIGNMENT, 4); // reset to the initial value;
 
+                // another way without glReadPixels
+                // OGLTexture fbo_tex;
+                // m_render_ctx->fbo().texture(fbo_tex);
+                // glBindTexture(GL_TEXTURE_2D, fbo_tex.buffer);
+                // glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, params.buffer);
+
                 // rgbrgbrgbrgb... [line0]
                 // rgbrgbrgbrgb... [line1]
                 // ...
