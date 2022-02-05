@@ -10,7 +10,9 @@ namespace akashi {
 
         Rational::Rational(int64_t num, int64_t den) : m_num(num), m_den(den) {
             if (den == 0) {
-                throw std::runtime_error("Rational Exception:: den must not be zero");
+                AKLOG_WARNN("Den must not be zero. Treating 0/1 instead.");
+                m_num = 0;
+                m_den = 1;
             }
             this->reduce();
         }
