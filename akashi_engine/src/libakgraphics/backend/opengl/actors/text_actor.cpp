@@ -135,6 +135,7 @@ namespace akashi {
             m_pass->tex.effective_width = m_pass->tex.width;
             m_pass->tex.effective_height = m_pass->tex.height;
             m_pass->tex.format = (surface->format->BytesPerPixel == 3) ? GL_RGB : GL_RGBA;
+
             m_pass->tex.surface = surface;
 
             glGenTextures(1, &m_pass->tex.buffer);
@@ -159,6 +160,9 @@ namespace akashi {
 
         bool TextActor::render_pass(const TextActor::Pass& pass, OGLRenderContext& ctx,
                                     const core::Rational& pts) {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
             glUseProgram(pass.prog);
 
             use_ogl_texture(pass.tex, pass.tex_loc);
@@ -184,6 +188,9 @@ namespace akashi {
             glDrawElements(GL_TRIANGLES, pass.mesh->ibo_length(), GL_UNSIGNED_SHORT, 0);
 
             glBindVertexArray(0);
+
+            glEnable(GL_BLEND);
+            ctx.use_default_blend_func();
 
             return true;
         }

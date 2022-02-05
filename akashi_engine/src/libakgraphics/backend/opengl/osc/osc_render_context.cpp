@@ -2,6 +2,7 @@
 #include "./osc_camera.h"
 
 #include "../../../item.h"
+#include "../core/glc.h"
 
 #include <libakcore/memory.h>
 #include <libakcore/error.h>
@@ -92,6 +93,10 @@ namespace akashi {
                 font_path = m_state->m_prop.default_font_path;
             }
             return font_path;
+        }
+
+        void OSCRenderContext::use_default_blend_func() const {
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         }
 
         akashi::state::PlayState OSCRenderContext::play_state() {

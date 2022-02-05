@@ -15,6 +15,7 @@
 
 #include "../core/glc.h"
 #include "../core/shader.h"
+#include "../core/color.h"
 #include "../meshes/rect.h"
 
 #include <libakcore/error.h>
@@ -42,7 +43,10 @@ namespace akashi {
             glScissor(0.0, 0.0, params.screen_width, params.screen_height);
             glEnable(GL_SCISSOR_TEST);
 
-            glClearColor(0, 0, 0, 0);
+            std::array<float, 4> color = {0, 0, 0, 0};
+            color = to_rgba_float(ctx.root_bg_color);
+            glClearColor(color[0], color[1], color[2], 0);
+
             glClear(GL_COLOR_BUFFER_BIT);
 
             glDisable(GL_SCISSOR_TEST);
@@ -143,10 +147,10 @@ namespace akashi {
 
             init_render(params, *m_ctx);
 
-            glDisable(GL_BLEND);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
             m_ctx->m_rect->render(*m_render_ctx, params);
 
-            glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             for (auto iter = m_ctx->m_widgets.rbegin(), end = m_ctx->m_widgets.rend(); iter != end;

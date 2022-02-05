@@ -433,6 +433,9 @@ namespace akashi {
 
         bool SeekRuler::render_label_pass(OSCRenderContext& render_ctx,
                                           const RenderParams& params) {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
             auto& pass = m_ctx->label_pass;
 
             glUseProgram(pass.prog);
@@ -450,6 +453,8 @@ namespace akashi {
                                     nullptr, m_obj_params.label_texts.size());
 
             glBindVertexArray(0);
+
+            render_ctx.use_default_blend_func();
 
             return true;
         }

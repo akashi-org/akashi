@@ -103,6 +103,10 @@ namespace akashi {
                 // [TODO]  translate?
                 m_dirty = false;
             }
+
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
             glUseProgram(m_ctx->prog);
 
             use_ogl_texture(m_ctx->tex, m_ctx->tex_loc);
@@ -117,6 +121,8 @@ namespace akashi {
             glDrawElements(GL_TRIANGLES, m_ctx->mesh.ibo_length(), GL_UNSIGNED_SHORT, 0);
 
             glBindVertexArray(0);
+
+            render_ctx.use_default_blend_func();
 
             return true;
         }

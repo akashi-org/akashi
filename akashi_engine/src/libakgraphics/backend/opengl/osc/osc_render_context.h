@@ -50,6 +50,8 @@ namespace akashi {
 
             std::string default_font_path();
 
+            void use_default_blend_func() const;
+
             akashi::state::PlayState play_state();
 
             core::Rational duration();
