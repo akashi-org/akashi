@@ -192,9 +192,10 @@ namespace akashi {
             glGenTextures(1, &m_pass->tex.buffer);
 
             glBindTexture(GL_TEXTURE_2D, m_pass->tex.buffer);
-            glTexImage2D(GL_TEXTURE_2D, 0, m_pass->tex.internal_format, m_pass->tex.width,
-                         m_pass->tex.height, 0, m_pass->tex.format, GL_UNSIGNED_BYTE,
-                         m_pass->tex.image);
+
+            // [TODO] Image format queries?
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, m_pass->tex.width, m_pass->tex.height, 0,
+                         GL_RGB, GL_UNSIGNED_BYTE, m_pass->tex.image);
 
             // GET_GLFUNC(ctx, glGenerateMipmap)(GL_TEXTURE_2D);
 
