@@ -16,20 +16,15 @@ namespace akashi {
         OSCRenderContext::OSCRenderContext(OSCEventCallback evt_cb, const RenderParams& params,
                                            core::borrowed_ptr<state::AKState> state)
             : m_evt_cb(evt_cb), m_state(state) {
-            int osc_width = params.screen_width;
-            int osc_height = params.screen_height;
-
-            osc::ProjectionState proj_state;
-            proj_state.video_width = osc_width;
-            proj_state.video_height = osc_height;
-
-            osc::ViewState view_state;
-            view_state.camera = glm::vec3(0, 0, 1);
-
-            m_camera = core::make_owned<osc::Camera>(proj_state, &view_state);
+            this->initialize_camera(params);
         }
 
         OSCRenderContext::~OSCRenderContext() {}
+
+        void OSCRenderContext::resize(const RenderParams& params) {
+            m_camera.reset(nullptr);
+            this->initialize_camera(params);
+        }
 
         void OSCRenderContext::emit_play_btn_clicked() {
             OSCInnerEvent event;
@@ -182,6 +177,20 @@ namespace akashi {
                 }
             }
             m_second_zoom_level = priv::seek_base_table_max_index;
+        }
+
+        void OSCRenderContext::initialize_camera(const RenderParams& params) {
+            int osc_width = params.screen_width;
+            int osc_height = params.screen_height;
+
+            osc::ProjectionState proj_state;
+            proj_state.video_width = osc_width;
+            proj_state.video_height = osc_height;
+
+            osc::ViewState view_state;
+            view_state.camera = glm::vec3(0, 0, 1);
+
+            m_camera = core::make_owned<osc::Camera>(proj_state, &view_state);
         }
 
     }

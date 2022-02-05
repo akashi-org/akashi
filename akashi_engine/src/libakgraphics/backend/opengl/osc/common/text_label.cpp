@@ -151,6 +151,33 @@ namespace akashi {
             auto uvs_loc = glGetAttribLocation(m_ctx->prog, "uvs");
 
             std::array<float, 2> mesh_size = {(float)m_obj_params.w, (float)m_obj_params.h};
+
+            auto aspect_ratio = core::Rational(m_ctx->tex.effective_width, 1) /
+                                core::Rational(m_ctx->tex.effective_height, 1);
+
+            switch (m_obj_params.size_pref) {
+                case MeshSizePref::FIT_TO_BBOX: {
+                    mesh_size = {(float)m_obj_params.w, (float)m_obj_params.h};
+                    break;
+                }
+                case MeshSizePref::FIXED_WIDTH_TEX: {
+                    mesh_size = {
+                        (float)m_obj_params.w,
+                        (float)(core::Rational(m_obj_params.w, 1) / aspect_ratio).to_decimal(),
+                    };
+                    break;
+                }
+                case MeshSizePref::FIXED_HEIGHT_TEX: {
+                    mesh_size = {
+                        (float)(core::Rational(m_obj_params.h, 1) * aspect_ratio).to_decimal(),
+                        (float)m_obj_params.h};
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+
             CHECK_AK_ERROR2(m_ctx->mesh.create(mesh_size, vertices_loc, uvs_loc));
 
             return true;

@@ -21,6 +21,8 @@ namespace akashi {
           public:
             explicit OSCArea(core::borrowed_ptr<akashi::state::AKState> state, QWidget* parent = 0);
 
+            void resize_osc(int w, int h);
+
           protected:
             virtual void showEvent(QShowEvent* event) override;
             virtual void enterEvent(QEvent* event) override;

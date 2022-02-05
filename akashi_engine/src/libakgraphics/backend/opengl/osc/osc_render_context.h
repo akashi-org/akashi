@@ -30,6 +30,8 @@ namespace akashi {
                                       core::borrowed_ptr<state::AKState> state);
             virtual ~OSCRenderContext();
 
+            void resize(const RenderParams& params);
+
             void emit_play_btn_clicked();
 
             void emit_volume_changed(double gain);
@@ -71,6 +73,9 @@ namespace akashi {
             void set_second_mode(bool second_mode);
 
             bool is_second_mode() const { return m_is_second_mode; }
+
+          private:
+            void initialize_camera(const RenderParams& params);
 
           private:
             OSCEventCallback m_evt_cb;

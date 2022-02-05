@@ -17,9 +17,16 @@ namespace akashi {
             class TextLabel final {
               public:
                 struct Context;
+                enum class MeshSizePref {
+                    FIT_TO_BBOX = 0,
+                    FIXED_WIDTH_TEX,
+                    FIXED_HEIGHT_TEX,
+                    LENGTH
+                };
                 struct Params : core::TextLayerContext, BoundingBox {
                     std::array<int32_t, 4> pad = {0, 0, 0, 0};
                     int32_t line_span = 0;
+                    MeshSizePref size_pref = MeshSizePref::FIXED_HEIGHT_TEX;
                 };
 
               public:

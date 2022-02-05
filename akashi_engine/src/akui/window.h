@@ -22,7 +22,6 @@ namespace akashi {
     }
 
     namespace ui {
-        class ControlArea;
         class MonitorArea;
         class OSCArea;
 
@@ -54,15 +53,17 @@ namespace akashi {
 
           protected:
             virtual void showEvent(QShowEvent* event) override;
+            virtual void enterEvent(QEvent* event) override;
+            virtual void leaveEvent(QEvent* event) override;
             virtual void changeEvent(QEvent* event) override;
             virtual void mousePressEvent(QMouseEvent* event) override;
             virtual void mouseReleaseEvent(QMouseEvent* event) override;
             virtual void mouseMoveEvent(QMouseEvent* event) override;
             virtual void mouseDoubleClickEvent(QMouseEvent* event) override;
+            virtual void resizeEvent(QResizeEvent* event) override;
 
           private:
             MonitorArea* m_monitorArea;
-            ControlArea* m_controlArea;
             OSCArea* m_oscArea;
             QGridLayout* m_mainLayout;
             ExitButton* m_exitBtn;

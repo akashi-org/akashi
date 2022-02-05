@@ -410,7 +410,7 @@ namespace akashi {
             auto vertices_loc = glGetAttribLocation(pass.prog, "vertices");
             auto uvs_loc = glGetAttribLocation(pass.prog, "uvs");
 
-            auto mesh_height = (m_ctx->line_end[1] - m_ctx->line_begin[1]) * 2.0;
+            auto mesh_height = (m_ctx->line_end[1] - m_ctx->line_begin[1]) * 2.2;
             auto aspect_ratio = core::Rational(pass.tex.effective_width, 1) /
                                 core::Rational(pass.tex.effective_height, 1);
             auto mesh_width = core::Rational(mesh_height, 1) * aspect_ratio;

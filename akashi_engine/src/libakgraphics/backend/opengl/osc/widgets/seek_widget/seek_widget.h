@@ -42,8 +42,8 @@ namespace akashi {
                                            const OSCTimeEvent& event) override;
 
               private:
-                size_t seek_value_for_mouse(OSCRenderContext& render_ctx,
-                                            const OSCMouseEvent& event);
+                bool seek_value_for_mouse(size_t* seek_value, OSCRenderContext& render_ctx,
+                                          const OSCMouseEvent& event);
 
                 SeekTimeResult seek_time_for_mouse(core::Rational* seek_time,
                                                    const size_t seek_value,

@@ -142,6 +142,14 @@ namespace akashi {
             m_root->render(params);
         }
 
+        void OGLOSCContext::resize(const RenderParams& params) {
+            if (!m_root) {
+                AKLOG_ERRORN("m_root is null");
+                return;
+            }
+            m_root->resize(params);
+        }
+
         bool OGLOSCContext::emit_mouse_event(const OSCMouseEvent& event) {
             if (m_root) {
                 return m_root->on_mouse_event(event);

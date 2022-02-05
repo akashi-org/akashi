@@ -71,6 +71,11 @@ namespace akashi {
             this->setLayout(this->m_main_layout);
         }
 
+        void OSCArea::resize_osc(int w, int h) {
+            this->m_osc_widget->setMinimumSize(w, h);
+            this->resize(w, h);
+        }
+
         void OSCArea::showEvent(QShowEvent*) {
             // auto ch = this->m_osc_area_layout->geometry().height();
             // m_event_proxy->setStyleSheet(
@@ -103,15 +108,15 @@ namespace akashi {
         }
 
         void OSCArea::show_control(void) {
-            // if (this->m_osc_widget->isHidden()) {
-            //     this->m_osc_widget->show();
-            // }
+            if (this->m_osc_widget->isHidden()) {
+                this->m_osc_widget->show();
+            }
         }
 
         void OSCArea::hide_control(void) {
-            // if (!this->m_osc_widget->isHidden()) {
-            //     this->m_osc_widget->hide();
-            // }
+            if (!this->m_osc_widget->isHidden()) {
+                this->m_osc_widget->hide();
+            }
         }
 
     }

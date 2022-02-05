@@ -60,7 +60,10 @@ namespace akashi {
             init_render(params, *m_ctx);
 
             m_render_ctx = core::make_owned<OSCRenderContext>(evt_cb, params, state);
+            this->initialize(params);
+        }
 
+        void OSCRoot::initialize(const RenderParams& params) {
             auto pw = params.screen_width;
             auto ph = params.screen_height;
 
@@ -68,11 +71,11 @@ namespace akashi {
                 *m_render_ctx, osc::BoundingBox{.cx = int(pw * 0.04),
                                                 .cy = int(ph * 0.88),
                                                 .w = int(pw * 0.028 * 0.9),
-                                                .h = int(ph * 0.10 * 0.9)}));
+                                                .h = int(ph * 0.10)}));
 
             m_ctx->m_widgets.push_back(core::make_owned<osc::Timecode>(
                 *m_render_ctx, osc::BoundingBox{.cx = int(pw * 0.51),
-                                                .cy = int(ph * 0.885),
+                                                .cy = int(ph * 0.88),
                                                 .w = int(pw * 0.65),
                                                 .h = int(ph * 0.10)}));
 
@@ -86,7 +89,7 @@ namespace akashi {
                 *m_render_ctx, osc::BoundingBox{.cx = int(pw * 0.12),
                                                 .cy = int(ph * 0.88),
                                                 .w = int(pw * 0.09),
-                                                .h = int(ph * 0.09)}));
+                                                .h = int(ph * 0.08)}));
 
             m_ctx->m_widgets.push_back(core::make_owned<osc::FrameSeekBtn>(
                 *m_render_ctx,
@@ -115,9 +118,8 @@ namespace akashi {
             rect_params.cy = ph * 0.5;
             rect_params.w = pw;
             rect_params.h = ph;
-            rect_params.radius = 20.0;
+            rect_params.radius = 20.0; // [TODO]
             rect_params.color = m_ctx->root_bg_color;
-            // rect_params.color = "#ff0000";
             m_ctx->m_rect = core::make_owned<osc::BGRect>(rect_params);
         }
 
@@ -158,6 +160,23 @@ namespace akashi {
                 auto& widget = *iter;
                 widget->render(*m_render_ctx, params);
             }
+
+            return true;
+        }
+
+        bool OSCRoot::resize(const RenderParams& params) {
+            delete m_ctx;
+            m_ctx = new OSCRoot::Context;
+
+            init_render(params, *m_ctx);
+            m_render_ctx->resize(params);
+
+            this->initialize(params);
+
+            this->on_time_event(
+                {.kind = OSCTimeEventKind::DURATION, .duration = m_render_ctx->duration()});
+            this->on_time_event({.kind = OSCTimeEventKind::CURRENT_TIME,
+                                 .current_time = m_render_ctx->current_time()});
 
             return true;
         }

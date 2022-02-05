@@ -6,6 +6,7 @@
 #include "../../core/shader.h"
 #include "../../core/color.h"
 #include "../../meshes/rect.h"
+#include "../../../../item.h"
 
 #include <libakcore/error.h>
 #include <libakcore/logger.h>
@@ -30,13 +31,33 @@ static constexpr const char* vshader_src = u8R"(
 static constexpr const char* fshader_src = u8R"(
     #version 420 core
     uniform vec4 u_color;
+    out vec4 fragColor;
+    void main(void){
+        fragColor = u_color;
+    }
+)";
+
+static constexpr const char* content_fshader_src = u8R"(
+    #version 420 core
+    uniform vec4 u_color;
+    uniform vec4 u_inactive_color;
     uniform int u_warn;
+
+    uniform float u_mesh_init_x;
+    uniform float u_inv_mesh_width;
+    uniform float u_active_x;
 
     out vec4 fragColor;
 
     void main(void){
-        fragColor = u_warn == 1 ? vec4(1,0,0,1) : u_color;
-})";
+        vec4 warn_color = vec4(1,0,0,1);
+        float rx = (gl_FragCoord.x - u_mesh_init_x) * u_inv_mesh_width;
+        // !! 
+        fragColor = (rx > u_active_x) ? u_inactive_color :
+                    (u_warn == 1) ? warn_color :
+                    u_color;
+    }
+)";
 
 namespace akashi {
     namespace graphics::osc {
@@ -56,17 +77,27 @@ namespace akashi {
             return glm::vec3((a_x - c_x).to_decimal(), -(a_y - c_y).to_decimal(), layer_pos[2]);
         }
 
-        struct VolumeGaugePass {
+        struct VolumeGaugeBorderPass {
+            GLuint prog;
+            BaseMesh* mesh = nullptr;
+            GLuint mvp_loc;
+            glm::mat4 model_mat = glm::mat4(1.0f);
+        };
+
+        struct VolumeGaugeContentPass {
             GLuint prog;
             BaseMesh* mesh = nullptr;
             GLuint mvp_loc;
             GLuint warn_loc;
+            GLuint inv_mesh_width_loc;
+            GLuint mesh_init_x_loc;
+            GLuint active_x_loc;
             glm::mat4 model_mat = glm::mat4(1.0f);
         };
 
         struct VolumeGauge::Context {
-            VolumeGaugePass border_pass;
-            VolumeGaugePass content_pass;
+            VolumeGaugeBorderPass border_pass;
+            VolumeGaugeContentPass content_pass;
         };
 
         VolumeGauge::VolumeGauge(const VolumeGauge::Params& init_params)
@@ -115,7 +146,6 @@ namespace akashi {
             CHECK_AK_ERROR2(link_shader(pass.prog));
 
             pass.mvp_loc = glGetUniformLocation(pass.prog, "u_mvp");
-            pass.warn_loc = glGetUniformLocation(pass.prog, "u_warn");
 
             // load mesh
             auto vertices_loc = glGetAttribLocation(pass.prog, "vertices");
@@ -135,7 +165,6 @@ namespace akashi {
 
             glUseProgram(pass.prog);
             glUniform4fv(color_loc, 1, color.data());
-            glUniform1i(pass.warn_loc, 0);
             glUseProgram(0);
 
             return true;
@@ -166,11 +195,15 @@ namespace akashi {
             pass.prog = glCreateProgram();
 
             CHECK_AK_ERROR2(compile_attach_shader(pass.prog, GL_VERTEX_SHADER, vshader_src));
-            CHECK_AK_ERROR2(compile_attach_shader(pass.prog, GL_FRAGMENT_SHADER, fshader_src));
+            CHECK_AK_ERROR2(
+                compile_attach_shader(pass.prog, GL_FRAGMENT_SHADER, content_fshader_src));
             CHECK_AK_ERROR2(link_shader(pass.prog));
 
             pass.mvp_loc = glGetUniformLocation(pass.prog, "u_mvp");
             pass.warn_loc = glGetUniformLocation(pass.prog, "u_warn");
+            pass.mesh_init_x_loc = glGetUniformLocation(pass.prog, "u_mesh_init_x");
+            pass.inv_mesh_width_loc = glGetUniformLocation(pass.prog, "u_inv_mesh_width");
+            pass.active_x_loc = glGetUniformLocation(pass.prog, "u_active_x");
 
             // load mesh
             auto vertices_loc = glGetAttribLocation(pass.prog, "vertices");
@@ -184,8 +217,12 @@ namespace akashi {
             auto color_loc = glGetUniformLocation(pass.prog, "u_color");
             auto color = to_rgba_float(m_obj_params.color);
 
+            auto inactive_color_loc = glGetUniformLocation(pass.prog, "u_inactive_color");
+            auto inactive_color = to_rgba_float(m_obj_params.inactive_color);
+
             glUseProgram(pass.prog);
             glUniform4fv(color_loc, 1, color.data());
+            glUniform4fv(inactive_color_loc, 1, inactive_color.data());
             glUseProgram(0);
 
             return true;
@@ -196,13 +233,15 @@ namespace akashi {
 
             glUseProgram(pass.prog);
 
-            this->update_content_model_mat();
-
             glm::mat4 new_mvp = render_ctx.camera()->vp_mat() * pass.model_mat;
 
             glUniformMatrix4fv(pass.mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 
             glUniform1i(pass.warn_loc, m_obj_params.value > 1.0 ? 1 : 0);
+
+            glUniform1f(pass.mesh_init_x_loc, m_obj_params.cx - (m_obj_params.w * 0.5));
+            glUniform1f(pass.inv_mesh_width_loc, 1.0 / m_obj_params.w);
+            glUniform1f(pass.active_x_loc, m_obj_params.value);
 
             glBindVertexArray(pass.mesh->vao());
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pass.mesh->ibo());
@@ -219,11 +258,6 @@ namespace akashi {
             pass.model_mat = glm::mat4(1.0f);
             pass.model_mat = glm::translate(pass.model_mat,
                                             get_trans_vec({m_obj_params.cx, m_obj_params.cy, 0}));
-
-            auto gain = std::min(1.0, m_obj_params.value);
-            pass.model_mat =
-                glm::translate(pass.model_mat, {-m_obj_params.w * 0.5 * (1 - gain), 0, 0});
-            pass.model_mat = glm::scale(pass.model_mat, glm::vec3(gain, 1.0, 1.0));
         }
 
     }

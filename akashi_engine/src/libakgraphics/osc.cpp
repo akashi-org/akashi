@@ -28,6 +28,8 @@ namespace akashi {
 
         void OSCWidget::render(const RenderParams& params) { m_osc_ctx->render(params); }
 
+        void OSCWidget::resize(const RenderParams& params) { m_osc_ctx->resize(params); }
+
         bool OSCWidget::emit_mouse_event(const OSCMouseEvent& event) {
             return m_osc_ctx->emit_mouse_event(event);
         }

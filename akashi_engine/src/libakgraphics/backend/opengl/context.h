@@ -63,6 +63,8 @@ namespace akashi {
 
             virtual void render(const RenderParams& params) override;
 
+            virtual void resize(const RenderParams& params) override;
+
             virtual bool emit_mouse_event(const OSCMouseEvent& event) override;
 
             virtual bool emit_time_event(const OSCTimeEvent& event) override;

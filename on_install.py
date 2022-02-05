@@ -27,6 +27,10 @@ def _exec_install(install_cmd: install):
     install_cmd.copy_file(path.join(SDIST_TEMP, ENCODER_BIN_NAME), akashi_cli_path)
     install_cmd.copy_file(path.join(SDIST_TEMP, KERNEL_BIN_NAME), akashi_cli_path)
 
+    inst_assets_dir = path.join(akashi_cli_path, 'assets')
+    mkpath(inst_assets_dir)
+    install_cmd.copy_tree(path.join(SDIST_TEMP, 'assets'), inst_assets_dir)
+
     inst_lib_dir = path.join(akashi_cli_path, 'lib')
     mkpath(inst_lib_dir)
     install_cmd.copy_tree(path.join(SDIST_TEMP, 'lib'), inst_lib_dir)

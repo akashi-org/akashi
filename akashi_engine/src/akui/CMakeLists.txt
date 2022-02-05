@@ -26,15 +26,10 @@ add_executable(${PROJECT_NAME}
   interface/asp_gui.cpp
   utils/widget.cpp
   utils/xutils.cpp
-  container/ControlArea.cpp
   container/MonitorArea.cpp
-  components/PlayerWidget/PlayerWidget.cpp
-  components/SliderSection/SliderSection.cpp
-  components/WidgetSection/WidgetSection.cpp
-
-  components/OSCWidget/OSCWidget.cpp
   container/OSCArea.cpp
-
+  components/PlayerWidget/PlayerWidget.cpp
+  components/OSCWidget/OSCWidget.cpp
   ${UI_FILES}
   ${RESOURCES}
 )

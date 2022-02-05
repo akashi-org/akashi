@@ -28,9 +28,14 @@ namespace akashi {
 
             bool render(const RenderParams& params);
 
+            bool resize(const RenderParams& params);
+
             bool on_mouse_event(const OSCMouseEvent& event);
 
             bool on_time_event(const OSCTimeEvent& event);
+
+          private:
+            void initialize(const RenderParams& params);
 
           private:
             core::owned_ptr<OSCRenderContext> m_render_ctx;

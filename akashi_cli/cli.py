@@ -1,4 +1,11 @@
-from .utils import BIN_PATH, ENCODER_BIN_PATH, KERNEL_BIN_PATH, LIBRARY_PATH, libpython_path
+from .utils import (
+    BIN_PATH,
+    ENCODER_BIN_PATH,
+    KERNEL_BIN_PATH,
+    LIBRARY_PATH,
+    ASSETS_DIR,
+    libpython_path
+)
 from .parser import argument_parse, ParsedOption
 from .action_init import do_init
 
@@ -73,6 +80,9 @@ def akashi_cli() -> None:
         os.environ['QT_LOGGING_RULES'] = '*=false;*.critical=true'
 
     os.environ['QT_XCB_GL_INTEGRATION'] = 'xcb_egl'
+
+    if 'AK_ASSET_DIR' not in os.environ.keys():
+        os.environ['AK_ASSET_DIR'] = ASSETS_DIR
 
     sigset: list[signal.Signals] = []
     sigset += [signal.SIGINT, signal.SIGHUP, signal.SIGQUIT, signal.SIGTERM]

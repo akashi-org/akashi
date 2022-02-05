@@ -28,6 +28,8 @@ KERNEL_BIN_PATH: Final[str] = (
 
 LIBRARY_PATH: Final[str] = from_relpath(__file__, './lib')
 
+ASSETS_DIR: Final[str] = from_relpath(__file__, './assets')
+
 
 def libpython_path() -> str:
 

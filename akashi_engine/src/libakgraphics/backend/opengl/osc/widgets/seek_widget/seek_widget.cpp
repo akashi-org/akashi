@@ -62,6 +62,7 @@ namespace akashi {
             // gauge_params.color = "#0872a8ee"; blue
             gauge_params.color = "#909090ee";
             gauge_params.border_color = "#ffffff00";
+            gauge_params.inactive_color = "#000000ee";
 
             m_ctx->seek_area = core::make_owned<osc::VolumeGauge>(gauge_params);
 
@@ -83,9 +84,15 @@ namespace akashi {
             ruler_params.seek_area_width = handle_params.seek_area_width;
 
             ruler_params.label.style.font_path = render_ctx.default_font_path();
+            if (std::getenv("AK_ASSET_DIR")) {
+                ruler_params.label.style.font_path =
+                    std::string(std::getenv("AK_ASSET_DIR")) +
+                    "/fonts/liberation-fonts-ttf-2.1.5/LiberationSans-Bold.ttf";
+            }
+
             ruler_params.label.text_align = core::TextAlign::CENTER;
             ruler_params.label.style.fg_color = "#ffffff";
-            ruler_params.label.style.fg_size = 22;
+            ruler_params.label.style.fg_size = 18;
 
             m_ctx->seek_ruler = core::make_owned<osc::SeekRuler>(
                 render_ctx,
@@ -144,15 +151,6 @@ namespace akashi {
         }
 
         bool SeekWidget::render(OSCRenderContext& render_ctx, const RenderParams& params) {
-            auto gauge_params = m_ctx->seek_area->obj_params();
-
-            glScissor(gauge_params.cx - (gauge_params.w * 0.5),
-                      gauge_params.cy - (gauge_params.h * 0.32), gauge_params.w, gauge_params.h);
-            glEnable(GL_SCISSOR_TEST);
-            glClearColor(0, 0, 0, 0.9);
-            glClear(GL_COLOR_BUFFER_BIT);
-            glDisable(GL_SCISSOR_TEST);
-
             CHECK_AK_ERROR2(m_ctx->seek_area->render(render_ctx, params));
             CHECK_AK_ERROR2(m_ctx->seek_ruler->render(render_ctx, params));
             CHECK_AK_ERROR2(m_ctx->seek_handle->render(render_ctx, params));
@@ -165,7 +163,10 @@ namespace akashi {
                     if (event.btn != OSCMouseButton::LEFT) {
                         return false;
                     } else {
-                        auto seek_value = this->seek_value_for_mouse(render_ctx, event);
+                        size_t seek_value;
+                        if (!this->seek_value_for_mouse(&seek_value, render_ctx, event)) {
+                            return false;
+                        }
 
                         core::Rational seek_time;
                         if (this->seek_time_for_mouse(&seek_time, seek_value, render_ctx, event) <
@@ -184,7 +185,11 @@ namespace akashi {
                 case OSCMouseEventKind::MOVE: {
                     if (m_detect_mouse_move) {
                         m_ctx->seek_moved_triggered = true;
-                        auto seek_value = this->seek_value_for_mouse(render_ctx, event);
+
+                        size_t seek_value;
+                        if (!this->seek_value_for_mouse(&seek_value, render_ctx, event)) {
+                            return false;
+                        }
 
                         core::Rational seek_time;
                         if (this->seek_time_for_mouse(&seek_time, seek_value, render_ctx, event) <
@@ -200,7 +205,11 @@ namespace akashi {
                 }
 
                 case OSCMouseEventKind::HOLD: {
-                    auto seek_value = this->seek_value_for_mouse(render_ctx, event);
+                    size_t seek_value;
+                    if (!this->seek_value_for_mouse(&seek_value, render_ctx, event)) {
+                        return false;
+                    }
+
                     if (seek_value > m_ctx->seek_unit - 1) {
                         seek_value = m_ctx->seek_unit - 1;
                     }
@@ -305,18 +314,18 @@ namespace akashi {
             }
         }
 
-        size_t SeekWidget::seek_value_for_mouse(OSCRenderContext& /*render_ctx*/,
-                                                const OSCMouseEvent& event) {
+        bool SeekWidget::seek_value_for_mouse(size_t* seek_value, OSCRenderContext& /*render_ctx*/,
+                                              const OSCMouseEvent& event) {
             auto handle_bbox = m_ctx->seek_handle->bounding_box();
             auto handle_area_width = m_ctx->seek_handle->obj_params().seek_area_width;
-            auto seek_value = (event.pos[0] - (1.0 * handle_bbox.cx)) / handle_area_width;
-            if (seek_value < 0) {
-                seek_value = 0;
+            auto raw_seek_value = (event.pos[0] - (1.0 * handle_bbox.cx)) / handle_area_width;
+            if (raw_seek_value < 0) {
+                return false;
             }
             // seek_value = std::max(0.0, std::min(1.0, seek_value));
-            seek_value = int(seek_value * m_ctx->seek_unit);
+            *seek_value = int(raw_seek_value * m_ctx->seek_unit);
 
-            return seek_value;
+            return true;
         }
 
         SeekWidget::SeekTimeResult SeekWidget::seek_time_for_mouse(core::Rational* seek_time,

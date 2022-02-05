@@ -61,6 +61,8 @@ namespace akashi {
                                   const EGLGetProcAddress& egl_get_proc_address) = 0;
             virtual void render(const RenderParams& params) = 0;
 
+            virtual void resize(const RenderParams& params) = 0;
+
             virtual bool emit_mouse_event(const OSCMouseEvent& event) = 0;
 
             virtual bool emit_time_event(const OSCTimeEvent& event) = 0;
@@ -77,6 +79,8 @@ namespace akashi {
                           const EGLGetProcAddress& egl_get_proc_address);
 
             void render(const RenderParams& params);
+
+            void resize(const RenderParams& params);
 
             bool emit_mouse_event(const OSCMouseEvent& event);
 

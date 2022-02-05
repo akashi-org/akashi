@@ -87,6 +87,10 @@ namespace akashi {
 
         void OSCWidget::paintGL() { m_osc->render(this->current_render_params()); }
 
+        void OSCWidget::resizeGL(int /*w*/, int /*h*/) {
+            m_osc->resize(this->current_render_params());
+        }
+
         void OSCWidget::update_current_time(const akashi::core::Rational& current_time) {
             using namespace akashi::graphics;
             auto should_update = m_osc->emit_time_event(

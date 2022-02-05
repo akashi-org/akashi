@@ -10,6 +10,7 @@
 #include <libakcore/time.h>
 
 #include <sstream>
+#include <iomanip>
 
 namespace akashi {
     namespace graphics::osc {
@@ -41,12 +42,19 @@ namespace akashi {
             osc::TextLabel::Params text_params;
             text_params.text = this->construct_time_string();
             text_params.style.font_path = render_ctx.default_font_path();
+            if (std::getenv("AK_ASSET_DIR")) {
+                text_params.style.font_path =
+                    std::string(std::getenv("AK_ASSET_DIR")) +
+                    "/fonts/liberation-fonts-ttf-2.1.5/LiberationSans-Bold.ttf";
+            }
+
             text_params.style.fg_color = "#ffffff";
-            text_params.style.fg_size = 22;
+            text_params.style.fg_size = 20;
             text_params.cx = bbox.cx;
             text_params.cy = bbox.cy;
             text_params.w = bbox.w;
             text_params.h = bbox.h;
+            text_params.size_pref = osc::TextLabel::MeshSizePref::FIXED_WIDTH_TEX;
 
             m_ctx->text_label = core::make_owned<osc::TextLabel>(text_params);
         }

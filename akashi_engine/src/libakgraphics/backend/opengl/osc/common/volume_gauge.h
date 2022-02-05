@@ -20,6 +20,7 @@ namespace akashi {
                     double border_radius = 0.0;
                     std::string color;
                     std::string border_color;
+                    std::string inactive_color = "#ffffff00";
                 };
 
               public:
