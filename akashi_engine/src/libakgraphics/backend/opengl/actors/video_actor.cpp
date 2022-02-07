@@ -16,7 +16,6 @@
 
 using namespace akashi::core;
 
-// inspired by https://github.com/brion/yuv-canvas/blob/master/shaders/YCbCr.vsh
 static constexpr const char* vshader_src = u8R"(
     #version 420 core
     uniform mat4 mvpMatrix;
@@ -42,53 +41,68 @@ static constexpr const char* vshader_src = u8R"(
 
 static constexpr const char* fshader_src = u8R"(
     #version 420 core
-    uniform sampler2D textureY;
-    uniform sampler2D textureCb;
-    uniform sampler2D textureCr;
     uniform float time;
     uniform float global_time;
     uniform float local_duration;
     uniform float fps;
     uniform vec2 resolution;
 
-    in GS_OUT {
-        vec2 vLumaUvs;
-        vec2 vChromaUvs;
-    } fs_in;
-
     out vec4 fragColor;
 
-    void to_rgb(inout vec4 _fragColor, vec2 vLumaUvs, vec2 vChromaUvs);
+    vec3 get_yuv();
+
+    vec4 to_rgb(){
+        
+        // MPEG, YUV(Y: 16~235, UV: 16~240) => RGB(RGB: 0~255)
+        
+        vec3 yuv = get_yuv();
+        yuv.y -= 0.5;
+        yuv.z -= 0.5;
+
+        // BT.601
+        // vec3 rc = vec3(1, 0, 1.402);
+        // vec3 gc = vec3(1,-0.344136, -0.714136);
+        // vec3 bc = vec3(1, 1.772, 0);
+        
+        // BT.709
+        vec3 rc = vec3(1, 0, 1.5748);
+        vec3 gc = vec3(1,-0.187324, -0.468124);
+        vec3 bc = vec3(1, 1.8556, 0);
+
+        return vec4(
+            (dot(yuv, rc)-0.0625) * 1.164, 
+            (dot(yuv, gc)-0.0625) * 1.164, 
+            (dot(yuv, bc)-0.0625) * 1.164, 
+            1
+        );
+    }
 
     void frag_main(inout vec4 rv);
 
     void main(void){
-        to_rgb(fragColor, fs_in.vLumaUvs, fs_in.vChromaUvs);
+        fragColor = to_rgb();
         frag_main(fragColor);
 })";
 
-// inspired by https://github.com/brion/yuv-canvas/blob/master/shaders/YCbCr.fsh
 static constexpr const char* color_conv_fshader_sw = u8R"(
     #version 420 core
     uniform sampler2D textureY;
     uniform sampler2D textureCb;
     uniform sampler2D textureCr;
 
-    void to_rgb(inout vec4 _fragColor, vec2 vLumaUvs, vec2 vChromaUvs){
+    in GS_OUT {
+        vec2 vLumaUvs;
+        vec2 vChromaUvs;
+    } fs_in;
 
-        float fY = texture(textureY, vLumaUvs).r;
-        float fCb = texture(textureCb, vChromaUvs).r;
-        float fCr = texture(textureCr, vChromaUvs).r;
-
-        float fYmul = fY * 1.1643828125;
-
-        _fragColor = vec4(
-            fYmul + 1.59602734375 * fCr - 0.87078515625,
-            fYmul - 0.39176171875 * fCb - 0.81296875 * fCr + 0.52959375,
-            fYmul + 2.017234375   * fCb - 1.081390625,
-            1
+    vec3 get_yuv(){
+        return vec3(
+            texture(textureY, fs_in.vLumaUvs).r,
+            texture(textureCb, fs_in.vChromaUvs).r,
+            texture(textureCr, fs_in.vChromaUvs).r
         );
     }
+
 )";
 
 static constexpr const char* color_conv_fshader_vaapi = u8R"(
@@ -96,27 +110,16 @@ static constexpr const char* color_conv_fshader_vaapi = u8R"(
     uniform sampler2D textureY;
     uniform sampler2D textureCb;
 
-    void to_rgb(inout vec4 _fragColor, vec2 vLumaUvs, vec2 vChromaUvs){
+    in GS_OUT {
+        vec2 vLumaUvs;
+        vec2 vChromaUvs;
+    } fs_in;
 
-        vec3 rc = vec3(1.164, 0.0, 1.596);
-        vec3 gc = vec3(1.164, -0.391, -0.813);
-        vec3 bc = vec3(1.164, 2.018, 0.0);
-
-        vec3 offset = vec3(-0.0625, -0.5, -0.5);
-
-        vec3 yuv = vec3(
-            texture(textureY, vLumaUvs).r,
-            texture(textureCb, vLumaUvs).r,
-            texture(textureCb, vLumaUvs).g
-        );
-        // yuv = clamp(yuv, 0.0, 1.0);
-        yuv += offset;
-
-        _fragColor = vec4(
-            dot(yuv, rc),
-            dot(yuv, gc),
-            dot(yuv, bc),
-            1
+    vec3 get_yuv(){
+        return vec3(
+            texture(textureY, fs_in.vLumaUvs).r,
+            texture(textureCb, fs_in.vLumaUvs).r,
+            texture(textureCb, fs_in.vLumaUvs).g
         );
     }
 )";
