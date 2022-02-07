@@ -318,6 +318,10 @@ namespace akashi {
                 enc_ctx->height = m_state->m_prop.video_height;
                 enc_ctx->time_base = to_av_rational(Rational(1l) / m_state->m_prop.fps);
                 enc_ctx->framerate = to_av_rational(m_state->m_prop.fps);
+                enc_ctx->colorspace = AVColorSpace::AVCOL_SPC_BT709;
+                // enc_ctx->color_primaries = AVColorPrimaries::AVCOL_PRI_BT709;
+                // enc_ctx->color_trc = AVColorTransferCharacteristic::AVCOL_TRC_BT709;
+                enc_ctx->color_range = AVColorRange::AVCOL_RANGE_MPEG;
                 // [TODO] add a field for AKState
                 enc_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
                 // [XXX] settings for interlacing?
@@ -356,7 +360,7 @@ namespace akashi {
                 // dst
                 enc_ctx->width, enc_ctx->height, enc_ctx->pix_fmt,
                 // flags
-                0, // SWS_FAST_BILINEAR 
+                SWS_BICUBIC | SWS_FULL_CHR_H_INP | SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND, // SWS_LANCZOS | SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND,
                 // options
                 nullptr, nullptr, nullptr
             );
@@ -364,6 +368,14 @@ namespace akashi {
             if (!m_video_stream.sws_ctx) {
                 AKLOG_ERRORN("sws_getCashedContext() failed");
                 return false;
+            }
+
+            // NB: This operation is really important for handling colorspace issues properly
+            if (auto err = sws_setColorspaceDetails(
+                    m_video_stream.sws_ctx, sws_getCoefficients(SWS_CS_DEFAULT), 1,
+                    sws_getCoefficients(SWS_CS_ITU709), 0, 0, (1 << 16), (1 << 16));
+                err < 0) {
+                AKLOG_ERRORN("sws_setColorspaceDetails() failed");
             }
 
             return true;
@@ -444,6 +456,10 @@ namespace akashi {
             // [TODO] is this really necessary?
             (*frame)->pts = av_rescale_q(encode_arg.pts.num(), {1, (int)encode_arg.pts.den()},
                                          m_video_stream.enc_ctx->time_base);
+
+            // (*frame)->colorspace = m_video_stream.enc_ctx->colorspace;
+            (*frame)->colorspace = AVColorSpace::AVCOL_SPC_RGB;
+            (*frame)->color_range = AVColorRange::AVCOL_RANGE_JPEG;
 
             // alloc video buffer
             if (auto err = av_frame_get_buffer(*frame, 0); err < 0) {
