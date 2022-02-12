@@ -1,7 +1,7 @@
 #include "./window.h"
 
-#include "./container/ControlArea.h"
 #include "./container/MonitorArea.h"
+#include "./container/OSCArea.h"
 
 #include <libakcore/rational.h>
 #include <libakcore/element.h>
@@ -14,8 +14,11 @@
 #include <QWidget>
 #include <QMouseEvent>
 #include <QResizeEvent>
+#include <QScreen>
 
 #include <QSizeGrip>
+
+#include <QTimer>
 
 using namespace akashi::core;
 
@@ -57,7 +60,12 @@ namespace akashi {
             // this->setFrameShadow(QFrame::Raised);
 
             this->m_monitorArea = new MonitorArea(borrowed_ptr(m_state), this);
-            this->m_controlArea = new ControlArea(borrowed_ptr(m_state), this);
+
+            this->m_oscArea = new OSCArea(borrowed_ptr(m_state), this);
+            this->m_oscArea->show();
+
+            auto [init_w, init_h] = state->m_ui_conf.resolution;
+            this->m_oscArea->move((init_w - (init_w * 0.8)) / 2, (init_h / 2));
 
             switch (m_state->m_ui_conf.window_mode) {
                 case core::WindowMode::SPLIT: {
@@ -66,7 +74,7 @@ namespace akashi {
                 }
                 case core::WindowMode::IMMERSIVE: {
                     this->setTransparent(true);
-                    this->m_controlArea->hide();
+                    this->m_oscArea->hide();
                     break;
                 }
                 case core::WindowMode::INDEPENDENT: {
@@ -88,7 +96,6 @@ namespace akashi {
             this->m_mainLayout->setSpacing(0);
             // [XXX] keep it align unset, or the expansion does not work properly
             this->m_mainLayout->addWidget(this->m_monitorArea, 0, 0, -1, -1);
-            this->m_mainLayout->addWidget(this->m_controlArea, 0, 0, -1, -1, Qt::AlignBottom);
 
             this->m_mainLayout->addWidget(m_exitBtn, 0, 0, -1, -1, Qt::AlignTop | Qt::AlignLeft);
             this->m_mainLayout->addWidget(m_sizeGrip, 0, 0, -1, -1,
@@ -112,10 +119,10 @@ namespace akashi {
                 }
                 case core::WindowMode::IMMERSIVE: {
                     if (this->windowOpacity() < 1.0) {
-                        this->m_controlArea->show();
+                        this->m_oscArea->show();
                         this->setTransparent(false);
                     } else {
-                        this->m_controlArea->hide();
+                        this->m_oscArea->hide();
                         this->setTransparent(true);
                     }
                     break;
@@ -131,7 +138,8 @@ namespace akashi {
                 switch (m_state->m_ui_conf.window_mode) {
                     case core::WindowMode::SPLIT:
                     case core::WindowMode::INDEPENDENT: {
-                        this->setWindowOpacity(0.75);
+                        // this->setWindowOpacity(0.75);
+                        this->setWindowOpacity(1.0); // [TODO] temporary
                         break;
                     }
                     case core::WindowMode::IMMERSIVE: {
@@ -158,7 +166,7 @@ namespace akashi {
                     if (m_state->m_ui_conf.window_mode == core::WindowMode::IMMERSIVE &&
                         m_state->m_ui_conf.smart_immersive) {
                         this->setTransparent(true);
-                        this->m_controlArea->hide();
+                        this->m_oscArea->hide();
                     }
                     this->m_monitorArea->pause();
                     break;
@@ -175,7 +183,7 @@ namespace akashi {
                     if (m_state->m_ui_conf.window_mode == core::WindowMode::IMMERSIVE &&
                         m_state->m_ui_conf.smart_immersive) {
                         this->setTransparent(false);
-                        this->m_controlArea->show();
+                        this->m_oscArea->show();
                     }
                     this->m_monitorArea->play();
                     break;
@@ -188,6 +196,10 @@ namespace akashi {
 
         void Window::showEvent(QShowEvent*) { m_origSize = this->size(); }
 
+        void Window::enterEvent(QEvent*) { m_oscArea->show_control(); }
+
+        void Window::leaveEvent(QEvent*) { m_oscArea->hide_control(); }
+
         void Window::changeEvent(QEvent* event) {
             if (event->type() == QEvent::ActivationChange) {
                 if (this->isActiveWindow()) {
@@ -199,12 +211,12 @@ namespace akashi {
                     if (m_state->m_ui_conf.window_mode == core::WindowMode::SPLIT) {
                         this->setTransparent(false);
                     }
-                    Q_EMIT this->m_controlArea->hide_control();
+                    m_oscArea->hide_control();
                 } else {
                     if (m_state->m_ui_conf.window_mode != core::WindowMode::INDEPENDENT) {
                         this->setTransparent(true);
                     }
-                    Q_EMIT this->m_controlArea->show_control();
+                    m_oscArea->show_control();
                 }
             }
         }
@@ -225,11 +237,83 @@ namespace akashi {
             // this->resize(this->m_origSize);
         }
 
+        void Window::resizeEvent(QResizeEvent* event) {
+            static core::Rational aspect = core::Rational(this->m_oscArea->width(), 1) /
+                                           core::Rational(this->m_oscArea->height(), 1);
+
+            auto screen_width = QGuiApplication::primaryScreen()->size().width();
+            auto new_w = std::max(screen_width * 0.35,
+                                  std::min(screen_width * 0.6, event->size().width() * 0.8));
+            auto new_h = new_w / aspect.to_decimal();
+            this->m_oscArea->resize_osc(new_w, new_h);
+
+            // [TODO] this calculation might be wrong...
+            auto old_rx = (double)this->m_oscArea->pos().x() / event->oldSize().width();
+            auto old_ry = (double)this->m_oscArea->pos().y() / event->oldSize().height();
+            auto new_x = old_rx * event->size().width();
+            auto new_y = old_ry * event->size().height();
+            if (new_x > 0 && new_y > 0) {
+                this->m_oscArea->move(new_x, new_y);
+            }
+
+            // static core::Rational aspect = core::Rational(this->m_oscArea->width(), 1) /
+            //                                core::Rational(this->m_oscArea->height(), 1);
+
+            // static double before_size[] = {(double)event->size().width(),
+            //                                (double)event->size().height()};
+
+            // auto wd_ratio = std::abs(before_size[0] - event->size().width()) / before_size[0];
+            // auto hd_ratio = std::abs(before_size[1] - event->size().height()) / before_size[1];
+
+            // if (wd_ratio > 0.3 || hd_ratio > 0.3) {
+            //     before_size[0] = (double)event->size().width();
+            //     before_size[1] = (double)event->size().height();
+            //     auto new_w = event->size().width() * 0.8;
+            //     this->m_oscArea->resize_osc(new_w, new_w / aspect.to_decimal());
+            // }
+        }
+
         void Window::on_seek(const akashi::core::Rational& time) {
             if (can_seek(m_state)) {
                 m_state->m_atomic_state.ui_can_seek.store(false);
-                this->m_controlArea->set_slider_movable(false);
+                // this->m_controlArea->set_slider_movable(false);
                 this->m_monitorArea->seek(time);
+                m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
+                Q_EMIT this->state_changed(m_state->m_atomic_state.icon_play_state.load());
+            }
+        }
+
+        void Window::on_seekbar_pressed(const akashi::core::Rational& time) {
+            m_state->m_atomic_state.last_play_state.store(
+                m_state->m_atomic_state.icon_play_state.load());
+            this->changePlayState(akashi::state::PlayState::PAUSED);
+
+            // [TODO] ugly hack
+            QTimer::singleShot(100, [this, time] { this->on_seekbar_moved(time); });
+        }
+
+        void Window::on_seekbar_moved(const akashi::core::Rational& time) {
+            if (can_seek(m_state)) {
+                m_state->m_atomic_state.ui_can_seek.store(false);
+                // this->m_controlArea->set_slider_movable(false);
+                this->m_monitorArea->seek(time);
+                m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
+                Q_EMIT this->state_changed(m_state->m_atomic_state.icon_play_state.load());
+            }
+        }
+
+        void Window::on_seekbar_released(const akashi::core::Rational& /*time*/) {
+            if (m_state->m_atomic_state.last_play_state == state::PlayState::PLAYING) {
+                this->changePlayState(akashi::state::PlayState::PLAYING);
+            }
+        }
+
+        void Window::on_frame_seek(int nframes) {
+            if (can_seek(m_state)) {
+                this->changePlayState(akashi::state::PlayState::PAUSED);
+                m_state->m_atomic_state.ui_can_seek.store(false);
+                // this->m_controlArea->set_slider_movable(false);
+                this->m_monitorArea->frame_seek(nframes);
                 m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
                 Q_EMIT this->state_changed(m_state->m_atomic_state.icon_play_state.load());
             }
@@ -237,8 +321,9 @@ namespace akashi {
 
         void Window::on_frame_step(void) {
             if (can_seek(m_state)) {
+                this->changePlayState(akashi::state::PlayState::PAUSED);
                 m_state->m_atomic_state.ui_can_seek.store(false);
-                this->m_controlArea->set_slider_movable(false);
+                // this->m_controlArea->set_slider_movable(false);
                 this->m_monitorArea->frame_step();
                 m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
                 Q_EMIT this->state_changed(m_state->m_atomic_state.icon_play_state.load());
@@ -247,8 +332,9 @@ namespace akashi {
 
         void Window::on_frame_back_step(void) {
             if (can_seek(m_state)) {
+                this->changePlayState(akashi::state::PlayState::PAUSED);
                 m_state->m_atomic_state.ui_can_seek.store(false);
-                this->m_controlArea->set_slider_movable(false);
+                // this->m_controlArea->set_slider_movable(false);
                 this->m_monitorArea->frame_back_step();
                 m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
                 Q_EMIT this->state_changed(m_state->m_atomic_state.icon_play_state.load());
@@ -257,8 +343,9 @@ namespace akashi {
 
         void Window::on_forward_jump(const double ratio) {
             if (can_seek(m_state)) {
+                this->changePlayState(akashi::state::PlayState::PAUSED);
                 m_state->m_atomic_state.ui_can_seek.store(false);
-                this->m_controlArea->set_slider_movable(false);
+                // this->m_controlArea->set_slider_movable(false);
                 this->m_monitorArea->relative_seek(ratio);
                 m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
                 Q_EMIT this->state_changed(m_state->m_atomic_state.icon_play_state.load());
@@ -267,8 +354,9 @@ namespace akashi {
 
         void Window::on_backward_jump(const double ratio) {
             if (can_seek(m_state)) {
+                this->changePlayState(akashi::state::PlayState::PAUSED);
                 m_state->m_atomic_state.ui_can_seek.store(false);
-                this->m_controlArea->set_slider_movable(false);
+                // this->m_controlArea->set_slider_movable(false);
                 this->m_monitorArea->relative_seek(-1 * ratio);
                 m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
                 Q_EMIT this->state_changed(m_state->m_atomic_state.icon_play_state.load());
@@ -326,7 +414,12 @@ namespace akashi {
 
         void Window::on_seek_completed(void) {
             m_state->m_atomic_state.ui_can_seek.store(true);
-            this->m_controlArea->set_slider_movable(true);
+            // this->m_controlArea->set_slider_movable(true);
+        }
+
+        void Window::on_volume_changed(double gain) {
+            m_state->m_atomic_state.volume = gain;
+            Q_EMIT this->volume_changed(gain);
         }
     }
 }

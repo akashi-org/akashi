@@ -73,6 +73,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./config.cpp"
   "./string.cpp"
   "./uuid.cpp"
+  "./time.cpp"
 )
 
 file(GLOB INTERFACE_HEADERS
@@ -97,6 +98,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 target_compile_definitions(${PROJECT_NAME}
   PUBLIC "SPDLOG_COMPILED_LIB"
+  PUBLIC "BOOST_DATE_TIME_NO_LIB"
 )
 
 target_include_directories(${PROJECT_NAME}

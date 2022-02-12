@@ -68,6 +68,8 @@ namespace akashi {
 
         void PlayerWidget::relative_seek(const double ratio) { m_player->relative_seek(ratio); }
 
+        void PlayerWidget::frame_seek(int nframes) { m_player->frame_seek(nframes); }
+
         void PlayerWidget::frame_step(void) { m_player->frame_step(); }
 
         void PlayerWidget::frame_back_step(void) { m_player->frame_back_step(); }

@@ -14,32 +14,35 @@ namespace akashi {
     }
     namespace ui {
 
-        class SliderSection;
-        class WidgetSection;
+        class OSCWidget;
 
-        class ControlArea final : public QWidget {
+        class OSCArea final : public QWidget {
             Q_OBJECT
           public:
-            explicit ControlArea(core::borrowed_ptr<akashi::state::AKState> state,
-                                 QWidget* parent = 0);
+            explicit OSCArea(core::borrowed_ptr<akashi::state::AKState> state, QWidget* parent = 0);
 
-            void set_slider_movable(bool movable);
+            void resize_osc(int w, int h);
 
           protected:
             virtual void showEvent(QShowEvent* event) override;
             virtual void enterEvent(QEvent* event) override;
             virtual void leaveEvent(QEvent* event) override;
 
+            virtual void mousePressEvent(QMouseEvent* event) override;
+            virtual void mouseReleaseEvent(QMouseEvent* event) override;
+            virtual void mouseMoveEvent(QMouseEvent* event) override;
+
           public Q_SLOTS:
             void show_control(void);
             void hide_control(void);
 
           private:
-            QVBoxLayout* m_control_area_layout;
-            SliderSection* m_slider_section;
-            WidgetSection* m_widget_section;
+            QVBoxLayout* m_osc_area_layout;
+            OSCWidget* m_osc_widget;
             QLabel* m_event_proxy;
             QGridLayout* m_main_layout;
+            QPoint m_old_pos = {0, 0};
+            bool m_can_move = false;
           Q_SIGNALS:
           public Q_SLOTS:
         };

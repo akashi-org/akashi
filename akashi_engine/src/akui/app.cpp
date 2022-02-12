@@ -54,6 +54,11 @@ namespace akashi {
             QSurfaceFormat format;
             format.setVersion(4, 2);
             format.setProfile(QSurfaceFormat::CoreProfile);
+            if (akconf.video.msaa < 2) {
+                format.setSamples(2);
+            } else {
+                format.setSamples(akconf.video.msaa);
+            }
             QSurfaceFormat::setDefaultFormat(format);
 
             Window window{borrowed_ptr(&state)};

@@ -174,7 +174,7 @@ namespace akashi {
             return true;
         }
 
-        void QuadMesh::destroy() {}
+        void QuadMesh::destroy_inner() {}
 
     }
 }

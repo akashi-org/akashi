@@ -255,6 +255,11 @@ namespace akashi {
                 return {(float)orig_size[0], (float)orig_size[1]};
             }
 
+            inline void update_model_mat(Transform* pass) {
+                pass->model_mat = glm::translate(pass->model_mat, pass->trans_vec);
+                pass->model_mat = glm::scale(pass->model_mat, pass->scale_vec);
+            }
+
         }
 
     }

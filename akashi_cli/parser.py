@@ -1,17 +1,21 @@
 from .utils import KERNEL_BIN_PATH
+from .config_parser import config_parse
 
 import argparse
 from argparse import RawTextHelpFormatter
 import sys
 from os import path
-from importlib.machinery import SourceFileLoader
 from typing import Any
 from dataclasses import dataclass
 from subprocess import Popen, PIPE
-import pkg_resources
 
 
 def _version_string():
+    # NB: pkg_resources is quite slow to import, so we import it only when it is really needed
+    if '--version' not in sys.argv:
+        return ''
+
+    import pkg_resources
     py_ver = pkg_resources.get_distribution('akashi-engine').version
     _, err = Popen([KERNEL_BIN_PATH, "--version"], stderr=PIPE).communicate()
     engine_ver = err.decode('utf-8').split(' ')[-1]
@@ -24,6 +28,7 @@ class ParsedOption:
     akconf: str
     conf_path: str
     asp_port: int
+    out_fpath: str
 
 
 def argument_parse() -> ParsedOption:
@@ -36,16 +41,7 @@ def argument_parse() -> ParsedOption:
 
     parser.add_argument(
         "action",
-        choices=['debug', 'build', 'kernel'],
-    )
-
-    parser.add_argument(
-        "--conf_path",
-        "-c",
-        help="config file path",
-        type=str,
-        default="./akconf.py",  # temporary
-        required=False
+        choices=['init', 'run', 'build', 'kernel'],
     )
 
     parser.add_argument(
@@ -53,6 +49,12 @@ def argument_parse() -> ParsedOption:
         action='version',
         version=_version_string()
     )
+
+    if len(sys.argv) > 1 and sys.argv[1] in ['run', 'build', 'kernel']:
+        parser.add_argument(
+            "conf_path",
+            type=str
+        )
 
     if len(sys.argv) > 1 and sys.argv[1] == 'kernel':
         parser.add_argument(
@@ -63,6 +65,14 @@ def argument_parse() -> ParsedOption:
             required=False
         )
 
+    if len(sys.argv) > 1 and sys.argv[1] == 'build':
+        parser.add_argument(
+            "-o", "--out",
+            help="output file path",
+            type=str,
+            required=True
+        )
+
     args_dict = vars(parser.parse_args())
     if len(args_dict) == 0:
         parser.print_help(sys.stderr)
@@ -70,15 +80,8 @@ def argument_parse() -> ParsedOption:
 
     return ParsedOption(
         args_dict['action'],
-        _akconf_parse(args_dict["conf_path"]),
-        path.abspath(args_dict["conf_path"]),
-        args_dict['port'] if 'port' in args_dict else 1234
+        config_parse(args_dict["conf_path"]).to_json() if 'conf_path' in args_dict else '',
+        path.abspath(args_dict["conf_path"] if 'conf_path' in args_dict else ''),
+        args_dict['port'] if 'port' in args_dict else 1234,
+        args_dict['out'] if 'out' in args_dict else ''
     )
-
-
-def _akconf_parse(conf_path: str) -> str:
-
-    akconf: Any = SourceFileLoader("akconf", path.abspath(conf_path)).load_module()  # type: ignore
-    if not hasattr(akconf, '__akashi_export_config_fn'):
-        raise Exception('No config function found. Perhaps you forget to add the export decorator?')
-    return getattr(akconf, '__akashi_export_config_fn')().to_json()

@@ -23,6 +23,7 @@ namespace akashi {
                                   public layer_commons::Transform {
             GLuint prog;
             BaseMesh* mesh = nullptr;
+            bool enable_msaa = false;
         };
 
         bool ShapeActor::create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
@@ -39,6 +40,10 @@ namespace akashi {
         }
 
         bool ShapeActor::render(OGLRenderContext& ctx, const core::Rational& pts) {
+            if (m_pass->enable_msaa) {
+                glEnable(GL_MULTISAMPLE);
+            }
+
             glUseProgram(m_pass->prog);
 
             glm::mat4 new_mvp = ctx.camera()->vp_mat() * m_pass->model_mat;
@@ -62,6 +67,8 @@ namespace akashi {
             glDrawElements(GL_TRIANGLES, m_pass->mesh->ibo_length(), GL_UNSIGNED_SHORT, 0);
 
             glBindVertexArray(0);
+
+            glDisable(GL_MULTISAMPLE);
 
             return true;
         }
@@ -125,7 +132,7 @@ namespace akashi {
 
             m_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
-            this->update_model_mat();
+            layer_commons::update_model_mat(m_pass);
 
             return true;
         }
@@ -148,6 +155,7 @@ namespace akashi {
 
                     if (shape_params.edge_radius > 0) {
                         m_pass->mesh = new RoundRectMesh;
+                        m_pass->enable_msaa = true;
                         if (shape_params.fill || !(shape_params.border_size > 0)) {
                             static_cast<RoundRectMesh*>(m_pass->mesh)
                                 ->create(mesh_size, shape_params.edge_radius, vertices_loc);
@@ -177,6 +185,8 @@ namespace akashi {
                 }
 
                 case core::ShapeKind::CIRCLE: {
+                    m_pass->enable_msaa = true;
+
                     std::array<float, 2> mesh_size = {(float)shape_params.circle.radius,
                                                       (float)shape_params.circle.radius};
                     if (m_layer_ctx.layer_size[0] > 0) {
@@ -205,6 +215,7 @@ namespace akashi {
                 }
 
                 case core::ShapeKind::TRIANGLE: {
+                    m_pass->enable_msaa = true;
                     auto mesh_size = layer_commons::get_mesh_size(
                         m_layer_ctx, {(long)shape_params.tri.side,
                                       (long)(shape_params.tri.side * 0.5 * sqrt(3))});
@@ -239,11 +250,6 @@ namespace akashi {
             }
 
             return true;
-        }
-
-        void ShapeActor::update_model_mat() {
-            m_pass->model_mat = glm::translate(m_pass->model_mat, m_pass->trans_vec);
-            m_pass->model_mat = glm::scale(m_pass->model_mat, m_pass->scale_vec);
         }
 
     }

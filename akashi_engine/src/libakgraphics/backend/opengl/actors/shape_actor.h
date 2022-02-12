@@ -30,8 +30,6 @@ namespace akashi {
 
             bool load_mesh(const OGLRenderContext& ctx);
 
-            void update_model_mat();
-
           private:
             ShapeActor::Pass* m_pass = nullptr;
         };

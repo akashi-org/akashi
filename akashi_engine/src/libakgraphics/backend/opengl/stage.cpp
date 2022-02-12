@@ -66,11 +66,6 @@ namespace akashi {
 
             glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
-
-            // If enabled, we can change the point size in shader
-            // glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-
-            glEnable(GL_MULTISAMPLE);
         }
 
         void Stage::init_renderer(const FBInfo& info, const core::FrameContext* frame_ctx) {
@@ -80,14 +75,16 @@ namespace akashi {
 
             glEnable(GL_SCISSOR_TEST);
 
-            std::array<double, 4> color = {0, 0, 0, 1};
+            std::array<float, 4> color = {0, 0, 0, 1};
             if (frame_ctx) {
-                color = to_rgba_double(frame_ctx->atom_static_profile.bg_color);
+                color = to_rgba_float(frame_ctx->atom_static_profile.bg_color);
             }
             glClearColor(color[0], color[1], color[2], color[3]);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             glDisable(GL_SCISSOR_TEST);
+
+            glDisable(GL_MULTISAMPLE);
 
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

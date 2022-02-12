@@ -28,6 +28,8 @@ KERNEL_BIN_PATH: Final[str] = (
 
 LIBRARY_PATH: Final[str] = from_relpath(__file__, './lib')
 
+ASSETS_DIR: Final[str] = from_relpath(__file__, './assets')
+
 
 def libpython_path() -> str:
 
@@ -37,4 +39,4 @@ def libpython_path() -> str:
     if libdir and libname:
         return os.path.join(libdir, libname)
     else:
-        raise Exception(f'Failed to find libpython.so: LIBDIR: {libdir}, LDLIBRARY: {libname}')
+        raise Exception(f'akashi: error: libpython.so not found: LIBDIR: {libdir}, LDLIBRARY: {libname}')

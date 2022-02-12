@@ -59,7 +59,7 @@ namespace akashi {
             return true;
         }
 
-        void CircleMesh::destroy() {}
+        void CircleMesh::destroy_inner() {}
 
         bool CircleMesh::load_circle_mesh(const GLuint vertices_loc,
                                           const std::array<GLfloat, 2>& size, int lod) {

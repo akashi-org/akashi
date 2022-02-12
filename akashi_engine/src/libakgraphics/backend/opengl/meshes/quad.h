@@ -29,7 +29,8 @@ namespace akashi {
                         const GLuint vertices_loc, const GLuint luma_uvs_loc,
                         const GLuint chroma_uvs_loc);
 
-            void destroy() override;
+          protected:
+            void destroy_inner() override;
         };
 
     }

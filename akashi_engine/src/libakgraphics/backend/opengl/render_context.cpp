@@ -109,5 +109,9 @@ namespace akashi {
             return m_buffer->vq->dequeue(layer_uuid, pts);
         }
 
+        void OGLRenderContext::use_default_blend_func() const {
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        }
+
     }
 }

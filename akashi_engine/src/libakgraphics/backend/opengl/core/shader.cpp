@@ -26,7 +26,7 @@ namespace akashi {
             if (log_length > 1) {
                 log_str = static_cast<GLchar*>(calloc(log_length + 1, sizeof(GLchar)));
                 glGetShaderInfoLog(shader, log_length, nullptr, log_str);
-                AKLOG_INFO("Shader compile log: {}", log_str);
+                AKLOG_ERROR("Shader compile log: {}", log_str);
             }
 
             if (!compile_status) {

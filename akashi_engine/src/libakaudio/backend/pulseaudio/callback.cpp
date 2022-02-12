@@ -173,7 +173,7 @@ namespace akashi {
                 size_t audio_buf_size = 0;
 
                 if (cb_ctx->is_buf_empty(comp_layer_uuid)) {
-                    AKLOG_ERRORN("fill_layer() failed: audio buffer not found.");
+                    AKLOG_DEBUGN("fill_layer() failed: audio buffer not found.");
                     // cb_ctx->player_pause();
                     break;
                 }
@@ -260,7 +260,11 @@ namespace akashi {
                 }
             }
 
-            adjust_volume(s_mask_buf.buf, requested_bytes, cb_ctx->volume());
+            double rms = adjust_volume(s_mask_buf.buf, requested_bytes, cb_ctx->volume());
+            if (std::isnan(rms)) {
+                AKLOG_ERRORN("RMS is nan");
+                memset(s_mask_buf.buf, 0, requested_bytes);
+            }
 
             if (pa_stream_write(stream, s_mask_buf.buf, requested_bytes, NULL, 0,
                                 PA_SEEK_RELATIVE) < 0) {

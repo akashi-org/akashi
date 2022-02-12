@@ -111,7 +111,7 @@ namespace akashi {
             return true;
         }
 
-        void RectMesh::destroy() {}
+        void RectMesh::destroy_inner() {}
 
         namespace priv {
 
@@ -357,7 +357,7 @@ namespace akashi {
             return true;
         }
 
-        void RoundRectMesh::destroy() {}
+        void RoundRectMesh::destroy_inner() {}
 
     }
 }

@@ -47,6 +47,8 @@ namespace akashi {
             std::unique_ptr<buffer::AVBufferData> dequeue(std::string layer_uuid,
                                                           const core::Rational& pts);
 
+            void use_default_blend_func() const;
+
           private:
             core::borrowed_ptr<state::AKState> m_state;
             core::borrowed_ptr<buffer::AVBuffer> m_buffer;

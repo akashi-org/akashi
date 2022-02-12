@@ -47,6 +47,8 @@ namespace akashi {
 
         void MonitorArea::relative_seek(const double ratio) { m_player->relative_seek(ratio); }
 
+        void MonitorArea::frame_seek(int nframes) { m_player->frame_seek(nframes); }
+
         void MonitorArea::frame_step(void) { m_player->frame_step(); }
 
         void MonitorArea::frame_back_step(void) { m_player->frame_back_step(); }

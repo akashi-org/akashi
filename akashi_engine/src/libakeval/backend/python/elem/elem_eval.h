@@ -20,7 +20,7 @@ namespace akashi {
 
         struct GlobalContext {
             std::vector<core::owned_ptr<AtomProxy>> atom_proxies;
-            core::Rational interval;
+            core::Rational sec_per_frame;
             core::Rational duration;
             std::string uuid;
         };

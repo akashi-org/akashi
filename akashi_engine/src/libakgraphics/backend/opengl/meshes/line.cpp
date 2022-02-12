@@ -31,7 +31,7 @@ namespace akashi {
             return true;
         }
 
-        void LineMesh::destroy() {}
+        void LineMesh::destroy_inner() {}
 
         bool LineMesh::load_default_line_mesh(const GLuint vertices_loc, const GLfloat size,
                                               const std::array<long, 2>& begin,

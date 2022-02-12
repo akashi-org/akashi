@@ -94,7 +94,7 @@ namespace akashi {
             m_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
             m_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.text_layer_ctx.scale;
-            this->update_model_mat(*m_pass);
+            layer_commons::update_model_mat(m_pass);
 
             return true;
         }
@@ -135,6 +135,7 @@ namespace akashi {
             m_pass->tex.effective_width = m_pass->tex.width;
             m_pass->tex.effective_height = m_pass->tex.height;
             m_pass->tex.format = (surface->format->BytesPerPixel == 3) ? GL_RGB : GL_RGBA;
+
             m_pass->tex.surface = surface;
 
             glGenTextures(1, &m_pass->tex.buffer);
@@ -159,6 +160,9 @@ namespace akashi {
 
         bool TextActor::render_pass(const TextActor::Pass& pass, OGLRenderContext& ctx,
                                     const core::Rational& pts) {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
             glUseProgram(pass.prog);
 
             use_ogl_texture(pass.tex, pass.tex_loc);
@@ -185,12 +189,10 @@ namespace akashi {
 
             glBindVertexArray(0);
 
-            return true;
-        }
+            glEnable(GL_BLEND);
+            ctx.use_default_blend_func();
 
-        void TextActor::update_model_mat(TextActor::Pass& pass) {
-            pass.model_mat = glm::translate(pass.model_mat, pass.trans_vec);
-            pass.model_mat = glm::scale(pass.model_mat, pass.scale_vec);
+            return true;
         }
 
     }

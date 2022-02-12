@@ -17,7 +17,10 @@ namespace akashi {
 
             virtual size_t ibo_length() const { return m_ibo_length; }
 
-            virtual void destroy() = 0;
+            void destroy();
+
+          protected:
+            virtual void destroy_inner(){};
 
           private:
             void destroy_base();

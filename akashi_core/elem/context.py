@@ -1,8 +1,8 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Callable
+from typing import TYPE_CHECKING, Optional, Callable, cast
 from dataclasses import dataclass, field
 from .uuid import gen_uuid, UUID
-from akashi_core.config import AKConf
+from akashi_core.config import AKConf, config_parse
 import sys
 
 if TYPE_CHECKING:
@@ -45,10 +45,17 @@ class _GlobalKronContext:
         cls.__ctx = None
 
 
-def entry(config: AKConf) -> Callable[['ElemFn'], Callable[[], KronContext]]:
-    # [TODO] impl for a case with no config passed (try to load if from home dir?)
+class _ElemFnOpaque:
+    ...
+
+
+def entry() -> Callable[['ElemFn'], Callable[[_ElemFnOpaque], KronContext]]:
     def _entry(fn: ElemFn):
-        def inner() -> KronContext:
+        def inner(config_path: _ElemFnOpaque) -> KronContext:
+            # NB: We assume _ElemFnOpaque to be str
+            if not isinstance(config_path, str):
+                raise Exception('')
+            config = config_parse(cast(str, config_path))
             _GlobalKronContext.flush_ctx()
             _GlobalKronContext.init_ctx(config)
             fn()

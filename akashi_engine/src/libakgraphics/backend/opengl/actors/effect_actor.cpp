@@ -41,6 +41,11 @@ namespace akashi {
                 use_ogl_texture(fbo_tex, m_pass->tex_loc);
             }
 
+            // clear underlying layers
+            glEnable(GL_SCISSOR_TEST);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glDisable(GL_SCISSOR_TEST);
+
             glm::mat4 new_mvp = ctx.camera()->vp_mat() * m_pass->model_mat;
 
             glUniformMatrix4fv(m_pass->mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
@@ -94,9 +99,15 @@ namespace akashi {
             auto vertices_loc = glGetAttribLocation(m_pass->prog, "vertices");
             auto uvs_loc = glGetAttribLocation(m_pass->prog, "uvs");
 
-            CHECK_AK_ERROR2(
-                m_pass->mesh.create({(float)ctx.fbo().info().width, (float)ctx.fbo().info().height},
-                                    vertices_loc, uvs_loc, true));
+            auto mesh_size = layer_commons::get_mesh_size(
+                m_layer_ctx, {ctx.fbo().info().width, ctx.fbo().info().height});
+
+            CHECK_AK_ERROR2(m_pass->mesh.create(mesh_size, vertices_loc, uvs_loc, true));
+
+            m_pass->trans_vec =
+                layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
+            // m_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.effect_layer_ctx.scale;
+            layer_commons::update_model_mat(m_pass);
 
             return true;
         }

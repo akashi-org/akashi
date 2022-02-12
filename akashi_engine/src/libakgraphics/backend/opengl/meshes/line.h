@@ -15,7 +15,8 @@ namespace akashi {
             bool create_default(const GLuint vertices_loc, const GLfloat size,
                                 const std::array<long, 2>& begin, const std::array<long, 2>& end);
 
-            void destroy() override;
+          protected:
+            void destroy_inner() override;
 
           private:
             bool load_default_line_mesh(const GLuint vertices_loc, const GLfloat size,

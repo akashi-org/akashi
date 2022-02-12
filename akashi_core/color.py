@@ -25,6 +25,12 @@ def hsv(h: int, s: int, v: int) -> _color_type:
     return rgb(int(r * 255), int(g * 255), int(b * 255))
 
 
+def hsva(h: int, s: int, v: int, a: int) -> _color_type:
+    ''' h <- [0, 360], s <- [0, 100], v <- [0, 100], a <- [0, 255]'''
+    r, g, b = colorsys.hsv_to_rgb(h / 360, s / 100, v / 100)
+    return rgba(int(r * 255), int(g * 255), int(b * 255), a)
+
+
 class Color(Enum):
     # ref: https://developer.mozilla.org/en-US/docs/Web/CSS/color_value#color_keywords
     Black = "#000000"

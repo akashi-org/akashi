@@ -28,11 +28,6 @@ namespace akashi {
         };
 
         void trace_kron_context(const pybind11::object& elem, GlobalContext& ctx) {
-            // [TODO]
-            // parse atom proxies
-            // parse layer proxies
-            //
-
             for (const auto& atom : elem.attr("atoms").cast<py::list>()) {
                 AtomTracerContext atom_ctx;
                 atom_ctx.atom_profile = {};
@@ -54,8 +49,8 @@ namespace akashi {
                         std::move(layer_trace_ctx.update_func)));
                 }
 
-                if (atom_ctx.atom_duration < ctx.interval) {
-                    atom_ctx.atom_duration = ctx.interval;
+                if (atom_ctx.atom_duration < ctx.sec_per_frame) {
+                    atom_ctx.atom_duration = ctx.sec_per_frame;
                 }
                 atom_ctx.atom_profile.from = ctx.duration;
                 atom_ctx.atom_profile.to = ctx.duration + atom_ctx.atom_duration;
@@ -68,142 +63,14 @@ namespace akashi {
 
                 ctx.atom_proxies.push_back(core::make_owned<AtomProxy>(
                     atom_ctx.atom_profile, std::move(atom_ctx.layer_proxies)));
-                ctx.duration += (atom_ctx.atom_duration + ctx.interval);
+                ctx.duration += atom_ctx.atom_duration;
             }
 
-            // assert(false);
-        }
-
-        void trace_root(const pybind11::object& elem, GlobalContext& ctx) {
-            auto elem_cl = elem.attr("__closure__");
-
-            for (const auto& handle : elem_cl.cast<py::tuple>()) {
-                auto cell_contents = handle.attr("cell_contents");
-                // uuid
-                if (py::isinstance<py::str>(cell_contents)) {
-                    // auto uuid = cell_contents.cast<std::string>();
-                    // AKLOG_DEBUG("root: {}", uuid);
-                }
-                // children
-                else if (py::isinstance<py::list>(cell_contents)) {
-                    for (const auto& handle2 : cell_contents.cast<py::list>()) {
-                        trace_scene(handle2.cast<py::object>(), ctx);
-                    }
-                }
-            }
-
-            if (ctx.atom_proxies.size() > 0) {
-                ctx.duration -= ctx.interval;
-            }
-        }
-
-        void trace_scene(const pybind11::object& elem, GlobalContext& ctx) {
-            auto elem_cl = elem.attr("__closure__");
-
-            for (const auto& handle : elem_cl.cast<py::tuple>()) {
-                auto cell_contents = handle.attr("cell_contents");
-                // uuid
-                if (py::isinstance<py::str>(cell_contents)) {
-                    // auto uuid = cell_contents.cast<std::string>();
-                    // AKLOG_DEBUG("scene: {}", uuid);
-                }
-                // params
-                if (py::isinstance<py::dict>(cell_contents)) {
-                }
-                // children
-                else if (py::isinstance<py::list>(cell_contents)) {
-                    for (const auto& handle2 : cell_contents.cast<py::list>()) {
-                        trace_atom(handle2.cast<py::object>(), ctx);
-                    }
-                }
-            }
-        }
-
-        void trace_atom(const pybind11::object& elem, GlobalContext& ctx) {
-            auto elem_cl = elem.attr("__closure__");
-
-            AtomTracerContext atom_ctx;
-            atom_ctx.atom_profile = {};
-            atom_ctx.atom_duration = core::Rational(0l);
-            atom_ctx.atom_duration_fixed = false;
-            assert(atom_ctx.layer_proxies.empty());
-
-            for (const auto& handle : elem_cl.cast<py::tuple>()) {
-                auto cell_contents = handle.attr("cell_contents");
-                // uuid
-                if (py::isinstance<py::str>(cell_contents)) {
-                    auto uuid = cell_contents.cast<std::string>();
-                    atom_ctx.atom_profile.uuid = uuid;
-                    // AKLOG_DEBUG("atom: {}", uuid);
-                }
-                // params
-                if (py::isinstance<py::dict>(cell_contents)) {
-                    if (cell_contents.cast<py::dict>().contains("duration")) {
-                        atom_ctx.atom_duration =
-                            to_rational(cell_contents.cast<py::dict>()["duration"]);
-                        atom_ctx.atom_duration_fixed = true;
-                    }
-                }
-                // children
-                else if (py::isinstance<py::list>(cell_contents)) {
-                    for (const auto& handle2 : cell_contents.cast<py::list>()) {
-                        trace_layer(handle2.cast<py::object>(), ctx, atom_ctx);
-                    }
-                }
-            }
-
-            // atom proxy
-            // min duration
-            if (atom_ctx.atom_duration < ctx.interval) {
-                atom_ctx.atom_duration = ctx.interval;
-            }
-            atom_ctx.atom_profile.from = ctx.duration;
-            atom_ctx.atom_profile.to = ctx.duration + atom_ctx.atom_duration;
-            atom_ctx.atom_profile.duration = atom_ctx.atom_duration;
-
-            for (auto&& layer_proxy : atom_ctx.layer_proxies) {
-                auto& layer_ctx = layer_proxy->layer_ctx_mut();
-                layer_ctx.atom_uuid = atom_ctx.atom_profile.uuid;
-            }
-
-            ctx.atom_proxies.push_back(core::make_owned<AtomProxy>(
-                atom_ctx.atom_profile, std::move(atom_ctx.layer_proxies)));
-            ctx.duration += (atom_ctx.atom_duration + ctx.interval);
-        }
-
-        void trace_layer(const pybind11::object& elem, GlobalContext&,
-                         AtomTracerContext& atom_ctx) {
-            auto elem_cl = elem.attr("__closure__");
-
-            LayerTracerContext layer_trace_ctx = {
-                .layer_ctx = {}, .params_obj = nullptr, .update_func = nullptr};
-
-            for (const auto& handle : elem_cl.cast<py::tuple>()) {
-                auto cell_contents = handle.attr("cell_contents");
-                // uuid
-                if (py::isinstance<py::str>(cell_contents)) {
-                    auto uuid = cell_contents.cast<std::string>();
-                    layer_trace_ctx.layer_ctx.uuid = uuid;
-                    // AKLOG_DEBUG("layer: {}", uuid);
-                }
-                // layer update
-                else if (cell_contents.is_none() || py::hasattr(cell_contents, "__call__")) {
-                    layer_trace_ctx.update_func = core::make_owned<pybind11::object>(cell_contents);
-                }
-                // layer params
-                else {
-                    layer_trace_ctx.layer_ctx = parse_layer_context(cell_contents);
-                    if (auto layer_end = layer_trace_ctx.layer_ctx.to;
-                        !atom_ctx.atom_duration_fixed && atom_ctx.atom_duration <= layer_end) {
-                        atom_ctx.atom_duration = layer_end;
-                    }
-                    layer_trace_ctx.params_obj = core::make_owned<pybind11::object>(cell_contents);
-                }
-            }
-
-            atom_ctx.layer_proxies.push_back(core::make_owned<LayerProxy>(
-                layer_trace_ctx.layer_ctx, std::move(layer_trace_ctx.params_obj),
-                std::move(layer_trace_ctx.update_func)));
+            // add intervals
+            // auto atom_length = ctx.atom_proxies.size();
+            // if (atom_length > 1) {
+            //     ctx.duration += core::Rational(atom_length - 1, 1) * ctx.interval;
+            // }
         }
 
     }

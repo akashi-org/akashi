@@ -11,6 +11,7 @@ set(AKASHI_PRIV_GLAD_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../shared_temp/glad
 
 add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./akgraphics.cpp"
+  "./osc.cpp"
 
   "./backend/opengl/context.cpp"
   "./backend/opengl/render_context.cpp"
@@ -39,6 +40,23 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/opengl/actors/text_actor.cpp"
   "./backend/opengl/actors/effect_actor.cpp"
   "./backend/opengl/actors/shape_actor.cpp"
+
+  "./backend/opengl/osc/osc_root.cpp"
+  "./backend/opengl/osc/osc_render_context.cpp"
+  "./backend/opengl/osc/osc_camera.cpp"
+  "./backend/opengl/osc/widgets/widget.cpp"
+  "./backend/opengl/osc/widgets/play_btn.cpp"
+  "./backend/opengl/osc/widgets/volume_widget.cpp"
+  "./backend/opengl/osc/widgets/timecode.cpp"
+  "./backend/opengl/osc/widgets/fseek_btn.cpp"
+  "./backend/opengl/osc/widgets/zoom_btn.cpp"
+  "./backend/opengl/osc/widgets/seek_widget/seek_widget.cpp"
+  "./backend/opengl/osc/widgets/seek_widget/seek_handle.cpp"
+  "./backend/opengl/osc/widgets/seek_widget/seek_ruler.cpp"
+  "./backend/opengl/osc/widgets/seek_widget/seek_rail.cpp"
+  "./backend/opengl/osc/common/text_label.cpp"
+  "./backend/opengl/osc/common/volume_gauge.cpp"
+  "./backend/opengl/osc/common/bg_rect.cpp"
 )
 
 file(GLOB INTERFACE_HEADERS

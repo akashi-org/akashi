@@ -1,6 +1,8 @@
 #include "./context.h"
 #include "../../item.h"
 
+#include "./osc/osc_root.h"
+
 #include "./core/glc.h"
 #include "./core/eglc.h"
 #include "./render_context.h"
@@ -71,6 +73,12 @@ namespace akashi {
 
                 glPixelStorei(GL_PACK_ALIGNMENT, 4); // reset to the initial value;
 
+                // another way without glReadPixels
+                // OGLTexture fbo_tex;
+                // m_render_ctx->fbo().texture(fbo_tex);
+                // glBindTexture(GL_TEXTURE_2D, fbo_tex.buffer);
+                // glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, params.buffer);
+
                 // rgbrgbrgbrgb... [line0]
                 // rgbrgbrgbrgb... [line1]
                 // ...
@@ -87,6 +95,73 @@ namespace akashi {
                                      params.buffer + 3 * params.width * (params.height - line - 1));
                 }
             }
+        }
+
+        OGLOSCContext::OGLOSCContext(core::borrowed_ptr<state::AKState> state)
+            : OSCContext(state), m_state(state){};
+
+        OGLOSCContext::~OGLOSCContext(){};
+
+        bool OGLOSCContext::load_api(OSCEventCallback evt_cb, const RenderParams& params,
+                                     const GetProcAddress& get_proc_address,
+                                     const EGLGetProcAddress& egl_get_proc_address) {
+            // [TODO] we need to resolve a conflict with OGLGraphicsContext::load_api()
+            // if (!gladLoadGLLoader((GLADloadproc)get_proc_address.func)) {
+            //     AKLOG_ERRORN("Failed to initialize OpenGL context");
+            //     return false;
+            // }
+            // if (!load_egl_functions(egl_get_proc_address)) {
+            //     AKLOG_ERRORN("Failed to initialize EGL context");
+            //     return false;
+            // }
+
+            // init_gl
+
+            // glEnable(GL_DEPTH_TEST);
+            // glDepthFunc(GL_LEQUAL);
+
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+
+            m_root = core::make_owned<OSCRoot>(evt_cb, params, m_state);
+
+            return true;
+        }
+
+        void OGLOSCContext::render(const RenderParams& params) {
+            if (!m_root) {
+                AKLOG_ERRORN("m_root is null");
+                return;
+            }
+
+            if (!m_root->update(params)) {
+                AKLOG_DEBUGN("No update needed");
+                return;
+            }
+
+            m_root->render(params);
+        }
+
+        void OGLOSCContext::resize(const RenderParams& params) {
+            if (!m_root) {
+                AKLOG_ERRORN("m_root is null");
+                return;
+            }
+            m_root->resize(params);
+        }
+
+        bool OGLOSCContext::emit_mouse_event(const OSCMouseEvent& event) {
+            if (m_root) {
+                return m_root->on_mouse_event(event);
+            }
+            return false;
+        }
+
+        bool OGLOSCContext::emit_time_event(const OSCTimeEvent& event) {
+            if (m_root) {
+                return m_root->on_time_event(event);
+            }
+            return false;
         }
 
     }
