@@ -457,9 +457,7 @@ namespace akashi {
             (*frame)->pts = av_rescale_q(encode_arg.pts.num(), {1, (int)encode_arg.pts.den()},
                                          m_video_stream.enc_ctx->time_base);
 
-            // (*frame)->colorspace = m_video_stream.enc_ctx->colorspace;
-            (*frame)->colorspace = AVColorSpace::AVCOL_SPC_RGB;
-            (*frame)->color_range = AVColorRange::AVCOL_RANGE_JPEG;
+            (*frame)->colorspace = m_video_stream.enc_ctx->colorspace;
 
             // alloc video buffer
             if (auto err = av_frame_get_buffer(*frame, 0); err < 0) {
