@@ -66,6 +66,7 @@ class PositionField:
     pos: tuple[int, int] = (0, 0)
     z: float = 0.0
     layer_size: tuple[int, int] = (-1, -1)
+    rotation: sec = sec(0)
 
 
 class PositionTrait(LayerTrait, metaclass=ABCMeta):
@@ -83,6 +84,11 @@ class PositionTrait(LayerTrait, metaclass=ABCMeta):
     def layer_size(self: '_TPositionTrait', width: int, height: int) -> '_TPositionTrait':
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(PositionField, cur_layer).layer_size = (width, height)
+        return self
+
+    def rotate(self: '_TPositionTrait', degrees: int | float | sec) -> '_TPositionTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(PositionField, cur_layer).rotation = sec(degrees)
         return self
 
 
@@ -133,6 +139,30 @@ class CropTrait(LayerTrait, metaclass=ABCMeta):
     def crop_end(self: '_TCropTrait', x: int, y: int) -> '_TCropTrait':
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(CropField, cur_layer).crop_end = (x, y)
+        return self
+
+
+''' Texture Concept '''
+
+_TTextureTrait = tp.TypeVar('_TTextureTrait', bound='TextureTrait')
+
+
+@dataclass
+class TextureField:
+    flip_v: bool = False
+    flip_h: bool = False
+
+
+class TextureTrait(LayerTrait, metaclass=ABCMeta):
+
+    def flip_v(self: '_TTextureTrait', enable_flag: bool = True) -> '_TTextureTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(TextureField, cur_layer).flip_v = enable_flag
+        return self
+
+    def flip_h(self: '_TTextureTrait', enable_flag: bool = True) -> '_TTextureTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(TextureField, cur_layer).flip_h = enable_flag
         return self
 
 

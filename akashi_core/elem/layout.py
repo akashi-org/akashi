@@ -17,7 +17,12 @@ class LaneContext:
     num_lanes: int  # current max number of lanes
 
 
-LayoutInfo: tp.TypeAlias = PositionField
+@dataclass
+class LayoutInfo:
+    pos: tuple[int, int] = (0, 0)
+    z: float = 0.0
+    layer_size: tuple[int, int] = (-1, -1)
+
 
 # (lane_idx: int, lane_size: int) => LayoutInfo
 LayoutFn: tp.TypeAlias = tp.Callable[[LaneContext], LayoutInfo | None]

@@ -94,7 +94,14 @@ namespace akashi {
             m_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
             m_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.text_layer_ctx.scale;
-            layer_commons::update_model_mat(m_pass);
+            layer_commons::update_model_mat(m_pass, m_layer_ctx);
+
+            {
+                glUseProgram(m_pass->prog);
+                auto uv_flip_hv_loc = glGetUniformLocation(m_pass->prog, "uv_flip_hv");
+                glUniform2i(uv_flip_hv_loc, m_layer_ctx.uv_flip_h, m_layer_ctx.uv_flip_v);
+                glUseProgram(0);
+            }
 
             return true;
         }

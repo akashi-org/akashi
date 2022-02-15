@@ -132,7 +132,7 @@ namespace akashi {
 
             m_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
-            layer_commons::update_model_mat(m_pass);
+            layer_commons::update_model_mat(m_pass, m_layer_ctx);
 
             return true;
         }

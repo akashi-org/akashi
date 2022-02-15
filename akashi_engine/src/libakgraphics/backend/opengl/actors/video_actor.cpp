@@ -19,6 +19,7 @@ using namespace akashi::core;
 static constexpr const char* vshader_src = u8R"(
     #version 420 core
     uniform mat4 mvpMatrix;
+    uniform ivec2 uv_flip_hv; // [uv_flip_h, uv_flip_v]
     in vec3 vertices;
     in vec2 lumaUvs;
     in vec2 chromaUvs;
@@ -29,10 +30,17 @@ static constexpr const char* vshader_src = u8R"(
     } vs_out;
 
     void poly_main(inout vec4 pos);
+
+    vec2 get_uvs(vec2 raw_uvs){
+        return vec2(
+            uv_flip_hv[0] == 1 ? 1.0 - raw_uvs.x : raw_uvs.x,
+            uv_flip_hv[1] == 1 ? 1.0 - raw_uvs.y : raw_uvs.y
+        );
+    }
     
     void main(void){
-        vs_out.vLumaUvs = lumaUvs;
-        vs_out.vChromaUvs = chromaUvs;
+        vs_out.vLumaUvs = get_uvs(lumaUvs);
+        vs_out.vChromaUvs = get_uvs(chromaUvs);
         vec4 t_vertices = vec4(vertices, 1.0);
         poly_main(t_vertices);
         gl_Position = mvpMatrix * t_vertices;
@@ -301,7 +309,14 @@ namespace akashi {
             m_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
             m_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.video_layer_ctx.scale;
-            layer_commons::update_model_mat(m_pass);
+            layer_commons::update_model_mat(m_pass, m_layer_ctx);
+
+            {
+                glUseProgram(m_pass->prog);
+                auto uv_flip_hv_loc = glGetUniformLocation(m_pass->prog, "uv_flip_hv");
+                glUniform2i(uv_flip_hv_loc, m_layer_ctx.uv_flip_h, m_layer_ctx.uv_flip_v);
+                glUseProgram(0);
+            }
 
             return true;
         }

@@ -5,7 +5,14 @@ import typing as tp
 
 from akashi_core.time import sec
 
-from .base import PositionField, PositionTrait, LayerField, LayerTrait
+from .base import (
+    PositionField,
+    PositionTrait,
+    TextureField,
+    TextureTrait,
+    LayerField,
+    LayerTrait
+)
 from .base import peek_entry, register_entry, frag, poly
 
 from akashi_core.pysl import _gl as gl
@@ -69,14 +76,14 @@ class VideoLocalField:
 
 
 @dataclass
-class VideoEntry(PositionField, LayerField, VideoLocalField):
+class VideoEntry(TextureField, PositionField, LayerField, VideoLocalField):
 
     def __post_init__(self):
         self.duration = sec(-1)
 
 
 @dataclass
-class VideoHandle(PositionTrait, LayerTrait):
+class VideoHandle(TextureTrait, PositionTrait, LayerTrait):
 
     def frame(self, begin_frame: int, end_frame: int = -1) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):

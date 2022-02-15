@@ -7,6 +7,8 @@ from .base import (
     FittableDurationTrait,
     PositionField,
     PositionTrait,
+    TextureField,
+    TextureTrait,
     ShaderField,
     LayerField,
     LayerTrait,
@@ -45,12 +47,12 @@ class ImageLocalField:
 
 
 @dataclass
-class ImageEntry(CropField, ShaderField, PositionField, LayerField, ImageLocalField):
+class ImageEntry(TextureField, CropField, ShaderField, PositionField, LayerField, ImageLocalField):
     ...
 
 
 @dataclass
-class ImageHandle(CropTrait, FittableDurationTrait, PositionTrait, LayerTrait):
+class ImageHandle(TextureTrait, CropTrait, FittableDurationTrait, PositionTrait, LayerTrait):
 
     def frag(self, *frag_fns: _ImageFragFn, preamble: tuple[str, ...] = tuple()) -> 'ImageHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ImageEntry):

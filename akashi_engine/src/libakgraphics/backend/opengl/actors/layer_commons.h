@@ -46,6 +46,7 @@ namespace akashi {
             static constexpr const char* vshader_src = u8R"(
     #version 420 core
     uniform mat4 mvpMatrix;
+    uniform ivec2 uv_flip_hv; // [uv_flip_h, uv_flip_v]
     in vec3 vertices;
     in vec2 uvs;
 
@@ -55,9 +56,16 @@ namespace akashi {
     } vs_out;
 
     void poly_main(inout vec4 pos);
+
+    vec2 get_uvs(){
+        return vec2(
+            uv_flip_hv[0] == 1 ? 1.0 - uvs.x : uvs.x,
+            uv_flip_hv[1] == 1 ? 1.0 - uvs.y : uvs.y
+        );
+    }
     
     void main(void){
-        vs_out.vUvs = uvs;
+        vs_out.vUvs = get_uvs();
         vs_out.sprite_idx = 0;
         vec4 t_vertices = vec4(vertices, 1.0);
         poly_main(t_vertices);
@@ -191,6 +199,8 @@ namespace akashi {
 
                 glm::vec3 scale_vec = glm::vec3(1.0f);
 
+                core::Rational rotation = core::Rational(0, 1);
+
                 glm::mat4 model_mat = glm::mat4(1.0f);
             };
 
@@ -255,8 +265,11 @@ namespace akashi {
                 return {(float)orig_size[0], (float)orig_size[1]};
             }
 
-            inline void update_model_mat(Transform* pass) {
+            inline void update_model_mat(Transform* pass, const core::LayerContext& layer_ctx) {
                 pass->model_mat = glm::translate(pass->model_mat, pass->trans_vec);
+                pass->model_mat = glm::rotate(pass->model_mat,
+                                              glm::radians((float)layer_ctx.rotation.to_decimal()),
+                                              glm::vec3(0.0f, 0.0f, 1.0f));
                 pass->model_mat = glm::scale(pass->model_mat, pass->scale_vec);
             }
 

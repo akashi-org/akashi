@@ -10,6 +10,8 @@ from .base import (
     FittableDurationTrait,
     PositionField,
     PositionTrait,
+    TextureField,
+    TextureTrait,
     ShaderField,
     LayerField,
     LayerTrait
@@ -66,14 +68,14 @@ class TextLocalField:
 
 
 @dataclass
-class TextEntry(ShaderField, PositionField, LayerField, TextLocalField):
+class TextEntry(TextureField, ShaderField, PositionField, LayerField, TextLocalField):
 
     def __post_init__(self):
         self.style = TextStyle()
 
 
 @dataclass
-class TextHandle(FittableDurationTrait, PositionTrait, LayerTrait):
+class TextHandle(TextureTrait, FittableDurationTrait, PositionTrait, LayerTrait):
 
     def frag(self, *frag_fns: _TextFragFn, preamble: tuple[str, ...] = tuple()) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):

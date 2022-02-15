@@ -131,6 +131,13 @@ namespace akashi {
                 const auto& layer_size =
                     layer_params.attr("layer_size").cast<std::tuple<long, long>>();
                 layer_ctx.layer_size = {std::get<0>(layer_size), std::get<1>(layer_size)};
+
+                layer_ctx.rotation = to_rational(layer_params.attr("rotation"));
+            }
+
+            if (has_field(layer_params, "TextureField")) {
+                layer_ctx.uv_flip_v = layer_params.attr("flip_v").cast<bool>();
+                layer_ctx.uv_flip_h = layer_params.attr("flip_h").cast<bool>();
             }
 
             std::string type_str = layer_params.attr("kind").cast<std::string>();

@@ -8,7 +8,9 @@ from .base import (
     LayerField,
     LayerTrait,
     PositionField,
-    PositionTrait
+    PositionTrait,
+    TextureField,
+    TextureTrait,
 )
 from .base import register_entry, peek_entry, frag, poly
 from akashi_core.pysl import _gl as gl
@@ -33,7 +35,7 @@ class EffectPolyBuffer(poly, EffectUniform, gl._LayerPolyOutput):
 
 
 @dataclass
-class EffectEntry(ShaderField, PositionField, LayerField):
+class EffectEntry(TextureField, ShaderField, PositionField, LayerField):
     ...
 
 
@@ -42,7 +44,7 @@ _EffectPolyFn = LEntryPolyFn[EffectPolyBuffer] | _TEntryFnOpaque[_NamedEntryPoly
 
 
 @dataclass
-class EffectHandle(FittableDurationTrait, PositionTrait, LayerTrait):
+class EffectHandle(TextureTrait, FittableDurationTrait, PositionTrait, LayerTrait):
 
     def frag(self, *frag_fns: _EffectFragFn, preamble: tuple[str, ...] = tuple()) -> 'EffectHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, EffectEntry):

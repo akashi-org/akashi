@@ -120,6 +120,11 @@ namespace akashi {
             std::string atom_uuid;
             bool display = false;
 
+            Rational rotation = Rational(0, 1);
+
+            bool uv_flip_v = false;
+            bool uv_flip_h = false;
+
             VideoLayerContext video_layer_ctx;
 
             AudioLayerContext audio_layer_ctx;
