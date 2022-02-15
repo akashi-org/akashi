@@ -54,6 +54,7 @@ static constexpr const char* fshader_src = u8R"(
     uniform float local_duration;
     uniform float fps;
     uniform vec2 resolution;
+    uniform vec2 mesh_size;
 
     out vec4 fragColor;
 
@@ -139,6 +140,7 @@ static constexpr const char* default_user_pshader_src = u8R"(
     uniform float local_duration;
     uniform float fps;
     uniform vec2 resolution;
+    uniform vec2 mesh_size;
     void poly_main(inout vec4 position){
     }
 )";
@@ -147,6 +149,7 @@ static constexpr const char* default_user_fshader_src = u8R"(
     #version 420 core
     uniform float time;
     uniform vec2 resolution;
+    uniform vec2 mesh_size;
     void frag_main(inout vec4 _fragColor){
     }
 )";
@@ -247,13 +250,6 @@ namespace akashi {
             m_pass->vtex.use_textures({m_pass->texY_loc, m_pass->texCb_loc, m_pass->texCr_loc});
 
             glm::mat4 new_mvp = ctx.camera()->vp_mat() * m_pass->model_mat;
-            // glm::mat4 new_mvp = mesh_prop.mvp();
-            // update_translate(ctx, layer_ctx, new_mvp);
-            // // [XXX] looks confusing, but we only need to process the texY,
-            // // because update_scale gets the magnification rate from the size of the tex, and
-            // // reflect it to mvp
-            // update_scale(ctx, mesh_prop.textures()[0], new_mvp, layer_ctx.video_layer_ctx.scale);
-
             glUniformMatrix4fv(m_pass->mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 
             auto local_pts = pts - m_layer_ctx.from;
@@ -295,6 +291,7 @@ namespace akashi {
             m_pass->local_duration_loc = glGetUniformLocation(m_pass->prog, "local_duration");
             m_pass->fps_loc = glGetUniformLocation(m_pass->prog, "fps");
             m_pass->resolution_loc = glGetUniformLocation(m_pass->prog, "resolution");
+            m_pass->mesh_size_loc = glGetUniformLocation(m_pass->prog, "mesh_size");
 
             auto vertices_loc = glGetAttribLocation(m_pass->prog, "vertices");
             auto luma_uvs_loc = glGetAttribLocation(m_pass->prog, "lumaUvs");
@@ -315,6 +312,7 @@ namespace akashi {
                 glUseProgram(m_pass->prog);
                 auto uv_flip_hv_loc = glGetUniformLocation(m_pass->prog, "uv_flip_hv");
                 glUniform2i(uv_flip_hv_loc, m_layer_ctx.uv_flip_h, m_layer_ctx.uv_flip_v);
+                glUniform2fv(m_pass->mesh_size_loc, 1, m_pass->mesh.mesh_size().data());
                 glUseProgram(0);
             }
 

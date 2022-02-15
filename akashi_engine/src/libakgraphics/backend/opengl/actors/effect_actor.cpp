@@ -95,6 +95,7 @@ namespace akashi {
             m_pass->local_duration_loc = glGetUniformLocation(m_pass->prog, "local_duration");
             m_pass->fps_loc = glGetUniformLocation(m_pass->prog, "fps");
             m_pass->resolution_loc = glGetUniformLocation(m_pass->prog, "resolution");
+            m_pass->mesh_size_loc = glGetUniformLocation(m_pass->prog, "mesh_size");
 
             auto vertices_loc = glGetAttribLocation(m_pass->prog, "vertices");
             auto uvs_loc = glGetAttribLocation(m_pass->prog, "uvs");
@@ -113,6 +114,7 @@ namespace akashi {
                 glUseProgram(m_pass->prog);
                 auto uv_flip_hv_loc = glGetUniformLocation(m_pass->prog, "uv_flip_hv");
                 glUniform2i(uv_flip_hv_loc, m_layer_ctx.uv_flip_h, m_layer_ctx.uv_flip_v);
+                glUniform2fv(m_pass->mesh_size_loc, 1, m_pass->mesh.mesh_size().data());
                 glUseProgram(0);
             }
 

@@ -139,6 +139,7 @@ namespace akashi {
 
         bool QuadMesh::create(const std::array<float, 2>& size, const GLuint vertices_loc,
                               const GLuint uvs_loc, const bool flip_uv, const QuadMeshCrop* crop) {
+            m_mesh_size = size;
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);
@@ -158,6 +159,7 @@ namespace akashi {
         bool QuadMesh::create(const std::array<float, 2>& size, const VideoTextureInfo& info,
                               const GLuint vertices_loc, const GLuint luma_uvs_loc,
                               const GLuint chroma_uvs_loc) {
+            m_mesh_size = size;
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);

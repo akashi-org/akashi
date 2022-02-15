@@ -127,12 +127,19 @@ namespace akashi {
             m_pass->local_duration_loc = glGetUniformLocation(m_pass->prog, "local_duration");
             m_pass->fps_loc = glGetUniformLocation(m_pass->prog, "fps");
             m_pass->resolution_loc = glGetUniformLocation(m_pass->prog, "resolution");
+            m_pass->mesh_size_loc = glGetUniformLocation(m_pass->prog, "mesh_size");
 
             CHECK_AK_ERROR2(this->load_mesh(ctx));
 
             m_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
             layer_commons::update_model_mat(m_pass, m_layer_ctx);
+
+            {
+                glUseProgram(m_pass->prog);
+                glUniform2fv(m_pass->mesh_size_loc, 1, m_pass->mesh->mesh_size().data());
+                glUseProgram(0);
+            }
 
             return true;
         }

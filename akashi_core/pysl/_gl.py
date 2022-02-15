@@ -1011,6 +1011,7 @@ class _LayerUniform:
     local_duration: Final['uniform'[float]] = _uniform_default()
     fps: Final['uniform'[float]] = _uniform_default()
     resolution: Final['uniform'['vec2']] = _uniform_default()
+    mesh_size: Final['uniform'['vec2']] = _uniform_default()
 
 
 @dataclass

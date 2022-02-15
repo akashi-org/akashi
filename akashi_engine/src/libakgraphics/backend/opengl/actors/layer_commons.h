@@ -139,6 +139,7 @@ namespace akashi {
     uniform float local_duration;
     uniform float fps;
     uniform vec2 resolution;
+    uniform vec2 mesh_size;
     void poly_main(inout vec4 position){
     }
 )";
@@ -150,6 +151,7 @@ namespace akashi {
     uniform float local_duration;
     uniform float fps;
     uniform vec2 resolution;
+    uniform vec2 mesh_size;
     void frag_main(inout vec4 _fragColor){
     }
 )";
@@ -192,6 +194,8 @@ namespace akashi {
                 GLuint fps_loc;
 
                 GLuint resolution_loc;
+
+                GLuint mesh_size_loc;
             };
 
             struct Transform {

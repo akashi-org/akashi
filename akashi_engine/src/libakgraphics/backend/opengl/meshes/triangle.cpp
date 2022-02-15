@@ -27,6 +27,8 @@ namespace akashi {
         /* Triangle */
 
         bool TriangleMesh::create(const std::array<GLfloat, 2>& size, const GLuint vertices_loc) {
+            m_mesh_size = size;
+
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);
@@ -41,6 +43,8 @@ namespace akashi {
 
         bool TriangleMesh::create_border(const std::array<GLfloat, 2>& size,
                                          const GLfloat border_width, const GLuint vertices_loc) {
+            m_mesh_size = {size[0] + (border_width), size[1] + (border_width)};
+
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);
