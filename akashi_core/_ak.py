@@ -9,7 +9,7 @@ __all__ = [
     "effect",
     "rect",
     "circle",
-    "tri",
+    # "tri",
     "line",
     "sec",
     "rgba",
@@ -52,7 +52,8 @@ from .elem.layer.audio import audio
 from .elem.layer.image import image
 from .elem.layer.text import text
 from .elem.layer.effect import effect
-from .elem.layer.shape import rect, circle, tri, line
+from .elem.layer.shape import rect, circle, line
+# from .elem.layer.shape import tri
 
 from .time import sec
 from .color import rgba, rgb, hsv, hsva, Color
