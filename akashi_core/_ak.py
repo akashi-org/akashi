@@ -1,4 +1,5 @@
 __all__ = [
+    "argv",
     "entry",
     "atom",
     "lane",
@@ -41,6 +42,7 @@ __all__ = [
     "LaneContext"
 ]
 
+from .args import argv
 
 from .elem.context import entry, cur_config, width, height, center
 from .elem.atom import atom

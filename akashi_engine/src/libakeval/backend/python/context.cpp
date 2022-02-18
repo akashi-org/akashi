@@ -55,6 +55,12 @@ namespace akashi {
                     std::getenv("AK_LIBPROBE_PATH");
             }
 
+            if (std::getenv("AK_CORE_ARGS")) {
+                py::module_::import("akashi_core")
+                    .attr("args")
+                    .attr("_register_argv")(std::getenv("AK_CORE_ARGS"));
+            }
+
             // version check
             // auto res = py::module_::import("akashi_core").attr("utils").attr("version_check")();
             // if (!res.cast<py::tuple>()[0].cast<bool>()) {

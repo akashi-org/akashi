@@ -8,6 +8,7 @@ from .utils import (
 )
 from .parser import argument_parse, ParsedOption
 from .action_init import do_init
+from os import path
 
 import signal
 import threading
@@ -83,6 +84,8 @@ def akashi_cli() -> None:
 
     if 'AK_ASSET_DIR' not in os.environ.keys():
         os.environ['AK_ASSET_DIR'] = ASSETS_DIR
+
+    os.environ['AK_CORE_ARGS'] = " ".join([path.abspath(parsed_option.conf_path)] + parsed_option.run_args)
 
     sigset: list[signal.Signals] = []
     sigset += [signal.SIGINT, signal.SIGHUP, signal.SIGQUIT, signal.SIGTERM]
