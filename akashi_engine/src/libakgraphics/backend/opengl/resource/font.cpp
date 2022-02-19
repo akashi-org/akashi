@@ -68,6 +68,11 @@ namespace akashi {
                     (info.line_span * (std::max(0, (int)line_surfaces.size() - 1))),
                 32, 0, 0, 0, 0);
 
+            if (!main_surface) {
+                AKLOG_ERRORN("SDL_CreateRGBSurface() failed");
+                return false;
+            }
+
             int err_code = 0;
             int acc_height = 0;
             for (auto&& ln_surface : line_surfaces) {
