@@ -73,8 +73,16 @@ def width() -> int:
     return _GlobalKronContext.get_ctx().config.video.resolution[0]
 
 
+def hwidth() -> int:
+    return _GlobalKronContext.get_ctx().config.video.resolution[0] // 2
+
+
 def height() -> int:
     return _GlobalKronContext.get_ctx().config.video.resolution[1]
+
+
+def hheight() -> int:
+    return _GlobalKronContext.get_ctx().config.video.resolution[1] // 2
 
 
 def center() -> tuple[int, int]:

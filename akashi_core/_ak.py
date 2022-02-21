@@ -34,6 +34,8 @@ __all__ = [
     "cur_config",
     "width",
     "height",
+    "hwidth",
+    "hheight",
     "center",
     "LayoutInfo",
     "vstack",
@@ -44,7 +46,7 @@ __all__ = [
 
 from .args import argv
 
-from .elem.context import entry, cur_config, width, height, center
+from .elem.context import entry, cur_config, width, height, hwidth, hheight, center
 from .elem.atom import atom
 from .elem.timeline import timeline
 from .elem.layout import LayoutInfo, vstack, hstack, layout, LaneContext
