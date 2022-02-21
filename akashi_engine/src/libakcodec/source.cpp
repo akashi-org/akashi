@@ -75,7 +75,7 @@ namespace akashi {
 
             if (!this->collect_active_layers()) {
                 // [TODO] sane solution?
-                throw std::runtime_error("Not found active layers");
+                AKLOG_ERRORN("Not found active layers");
             }
             // m_dts_avg = detail::calc_dts_avg(m_active_layers);
             m_current_active_layer_idx = 0;
