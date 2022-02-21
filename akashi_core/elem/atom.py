@@ -7,9 +7,10 @@ from .uuid import gen_uuid, UUID
 from akashi_core.time import sec
 from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
+from akashi_core.probe import get_duration, g_resource_map
 
 if tp.TYPE_CHECKING:
-    from .lane import LaneEntry
+    from .timeline import TimelineEntry
     from .layer.base import LayerField
 
 
@@ -19,12 +20,8 @@ class AtomEntry:
     uuid: UUID
     layer_indices: list[int] = field(default_factory=list, init=False)
     bg_color: str = "#000000"  # "#rrggbb"
-    _lanes: list['LaneEntry'] = field(default_factory=list, init=False)
-    _on_lane: bool = field(default=False, init=False)
+    _cur_timeline: 'TimelineEntry' | None = field(default=None, init=False)
     _duration: sec = field(default=sec(0), init=False)
-    # [TODO] we should use layer index
-
-    _atom_fitted_layers: list['LayerField'] = field(default_factory=list, init=False)
 
 
 @dataclass
@@ -38,8 +35,32 @@ class AtomHandle:
     def __exit__(self, *ext: tp.Any):
 
         cur_atom = gctx.get_ctx().atoms[self._atom_idx]
-        for at_layer in cur_atom._atom_fitted_layers:
-            at_layer.duration = cur_atom._duration
+        cur_layers = gctx.get_ctx().layers
+        max_to: sec = sec(0)
+        atom_fitted_layer_indices: list[int] = []
+        for layer_idx in cur_atom.layer_indices:
+            if isinstance(cur_layers[layer_idx].duration, sec):
+
+                # resolve -1 duration
+                if cur_layers[layer_idx].kind in ["VIDEO", "AUDIO"] and cur_layers[layer_idx].duration == sec(-1):
+                    layer_src: str = cur_layers[layer_idx].src  # type: ignore
+                    if layer_src in g_resource_map:
+                        cur_layers[layer_idx].duration = g_resource_map[layer_src]
+                    else:
+                        cur_layers[layer_idx].duration = get_duration(layer_src)
+                        g_resource_map[layer_src] = tp.cast(sec, cur_layers[layer_idx].duration)
+
+                layer_to = cur_layers[layer_idx].atom_offset + tp.cast(sec, cur_layers[layer_idx].duration)
+                if layer_to > max_to:
+                    max_to = layer_to
+            else:
+                atom_fitted_layer_indices.append(layer_idx)
+
+        cur_atom._duration = max_to
+
+        # resolve atom fitted layers
+        for at_layer_idx in atom_fitted_layer_indices:
+            cur_layers[at_layer_idx].duration = cur_atom._duration
 
         return False
 

@@ -6,7 +6,7 @@ def main():
 
     with ak.atom() as _:
 
-        with ak.lane():
+        with ak.timeline():
 
             ak.rect(300, 300).ap(
                 lambda h: h.pos(*ak.center()),

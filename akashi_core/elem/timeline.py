@@ -14,51 +14,43 @@ if tp.TYPE_CHECKING:
 
 
 @dataclass
-class LanePad:
+class TimelinePad:
     pad_sec: sec = sec(0)
 
 
 @dataclass
-class LaneEntry:
+class TimelineEntry:
 
     key: str = field(default='')
-    items: list[tp.Union[LayerField, LanePad]] = field(default_factory=list)
+    items: list[tp.Union[LayerField, TimelinePad]] = field(default_factory=list)
 
 
 @dataclass
-class LaneHandle:
+class TimelineHandle:
 
     __key: str = field(default='')
-    __lane_idx: int = field(default=-1, init=False)
 
-    def __enter__(self) -> 'LaneHandle':
+    def __enter__(self) -> 'TimelineHandle':
         cur_atom = gctx.get_ctx().atoms[-1]
-        if cur_atom._on_lane:
-            raise Exception('Nested lanes is prohibited')
-        cur_atom._on_lane = True
-        cur_atom._lanes.append(LaneEntry(self.__key))
-        self.__lane_idx = len(cur_atom._lanes) - 1
+        if cur_atom._cur_timeline:
+            raise Exception('Nested timelines is prohibited')
+        cur_atom._cur_timeline = TimelineEntry(self.__key)
         return self
 
     def __exit__(self, *ext: tp.Any):
         cur_atom = gctx.get_ctx().atoms[-1]
-        cur_atom._on_lane = False
-        cur_entry = cur_atom._lanes[self.__lane_idx]
+        cur_entry = tp.cast(TimelineEntry, cur_atom._cur_timeline)
+        cur_atom._cur_timeline = None
         acc_duration: sec = sec(0)
 
         for item in cur_entry.items:
-            if isinstance(item, LanePad):
+            if isinstance(item, TimelinePad):
                 acc_duration += item.pad_sec
             # assumes LayerField
             else:
                 # assumes AtomHandle
                 if not isinstance(item.duration, sec):
-                    if len(cur_entry.items) > 1:
-                        raise Exception('Single item is only allowed in a lane with atom-fitted layer')
-                    else:
-                        cur_atom._atom_fitted_layers.append(item)
-                        acc_duration = sec(0)
-                        break
+                    raise Exception('Atom fitted layer is not allowed in timeline')
 
                 item.atom_offset = acc_duration
 
@@ -73,16 +65,14 @@ class LaneHandle:
 
                 acc_duration += item.duration
 
-        if acc_duration > cur_atom._duration:
-            cur_atom._duration = acc_duration
-
         return False
 
     def pad(self, pad_sec: sec) -> None:
         cur_atom = gctx.get_ctx().atoms[-1]
-        cur_atom._lanes[self.__lane_idx].items.append(LanePad(pad_sec))
+        if cur_atom._cur_timeline:
+            cur_atom._cur_timeline.items.append(TimelinePad(pad_sec))
 
 
-def lane(key: str = '') -> LaneHandle:
+def timeline(key: str = '') -> TimelineHandle:
 
-    return LaneHandle(key)
+    return TimelineHandle(key)

@@ -42,27 +42,30 @@ class AtomLayoutHandle:
         return False
 
     def begin(self) -> None:
-        cur_atom = gctx.get_ctx().atoms[-1]
-        self.__layout_lane_idx = len(cur_atom._lanes)
+        ...
+        # [XXX] comment out due to refactoring
+        # cur_atom = gctx.get_ctx().atoms[-1]
+        # self.__layout_lane_idx = len(cur_atom._cur_lane)
 
     def end(self) -> None:
+        ...
+        # [XXX] comment out due to refactoring
+        # cur_atom = gctx.get_ctx().atoms[-1]
 
-        cur_atom = gctx.get_ctx().atoms[-1]
-
-        layout_lanes = cur_atom._lanes[self.__layout_lane_idx:]
-        for idx, layout_lane in enumerate(layout_lanes):
-            layout_info = self.__layout_fn(LaneContext(
-                layout_lane.key,
-                idx,
-                len(layout_lanes)
-            ))
-            if not layout_info:
-                continue
-            for item in layout_lane.items:
-                if isinstance(item, PositionField):
-                    item.pos = layout_info.pos
-                    item.z = layout_info.z
-                    item.layer_size = layout_info.layer_size
+        # layout_lanes = cur_atom._cur_lane[self.__layout_lane_idx:]
+        # for idx, layout_lane in enumerate(layout_lanes):
+        #     layout_info = self.__layout_fn(LaneContext(
+        #         layout_lane.key,
+        #         idx,
+        #         len(layout_lanes)
+        #     ))
+        #     if not layout_info:
+        #         continue
+        #     for item in layout_lane.items:
+        #         if isinstance(item, PositionField):
+        #             item.pos = layout_info.pos
+        #             item.z = layout_info.z
+        #             item.layer_size = layout_info.layer_size
 
 
 def vstack(item_width: int = -1, layout_height: int | None = None, item_offsets: tuple[int, int] = (0, 0)) -> LayoutFn:

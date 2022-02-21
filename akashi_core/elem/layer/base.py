@@ -201,8 +201,7 @@ def register_entry(entry: LayerField, kind: LayerKind, key: str) -> int:
     cur_layer_idx = len(cur_ctx.layers) - 1
     cur_atom.layer_indices.append(cur_layer_idx)
 
-    if len(cur_atom._lanes) == 0:
-        raise Exception('Layer initialization outside the lane is prohibited')
-    cur_atom._lanes[-1].items.append(cur_ctx.layers[-1])
+    if cur_atom._cur_timeline:
+        cur_atom._cur_timeline.items.append(cur_ctx.layers[-1])
 
     return cur_layer_idx
