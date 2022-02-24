@@ -31,6 +31,7 @@ namespace akashi {
             pa_channel_map map;
             pa_channel_map_init_stereo(&map);
 
+            // [TODO] should we use pa_stream_new_extended() instead?
             m_stream =
                 pa_stream_new(m_context, AudioStream::STREAM_NAME, &sample_specifications, &map);
             pa_stream_set_state_callback(m_stream, AudioStream::stream_state_cb, m_mainloop);
@@ -96,11 +97,29 @@ namespace akashi {
         };
 
         void AudioStream::cork(void) {
-            pa_stream_cork(m_stream, 1, AudioStream::stream_success_cb, nullptr);
+            {
+                MainloopLockGuard main_lk(m_mainloop);
+                auto op = pa_stream_cork(m_stream, 1, AudioStream::stream_success_cb, m_mainloop);
+                while (pa_operation_get_state(op) != PA_OPERATION_DONE) {
+                    pa_threaded_mainloop_wait(m_mainloop);
+                }
+                if (op) {
+                    pa_operation_unref(op);
+                }
+            }
         }
 
         void AudioStream::uncork(void) {
-            pa_stream_cork(m_stream, 0, AudioStream::stream_success_cb, nullptr);
+            {
+                MainloopLockGuard main_lk(m_mainloop);
+                auto op = pa_stream_cork(m_stream, 0, AudioStream::stream_success_cb, m_mainloop);
+                while (pa_operation_get_state(op) != PA_OPERATION_DONE) {
+                    pa_threaded_mainloop_wait(m_mainloop);
+                }
+                if (op) {
+                    pa_operation_unref(op);
+                }
+            }
         }
 
         void AudioStream::drain(void) {
@@ -139,7 +158,9 @@ namespace akashi {
             pa_threaded_mainloop_signal((pa_threaded_mainloop*)mainloop, 0);
         };
 
-        void AudioStream::stream_success_cb(pa_stream*, int, void*) { return; };
+        void AudioStream::stream_success_cb(pa_stream*, int, void* mainloop) {
+            pa_threaded_mainloop_signal((pa_threaded_mainloop*)mainloop, 0);
+        };
 
     }
 }

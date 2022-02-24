@@ -17,6 +17,7 @@ namespace akashi {
         }
         MainloopLockGuard::~MainloopLockGuard() { pa_threaded_mainloop_unlock(m_mainloop); }
 
+        // [TODO] needs pa_threaded_mainloop_lock()?
         void context_inspect(pa_context* context) {
             pa_context_get_source_info_list(
                 context,
