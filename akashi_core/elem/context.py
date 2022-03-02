@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Callable, cast
 from dataclasses import dataclass, field
@@ -9,6 +10,7 @@ if TYPE_CHECKING:
     from .timeline import TimelineEntry
     from .atom import AtomEntry
     from .layer.base import LayerField
+    from .layer.unit import UnitEntry
     ElemFn = Callable[[], None]
     # ConfFn = Callable[[], AKConf]
 
@@ -73,21 +75,54 @@ def cur_config() -> AKConf:
     return _GlobalKronContext.get_ctx().config
 
 
+def _cur_global_size() -> tuple[int, int]:
+    return _GlobalKronContext.get_ctx().config.video.resolution
+
+
+def _cur_local_size() -> tuple[int, int]:
+    cur_ctx = _GlobalKronContext.get_ctx()
+    unit_ids = cur_ctx._cur_unit_ids
+    if len(unit_ids) == 0:
+        return cur_ctx.config.video.resolution
+    else:
+        return cast('UnitEntry', cur_ctx.layers[unit_ids[-1]]).layer_size
+
+
 def width() -> int:
-    return _GlobalKronContext.get_ctx().config.video.resolution[0]
+    return _cur_global_size()[0]
 
 
 def hwidth() -> int:
-    return _GlobalKronContext.get_ctx().config.video.resolution[0] // 2
+    return width() // 2
 
 
 def height() -> int:
-    return _GlobalKronContext.get_ctx().config.video.resolution[1]
+    return _cur_global_size()[1]
 
 
 def hheight() -> int:
-    return _GlobalKronContext.get_ctx().config.video.resolution[1] // 2
+    return height() // 2
 
 
 def center() -> tuple[int, int]:
     return (width() // 2, height() // 2)
+
+
+def lwidth() -> int:
+    return _cur_local_size()[0]
+
+
+def lhwidth() -> int:
+    return lwidth() // 2
+
+
+def lheight() -> int:
+    return _cur_local_size()[1]
+
+
+def lhheight() -> int:
+    return lheight() // 2
+
+
+def lcenter() -> tuple[int, int]:
+    return (lwidth() // 2, lheight() // 2)

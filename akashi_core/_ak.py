@@ -37,19 +37,36 @@ __all__ = [
     "hwidth",
     "hheight",
     "center",
+    "lwidth",
+    "lheight",
+    "lhwidth",
+    "lhheight",
+    "lcenter",
     "LayoutInfo",
     "vstack",
     "hstack",
-    "layout",
-    "LaneContext"
+    "LayoutLayerContext"
 ]
 
 from .args import argv
 
-from .elem.context import entry, cur_config, width, height, hwidth, hheight, center
+from .elem.context import (
+    entry,
+    cur_config,
+    width,
+    height,
+    hwidth,
+    hheight,
+    center,
+    lwidth,
+    lheight,
+    lhwidth,
+    lhheight,
+    lcenter
+)
 from .elem.atom import atom
 from .elem.timeline import timeline
-from .elem.layout import LayoutInfo, vstack, hstack, layout, LaneContext
+from .elem.layout import LayoutInfo, vstack, hstack, LayoutLayerContext
 from .elem.layer.base import frag, poly
 from .elem.layer.video import video
 from .elem.layer.audio import audio

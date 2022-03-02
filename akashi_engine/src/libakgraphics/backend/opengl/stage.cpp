@@ -39,7 +39,10 @@ namespace akashi {
         RenderPlane::RenderPlane(OGLRenderContext& render_ctx, const core::PlaneContext& plane_ctx,
                                  const core::AtomStaticProfile& atom_static_profile)
             : m_plane_ctx(plane_ctx), m_atom_static_profile(atom_static_profile) {
-            auto fb_size = plane_ctx.base.layer_size;
+            auto fb_size = m_plane_ctx.base.layer_size;
+
+            // [TODO] If m_fbo.create() is not called even when the plane level is 0,
+            // we get the unexpected m_fbo when HR occurs.
             if (!(m_fbo.create(fb_size[0], fb_size[1], render_ctx.msaa()))) {
                 AKLOG_ERRORN("Failed to create FBO");
             }
@@ -62,6 +65,7 @@ namespace akashi {
             for (auto&& actor : m_actors) {
                 if (actor) {
                     actor->destroy(ctx);
+                    delete actor;
                 }
             }
             m_actors.clear();
@@ -86,8 +90,10 @@ namespace akashi {
                     if (static_cast<core::LayerType>(layer_ctx.type) == core::LayerType::UNIT) {
                         RenderPlane* render_plane = nullptr;
                         if (stage.find_render_plane(&render_plane, layer_ctx.uuid)) {
-                            // lifetime?
-                            m_actors.back()->set_fbo(core::borrowed_ptr{&render_plane->m_fbo});
+                            if (render_plane->m_fbo.initilized()) {
+                                // lifetime?
+                                m_actors.back()->set_fbo(core::borrowed_ptr{&render_plane->m_fbo});
+                            }
                         }
                     }
                 }
@@ -222,6 +228,7 @@ namespace akashi {
             for (auto&& plane : m_planes) {
                 if (plane) {
                     plane->destroy(ctx);
+                    delete plane;
                 }
             }
             m_planes.clear();

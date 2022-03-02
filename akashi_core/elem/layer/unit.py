@@ -30,6 +30,8 @@ from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
 
+from akashi_core.elem.layout import LayoutFn, LayoutInfo, LayoutLayerContext
+
 
 @dataclass
 class UnitUniform:
@@ -51,6 +53,7 @@ class UnitEntry(TextureField, ShaderField, PositionField, LayerField):
 
     layer_indices: list[int] = field(default_factory=list, init=False)
     bg_color: str = "#00000000"  # transparent
+    _layout_fn: LayoutFn | None = None
 
 
 _UnitFragFn = LEntryFragFn[UnitFragBuffer] | _TEntryFnOpaque[_NamedEntryFragFn[UnitFragBuffer]]
@@ -68,13 +71,35 @@ class UnitHandle(TextureTrait, FittableDurationTrait, PositionTrait, LayerTrait)
 
     def __exit__(self, *ext: tp.Any):
         cur_ctx = gctx.get_ctx()
-        cur_unit_layer = tp.cast(UnitEntry, cur_ctx.layers[cur_ctx._cur_unit_ids.pop()])
+        cur_unit_layer = tp.cast(UnitEntry, cur_ctx.layers[cur_ctx._cur_unit_ids[-1]])
 
         if isinstance(cur_unit_layer.duration, sec):
             max_to: sec = sec(0)
-            for layer_idx in cur_unit_layer.layer_indices:
+            for layout_idx, layer_idx in enumerate(cur_unit_layer.layer_indices):
 
                 cur_layer = cur_ctx.layers[layer_idx]
+
+                if isinstance(cur_layer, PositionField) and cur_unit_layer._layout_fn:
+
+                    layout_info = cur_unit_layer._layout_fn(LayoutLayerContext(
+                        cur_layer.key,
+                        layout_idx,
+                        len(cur_unit_layer.layer_indices)
+                    ))
+                    if layout_info:
+                        cur_layer.pos = layout_info.pos
+                        cur_layer.z = layout_info.z
+
+                        temp_layer_size = list(layout_info.layer_size)
+                        if cur_layer.kind == 'UNIT':
+                            aspect_ratio = sec(cur_layer.layer_size[0], cur_layer.layer_size[1])
+                            if temp_layer_size[0] == -1:
+                                temp_layer_size[0] = (sec(temp_layer_size[1]) * aspect_ratio).trunc()
+                            if temp_layer_size[1] == -1:
+                                temp_layer_size[1] = (sec(temp_layer_size[0]) / aspect_ratio).trunc()
+
+                        cur_layer.layer_size = (temp_layer_size[0], temp_layer_size[1])
+
                 if isinstance(cur_layer.duration, sec):
 
                     # resolve -1 duration
@@ -96,7 +121,13 @@ class UnitHandle(TextureTrait, FittableDurationTrait, PositionTrait, LayerTrait)
             # for at_layer_idx in unit_fitted_layer_indices:
             #     cur_layers[at_layer_idx].duration = cur_atom._duration
 
+        cur_ctx._cur_unit_ids.pop()
         return False
+
+    def layout(self, layout_fn: LayoutFn) -> 'UnitHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
+            cur_layer._layout_fn = layout_fn
+        return self
 
     def layer_size(self, this_is_forbidden_method) -> _DO_NOT_USE_THIS:
         raise Exception('layer_size() in unit layer is forbidden')
@@ -123,6 +154,7 @@ class unit(object):
     poly: tp.ClassVar[tp.Type[UnitPolyBuffer]] = UnitPolyBuffer
 
     def __enter__(self) -> 'UnitHandle':
+
         raise Exception('unreachable path')
 
     def __exit__(self, *ext: tp.Any):
