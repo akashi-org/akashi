@@ -16,6 +16,26 @@
 namespace akashi {
     namespace graphics {
 
+        namespace priv {
+            static void init_renderer(const FBInfo& info, const std::array<float, 4>& bg_color) {
+                glBindFramebuffer(GL_FRAMEBUFFER, info.fbo);
+                glViewport(0.0, 0.0, info.width, info.height);
+                glScissor(0.0, 0.0, info.width, info.height);
+
+                glEnable(GL_SCISSOR_TEST);
+
+                glClearColor(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                glDisable(GL_SCISSOR_TEST);
+
+                glDisable(GL_MULTISAMPLE);
+
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            }
+        }
+
         RenderPlane::RenderPlane(OGLRenderContext& render_ctx, const core::PlaneContext& plane_ctx,
                                  const core::AtomStaticProfile& atom_static_profile)
             : m_plane_ctx(plane_ctx), m_atom_static_profile(atom_static_profile) {
@@ -51,7 +71,11 @@ namespace akashi {
         bool RenderPlane::render(OGLRenderContext& render_ctx, const core::Rational& pts,
                                  const core::PlaneContext& cur_plane_ctx, const Stage& stage) {
             auto& cur_fbo = m_plane_ctx.level == 0 ? render_ctx.mut_fbo() : m_fbo;
-            this->init_renderer(cur_fbo.info());
+
+            auto bg_color = m_plane_ctx.level == 0 ? m_atom_static_profile.bg_color
+                                                   : m_plane_ctx.base.unit_layer_ctx.bg_color;
+            std::array<float, 4> fb_bg_color = to_rgba_float(bg_color);
+            priv::init_renderer(cur_fbo.info(), fb_bg_color);
 
             if (m_initial_render) {
                 for (const auto& layer_ctx : cur_plane_ctx.layers) {
@@ -90,27 +114,6 @@ namespace akashi {
             return true;
         }
 
-        void RenderPlane::init_renderer(const FBInfo& info) {
-            glBindFramebuffer(GL_FRAMEBUFFER, info.fbo);
-            glViewport(0.0, 0.0, info.width, info.height);
-            glScissor(0.0, 0.0, info.width, info.height);
-
-            glEnable(GL_SCISSOR_TEST);
-
-            auto bg_color = m_plane_ctx.level == 0 ? m_atom_static_profile.bg_color
-                                                   : m_plane_ctx.base.unit_layer_ctx.bg_color;
-            std::array<float, 4> color = to_rgba_float(bg_color);
-            glClearColor(color[0], color[1], color[2], color[3]);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            glDisable(GL_SCISSOR_TEST);
-
-            glDisable(GL_MULTISAMPLE);
-
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        }
-
         bool RenderPlane::add_layer(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
             auto actor = create_actor(ctx, layer_ctx);
 
@@ -147,7 +150,8 @@ namespace akashi {
             CHECK_AK_ERROR2(this->render_planes(ctx, frame_ctx));
 
             // render fbo to the provided framebuffer
-            this->init_renderer({params.default_fb, params.screen_width, params.screen_height});
+            priv::init_renderer({params.default_fb, params.screen_width, params.screen_height},
+                                {0, 0, 0, 1});
             ctx.mut_fbo().render(ctx);
 
             return true;
@@ -182,40 +186,8 @@ namespace akashi {
             glCullFace(GL_BACK);
         }
 
-        void Stage::init_renderer(const FBInfo& info, const core::FrameContext* frame_ctx) {
-            glBindFramebuffer(GL_FRAMEBUFFER, info.fbo);
-            glViewport(0.0, 0.0, info.width, info.height);
-            glScissor(0.0, 0.0, info.width, info.height);
-
-            glEnable(GL_SCISSOR_TEST);
-
-            std::array<float, 4> color = {0, 0, 0, 1};
-            if (frame_ctx) {
-                color = to_rgba_float(frame_ctx->atom_static_profile.bg_color);
-            }
-            glClearColor(color[0], color[1], color[2], color[3]);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            glDisable(GL_SCISSOR_TEST);
-
-            glDisable(GL_MULTISAMPLE);
-
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        }
-
         bool Stage::render_planes(OGLRenderContext& ctx, const core::FrameContext& frame_ctx) {
-            // if (!ctx.fbo().initilized()) {
-            //     AKLOG_WARNN("FBO is not yet initialized");
-            //     return false;
-            // }
-
-            // if (frame_ctx.plane_ctxs.size() == 0 || frame_ctx.plane_ctxs.empty()) {
-            //     AKLOG_WARNN("Layer length is 0");
-            //     return false;
-            // }
-
-            // re-initialize the stage when new atom comes
+            // initialize the stage when new atom comes
             if (m_current_atom_uuid != frame_ctx.atom_static_profile.atom_uuid) {
                 AKLOG_DEBUG("new atom: old: {}, new: {}", m_current_atom_uuid,
                             frame_ctx.atom_static_profile.atom_uuid);
@@ -234,7 +206,6 @@ namespace akashi {
                 CHECK_AK_ERROR2(
                     m_planes[i]->render(ctx, frame_ctx.pts, frame_ctx.plane_ctxs[i], *this));
             }
-
             return true;
         }
 

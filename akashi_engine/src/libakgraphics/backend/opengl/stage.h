@@ -34,8 +34,6 @@ namespace akashi {
                         const core::PlaneContext& cur_plane_ctx, const Stage& stage);
 
           private:
-            void init_renderer(const FBInfo& info);
-
             bool add_layer(OGLRenderContext& ctx, const core::LayerContext& layer_ctx);
 
           private:
@@ -72,8 +70,6 @@ namespace akashi {
 
           private:
             void init_gl();
-
-            void init_renderer(const FBInfo& info, const core::FrameContext* frame_ctx = nullptr);
 
             bool render_planes(OGLRenderContext& ctx, const core::FrameContext& frame_ctx);
 
