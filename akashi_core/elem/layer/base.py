@@ -13,9 +13,11 @@ from akashi_core.pysl import _gl
 
 if tp.TYPE_CHECKING:
     from akashi_core.elem.atom import AtomHandle
+    from akashi_core.elem.timeline import TimelineEntry
+    from .unit import UnitEntry
 
 
-LayerKind = tp.Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE', 'EFFECT', 'SHAPE', 'FREE']
+LayerKind = tp.Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE', 'UNIT', 'SHAPE', 'FREE']
 
 
 ''' Layer Concept '''
@@ -37,12 +39,6 @@ class LayerField:
 class LayerTrait(metaclass=ABCMeta):
 
     _idx: int
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *ext: tp.Any):
-        return False
 
     def duration(self: '_TLayerTrait', duration: sec | float) -> '_TLayerTrait':
         if (cur_layer := peek_entry(self._idx)):
@@ -199,9 +195,14 @@ def register_entry(entry: LayerField, kind: LayerKind, key: str) -> int:
 
     cur_ctx.layers.append(entry)
     cur_layer_idx = len(cur_ctx.layers) - 1
-    cur_atom.layer_indices.append(cur_layer_idx)
 
-    if cur_atom._cur_timeline:
-        cur_atom._cur_timeline.items.append(cur_ctx.layers[-1])
+    if len(gctx.get_ctx()._cur_unit_ids) == 0:
+        cur_atom.layer_indices.append(cur_layer_idx)
+    else:
+        cur_unit_layer = tp.cast('UnitEntry', cur_ctx.layers[gctx.get_ctx()._cur_unit_ids[-1]])
+        cur_unit_layer.layer_indices.append(cur_layer_idx)
+
+    if gctx.get_ctx()._cur_timeline:
+        tp.cast('TimelineEntry', gctx.get_ctx()._cur_timeline).items.append(cur_ctx.layers[-1])
 
     return cur_layer_idx

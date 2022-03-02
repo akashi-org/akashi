@@ -5,11 +5,12 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <map>
 
 namespace akashi {
     namespace core {
 
-        enum class LayerType { VIDEO = 0, AUDIO, TEXT, IMAGE, EFFECT, SHAPE, LENGTH };
+        enum class LayerType { VIDEO = 0, AUDIO, TEXT, IMAGE, UNIT, SHAPE, LENGTH };
 
         struct CropInfo {
             std::array<long, 2> begin;
@@ -64,7 +65,9 @@ namespace akashi {
             CropInfo crop;
         };
 
-        struct EffectLayerContext {
+        struct UnitLayerContext {
+            std::vector<unsigned long> layer_indices;
+            std::string bg_color;
             std::string frag;
             std::string poly;
         };
@@ -133,7 +136,7 @@ namespace akashi {
 
             ImageLayerContext image_layer_ctx;
 
-            EffectLayerContext effect_layer_ctx;
+            UnitLayerContext unit_layer_ctx;
 
             ShapeLayerContext shape_layer_ctx;
         };
@@ -154,17 +157,24 @@ namespace akashi {
             Rational duration = core::Rational(0, 1);
             std::string uuid;
             std::string bg_color;
-            std::vector<LayerProfile> layers;
+            std::vector<LayerProfile> av_layers;
         };
 
         struct AtomStaticProfile {
             std::string bg_color;
+            std::string atom_uuid;
+        };
+
+        struct PlaneContext {
+            size_t level = 0;
+            LayerContext base; // unit layer
+            std::vector<LayerContext> layers;
         };
 
         struct FrameContext {
             Rational pts;
             AtomStaticProfile atom_static_profile;
-            std::vector<LayerContext> layer_ctxs;
+            std::vector<PlaneContext> plane_ctxs;
         };
 
         struct RenderProfile {
@@ -175,7 +185,7 @@ namespace akashi {
 
         inline bool has_layers(const RenderProfile& render_prof) {
             for (const auto& atom_prof : render_prof.atom_profiles) {
-                if (!atom_prof.layers.empty()) {
+                if (!atom_prof.av_layers.empty()) {
                     return true;
                 }
             }

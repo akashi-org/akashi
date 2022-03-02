@@ -16,10 +16,10 @@ namespace akashi {
     namespace eval {
 
         struct KronArg;
-        class AtomProxy;
 
         struct GlobalContext {
-            std::vector<core::owned_ptr<AtomProxy>> atom_proxies;
+            std::vector<AtomProxy> atom_proxies;
+            std::vector<LayerProxy> layer_proxies;
             core::Rational sec_per_frame;
             core::Rational duration;
             std::string uuid;

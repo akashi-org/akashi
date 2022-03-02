@@ -40,9 +40,10 @@ namespace akashi {
             return true;
         }
 
-        bool TextActor::render(OGLRenderContext& ctx, const core::Rational& pts) {
+        bool TextActor::render(OGLRenderContext& ctx, const core::Rational& pts,
+                               const Camera& camera) {
             if (m_pass) {
-                this->render_pass(*m_pass, ctx, pts);
+                this->render_pass(*m_pass, ctx, pts, camera);
             }
             return true;
         }
@@ -168,7 +169,7 @@ namespace akashi {
         }
 
         bool TextActor::render_pass(const TextActor::Pass& pass, OGLRenderContext& ctx,
-                                    const core::Rational& pts) {
+                                    const core::Rational& pts, const Camera& camera) {
             glEnable(GL_BLEND);
             glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -176,7 +177,7 @@ namespace akashi {
 
             use_ogl_texture(pass.tex, pass.tex_loc);
 
-            glm::mat4 new_mvp = ctx.camera()->vp_mat() * pass.model_mat;
+            glm::mat4 new_mvp = camera.vp_mat() * pass.model_mat;
 
             glUniformMatrix4fv(pass.mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 

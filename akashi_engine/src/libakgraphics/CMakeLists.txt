@@ -38,7 +38,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/opengl/actors/video_actor_texture.cpp"
   "./backend/opengl/actors/image_actor.cpp"
   "./backend/opengl/actors/text_actor.cpp"
-  "./backend/opengl/actors/effect_actor.cpp"
+  "./backend/opengl/actors/unit_actor.cpp"
   "./backend/opengl/actors/shape_actor.cpp"
 
   "./backend/opengl/osc/osc_root.cpp"

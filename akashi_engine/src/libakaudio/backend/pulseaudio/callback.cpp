@@ -221,7 +221,7 @@ namespace akashi {
             // loop_cnt,cur_pts,next_pts must be calculated after select_current_atom is called
             // clearly we need some refactoring for this
             const auto cur_atom = cb_ctx->select_current_atom(requested_bytes);
-            const auto cur_layers = cur_atom.layers;
+            const auto cur_layers = cur_atom.av_layers;
 
             if ((cb_ctx->state() != state::PlayState::PLAYING) || cur_layers.empty()) {
                 // [TODO] we want just do a return, but in that case, callback will not be called

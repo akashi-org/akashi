@@ -31,16 +31,15 @@ class TimelineHandle:
     __key: str = field(default='')
 
     def __enter__(self) -> 'TimelineHandle':
-        cur_atom = gctx.get_ctx().atoms[-1]
-        if cur_atom._cur_timeline:
+        if gctx.get_ctx()._cur_timeline:
             raise Exception('Nested timelines is prohibited')
-        cur_atom._cur_timeline = TimelineEntry(self.__key)
+        gctx.get_ctx()._cur_timeline = TimelineEntry(self.__key)
         return self
 
     def __exit__(self, *ext: tp.Any):
         cur_atom = gctx.get_ctx().atoms[-1]
-        cur_entry = tp.cast(TimelineEntry, cur_atom._cur_timeline)
-        cur_atom._cur_timeline = None
+        cur_entry = tp.cast(TimelineEntry, gctx.get_ctx()._cur_timeline)
+        gctx.get_ctx()._cur_timeline = None
         acc_duration: sec = sec(0)
 
         for item in cur_entry.items:
@@ -68,9 +67,8 @@ class TimelineHandle:
         return False
 
     def pad(self, pad_sec: sec) -> None:
-        cur_atom = gctx.get_ctx().atoms[-1]
-        if cur_atom._cur_timeline:
-            cur_atom._cur_timeline.items.append(TimelinePad(pad_sec))
+        if gctx.get_ctx()._cur_timeline:
+            tp.cast(TimelineEntry, gctx.get_ctx()._cur_timeline).items.append(TimelinePad(pad_sec))
 
 
 def timeline(key: str = '') -> TimelineHandle:

@@ -11,6 +11,7 @@ __all__ = [
     "circle",
     # "tri",
     "line",
+    "unit",
     "sec",
     "rgba",
     "rgb",
@@ -56,6 +57,7 @@ from .elem.layer.image import image
 from .elem.layer.text import text
 from .elem.layer.shape import rect, circle, line
 # from .elem.layer.shape import tri
+from .elem.layer.unit import unit
 
 from .time import sec
 from .color import rgba, rgb, hsv, hsva, Color

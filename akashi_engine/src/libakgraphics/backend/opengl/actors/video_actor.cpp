@@ -200,11 +200,12 @@ namespace akashi {
             return true;
         }
 
-        bool VideoActor::render(OGLRenderContext& ctx, const core::Rational& pts) {
+        bool VideoActor::render(OGLRenderContext& ctx, const core::Rational& pts,
+                                const Camera& camera) {
             if (m_current_pts == pts) {
                 AKLOG_INFON("PTS unchanged");
                 if (m_pass) {
-                    CHECK_AK_ERROR2(this->render_inner(ctx, pts));
+                    CHECK_AK_ERROR2(this->render_inner(ctx, pts, camera));
                     AKLOG_INFON("Rendering with the last frame");
                 }
                 return true;
@@ -214,7 +215,7 @@ namespace akashi {
             if (!buf_data) {
                 AKLOG_INFON("Dequeue failed");
                 if (m_pass) {
-                    CHECK_AK_ERROR2(this->render_inner(ctx, pts));
+                    CHECK_AK_ERROR2(this->render_inner(ctx, pts, camera));
                     AKLOG_INFON("Rendering with the last frame");
                 }
                 return true;
@@ -228,7 +229,7 @@ namespace akashi {
                     m_pass->vtex.update(ctx, m_layer_ctx.video_layer_ctx, std::move(buf_data)));
             }
 
-            CHECK_AK_ERROR2(this->render_inner(ctx, pts));
+            CHECK_AK_ERROR2(this->render_inner(ctx, pts, camera));
             m_current_pts = pts;
             return true;
         }
@@ -244,12 +245,13 @@ namespace akashi {
             return true;
         }
 
-        bool VideoActor::render_inner(OGLRenderContext& ctx, const core::Rational& pts) {
+        bool VideoActor::render_inner(OGLRenderContext& ctx, const core::Rational& pts,
+                                      const Camera& camera) {
             glUseProgram(m_pass->prog);
 
             m_pass->vtex.use_textures({m_pass->texY_loc, m_pass->texCb_loc, m_pass->texCr_loc});
 
-            glm::mat4 new_mvp = ctx.camera()->vp_mat() * m_pass->model_mat;
+            glm::mat4 new_mvp = camera.vp_mat() * m_pass->model_mat;
             glUniformMatrix4fv(m_pass->mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 
             auto local_pts = pts - m_layer_ctx.from;

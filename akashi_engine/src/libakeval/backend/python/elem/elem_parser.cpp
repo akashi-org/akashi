@@ -7,6 +7,7 @@
 #include <libakcore/logger.h>
 
 #include <pybind11/embed.h>
+#include <pybind11/stl.h>
 
 namespace akashi {
     namespace eval {
@@ -204,10 +205,14 @@ namespace akashi {
 
                 layer_ctx.text_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
                 layer_ctx.text_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
-            } else if (type_str == "EFFECT") {
-                layer_ctx.type = static_cast<int>(core::LayerType::EFFECT);
-                layer_ctx.effect_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
-                layer_ctx.effect_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
+            } else if (type_str == "UNIT") {
+                layer_ctx.type = static_cast<int>(core::LayerType::UNIT);
+                layer_ctx.unit_layer_ctx.layer_indices =
+                    layer_params.attr("layer_indices").cast<std::vector<unsigned long>>();
+                layer_ctx.unit_layer_ctx.bg_color =
+                    layer_params.attr("bg_color").cast<std::string>();
+                layer_ctx.unit_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
+                layer_ctx.unit_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
             } else if (type_str == "SHAPE") {
                 layer_ctx.type = static_cast<int>(core::LayerType::SHAPE);
                 layer_ctx.shape_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));

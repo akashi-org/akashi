@@ -1,4 +1,4 @@
-#include "./effect_actor.h"
+#include "./unit_actor.h"
 
 #include "./layer_commons.h"
 #include "../render_context.h"
@@ -13,14 +13,16 @@
 namespace akashi {
     namespace graphics {
 
-        struct EffectActor::Pass : public layer_commons::CommonProgramLocation,
-                                   public layer_commons::Transform {
+        struct UnitActor::Pass : public layer_commons::CommonProgramLocation,
+                                 public layer_commons::Transform {
             GLuint prog;
             QuadMesh mesh;
             GLuint tex_loc;
+
+            core::borrowed_ptr<FBO> fbo{nullptr};
         };
 
-        bool EffectActor::create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
+        bool UnitActor::create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
             m_layer_ctx = layer_ctx;
             m_layer_type = static_cast<core::LayerType>(layer_ctx.type);
 
@@ -28,25 +30,28 @@ namespace akashi {
                 AKLOG_ERRORN("Pass already loaded");
                 return false;
             }
-            m_pass = new EffectActor::Pass;
+            m_pass = new UnitActor::Pass;
             CHECK_AK_ERROR2(this->load_pass(ctx));
             return true;
         }
 
-        bool EffectActor::render(OGLRenderContext& ctx, const core::Rational& pts) {
+        bool UnitActor::render(OGLRenderContext& ctx, const core::Rational& pts,
+                               const Camera& camera) {
+            if (!m_pass->fbo) {
+                AKLOG_ERRORN("FBO is null");
+                return false;
+            }
+
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
             glUseProgram(m_pass->prog);
 
-            ctx.fbo().resolve();
-            if (OGLTexture fbo_tex; ctx.fbo().texture(fbo_tex)) {
+            if (OGLTexture fbo_tex; m_pass->fbo->texture(fbo_tex)) {
                 use_ogl_texture(fbo_tex, m_pass->tex_loc);
             }
 
-            // clear underlying layers
-            glEnable(GL_SCISSOR_TEST);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glDisable(GL_SCISSOR_TEST);
-
-            glm::mat4 new_mvp = ctx.camera()->vp_mat() * m_pass->model_mat;
+            glm::mat4 new_mvp = camera.vp_mat() * m_pass->model_mat;
 
             glUniformMatrix4fv(m_pass->mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 
@@ -68,10 +73,13 @@ namespace akashi {
 
             glBindVertexArray(0);
 
+            glEnable(GL_BLEND);
+            ctx.use_default_blend_func();
+
             return true;
         }
 
-        bool EffectActor::destroy(const OGLRenderContext& /*ctx */) {
+        bool UnitActor::destroy(const OGLRenderContext& /*ctx */) {
             if (m_pass) {
                 m_pass->mesh.destroy();
                 glDeleteProgram(m_pass->prog);
@@ -81,12 +89,14 @@ namespace akashi {
             return true;
         }
 
-        bool EffectActor::load_pass(const OGLRenderContext& ctx) {
+        void UnitActor::set_fbo(const core::borrowed_ptr<FBO>& fbo_ptr) { m_pass->fbo = fbo_ptr; }
+
+        bool UnitActor::load_pass(const OGLRenderContext& ctx) {
             m_pass->prog = glCreateProgram();
 
             CHECK_AK_ERROR2(layer_commons::load_shaders(m_pass->prog, m_layer_type,
-                                                        m_layer_ctx.effect_layer_ctx.poly,
-                                                        m_layer_ctx.effect_layer_ctx.frag));
+                                                        m_layer_ctx.unit_layer_ctx.poly,
+                                                        m_layer_ctx.unit_layer_ctx.frag));
 
             m_pass->mvp_loc = glGetUniformLocation(m_pass->prog, "mvpMatrix");
             m_pass->tex_loc = glGetUniformLocation(m_pass->prog, "texture0");
@@ -101,7 +111,7 @@ namespace akashi {
             auto uvs_loc = glGetAttribLocation(m_pass->prog, "uvs");
 
             auto mesh_size = layer_commons::get_mesh_size(
-                m_layer_ctx, {ctx.fbo().info().width, ctx.fbo().info().height});
+                m_layer_ctx, {m_layer_ctx.layer_size[0], m_layer_ctx.layer_size[1]});
 
             CHECK_AK_ERROR2(m_pass->mesh.create(mesh_size, vertices_loc, uvs_loc, true));
 

@@ -176,7 +176,7 @@ namespace akashi {
             render_prof.uuid = m_gctx->uuid;
             render_prof.duration = m_gctx->duration;
             for (const auto& atom_proxy : m_gctx->atom_proxies) {
-                render_prof.atom_profiles.push_back(atom_proxy->computed_profile());
+                render_prof.atom_profiles.push_back(atom_proxy.computed_profile());
             }
 
             return render_prof;

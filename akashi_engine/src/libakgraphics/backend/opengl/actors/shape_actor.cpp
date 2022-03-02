@@ -39,14 +39,15 @@ namespace akashi {
             return true;
         }
 
-        bool ShapeActor::render(OGLRenderContext& ctx, const core::Rational& pts) {
+        bool ShapeActor::render(OGLRenderContext& ctx, const core::Rational& pts,
+                                const Camera& camera) {
             if (m_pass->enable_msaa) {
                 glEnable(GL_MULTISAMPLE);
             }
 
             glUseProgram(m_pass->prog);
 
-            glm::mat4 new_mvp = ctx.camera()->vp_mat() * m_pass->model_mat;
+            glm::mat4 new_mvp = camera.vp_mat() * m_pass->model_mat;
 
             glUniformMatrix4fv(m_pass->mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 

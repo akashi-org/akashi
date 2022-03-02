@@ -10,7 +10,6 @@ from akashi_core.color import color_value
 from akashi_core.probe import get_duration, g_resource_map
 
 if tp.TYPE_CHECKING:
-    from .timeline import TimelineEntry
     from .layer.base import LayerField
 
 
@@ -20,7 +19,6 @@ class AtomEntry:
     uuid: UUID
     layer_indices: list[int] = field(default_factory=list, init=False)
     bg_color: str = "#000000"  # "#rrggbb"
-    _cur_timeline: 'TimelineEntry' | None = field(default=None, init=False)
     _duration: sec = field(default=sec(0), init=False)
 
 

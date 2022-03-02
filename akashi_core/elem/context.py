@@ -6,6 +6,7 @@ from akashi_core.config import AKConf, config_parse
 import sys
 
 if TYPE_CHECKING:
+    from .timeline import TimelineEntry
     from .atom import AtomEntry
     from .layer.base import LayerField
     ElemFn = Callable[[], None]
@@ -18,6 +19,9 @@ class KronContext:
     config: AKConf
     atoms: list['AtomEntry'] = field(default_factory=list, init=False)
     layers: list['LayerField'] = field(default_factory=list, init=False)
+
+    _cur_timeline: 'TimelineEntry' | None = field(default=None, init=False)
+    _cur_unit_ids: list[int] = field(default_factory=list, init=False)
 
     @staticmethod
     def init(config: AKConf) -> KronContext:

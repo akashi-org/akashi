@@ -37,12 +37,13 @@ namespace akashi {
             return true;
         }
 
-        bool ImageActor::render(OGLRenderContext& ctx, const core::Rational& pts) {
+        bool ImageActor::render(OGLRenderContext& ctx, const core::Rational& pts,
+                                const Camera& camera) {
             glUseProgram(m_pass->prog);
 
             use_ogl_texture(m_pass->tex, m_pass->tex_loc);
 
-            glm::mat4 new_mvp = ctx.camera()->vp_mat() * m_pass->model_mat;
+            glm::mat4 new_mvp = camera.vp_mat() * m_pass->model_mat;
 
             glUniformMatrix4fv(m_pass->mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 
