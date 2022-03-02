@@ -228,6 +228,9 @@ namespace akashi {
 
             // render
             for (int i = m_planes.size() - 1; i >= 0; i--) {
+                if (i > 0 && !frame_ctx.plane_ctxs[i].base.display) {
+                    continue;
+                }
                 CHECK_AK_ERROR2(
                     m_planes[i]->render(ctx, frame_ctx.pts, frame_ctx.plane_ctxs[i], *this));
             }
