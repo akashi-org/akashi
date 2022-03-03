@@ -8,31 +8,6 @@
 
 using namespace akashi::core;
 
-#define AKLOG_RLOG(lvl, ...)                                                                       \
-    do {                                                                                           \
-        switch (lvl) {                                                                             \
-            case akashi::core::LogLevel::DEBUG: {                                                  \
-                AKLOG_DEBUG(__VA_ARGS__);                                                          \
-                break;                                                                             \
-            }                                                                                      \
-            case akashi::core::LogLevel::INFO: {                                                   \
-                AKLOG_INFO(__VA_ARGS__);                                                           \
-                break;                                                                             \
-            }                                                                                      \
-            case akashi::core::LogLevel::WARN: {                                                   \
-                AKLOG_WARN(__VA_ARGS__);                                                           \
-                break;                                                                             \
-            }                                                                                      \
-            case akashi::core::LogLevel::ERROR: {                                                  \
-                AKLOG_ERROR(__VA_ARGS__);                                                          \
-                break;                                                                             \
-            }                                                                                      \
-            default: {                                                                             \
-                break;                                                                             \
-            }                                                                                      \
-        }                                                                                          \
-    } while (0)
-
 namespace akashi {
     namespace graphics {
 
