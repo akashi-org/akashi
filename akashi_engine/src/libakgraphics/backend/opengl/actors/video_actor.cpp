@@ -22,7 +22,7 @@ static constexpr const char* vshader_src = u8R"(
     uniform ivec2 uv_flip_hv; // [uv_flip_h, uv_flip_v]
     in vec3 vertices;
     in vec2 lumaUvs;
-    in vec2 chromaUvs;
+    layout (location = 2) in vec2 chromaUvs;
 
     out VS_OUT {
         vec2 vLumaUvs;
@@ -297,7 +297,8 @@ namespace akashi {
 
             auto vertices_loc = glGetAttribLocation(m_pass->prog, "vertices");
             auto luma_uvs_loc = glGetAttribLocation(m_pass->prog, "lumaUvs");
-            auto chroma_uvs_loc = glGetAttribLocation(m_pass->prog, "chromaUvs");
+            // auto chroma_uvs_loc = glGetAttribLocation(m_pass->prog, "chromaUvs");
+            auto chroma_uvs_loc = 2;
 
             std::array<float, 2> mesh_size = layer_commons::get_mesh_size(
                 m_layer_ctx, {m_pass->vtex.info().video_width, m_pass->vtex.info().video_height});

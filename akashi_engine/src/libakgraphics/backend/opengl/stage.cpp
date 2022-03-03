@@ -39,22 +39,20 @@ namespace akashi {
         RenderPlane::RenderPlane(OGLRenderContext& render_ctx, const core::PlaneContext& plane_ctx,
                                  const core::AtomStaticProfile& atom_static_profile)
             : m_plane_ctx(plane_ctx), m_atom_static_profile(atom_static_profile) {
-            auto fb_size = m_plane_ctx.base.layer_size;
+            if (m_plane_ctx.level > 0) {
+                auto fb_size = m_plane_ctx.base.layer_size;
 
-            // [TODO] If m_fbo.create() is not called even when the plane level is 0,
-            // we get the unexpected m_fbo when HR occurs.
-            if (!(m_fbo.create(fb_size[0], fb_size[1], render_ctx.msaa()))) {
-                AKLOG_ERRORN("Failed to create FBO");
-            }
+                if (!(m_fbo.create(fb_size[0], fb_size[1], render_ctx.msaa()))) {
+                    AKLOG_ERRORN("Failed to create FBO");
+                }
 
-            ProjectionState proj_state;
-            proj_state.video_width = fb_size[0];
-            proj_state.video_height = fb_size[1];
+                ProjectionState proj_state;
+                proj_state.video_width = fb_size[0];
+                proj_state.video_height = fb_size[1];
 
-            ViewState view_state;
-            view_state.camera = glm::vec3(0, 0, 1);
+                ViewState view_state;
+                view_state.camera = glm::vec3(0, 0, 1);
 
-            if (plane_ctx.level > 0) {
                 m_camera = core::make_owned<Camera>(proj_state, &view_state);
             }
         }
