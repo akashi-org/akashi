@@ -63,7 +63,7 @@ namespace akashi {
             glUniform1f(m_pass->local_duration_loc, local_duration.to_decimal());
             glUniform1f(m_pass->fps_loc, ctx.fps().to_decimal());
 
-            auto res = ctx.resolution();
+            auto res = m_layer_ctx.unit_layer_ctx.fb_size;
             glUniform2f(m_pass->resolution_loc, res[0], res[1]);
 
             glBindVertexArray(m_pass->mesh.vao());

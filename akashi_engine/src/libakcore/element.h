@@ -68,6 +68,7 @@ namespace akashi {
         struct UnitLayerContext {
             std::vector<unsigned long> layer_indices;
             std::string bg_color;
+            std::array<long, 2> fb_size = {0, 0};
             std::string frag;
             std::string poly;
         };

@@ -40,7 +40,7 @@ namespace akashi {
                                  const core::AtomStaticProfile& atom_static_profile)
             : m_plane_ctx(plane_ctx), m_atom_static_profile(atom_static_profile) {
             if (m_plane_ctx.level > 0) {
-                auto fb_size = m_plane_ctx.base.layer_size;
+                auto fb_size = m_plane_ctx.base.unit_layer_ctx.fb_size;
 
                 if (!(m_fbo.create(fb_size[0], fb_size[1], render_ctx.msaa()))) {
                     AKLOG_ERRORN("Failed to create FBO");

@@ -211,6 +211,8 @@ namespace akashi {
                     layer_params.attr("layer_indices").cast<std::vector<unsigned long>>();
                 layer_ctx.unit_layer_ctx.bg_color =
                     layer_params.attr("bg_color").cast<std::string>();
+                const auto& fb_size = layer_params.attr("fb_size").cast<std::tuple<long, long>>();
+                layer_ctx.unit_layer_ctx.fb_size = {std::get<0>(fb_size), std::get<1>(fb_size)};
                 layer_ctx.unit_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
                 layer_ctx.unit_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
             } else if (type_str == "SHAPE") {

@@ -52,14 +52,13 @@ class UnitPolyBuffer(poly, UnitUniform, gl._LayerPolyOutput):
 class UnitEntry(TextureField, ShaderField, PositionField, LayerField):
 
     layer_indices: list[int] = field(default_factory=list, init=False)
+    fb_size: tuple[int, int] = field(default=(0, 0), init=False)
     bg_color: str = "#00000000"  # transparent
     _layout_fn: LayoutFn | None = None
 
 
 _UnitFragFn = LEntryFragFn[UnitFragBuffer] | _TEntryFnOpaque[_NamedEntryFragFn[UnitFragBuffer]]
 _UnitPolyFn = LEntryPolyFn[UnitPolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn[UnitPolyBuffer]]
-
-_DO_NOT_USE_THIS = tp.Annotated[tp.NoReturn, 'DO_NOT_USE_THIS']
 
 
 @dataclass
@@ -92,7 +91,8 @@ class UnitHandle(TextureTrait, FittableDurationTrait, PositionTrait, LayerTrait)
 
                         temp_layer_size = list(layout_info.layer_size)
                         if cur_layer.kind == 'UNIT':
-                            aspect_ratio = sec(cur_layer.layer_size[0], cur_layer.layer_size[1])
+                            aspect_ratio = sec(tp.cast(UnitEntry, cur_layer).fb_size[0], tp.cast(
+                                UnitEntry, cur_layer).fb_size[1])
                             if temp_layer_size[0] == -1:
                                 temp_layer_size[0] = (sec(temp_layer_size[1]) * aspect_ratio).trunc()
                             if temp_layer_size[1] == -1:
@@ -129,9 +129,6 @@ class UnitHandle(TextureTrait, FittableDurationTrait, PositionTrait, LayerTrait)
             cur_layer._layout_fn = layout_fn
         return self
 
-    def layer_size(self, this_is_forbidden_method) -> _DO_NOT_USE_THIS:
-        raise Exception('layer_size() in unit layer is forbidden')
-
     def frag(self, *frag_fns: _UnitFragFn, preamble: tuple[str, ...] = tuple()) -> 'UnitHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
             cur_layer.frag_shader = ShaderCompiler(frag_fns, UnitFragBuffer, _frag_shader_header, preamble)
@@ -154,7 +151,6 @@ class unit(object):
     poly: tp.ClassVar[tp.Type[UnitPolyBuffer]] = UnitPolyBuffer
 
     def __enter__(self) -> 'UnitHandle':
-
         raise Exception('unreachable path')
 
     def __exit__(self, *ext: tp.Any):
@@ -163,5 +159,6 @@ class unit(object):
     def __new__(cls, width: int, height: int, key: str = '') -> UnitHandle:
         entry = UnitEntry()
         entry.layer_size = (width, height)
+        entry.fb_size = (width, height)
         idx = register_entry(entry, 'UNIT', key)
         return UnitHandle(idx)
