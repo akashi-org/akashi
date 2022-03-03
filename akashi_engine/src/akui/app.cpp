@@ -59,6 +59,9 @@ namespace akashi {
             } else {
                 format.setSamples(akconf.video.msaa);
             }
+            if (std::getenv("AK_OGL_DEBUG_OUT")) {
+                format.setOption(QSurfaceFormat::DebugContext);
+            }
             QSurfaceFormat::setDefaultFormat(format);
 
             Window window{borrowed_ptr(&state)};

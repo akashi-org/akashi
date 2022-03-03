@@ -39,6 +39,15 @@ namespace akashi {
                 AKLOG_ERRORN("Failed to initialize EGL context");
                 return false;
             }
+
+            if (GLAD_GL_ARB_debug_output) {
+                // glEnable(GL_DEBUG_OUTPUT);
+                glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+                glDebugMessageCallbackARB(gl_debug_message_callback, nullptr);
+                glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr,
+                                         GL_TRUE);
+            }
+
             return m_stage->create(*m_render_ctx);
         }
 
@@ -119,6 +128,14 @@ namespace akashi {
 
             // glEnable(GL_DEPTH_TEST);
             // glDepthFunc(GL_LEQUAL);
+
+            if (GLAD_GL_ARB_debug_output) {
+                // glEnable(GL_DEBUG_OUTPUT);
+                glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+                glDebugMessageCallbackARB(gl_debug_message_callback, nullptr);
+                glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr,
+                                         GL_TRUE);
+            }
 
             glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
