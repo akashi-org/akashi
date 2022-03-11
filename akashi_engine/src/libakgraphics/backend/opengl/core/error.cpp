@@ -135,7 +135,7 @@ namespace akashi {
 
             std::string stacktrace_str;
             if (type_str == "Error" || type_str == "Undefined Behavior") {
-                stacktrace_str = collect_stacktrace(5);
+                stacktrace_str = collect_stacktrace(7);
             }
 
             AKLOG_RLOG(log_level, "OGL_DEBUG({},{},{}): {}{}", id, type_str, severity_str, message,
