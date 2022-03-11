@@ -2,7 +2,6 @@ __all__ = [
     "argv",
     "entry",
     "atom",
-    "timeline",
     "video",
     "audio",
     "image",
@@ -65,7 +64,6 @@ from .elem.context import (
     lcenter
 )
 from .elem.atom import atom
-from .elem.timeline import timeline
 from .elem.layout import LayoutInfo, vstack, hstack, LayoutLayerContext
 from .elem.layer.base import frag, poly
 from .elem.layer.video import video
@@ -74,7 +72,7 @@ from .elem.layer.image import image
 from .elem.layer.text import text
 from .elem.layer.shape import rect, circle, line
 # from .elem.layer.shape import tri
-from .elem.layer.unit import unit
+from .elem.layer.unit import unit, scene
 
 from .time import sec
 from .color import rgba, rgb, hsv, hsva, Color

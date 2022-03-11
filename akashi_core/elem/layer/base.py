@@ -202,7 +202,4 @@ def register_entry(entry: LayerField, kind: LayerKind, key: str) -> int:
         cur_unit_layer = tp.cast('UnitEntry', cur_ctx.layers[gctx.get_ctx()._cur_unit_ids[-1]])
         cur_unit_layer.layer_indices.append(cur_layer_idx)
 
-    if gctx.get_ctx()._cur_timeline:
-        tp.cast('TimelineEntry', gctx.get_ctx()._cur_timeline).items.append(cur_ctx.layers[-1])
-
     return cur_layer_idx

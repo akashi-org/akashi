@@ -27,6 +27,8 @@ from akashi_core.pysl.shader import (
     _TEntryFnOpaque
 )
 from akashi_core.elem.context import _GlobalKronContext as gctx
+from akashi_core.elem.context import lwidth as ak_lwidth
+from akashi_core.elem.context import lheight as ak_lheight
 from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
 
@@ -162,3 +164,82 @@ class unit(object):
         entry.fb_size = (width, height)
         idx = register_entry(entry, 'UNIT', key)
         return UnitHandle(idx)
+
+
+@dataclass
+class SceneHandle(FittableDurationTrait, PositionTrait, LayerTrait):
+
+    @staticmethod
+    def __update_unit_layer_atom_offset(unit_entry: 'UnitEntry', new_offset: sec):
+
+        cur_ctx = gctx.get_ctx()
+        unit_entry.atom_offset += new_offset
+        for layer_idx in unit_entry.layer_indices:
+            cur_layer = cur_ctx.layers[layer_idx]
+            if cur_layer.kind == 'UNIT':
+                SceneHandle.__update_unit_layer_atom_offset(tp.cast('UnitEntry', cur_layer), new_offset)
+            else:
+                cur_layer.atom_offset += new_offset
+
+    def __enter__(self) -> 'SceneHandle':
+        gctx.get_ctx()._cur_unit_ids.append(self._idx)
+        return self
+
+    def __exit__(self, *ext: tp.Any):
+        cur_ctx = gctx.get_ctx()
+        cur_unit_layer = tp.cast(UnitEntry, cur_ctx.layers[cur_ctx._cur_unit_ids[-1]])
+
+        if not isinstance(cur_unit_layer.duration, sec):
+            raise Exception('Atom fitted layer is not allowed in scene layer')
+
+        acc_duration: sec = sec(0)
+        for layer_idx in cur_unit_layer.layer_indices:
+
+            cur_layer = cur_ctx.layers[layer_idx]
+            if cur_layer.kind == 'UNIT':
+                SceneHandle.__update_unit_layer_atom_offset(tp.cast('UnitEntry', cur_layer), acc_duration)
+            else:
+                cur_layer.atom_offset += acc_duration
+
+            if not isinstance(cur_layer.duration, sec):
+                raise Exception('Atom fitted layer is not allowed in scene layer')
+
+            # resolve -1 duration
+            if cur_layer.kind in ["VIDEO", "AUDIO"] and cur_layer.duration == sec(-1):
+                layer_src: str = cur_layer.src  # type: ignore
+                if layer_src in g_resource_map:
+                    cur_layer.duration = g_resource_map[layer_src]
+                else:
+                    cur_layer.duration = get_duration(layer_src)
+                    g_resource_map[layer_src] = cur_layer.duration
+
+            acc_duration += cur_layer.duration
+
+        cur_unit_layer.duration = acc_duration
+
+        cur_ctx._cur_unit_ids.pop()
+        return False
+
+    def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'SceneHandle':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
+            cur_layer.bg_color = color_value(color)
+        return self
+
+
+class scene(object):
+
+    def __enter__(self) -> 'SceneHandle':
+        raise Exception('unreachable path')
+
+    def __exit__(self, *ext: tp.Any):
+        raise Exception('unreachable path')
+
+    def __new__(cls, width: int | None = None, height: int | None = None, key: str = '') -> SceneHandle:
+        entry = UnitEntry()
+        entry.layer_size = (
+            ak_lwidth() if not width else width,
+            ak_lheight() if not height else height,
+        )
+        entry.fb_size = entry.layer_size
+        idx = register_entry(entry, 'UNIT', key)
+        return SceneHandle(idx)

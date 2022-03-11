@@ -22,7 +22,6 @@ class KronContext:
     atoms: list['AtomEntry'] = field(default_factory=list, init=False)
     layers: list['LayerField'] = field(default_factory=list, init=False)
 
-    _cur_timeline: 'TimelineEntry' | None = field(default=None, init=False)
     _cur_unit_ids: list[int] = field(default_factory=list, init=False)
 
     @staticmethod
