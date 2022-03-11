@@ -29,6 +29,7 @@ from akashi_core.pysl.shader import (
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.elem.context import lwidth as ak_lwidth
 from akashi_core.elem.context import lheight as ak_lheight
+from akashi_core.elem.context import lcenter as ak_lcenter
 from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
 
@@ -241,5 +242,6 @@ class scene(object):
             ak_lheight() if not height else height,
         )
         entry.fb_size = entry.layer_size
+        entry.pos = ak_lcenter()
         idx = register_entry(entry, 'UNIT', key)
         return SceneHandle(idx)
