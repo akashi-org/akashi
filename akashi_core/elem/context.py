@@ -7,7 +7,6 @@ from akashi_core.config import AKConf, config_parse
 import sys
 
 if TYPE_CHECKING:
-    from .timeline import TimelineEntry
     from .atom import AtomEntry
     from .layer.base import LayerField
     from .layer.unit import UnitEntry

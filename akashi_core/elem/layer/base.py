@@ -13,7 +13,6 @@ from akashi_core.pysl import _gl
 
 if tp.TYPE_CHECKING:
     from akashi_core.elem.atom import AtomHandle
-    from akashi_core.elem.timeline import TimelineEntry
     from .unit import UnitEntry
 
 
