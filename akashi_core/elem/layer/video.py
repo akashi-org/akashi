@@ -70,7 +70,6 @@ class VideoLocalField:
     frame: tuple[int, int] = (0, -1)
     gain: float = 1.0
     start: sec = sec(0)  # temporary
-    atom_offset: sec = sec(0)
     frag_shader: tp.Optional[ShaderCompiler] = None
     poly_shader: tp.Optional[ShaderCompiler] = None
 
@@ -98,11 +97,6 @@ class VideoHandle(TextureTrait, PositionTrait, LayerTrait):
     def start(self, start: sec | float) -> 'VideoHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.start = sec(start)
-        return self
-
-    def offset(self, offset: sec | float) -> 'VideoHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.atom_offset = sec(offset)
         return self
 
     def frag(self, *frag_fns: _VideoFragFn, preamble: tuple[str, ...] = tuple()) -> 'VideoHandle':

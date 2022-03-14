@@ -46,6 +46,11 @@ class LayerTrait(metaclass=ABCMeta):
             tp.cast(LayerField, cur_layer)._duration = _duration
         return self
 
+    def offset(self: '_TLayerTrait', offset: sec | float) -> '_TLayerTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            cur_layer.atom_offset = sec(offset)
+        return self
+
     def ap(self: '_TLayerTrait', *hs: tp.Callable[['_TLayerTrait'], '_TLayerTrait']) -> '_TLayerTrait':
         for h in hs:
             h(self)
