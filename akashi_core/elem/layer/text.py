@@ -7,7 +7,6 @@ from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
 
 from .base import (
-    FittableDurationTrait,
     PositionField,
     PositionTrait,
     TextureField,
@@ -75,7 +74,7 @@ class TextEntry(TextureField, ShaderField, PositionField, LayerField, TextLocalF
 
 
 @dataclass
-class TextHandle(TextureTrait, FittableDurationTrait, PositionTrait, LayerTrait):
+class TextHandle(TextureTrait, PositionTrait, LayerTrait):
 
     def frag(self, *frag_fns: _TextFragFn, preamble: tuple[str, ...] = tuple()) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):

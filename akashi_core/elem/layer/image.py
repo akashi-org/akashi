@@ -4,7 +4,6 @@ from dataclasses import dataclass
 import typing as tp
 
 from .base import (
-    FittableDurationTrait,
     PositionField,
     PositionTrait,
     TextureField,
@@ -52,7 +51,7 @@ class ImageEntry(TextureField, CropField, ShaderField, PositionField, LayerField
 
 
 @dataclass
-class ImageHandle(TextureTrait, CropTrait, FittableDurationTrait, PositionTrait, LayerTrait):
+class ImageHandle(TextureTrait, CropTrait, PositionTrait, LayerTrait):
 
     def frag(self, *frag_fns: _ImageFragFn, preamble: tuple[str, ...] = tuple()) -> 'ImageHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ImageEntry):

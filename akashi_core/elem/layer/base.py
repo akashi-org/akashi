@@ -6,14 +6,14 @@ import typing as tp
 
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.elem.uuid import UUID, gen_uuid
-from akashi_core.time import sec
+from akashi_core.time import sec, NOT_FIXED_SEC
 from akashi_core.pysl.shader import ShaderCompiler
 
 from akashi_core.pysl import _gl
 
 if tp.TYPE_CHECKING:
     from akashi_core.elem.atom import AtomHandle
-    from .unit import UnitEntry
+    from .unit import UnitEntry, UnitHandle
 
 
 LayerKind = tp.Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE', 'UNIT', 'SHAPE', 'FREE']
@@ -30,7 +30,8 @@ class LayerField:
     atom_uuid: UUID = UUID('')
     kind: LayerKind = 'LAYER'
     key: str = ''
-    duration: tp.Union[sec, 'AtomHandle'] = sec(5)
+    duration: sec = NOT_FIXED_SEC
+    _duration: sec | 'AtomHandle' | 'UnitHandle' = sec(5)
     atom_offset: sec = sec(0)
 
 
@@ -39,9 +40,10 @@ class LayerTrait(metaclass=ABCMeta):
 
     _idx: int
 
-    def duration(self: '_TLayerTrait', duration: sec | float) -> '_TLayerTrait':
+    def duration(self: '_TLayerTrait', duration: sec | float | 'UnitHandle' | 'AtomHandle') -> '_TLayerTrait':
         if (cur_layer := peek_entry(self._idx)):
-            tp.cast(LayerField, cur_layer).duration = sec(duration)
+            _duration = sec(duration) if isinstance(duration, (int, float)) else duration
+            tp.cast(LayerField, cur_layer)._duration = _duration
         return self
 
     def ap(self: '_TLayerTrait', *hs: tp.Callable[['_TLayerTrait'], '_TLayerTrait']) -> '_TLayerTrait':
@@ -98,18 +100,6 @@ poly = _gl._poly
 class ShaderField:
     frag_shader: tp.Optional[ShaderCompiler] = None
     poly_shader: tp.Optional[ShaderCompiler] = None
-
-
-''' FittableDuration Concept '''
-
-_TFittableDurationTrait = tp.TypeVar('_TFittableDurationTrait', bound='FittableDurationTrait')
-
-
-class FittableDurationTrait(LayerTrait, metaclass=ABCMeta):
-    def fit_to(self: '_TFittableDurationTrait', handle: 'AtomHandle') -> '_TFittableDurationTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(LayerField, cur_layer).duration = handle
-        return self
 
 
 ''' Crop Concept '''

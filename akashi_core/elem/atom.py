@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 import typing as tp
 from .context import _GlobalKronContext as gctx
 from .uuid import gen_uuid, UUID
-from akashi_core.time import sec
+from akashi_core.time import sec, NOT_FIXED_SEC
 from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
 from akashi_core.probe import get_duration, g_resource_map
@@ -37,18 +37,21 @@ class AtomHandle:
         max_to: sec = sec(0)
         atom_fitted_layer_indices: list[int] = []
         for layer_idx in cur_atom.layer_indices:
-            if isinstance(cur_layers[layer_idx].duration, sec):
+            cur_layer = cur_layers[layer_idx]
+            if isinstance(cur_layer._duration, sec):
 
                 # resolve -1 duration
-                if cur_layers[layer_idx].kind in ["VIDEO", "AUDIO"] and cur_layers[layer_idx].duration == sec(-1):
-                    layer_src: str = cur_layers[layer_idx].src  # type: ignore
+                if cur_layer.kind in ["VIDEO", "AUDIO"] and cur_layer._duration == sec(-1):
+                    layer_src: str = cur_layer.src  # type: ignore
                     if layer_src in g_resource_map:
-                        cur_layers[layer_idx].duration = g_resource_map[layer_src]
+                        cur_layer.duration = g_resource_map[layer_src]
                     else:
-                        cur_layers[layer_idx].duration = get_duration(layer_src)
-                        g_resource_map[layer_src] = tp.cast(sec, cur_layers[layer_idx].duration)
+                        cur_layer.duration = get_duration(layer_src)
+                        g_resource_map[layer_src] = cur_layer.duration
+                elif cur_layer.duration == NOT_FIXED_SEC:
+                    cur_layer.duration = cur_layer._duration
 
-                layer_to = cur_layers[layer_idx].atom_offset + tp.cast(sec, cur_layers[layer_idx].duration)
+                layer_to = cur_layer.atom_offset + cur_layer.duration
                 if layer_to > max_to:
                     max_to = layer_to
             else:

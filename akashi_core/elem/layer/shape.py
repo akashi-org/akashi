@@ -7,7 +7,6 @@ from abc import ABCMeta
 from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
 from .base import (
-    FittableDurationTrait,
     PositionField,
     PositionTrait,
     ShaderField,
@@ -132,12 +131,12 @@ class ShapeEntry(LayerField, ShaderField, PositionField, ShapeField):
 
 
 @dataclass
-class RectHandle(FittableDurationTrait, PositionTrait, ShapeTrait, LayerTrait):
+class RectHandle(PositionTrait, ShapeTrait, LayerTrait):
     ...
 
 
 @dataclass
-class CircleHandle(FittableDurationTrait, PositionTrait, ShapeTrait, LayerTrait):
+class CircleHandle(PositionTrait, ShapeTrait, LayerTrait):
 
     def lod(self, value: int) -> 'CircleHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
@@ -146,12 +145,12 @@ class CircleHandle(FittableDurationTrait, PositionTrait, ShapeTrait, LayerTrait)
 
 
 @dataclass
-class TriangleHandle(FittableDurationTrait, PositionTrait, ShapeTrait, LayerTrait):
+class TriangleHandle(PositionTrait, ShapeTrait, LayerTrait):
     ...
 
 
 @dataclass
-class LineHandle(FittableDurationTrait, PositionTrait, ShapeTrait, LayerTrait):
+class LineHandle(PositionTrait, ShapeTrait, LayerTrait):
 
     def color(self, color: tp.Union[str, 'ColorEnum']) -> 'LineHandle':
         return super().color(color)

@@ -1,6 +1,6 @@
 # pyright: reportIncompatibleMethodOverride=false
 from __future__ import annotations
-from typing import Union
+from typing import Union, Final
 from fractions import Fraction
 from decimal import Decimal
 from math import trunc
@@ -92,3 +92,6 @@ class sec(Fraction):
 
     def trunc(self) -> int:
         return trunc(self)
+
+
+NOT_FIXED_SEC: Final[sec] = sec(-100)

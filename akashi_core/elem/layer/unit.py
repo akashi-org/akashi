@@ -1,9 +1,9 @@
 # pyright: reportPrivateUsage=false, reportIncompatibleMethodOverride=false
+from __future__ import annotations
 from dataclasses import dataclass, field
 import typing as tp
 
 from .base import (
-    FittableDurationTrait,
     ShaderField,
     LayerField,
     LayerTrait,
@@ -14,7 +14,7 @@ from .base import (
 )
 from .base import register_entry, peek_entry, frag, poly
 from akashi_core.pysl import _gl as gl
-from akashi_core.time import sec
+from akashi_core.time import sec, NOT_FIXED_SEC
 from akashi_core.probe import get_duration, g_resource_map
 from akashi_core.pysl.shader import (
     ShaderCompiler,
@@ -36,7 +36,6 @@ from akashi_core.color import color_value
 from akashi_core.elem.layout import LayoutFn, LayoutInfo, LayoutLayerContext
 
 
-@dataclass
 class UnitUniform:
     texture0: tp.Final[gl.uniform[gl.sampler2D]] = gl._uniform_default()
 
@@ -65,7 +64,7 @@ _UnitPolyFn = LEntryPolyFn[UnitPolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn[U
 
 
 @dataclass
-class UnitHandle(TextureTrait, FittableDurationTrait, PositionTrait, LayerTrait):
+class UnitHandle(TextureTrait, PositionTrait, LayerTrait):
 
     def __enter__(self) -> 'UnitHandle':
         gctx.get_ctx()._cur_unit_ids.append(self._idx)
@@ -75,6 +74,7 @@ class UnitHandle(TextureTrait, FittableDurationTrait, PositionTrait, LayerTrait)
         cur_ctx = gctx.get_ctx()
         cur_unit_layer = tp.cast(UnitEntry, cur_ctx.layers[cur_ctx._cur_unit_ids[-1]])
 
+        unit_fitted_layer_indices: list[tuple[int, int]] = []
         if isinstance(cur_unit_layer.duration, sec):
             max_to: sec = sec(0)
             for layout_idx, layer_idx in enumerate(cur_unit_layer.layer_indices):
@@ -103,26 +103,35 @@ class UnitHandle(TextureTrait, FittableDurationTrait, PositionTrait, LayerTrait)
 
                         cur_layer.layer_size = (temp_layer_size[0], temp_layer_size[1])
 
-                if isinstance(cur_layer.duration, sec):
+                if isinstance(cur_layer._duration, sec):
 
                     # resolve -1 duration
-                    if cur_layer.kind in ["VIDEO", "AUDIO"] and cur_layer.duration == sec(-1):
+                    if cur_layer.kind in ["VIDEO", "AUDIO"] and cur_layer._duration == sec(-1):
                         layer_src: str = cur_layer.src  # type: ignore
                         if layer_src in g_resource_map:
                             cur_ctx.layers[layer_idx].duration = g_resource_map[layer_src]
                         else:
                             cur_ctx.layers[layer_idx].duration = get_duration(layer_src)
                             g_resource_map[layer_src] = tp.cast(sec, cur_ctx.layers[layer_idx].duration)
+                    elif cur_layer.duration == NOT_FIXED_SEC:
+                        cur_ctx.layers[layer_idx].duration = cur_layer._duration
 
                     layer_to = cur_ctx.layers[layer_idx].atom_offset + tp.cast(sec, cur_ctx.layers[layer_idx].duration)
                     if layer_to > max_to:
                         max_to = layer_to
+                elif isinstance(cur_layer._duration, UnitHandle):
+                    unit_fitted_layer_indices.append((layer_idx, cur_layer._duration._idx))
+                else:  # asuumes AtomHandle
+                    raise Exception('Passing a layer handle to duration is prohibited for child layers of an unit layer')
 
             cur_unit_layer.duration = max_to
 
-            # # resolve unit fitted layers
-            # for at_layer_idx in unit_fitted_layer_indices:
-            #     cur_layers[at_layer_idx].duration = cur_atom._duration
+            # resolve unit fitted layers
+            for from_layer_idx, unit_layer_idx in unit_fitted_layer_indices:
+                ref_duration = cur_ctx.layers[unit_layer_idx].duration
+                if ref_duration == NOT_FIXED_SEC:
+                    raise Exception('Invalid unit handle passed to the duration field')
+                cur_ctx.layers[from_layer_idx].duration = ref_duration
 
         cur_ctx._cur_unit_ids.pop()
         return False
@@ -168,7 +177,7 @@ class unit(object):
 
 
 @dataclass
-class SceneHandle(FittableDurationTrait, PositionTrait, LayerTrait):
+class SceneHandle(PositionTrait, LayerTrait):
 
     @staticmethod
     def __update_unit_layer_atom_offset(unit_entry: 'UnitEntry', new_offset: sec):
@@ -191,7 +200,7 @@ class SceneHandle(FittableDurationTrait, PositionTrait, LayerTrait):
         cur_unit_layer = tp.cast(UnitEntry, cur_ctx.layers[cur_ctx._cur_unit_ids[-1]])
 
         if not isinstance(cur_unit_layer.duration, sec):
-            raise Exception('Atom fitted layer is not allowed in scene layer')
+            raise Exception('Passing a layer handle to duration is prohibited for an scene layer')
 
         acc_duration: sec = sec(0)
         for layer_idx in cur_unit_layer.layer_indices:
@@ -202,17 +211,20 @@ class SceneHandle(FittableDurationTrait, PositionTrait, LayerTrait):
             else:
                 cur_layer.atom_offset += acc_duration
 
-            if not isinstance(cur_layer.duration, sec):
-                raise Exception('Atom fitted layer is not allowed in scene layer')
+            if not isinstance(cur_layer._duration, sec):
+                print(cur_layer._duration)
+                raise Exception('Passing a layer handle to duration is prohibited for child layers of an scene layer')
 
             # resolve -1 duration
-            if cur_layer.kind in ["VIDEO", "AUDIO"] and cur_layer.duration == sec(-1):
+            if cur_layer.kind in ["VIDEO", "AUDIO"] and cur_layer._duration == sec(-1):
                 layer_src: str = cur_layer.src  # type: ignore
                 if layer_src in g_resource_map:
                     cur_layer.duration = g_resource_map[layer_src]
                 else:
                     cur_layer.duration = get_duration(layer_src)
                     g_resource_map[layer_src] = cur_layer.duration
+            elif cur_layer.duration == NOT_FIXED_SEC:
+                cur_layer.duration = cur_layer._duration
 
             acc_duration += cur_layer.duration
 
