@@ -3,7 +3,6 @@ from __future__ import annotations
 import typing as tp
 from dataclasses import dataclass, field
 
-from .layer.base import PositionField
 from .context import _GlobalKronContext as gctx
 from .context import lwidth as ak_lwidth
 from .context import lheight as ak_lheight

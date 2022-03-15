@@ -2,17 +2,19 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 import typing as tp
+from typing import runtime_checkable
 
 from .base import (
     ShaderField,
     LayerField,
     LayerTrait,
-    PositionField,
-    PositionTrait,
+    HasTransformField,
+    TransformField,
+    TransformTrait,
     TextureField,
     TextureTrait,
 )
-from .base import register_entry, peek_entry, frag, poly
+from .base import register_entry, peek_entry, frag, poly, HasMediaField
 from akashi_core.pysl import _gl as gl
 from akashi_core.time import sec, NOT_FIXED_SEC
 from akashi_core.probe import get_duration, g_resource_map
@@ -51,12 +53,31 @@ class UnitPolyBuffer(poly, UnitUniform, gl._LayerPolyOutput):
 
 
 @dataclass
-class UnitEntry(TextureField, ShaderField, PositionField, LayerField):
-
+class UnitLocalField:
     layer_indices: list[int] = field(default_factory=list, init=False)
     fb_size: tuple[int, int] = field(default=(0, 0), init=False)
     bg_color: str = "#00000000"  # transparent
     _layout_fn: LayoutFn | None = None
+
+
+@runtime_checkable
+class HasUnitLocalField(tp.Protocol):
+    unit: UnitLocalField
+
+
+@dataclass
+class UnitEntry(LayerField):
+
+    unit: UnitLocalField = field(init=False)
+    transform: TransformField = field(init=False)
+    tex: TextureField = field(init=False)
+    shader: ShaderField = field(init=False)
+
+    def __post_init__(self):
+        self.unit = UnitLocalField()
+        self.transform = TransformField()
+        self.tex = TextureField()
+        self.shader = ShaderField()
 
 
 _UnitFragFn = LEntryFragFn[UnitFragBuffer] | _TEntryFnOpaque[_NamedEntryFragFn[UnitFragBuffer]]
@@ -64,7 +85,14 @@ _UnitPolyFn = LEntryPolyFn[UnitPolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn[U
 
 
 @dataclass
-class UnitHandle(TextureTrait, PositionTrait, LayerTrait):
+class UnitHandle(LayerTrait):
+
+    transform: TransformTrait = field(init=False)
+    tex: TextureTrait = field(init=False)
+
+    def __post_init__(self):
+        self.tex = TextureTrait(self._idx)
+        self.transform = TransformTrait(self._idx)
 
     def __enter__(self) -> 'UnitHandle':
         gctx.get_ctx()._cur_unit_ids.append(self._idx)
@@ -77,37 +105,37 @@ class UnitHandle(TextureTrait, PositionTrait, LayerTrait):
         unit_fitted_layer_indices: list[tuple[int, int]] = []
         if isinstance(cur_unit_layer.duration, sec):
             max_to: sec = sec(0)
-            for layout_idx, layer_idx in enumerate(cur_unit_layer.layer_indices):
+            for layout_idx, layer_idx in enumerate(cur_unit_layer.unit.layer_indices):
 
                 cur_layer = cur_ctx.layers[layer_idx]
 
-                if isinstance(cur_layer, PositionField) and cur_unit_layer._layout_fn:
+                if isinstance(cur_layer, HasTransformField) and cur_unit_layer.unit._layout_fn:
 
-                    layout_info = cur_unit_layer._layout_fn(LayoutLayerContext(
+                    layout_info = cur_unit_layer.unit._layout_fn(LayoutLayerContext(
                         cur_layer.key,
                         layout_idx,
-                        len(cur_unit_layer.layer_indices)
+                        len(cur_unit_layer.unit.layer_indices)
                     ))
                     if layout_info:
-                        cur_layer.pos = layout_info.pos
-                        cur_layer.z = layout_info.z
+                        cur_layer.transform.pos = layout_info.pos
+                        cur_layer.transform.z = layout_info.z
 
                         temp_layer_size = list(layout_info.layer_size)
                         if cur_layer.kind == 'UNIT':
-                            aspect_ratio = sec(tp.cast(UnitEntry, cur_layer).fb_size[0], tp.cast(
-                                UnitEntry, cur_layer).fb_size[1])
+                            aspect_ratio = sec(tp.cast(UnitEntry, cur_layer).unit.fb_size[0], tp.cast(
+                                UnitEntry, cur_layer).unit.fb_size[1])
                             if temp_layer_size[0] == -1:
                                 temp_layer_size[0] = (sec(temp_layer_size[1]) * aspect_ratio).trunc()
                             if temp_layer_size[1] == -1:
                                 temp_layer_size[1] = (sec(temp_layer_size[0]) / aspect_ratio).trunc()
 
-                        cur_layer.layer_size = (temp_layer_size[0], temp_layer_size[1])
+                        cur_layer.transform.layer_size = (temp_layer_size[0], temp_layer_size[1])
 
                 if isinstance(cur_layer._duration, sec):
 
                     # resolve -1 duration
                     if cur_layer.kind in ["VIDEO", "AUDIO"] and cur_layer._duration == sec(-1):
-                        layer_src: str = cur_layer.src  # type: ignore
+                        layer_src: str = tp.cast('HasMediaField', cur_layer).media.src
                         if layer_src in g_resource_map:
                             cur_ctx.layers[layer_idx].duration = g_resource_map[layer_src]
                         else:
@@ -138,22 +166,22 @@ class UnitHandle(TextureTrait, PositionTrait, LayerTrait):
 
     def layout(self, layout_fn: LayoutFn) -> 'UnitHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
-            cur_layer._layout_fn = layout_fn
+            cur_layer.unit._layout_fn = layout_fn
         return self
 
     def frag(self, *frag_fns: _UnitFragFn, preamble: tuple[str, ...] = tuple()) -> 'UnitHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
-            cur_layer.frag_shader = ShaderCompiler(frag_fns, UnitFragBuffer, _frag_shader_header, preamble)
+            cur_layer.shader.frag_shader = ShaderCompiler(frag_fns, UnitFragBuffer, _frag_shader_header, preamble)
         return self
 
     def poly(self, *poly_fns: _UnitPolyFn, preamble: tuple[str, ...] = tuple()) -> 'UnitHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
-            cur_layer.poly_shader = ShaderCompiler(poly_fns, UnitPolyBuffer, _poly_shader_header, preamble)
+            cur_layer.shader.poly_shader = ShaderCompiler(poly_fns, UnitPolyBuffer, _poly_shader_header, preamble)
         return self
 
     def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'UnitHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
-            cur_layer.bg_color = color_value(color)
+            cur_layer.unit.bg_color = color_value(color)
         return self
 
 
@@ -170,21 +198,26 @@ class unit(object):
 
     def __new__(cls, width: int, height: int, key: str = '') -> UnitHandle:
         entry = UnitEntry()
-        entry.layer_size = (width, height)
-        entry.fb_size = (width, height)
+        entry.transform.layer_size = (width, height)
+        entry.unit.fb_size = (width, height)
         idx = register_entry(entry, 'UNIT', key)
         return UnitHandle(idx)
 
 
 @dataclass
-class SceneHandle(PositionTrait, LayerTrait):
+class SceneHandle(LayerTrait):
+
+    transform: TransformTrait = field(init=False)
+
+    def __post_init__(self):
+        self.transform = TransformTrait(self._idx)
 
     @staticmethod
     def __update_unit_layer_atom_offset(unit_entry: 'UnitEntry', new_offset: sec):
 
         cur_ctx = gctx.get_ctx()
         unit_entry.atom_offset += new_offset
-        for layer_idx in unit_entry.layer_indices:
+        for layer_idx in unit_entry.unit.layer_indices:
             cur_layer = cur_ctx.layers[layer_idx]
             if cur_layer.kind == 'UNIT':
                 SceneHandle.__update_unit_layer_atom_offset(tp.cast('UnitEntry', cur_layer), new_offset)
@@ -203,7 +236,7 @@ class SceneHandle(PositionTrait, LayerTrait):
             raise Exception('Passing a layer handle to duration is prohibited for an scene layer')
 
         acc_duration: sec = sec(0)
-        for layer_idx in cur_unit_layer.layer_indices:
+        for layer_idx in cur_unit_layer.unit.layer_indices:
 
             cur_layer = cur_ctx.layers[layer_idx]
             if cur_layer.kind == 'UNIT':
@@ -217,7 +250,7 @@ class SceneHandle(PositionTrait, LayerTrait):
 
             # resolve -1 duration
             if cur_layer.kind in ["VIDEO", "AUDIO"] and cur_layer._duration == sec(-1):
-                layer_src: str = cur_layer.src  # type: ignore
+                layer_src: str = tp.cast('HasMediaField', cur_layer).media.src
                 if layer_src in g_resource_map:
                     cur_layer.duration = g_resource_map[layer_src]
                 else:
@@ -235,7 +268,7 @@ class SceneHandle(PositionTrait, LayerTrait):
 
     def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'SceneHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
-            cur_layer.bg_color = color_value(color)
+            cur_layer.unit.bg_color = color_value(color)
         return self
 
 
@@ -249,11 +282,11 @@ class scene(object):
 
     def __new__(cls, width: int | None = None, height: int | None = None, key: str = '') -> SceneHandle:
         entry = UnitEntry()
-        entry.layer_size = (
+        entry.transform.layer_size = (
             ak_lwidth() if not width else width,
             ak_lheight() if not height else height,
         )
-        entry.fb_size = entry.layer_size
-        entry.pos = ak_lcenter()
+        entry.unit.fb_size = entry.transform.layer_size
+        entry.transform.pos = ak_lcenter()
         idx = register_entry(entry, 'UNIT', key)
         return SceneHandle(idx)

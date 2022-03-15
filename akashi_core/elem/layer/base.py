@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from abc import ABCMeta
 import typing as tp
+from typing import runtime_checkable
 
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.elem.uuid import UUID, gen_uuid
@@ -51,46 +52,50 @@ class LayerTrait(metaclass=ABCMeta):
             cur_layer.atom_offset = sec(offset)
         return self
 
-    def ap(self: '_TLayerTrait', *hs: tp.Callable[['_TLayerTrait'], '_TLayerTrait']) -> '_TLayerTrait':
-        for h in hs:
-            h(self)
+    def ap(self: '_TLayerTrait', h: tp.Callable[['_TLayerTrait'], tp.Any]) -> '_TLayerTrait':
+        h(self)
         return self
 
 
-''' Position Concept '''
-
-
-_TPositionTrait = tp.TypeVar('_TPositionTrait', bound='PositionTrait')
+''' Transform Concept '''
 
 
 @dataclass
-class PositionField:
+class TransformField:
     pos: tuple[int, int] = (0, 0)
     z: float = 0.0
     layer_size: tuple[int, int] = (-1, -1)
     rotation: sec = sec(0)
 
 
-class PositionTrait(LayerTrait, metaclass=ABCMeta):
+@runtime_checkable
+class HasTransformField(tp.Protocol):
+    transform: TransformField
 
-    def pos(self: '_TPositionTrait', x: int, y: int) -> '_TPositionTrait':
+
+@dataclass
+class TransformTrait:
+
+    _idx: int
+
+    def pos(self, x: int, y: int) -> 'TransformTrait':
         if (cur_layer := peek_entry(self._idx)):
-            tp.cast(PositionField, cur_layer).pos = (x, y)
+            tp.cast(HasTransformField, cur_layer).transform.pos = (x, y)
         return self
 
-    def z(self: '_TPositionTrait', value: float) -> '_TPositionTrait':
+    def z(self, value: float) -> 'TransformTrait':
         if (cur_layer := peek_entry(self._idx)):
-            tp.cast(PositionField, cur_layer).z = value
+            tp.cast(HasTransformField, cur_layer).transform.z = value
         return self
 
-    def layer_size(self: '_TPositionTrait', width: int, height: int) -> '_TPositionTrait':
+    def layer_size(self, width: int, height: int) -> 'TransformTrait':
         if (cur_layer := peek_entry(self._idx)):
-            tp.cast(PositionField, cur_layer).layer_size = (width, height)
+            tp.cast(HasTransformField, cur_layer).transform.layer_size = (width, height)
         return self
 
-    def rotate(self: '_TPositionTrait', degrees: int | float | sec) -> '_TPositionTrait':
+    def rotate(self, degrees: int | float | sec) -> 'TransformTrait':
         if (cur_layer := peek_entry(self._idx)):
-            tp.cast(PositionField, cur_layer).rotation = sec(degrees)
+            tp.cast(HasTransformField, cur_layer).transform.rotation = sec(degrees)
         return self
 
 
@@ -110,31 +115,34 @@ class ShaderField:
 ''' Crop Concept '''
 
 
-_TCropTrait = tp.TypeVar('_TCropTrait', bound='CropTrait')
-
-
 @dataclass
 class CropField:
     crop_begin: tuple[int, int] = (0, 0)
     crop_end: tuple[int, int] = (0, 0)
 
 
-class CropTrait(LayerTrait, metaclass=ABCMeta):
+@runtime_checkable
+class HasCropField(tp.Protocol):
+    crop: CropField
 
-    def crop_begin(self: '_TCropTrait', x: int, y: int) -> '_TCropTrait':
+
+@dataclass
+class CropTrait:
+
+    _idx: int
+
+    def crop_begin(self, x: int, y: int) -> 'CropTrait':
         if (cur_layer := peek_entry(self._idx)):
-            tp.cast(CropField, cur_layer).crop_begin = (x, y)
+            tp.cast(HasCropField, cur_layer).crop.crop_begin = (x, y)
         return self
 
-    def crop_end(self: '_TCropTrait', x: int, y: int) -> '_TCropTrait':
+    def crop_end(self, x: int, y: int) -> 'CropTrait':
         if (cur_layer := peek_entry(self._idx)):
-            tp.cast(CropField, cur_layer).crop_end = (x, y)
+            tp.cast(HasCropField, cur_layer).crop.crop_end = (x, y)
         return self
 
 
 ''' Texture Concept '''
-
-_TTextureTrait = tp.TypeVar('_TTextureTrait', bound='TextureTrait')
 
 
 @dataclass
@@ -143,16 +151,55 @@ class TextureField:
     flip_h: bool = False
 
 
-class TextureTrait(LayerTrait, metaclass=ABCMeta):
+@runtime_checkable
+class HasTextureField(tp.Protocol):
+    tex: TextureField
 
-    def flip_v(self: '_TTextureTrait', enable_flag: bool = True) -> '_TTextureTrait':
+
+@dataclass
+class TextureTrait:
+
+    _idx: int
+
+    def flip_v(self, enable_flag: bool = True) -> 'TextureTrait':
         if (cur_layer := peek_entry(self._idx)):
-            tp.cast(TextureField, cur_layer).flip_v = enable_flag
+            tp.cast(HasTextureField, cur_layer).tex.flip_v = enable_flag
         return self
 
-    def flip_h(self: '_TTextureTrait', enable_flag: bool = True) -> '_TTextureTrait':
+    def flip_h(self, enable_flag: bool = True) -> 'TextureTrait':
         if (cur_layer := peek_entry(self._idx)):
-            tp.cast(TextureField, cur_layer).flip_h = enable_flag
+            tp.cast(HasTextureField, cur_layer).tex.flip_h = enable_flag
+        return self
+
+
+''' Media Concept '''
+
+
+@dataclass
+class MediaField:
+    src: str
+    gain: float = 1.0
+    start: sec = sec(0)  # temporary
+
+
+@runtime_checkable
+class HasMediaField(tp.Protocol):
+    media: MediaField
+
+
+@dataclass
+class MediaTrait:
+
+    _idx: int
+
+    def gain(self, gain: float) -> 'MediaTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasMediaField, cur_layer).media.gain = gain
+        return self
+
+    def start(self, start: sec | float) -> 'MediaTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasMediaField, cur_layer).media.start = sec(start)
         return self
 
 
@@ -194,6 +241,6 @@ def register_entry(entry: LayerField, kind: LayerKind, key: str) -> int:
         cur_atom.layer_indices.append(cur_layer_idx)
     else:
         cur_unit_layer = tp.cast('UnitEntry', cur_ctx.layers[gctx.get_ctx()._cur_unit_ids[-1]])
-        cur_unit_layer.layer_indices.append(cur_layer_idx)
+        cur_unit_layer.unit.layer_indices.append(cur_layer_idx)
 
     return cur_layer_idx

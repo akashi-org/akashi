@@ -10,7 +10,7 @@ from akashi_core.color import color_value
 from akashi_core.probe import get_duration, g_resource_map
 
 if tp.TYPE_CHECKING:
-    from .layer.base import LayerField
+    from .layer.base import LayerField, HasMediaField
 
 
 @dataclass
@@ -42,7 +42,7 @@ class AtomHandle:
 
                 # resolve -1 duration
                 if cur_layer.kind in ["VIDEO", "AUDIO"] and cur_layer._duration == sec(-1):
-                    layer_src: str = cur_layer.src  # type: ignore
+                    layer_src: str = tp.cast('HasMediaField', cur_layer).media.src
                     if layer_src in g_resource_map:
                         cur_layer.duration = g_resource_map[layer_src]
                     else:

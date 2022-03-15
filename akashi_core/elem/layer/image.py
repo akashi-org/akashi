@@ -1,11 +1,11 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import typing as tp
 
 from .base import (
-    PositionField,
-    PositionTrait,
+    TransformField,
+    TransformTrait,
     TextureField,
     TextureTrait,
     ShaderField,
@@ -46,21 +46,47 @@ class ImageLocalField:
 
 
 @dataclass
-class ImageEntry(TextureField, CropField, ShaderField, PositionField, LayerField, ImageLocalField):
-    ...
+class RequiredParams:
+    _req_srcs: list[str]
 
 
 @dataclass
-class ImageHandle(TextureTrait, CropTrait, PositionTrait, LayerTrait):
+class ImageEntry(LayerField, RequiredParams):
+
+    image: ImageLocalField = field(init=False)
+    transform: TransformField = field(init=False)
+    crop: CropField = field(init=False)
+    tex: TextureField = field(init=False)
+    shader: ShaderField = field(init=False)
+
+    def __post_init__(self):
+        self.image = ImageLocalField(self._req_srcs)
+        self.transform = TransformField()
+        self.crop = CropField()
+        self.tex = TextureField()
+        self.shader = ShaderField()
+
+
+@dataclass
+class ImageHandle(LayerTrait):
+
+    transform: TransformTrait = field(init=False)
+    crop: CropTrait = field(init=False)
+    tex: TextureTrait = field(init=False)
+
+    def __post_init__(self):
+        self.transform = TransformTrait(self._idx)
+        self.crop = CropTrait(self._idx)
+        self.tex = TextureTrait(self._idx)
 
     def frag(self, *frag_fns: _ImageFragFn, preamble: tuple[str, ...] = tuple()) -> 'ImageHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ImageEntry):
-            cur_layer.frag_shader = ShaderCompiler(frag_fns, ImageFragBuffer, _frag_shader_header, preamble)
+            cur_layer.shader.frag_shader = ShaderCompiler(frag_fns, ImageFragBuffer, _frag_shader_header, preamble)
         return self
 
     def poly(self, *poly_fns: _ImagePolyFn, preamble: tuple[str, ...] = tuple()) -> 'ImageHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ImageEntry):
-            cur_layer.poly_shader = ShaderCompiler(poly_fns, ImagePolyBuffer, _poly_shader_header, preamble)
+            cur_layer.shader.poly_shader = ShaderCompiler(poly_fns, ImagePolyBuffer, _poly_shader_header, preamble)
         return self
 
 

@@ -83,7 +83,7 @@ def _cur_local_size() -> tuple[int, int]:
     if len(unit_ids) == 0:
         return cur_ctx.config.video.resolution
     else:
-        return cast('UnitEntry', cur_ctx.layers[unit_ids[-1]]).fb_size
+        return cast('UnitEntry', cur_ctx.layers[unit_ids[-1]]).unit.fb_size
 
 
 def width() -> int:

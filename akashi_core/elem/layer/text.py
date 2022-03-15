@@ -2,13 +2,14 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 import typing as tp
+from typing import runtime_checkable
 
 from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
 
 from .base import (
-    PositionField,
-    PositionTrait,
+    TransformField,
+    TransformTrait,
     TextureField,
     TextureTrait,
     ShaderField,
@@ -65,76 +66,114 @@ class TextLocalField:
     pad: tuple[int, int, int, int] = (0, 0, 0, 0)  # left, right, top, bottom
     line_span: int = 0
 
-
-@dataclass
-class TextEntry(TextureField, ShaderField, PositionField, LayerField, TextLocalField):
-
     def __post_init__(self):
         self.style = TextStyle()
 
 
+@runtime_checkable
+class HasTextLocalField(tp.Protocol):
+    text: TextLocalField
+
+
 @dataclass
-class TextHandle(TextureTrait, PositionTrait, LayerTrait):
+class RequiredParams:
+    _req_text: str
+
+
+@dataclass
+class TextLocalTrait:
+
+    _idx: int
+
+    def text_align(self, align: TextAlign) -> 'TextLocalTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasTextLocalField, cur_layer).text.text_align = align
+        return self
+
+    def pad_x(self, a: int, b: tp.Optional[int] = None) -> 'TextLocalTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            left_pad = a
+            right_pad = a if not b else b
+            tp.cast(HasTextLocalField, cur_layer).text.pad = (
+                left_pad, right_pad, *tp.cast(HasTextLocalField, cur_layer).text.pad[2:])
+        return self
+
+    def pad_y(self, a: int, b: tp.Optional[int] = None) -> 'TextLocalTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            top_pad = a
+            bottom_pad = a if not b else b
+            tp.cast(HasTextLocalField, cur_layer).text.pad = (
+                *tp.cast(HasTextLocalField, cur_layer).text.pad[:2], top_pad, bottom_pad)
+        return self
+
+    def line_span(self, span: int) -> 'TextLocalTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasTextLocalField, cur_layer).text.line_span = span
+        return self
+
+    def font_path(self, path: str) -> 'TextLocalTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasTextLocalField, cur_layer).text.style.font_path = path
+        return self
+
+    def fg(self, fg_color: tp.Union[str, ColorEnum], fg_size: int) -> 'TextLocalTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasTextLocalField, cur_layer).text.style.fg_color = color_value(fg_color)
+            tp.cast(HasTextLocalField, cur_layer).text.style.fg_size = fg_size
+        return self
+
+    def outline(self, outline_color: tp.Union[str, ColorEnum], outline_size: int) -> 'TextLocalTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasTextLocalField, cur_layer).text.style.use_shadow = False
+            tp.cast(HasTextLocalField, cur_layer).text.style.use_outline = True
+            tp.cast(HasTextLocalField, cur_layer).text.style.outline_color = color_value(outline_color)
+            tp.cast(HasTextLocalField, cur_layer).text.style.outline_size = outline_size
+        return self
+
+    def shadow(self, shadow_color: tp.Union[str, ColorEnum], shadow_size: int) -> 'TextLocalTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasTextLocalField, cur_layer).text.style.use_outline = False
+            tp.cast(HasTextLocalField, cur_layer).text.style.use_shadow = True
+            tp.cast(HasTextLocalField, cur_layer).text.style.shadow_color = color_value(shadow_color)
+            tp.cast(HasTextLocalField, cur_layer).text.style.shadow_size = shadow_size
+        return self
+
+
+@dataclass
+class TextEntry(LayerField, RequiredParams):
+
+    text: TextLocalField = field(init=False)
+    transform: TransformField = field(init=False)
+    tex: TextureField = field(init=False)
+    shader: ShaderField = field(init=False)
+
+    def __post_init__(self):
+        self.text = TextLocalField(self._req_text)
+        self.transform = TransformField()
+        self.tex = TextureField()
+        self.shader = ShaderField()
+
+
+@dataclass
+class TextHandle(LayerTrait):
+
+    text: TextLocalTrait = field(init=False)
+    transform: TransformTrait = field(init=False)
+    tex: TextureTrait = field(init=False)
+
+    def __post_init__(self):
+        self.text = TextLocalTrait(self._idx)
+        self.tex = TextureTrait(self._idx)
+        self.transform = TransformTrait(self._idx)
 
     def frag(self, *frag_fns: _TextFragFn, preamble: tuple[str, ...] = tuple()) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.frag_shader = ShaderCompiler(frag_fns, TextFragBuffer, _frag_shader_header, preamble)
+            cur_layer.shader.frag_shader = ShaderCompiler(frag_fns, TextFragBuffer, _frag_shader_header, preamble)
         return self
 
     def poly(self, *poly_fns: _TextPolyFn, preamble: tuple[str, ...] = tuple()) -> 'TextHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.poly_shader = ShaderCompiler(poly_fns, TextPolyBuffer, _poly_shader_header, preamble)
-        return self
-
-    def text_align(self, align: TextAlign) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.text_align = align
-        return self
-
-    def pad_x(self, a: int, b: tp.Optional[int] = None) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            left_pad = a
-            right_pad = a if not b else b
-            cur_layer.pad = (left_pad, right_pad, *cur_layer.pad[2:])
-        return self
-
-    def pad_y(self, a: int, b: tp.Optional[int] = None) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            top_pad = a
-            bottom_pad = a if not b else b
-            cur_layer.pad = (*cur_layer.pad[:2], top_pad, bottom_pad)
-        return self
-
-    def line_span(self, span: int) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.line_span = span
-        return self
-
-    def font_path(self, path: str) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.style.font_path = path
-        return self
-
-    def fg(self, fg_color: tp.Union[str, ColorEnum], fg_size: int) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.style.fg_color = color_value(fg_color)
-            cur_layer.style.fg_size = fg_size
-        return self
-
-    def outline(self, outline_color: tp.Union[str, ColorEnum], outline_size: int) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.style.use_shadow = False
-            cur_layer.style.use_outline = True
-            cur_layer.style.outline_color = color_value(outline_color)
-            cur_layer.style.outline_size = outline_size
-        return self
-
-    def shadow(self, shadow_color: tp.Union[str, ColorEnum], shadow_size: int) -> 'TextHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.style.use_outline = False
-            cur_layer.style.use_shadow = True
-            cur_layer.style.shadow_color = color_value(shadow_color)
-            cur_layer.style.shadow_size = shadow_size
+            cur_layer.shader.poly_shader = ShaderCompiler(poly_fns, TextPolyBuffer, _poly_shader_header, preamble)
         return self
 
 
