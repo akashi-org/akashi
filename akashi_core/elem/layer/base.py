@@ -1,7 +1,6 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
 from dataclasses import dataclass
-from abc import ABCMeta
 import typing as tp
 from typing import runtime_checkable
 
@@ -37,7 +36,7 @@ class LayerField:
 
 
 @dataclass
-class LayerTrait(metaclass=ABCMeta):
+class LayerTrait:
 
     _idx: int
 

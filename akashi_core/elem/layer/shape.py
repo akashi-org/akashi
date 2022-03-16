@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import typing as tp
 from typing import runtime_checkable
-from abc import ABCMeta
 
 from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
