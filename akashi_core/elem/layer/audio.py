@@ -41,9 +41,9 @@ class AudioEntry(LayerField, RequiredParams):
     media: MediaField = field(init=False)
 
     def __post_init__(self):
+        self._duration = sec(-1)
         self.audio = AudioLocalField()
         self.media = MediaField(src=self._req_src)
-        self.duration = sec(-1)
 
 
 @dataclass

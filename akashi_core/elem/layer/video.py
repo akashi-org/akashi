@@ -98,7 +98,7 @@ class VideoEntry(LayerField, RequiredParams):
     shader: ShaderField = field(init=False)
 
     def __post_init__(self):
-        self.duration = sec(-1)
+        self._duration = sec(-1)
         self.video = VideoLocalField()
         self.media = MediaField(self._req_src)
         self.transform = TransformField()
