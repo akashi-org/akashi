@@ -1,13 +1,17 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Callable, cast
+from typing import TYPE_CHECKING, Optional, Callable, cast, Any
 from dataclasses import dataclass, field
 from .uuid import gen_uuid, UUID
 from akashi_core.config import AKConf, config_parse
+from akashi_core.time import sec, NOT_FIXED_SEC
+from akashi_core.probe import get_duration, g_resource_map
+from akashi_core.color import Color as ColorEnum
+from akashi_core.color import color_value
 import sys
 
 if TYPE_CHECKING:
-    from .atom import AtomEntry
+    from .layer.base import LayerField, HasMediaField
     from .layer.base import LayerField
     from .layer.unit import UnitEntry
     ElemFn = Callable[[], None]
@@ -49,6 +53,74 @@ class _GlobalKronContext:
         cls.__ctx = None
 
 
+@dataclass
+class AtomEntry:
+
+    uuid: UUID
+    layer_indices: list[int] = field(default_factory=list, init=False)
+    bg_color: str = "#000000"  # "#rrggbb"
+    _duration: sec = field(default=sec(0), init=False)
+
+
+@dataclass
+class AtomHandle:
+
+    _atom_idx: int
+
+    def __enter__(self) -> 'AtomHandle':
+        return self
+
+    def __exit__(self, *ext: Any):
+
+        cur_atom = _GlobalKronContext.get_ctx().atoms[self._atom_idx]
+        cur_layers = _GlobalKronContext.get_ctx().layers
+        max_to: sec = sec(0)
+        atom_fitted_layer_indices: list[int] = []
+        for layer_idx in cur_atom.layer_indices:
+            cur_layer = cur_layers[layer_idx]
+            if isinstance(cur_layer._duration, sec):
+
+                # resolve -1 duration
+                if cur_layer.kind in ["VIDEO", "AUDIO"] and cur_layer._duration == sec(-1):
+                    layer_src: str = cast('HasMediaField', cur_layer).media.src
+                    if layer_src in g_resource_map:
+                        cur_layer.duration = g_resource_map[layer_src]
+                    else:
+                        cur_layer.duration = get_duration(layer_src)
+                        g_resource_map[layer_src] = cur_layer.duration
+                elif cur_layer.duration == NOT_FIXED_SEC:
+                    cur_layer.duration = cur_layer._duration
+
+                layer_to = cur_layer.atom_offset + cur_layer.duration
+                if layer_to > max_to:
+                    max_to = layer_to
+            else:
+                atom_fitted_layer_indices.append(layer_idx)
+
+        cur_atom._duration = max_to
+
+        # resolve atom fitted layers
+        for at_layer_idx in atom_fitted_layer_indices:
+            cur_layers[at_layer_idx].duration = cur_atom._duration
+
+        return False
+
+    def bg_color(self, color: str | 'ColorEnum') -> 'AtomHandle':
+        cur_atom = _GlobalKronContext.get_ctx().atoms[self._atom_idx]
+        cur_atom.bg_color = color_value(color)
+        return self
+
+
+def atom() -> AtomHandle:
+
+    uuid = gen_uuid()
+    _atom = AtomEntry(uuid)
+    _GlobalKronContext.get_ctx().atoms.append(_atom)
+    atom_idx = len(_GlobalKronContext.get_ctx().atoms) - 1
+
+    return AtomHandle(atom_idx)
+
+
 class _ElemFnOpaque:
     ...
 
@@ -62,7 +134,8 @@ def entry() -> Callable[['ElemFn'], Callable[[_ElemFnOpaque], KronContext]]:
             config = config_parse(cast(str, config_path))
             _GlobalKronContext.flush_ctx()
             _GlobalKronContext.init_ctx(config)
-            fn()
+            with atom():
+                fn()
             return _GlobalKronContext.get_ctx()
         sys.modules[fn.__module__].__akashi_export_elem_fn = inner  # type: ignore
         return inner

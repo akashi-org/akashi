@@ -1,7 +1,6 @@
 __all__ = [
     "argv",
     "entry",
-    "atom",
     "video",
     "audio",
     "image",
@@ -63,7 +62,6 @@ from .elem.context import (
     lhheight,
     lcenter
 )
-from .elem.atom import atom
 from .elem.layout import LayoutInfo, vstack, hstack, LayoutLayerContext
 from .elem.layer.base import frag, poly
 from .elem.layer.video import video
