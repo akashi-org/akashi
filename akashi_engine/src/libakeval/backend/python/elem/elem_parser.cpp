@@ -184,7 +184,8 @@ namespace akashi {
                     to_rational(layer_params.attr("media").attr("start"));
             } else if (type_str == "IMAGE") {
                 layer_ctx.type = static_cast<int>(core::LayerType::IMAGE);
-                for (const auto& src : layer_params.attr("srcs").cast<pybind11::list>()) {
+                for (const auto& src :
+                     layer_params.attr("image").attr("srcs").cast<pybind11::list>()) {
                     layer_ctx.image_layer_ctx.srcs.push_back(src.cast<std::string>());
                 }
 
