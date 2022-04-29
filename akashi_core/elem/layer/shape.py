@@ -213,7 +213,7 @@ rect_poly = ShapePolyBuffer
 RectTraitFn = tp.Callable[[RectTrait], tp.Any]
 
 
-def rect(width: int, height: int, trait_fn: RectTraitFn) -> LayerRef:
+def rect(width: int, height: int, *trait_fns: RectTraitFn) -> LayerRef:
 
     entry = ShapeEntry('RECT')
     entry.shape.rect.width = width
@@ -221,7 +221,7 @@ def rect(width: int, height: int, trait_fn: RectTraitFn) -> LayerRef:
     idx = register_entry(entry, 'SHAPE', '')
     t = RectTrait(idx)
     t.transform.pos(*lcenter())
-    trait_fn(t)
+    [tfn(t) for tfn in trait_fns]
     return LayerRef(idx)
 
 
@@ -232,14 +232,14 @@ circle_poly = ShapePolyBuffer
 CircleTraitFn = tp.Callable[[CircleTrait], tp.Any]
 
 
-def circle(radius: float, trait_fn: CircleTraitFn) -> LayerRef:
+def circle(radius: float, *trait_fns: CircleTraitFn) -> LayerRef:
 
     entry = ShapeEntry('CIRCLE')
     entry.shape.circle.circle_radius = radius
     idx = register_entry(entry, 'SHAPE', '')
     t = CircleTrait(idx)
     t.transform.pos(*lcenter())
-    trait_fn(t)
+    [tfn(t) for tfn in trait_fns]
     return LayerRef(idx)
 
 
@@ -250,14 +250,14 @@ tri_poly = ShapePolyBuffer
 TriangleTraitFn = tp.Callable[[TriangleTrait], tp.Any]
 
 
-def tri(side: float, trait_fn: TriangleTraitFn) -> LayerRef:
+def tri(side: float, *trait_fns: TriangleTraitFn) -> LayerRef:
 
     entry = ShapeEntry('TRIANGLE')
     entry.shape.tri.side = side
     idx = register_entry(entry, 'SHAPE', '')
     t = TriangleTrait(idx)
     t.transform.pos(*lcenter())
-    trait_fn(t)
+    [tfn(t) for tfn in trait_fns]
     return LayerRef(idx)
 
 
@@ -268,12 +268,12 @@ line_poly = ShapePolyBuffer
 LineTraitFn = tp.Callable[[LineTrait], tp.Any]
 
 
-def line(size: float, trait_fn: LineTraitFn) -> LayerRef:
+def line(size: float, *trait_fns: LineTraitFn) -> LayerRef:
 
     entry = ShapeEntry('LINE')
     entry.shape.line.size = size
     idx = register_entry(entry, 'SHAPE', '')
     t = LineTrait(idx)
     t.transform.pos(*lcenter())
-    trait_fn(t)
+    [tfn(t) for tfn in trait_fns]
     return LayerRef(idx)

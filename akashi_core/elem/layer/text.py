@@ -185,11 +185,11 @@ text_poly = TextPolyBuffer
 TextTraitFn = tp.Callable[[TextTrait], tp.Any]
 
 
-def text(text: str, trait_fn: TextTraitFn) -> LayerRef:
+def text(text: str, *trait_fns: TextTraitFn) -> LayerRef:
 
     entry = TextEntry(text)
     idx = register_entry(entry, 'TEXT', '')
     t = TextTrait(idx)
     t.transform.pos(*lcenter())
-    trait_fn(t)
+    [tfn(t) for tfn in trait_fns]
     return LayerRef(idx)

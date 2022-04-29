@@ -99,11 +99,11 @@ image_poly = ImagePolyBuffer
 ImageTraitFn = tp.Callable[[ImageTrait], tp.Any]
 
 
-def image(src: str | list[str], trait_fn: ImageTraitFn) -> LayerRef:
+def image(src: str | list[str], *trait_fns: ImageTraitFn) -> LayerRef:
 
     entry = ImageEntry([src] if isinstance(src, str) else src)
     idx = register_entry(entry, 'IMAGE', '')
     t = ImageTrait(idx)
     t.transform.pos(*lcenter())
-    trait_fn(t)
+    [tfn(t) for tfn in trait_fns]
     return LayerRef(idx)

@@ -60,9 +60,10 @@ class AudioTrait(LayerTrait):
 AudioTraitFn = tp.Callable[[AudioTrait], tp.Any]
 
 
-def audio(src: str, trait_fn: AudioTraitFn) -> LayerRef:
+def audio(src: str, *trait_fns: AudioTraitFn) -> LayerRef:
 
     entry = AudioEntry(src)
     idx = register_entry(entry, 'AUDIO', '')
-    trait_fn(AudioTrait(idx))
+    t = AudioTrait(idx)
+    [tfn(t) for tfn in trait_fns]
     return LayerRef(idx)

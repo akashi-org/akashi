@@ -141,11 +141,11 @@ video_poly = VideoPolyBuffer
 VideoTraitFn = tp.Callable[[VideoTrait], tp.Any]
 
 
-def video(src: str, trait_fn: VideoTraitFn) -> LayerRef:
+def video(src: str, *trait_fns: VideoTraitFn) -> LayerRef:
 
     entry = VideoEntry(src)
     idx = register_entry(entry, 'VIDEO', '')
     t = VideoTrait(idx)
     t.transform.pos(*lcenter())
-    trait_fn(t)
+    [tfn(t) for tfn in trait_fns]
     return LayerRef(idx)
