@@ -68,6 +68,9 @@ namespace akashi {
             // disable auto focus on startup
             if (state.m_ui_conf.window_mode != core::WindowMode::INDEPENDENT) {
                 window.setAttribute(Qt::WA_ShowWithoutActivating);
+            }
+
+            if (state.m_ui_conf.frameless_window) {
                 window.setWindowFlags(window.windowFlags() | Qt::FramelessWindowHint);
             }
 
