@@ -190,10 +190,13 @@ unit_frag = UnitFragBuffer
 unit_poly = UnitPolyBuffer
 
 
-def unit(width: int, height: int) -> UnitHandle:
+def unit(width: int | None = None, height: int | None = None) -> UnitHandle:
     entry = UnitEntry()
-    entry.transform.layer_size = (width, height)
-    entry.unit.fb_size = (width, height)
+    entry.transform.layer_size = (
+        ak_lwidth() if not width else width,
+        ak_lheight() if not height else height,
+    )
+    entry.unit.fb_size = entry.transform.layer_size
     idx = register_entry(entry, 'UNIT', '')
 
     h = UnitHandle(idx)
