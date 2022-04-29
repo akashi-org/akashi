@@ -34,6 +34,7 @@ __all__ = [
     "unit",
     "unit_frag",
     "unit_poly",
+    "scene",
     "sec",
     "rgba",
     "rgb",
