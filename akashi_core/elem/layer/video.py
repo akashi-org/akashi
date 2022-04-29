@@ -17,7 +17,7 @@ from .base import (
     LayerTrait,
     ShaderField
 )
-from .base import peek_entry, register_entry, frag, poly
+from .base import peek_entry, register_entry, frag, poly, LayerRef
 
 from akashi_core.pysl import _gl as gl
 from akashi_core.pysl.shader import ShaderCompiler, _video_frag_shader_header, _video_poly_shader_header
@@ -107,7 +107,7 @@ class VideoEntry(LayerField, RequiredParams):
 
 
 @dataclass
-class VideoHandle(LayerTrait):
+class VideoTrait(LayerTrait):
 
     video: VideoLocalTrait = field(init=False)
     media: MediaTrait = field(init=False)
@@ -120,26 +120,29 @@ class VideoHandle(LayerTrait):
         self.tex = TextureTrait(self._idx)
         self.transform = TransformTrait(self._idx)
 
-    def frag(self, *frag_fns: _VideoFragFn, preamble: tuple[str, ...] = tuple()) -> 'VideoHandle':
+    def frag(self, *frag_fns: _VideoFragFn, preamble: tuple[str, ...] = tuple()) -> 'VideoTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.shader.frag_shader = ShaderCompiler(
                 frag_fns, VideoFragBuffer, _video_frag_shader_header, preamble)
         return self
 
-    def poly(self, *poly_fns: _VideoPolyFn, preamble: tuple[str, ...] = tuple()) -> 'VideoHandle':
+    def poly(self, *poly_fns: _VideoPolyFn, preamble: tuple[str, ...] = tuple()) -> 'VideoTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.shader.poly_shader = ShaderCompiler(
                 poly_fns, VideoPolyBuffer, _video_poly_shader_header, preamble)
         return self
 
 
-class video(object):
+video_frag = VideoFragBuffer
 
-    frag: tp.ClassVar[tp.Type[VideoFragBuffer]] = VideoFragBuffer
-    poly: tp.ClassVar[tp.Type[VideoPolyBuffer]] = VideoPolyBuffer
+video_poly = VideoPolyBuffer
 
-    def __new__(cls, src: str, key: str = '') -> VideoHandle:
+VideoTraitFn = tp.Callable[[VideoTrait], tp.Any]
 
-        entry = VideoEntry(src)
-        idx = register_entry(entry, 'VIDEO', key)
-        return VideoHandle(idx)
+
+def video(src: str, trait_fn: VideoTraitFn) -> LayerRef:
+
+    entry = VideoEntry(src)
+    idx = register_entry(entry, 'VIDEO', '')
+    trait_fn(VideoTrait(idx))
+    return LayerRef(idx)

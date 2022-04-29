@@ -5,7 +5,7 @@ import typing as tp
 from typing import runtime_checkable
 
 from akashi_core.time import sec
-from .base import LayerField, LayerTrait
+from .base import LayerField, LayerTrait, LayerRef
 from .base import peek_entry, register_entry
 
 from .base import (
@@ -47,7 +47,7 @@ class AudioEntry(LayerField, RequiredParams):
 
 
 @dataclass
-class AudioHandle(LayerTrait):
+class AudioTrait(LayerTrait):
 
     audio: AudioLocalTrait = field(init=False)
     media: MediaTrait = field(init=False)
@@ -57,10 +57,12 @@ class AudioHandle(LayerTrait):
         self.media = MediaTrait(self._idx)
 
 
-class audio(object):
+AudioTraitFn = tp.Callable[[AudioTrait], tp.Any]
 
-    def __new__(cls, src: str, key: str = '') -> AudioHandle:
 
-        entry = AudioEntry(src)
-        idx = register_entry(entry, 'AUDIO', key)
-        return AudioHandle(idx)
+def audio(src: str, trait_fn: AudioTraitFn) -> LayerRef:
+
+    entry = AudioEntry(src)
+    idx = register_entry(entry, 'AUDIO', '')
+    trait_fn(AudioTrait(idx))
+    return LayerRef(idx)

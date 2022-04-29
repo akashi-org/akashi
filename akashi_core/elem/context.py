@@ -111,7 +111,11 @@ class AtomHandle:
         return self
 
 
-def atom() -> AtomHandle:
+class root:
+    ...
+
+
+def _root() -> AtomHandle:
 
     uuid = gen_uuid()
     _atom = AtomEntry(uuid)
@@ -134,7 +138,7 @@ def entry() -> Callable[['ElemFn'], Callable[[_ElemFnOpaque], KronContext]]:
             config = config_parse(cast(str, config_path))
             _GlobalKronContext.flush_ctx()
             _GlobalKronContext.init_ctx(config)
-            with atom():
+            with _root():
                 fn()
             return _GlobalKronContext.get_ctx()
         sys.modules[fn.__module__].__akashi_export_elem_fn = inner  # type: ignore

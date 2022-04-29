@@ -16,7 +16,7 @@ from .base import (
     LayerField,
     LayerTrait
 )
-from .base import peek_entry, register_entry, frag, poly
+from .base import peek_entry, register_entry, frag, poly, LayerRef
 from akashi_core.pysl import _gl as gl
 from akashi_core.pysl.shader import ShaderCompiler, _frag_shader_header, _poly_shader_header
 from akashi_core.pysl.shader import LEntryFragFn, LEntryPolyFn
@@ -155,7 +155,7 @@ class TextEntry(LayerField, RequiredParams):
 
 
 @dataclass
-class TextHandle(LayerTrait):
+class TextTrait(LayerTrait):
 
     text: TextLocalTrait = field(init=False)
     transform: TransformTrait = field(init=False)
@@ -166,24 +166,27 @@ class TextHandle(LayerTrait):
         self.tex = TextureTrait(self._idx)
         self.transform = TransformTrait(self._idx)
 
-    def frag(self, *frag_fns: _TextFragFn, preamble: tuple[str, ...] = tuple()) -> 'TextHandle':
+    def frag(self, *frag_fns: _TextFragFn, preamble: tuple[str, ...] = tuple()) -> 'TextTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.shader.frag_shader = ShaderCompiler(frag_fns, TextFragBuffer, _frag_shader_header, preamble)
         return self
 
-    def poly(self, *poly_fns: _TextPolyFn, preamble: tuple[str, ...] = tuple()) -> 'TextHandle':
+    def poly(self, *poly_fns: _TextPolyFn, preamble: tuple[str, ...] = tuple()) -> 'TextTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
             cur_layer.shader.poly_shader = ShaderCompiler(poly_fns, TextPolyBuffer, _poly_shader_header, preamble)
         return self
 
 
-class text(object):
+text_frag = TextFragBuffer
 
-    frag: tp.ClassVar[tp.Type[TextFragBuffer]] = TextFragBuffer
-    poly: tp.ClassVar[tp.Type[TextPolyBuffer]] = TextPolyBuffer
+text_poly = TextPolyBuffer
 
-    def __new__(cls, text: str, key: str = '') -> TextHandle:
+TextTraitFn = tp.Callable[[TextTrait], tp.Any]
 
-        entry = TextEntry(text)
-        idx = register_entry(entry, 'TEXT', key)
-        return TextHandle(idx)
+
+def text(text: str, trait_fn: TextTraitFn) -> LayerRef:
+
+    entry = TextEntry(text)
+    idx = register_entry(entry, 'TEXT', '')
+    trait_fn(TextTrait(idx))
+    return LayerRef(idx)

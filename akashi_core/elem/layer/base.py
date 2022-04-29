@@ -12,12 +12,13 @@ from akashi_core.pysl.shader import ShaderCompiler
 from akashi_core.pysl import _gl
 
 if tp.TYPE_CHECKING:
-    from akashi_core.elem.atom import AtomHandle
+    from akashi_core.elem.context import root
     from .unit import UnitEntry, UnitHandle
 
 
 LayerKind = tp.Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE', 'UNIT', 'SHAPE', 'FREE']
 
+LayerRef = tp.NewType('LayerRef', int)
 
 ''' Layer Concept '''
 
@@ -31,7 +32,7 @@ class LayerField:
     kind: LayerKind = 'LAYER'
     key: str = ''
     duration: sec = NOT_FIXED_SEC
-    _duration: sec | 'AtomHandle' | 'UnitHandle' = sec(5)
+    _duration: sec | 'tp.Type[root]' | 'UnitHandle' = sec(5)
     atom_offset: sec = sec(0)
 
 
@@ -40,7 +41,7 @@ class LayerTrait:
 
     _idx: int
 
-    def duration(self: '_TLayerTrait', duration: sec | float | 'UnitHandle' | 'AtomHandle') -> '_TLayerTrait':
+    def duration(self: '_TLayerTrait', duration: sec | float | 'UnitHandle' | 'tp.Type[root]') -> '_TLayerTrait':
         if (cur_layer := peek_entry(self._idx)):
             _duration = sec(duration) if isinstance(duration, (int, float)) else duration
             tp.cast(LayerField, cur_layer)._duration = _duration
@@ -51,8 +52,9 @@ class LayerTrait:
             cur_layer.atom_offset = sec(offset)
         return self
 
-    def ap(self: '_TLayerTrait', h: tp.Callable[['_TLayerTrait'], tp.Any]) -> '_TLayerTrait':
-        h(self)
+    def key(self: '_TLayerTrait', value: str) -> '_TLayerTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            cur_layer.key = value
         return self
 
 

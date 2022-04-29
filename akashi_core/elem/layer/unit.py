@@ -185,23 +185,17 @@ class UnitHandle(LayerTrait):
         return self
 
 
-class unit(object):
+unit_frag = UnitFragBuffer
 
-    frag: tp.ClassVar[tp.Type[UnitFragBuffer]] = UnitFragBuffer
-    poly: tp.ClassVar[tp.Type[UnitPolyBuffer]] = UnitPolyBuffer
+unit_poly = UnitPolyBuffer
 
-    def __enter__(self) -> 'UnitHandle':
-        raise Exception('unreachable path')
 
-    def __exit__(self, *ext: tp.Any):
-        raise Exception('unreachable path')
-
-    def __new__(cls, width: int, height: int, key: str = '') -> UnitHandle:
-        entry = UnitEntry()
-        entry.transform.layer_size = (width, height)
-        entry.unit.fb_size = (width, height)
-        idx = register_entry(entry, 'UNIT', key)
-        return UnitHandle(idx)
+def unit(width: int, height: int) -> UnitHandle:
+    entry = UnitEntry()
+    entry.transform.layer_size = (width, height)
+    entry.unit.fb_size = (width, height)
+    idx = register_entry(entry, 'UNIT', '')
+    return UnitHandle(idx)
 
 
 @dataclass
@@ -272,21 +266,13 @@ class SceneHandle(LayerTrait):
         return self
 
 
-class scene(object):
-
-    def __enter__(self) -> 'SceneHandle':
-        raise Exception('unreachable path')
-
-    def __exit__(self, *ext: tp.Any):
-        raise Exception('unreachable path')
-
-    def __new__(cls, width: int | None = None, height: int | None = None, key: str = '') -> SceneHandle:
-        entry = UnitEntry()
-        entry.transform.layer_size = (
-            ak_lwidth() if not width else width,
-            ak_lheight() if not height else height,
-        )
-        entry.unit.fb_size = entry.transform.layer_size
-        entry.transform.pos = ak_lcenter()
-        idx = register_entry(entry, 'UNIT', key)
-        return SceneHandle(idx)
+def scene(width: int | None = None, height: int | None = None) -> SceneHandle:
+    entry = UnitEntry()
+    entry.transform.layer_size = (
+        ak_lwidth() if not width else width,
+        ak_lheight() if not height else height,
+    )
+    entry.unit.fb_size = entry.transform.layer_size
+    entry.transform.pos = ak_lcenter()
+    idx = register_entry(entry, 'UNIT', '')
+    return SceneHandle(idx)
