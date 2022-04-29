@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 import typing as tp
 from typing import runtime_checkable
 
+from akashi_core.elem.context import lcenter
 from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
 from .base import (
@@ -218,7 +219,9 @@ def rect(width: int, height: int, trait_fn: RectTraitFn) -> LayerRef:
     entry.shape.rect.width = width
     entry.shape.rect.height = height
     idx = register_entry(entry, 'SHAPE', '')
-    trait_fn(RectTrait(idx))
+    t = RectTrait(idx)
+    t.transform.pos(*lcenter())
+    trait_fn(t)
     return LayerRef(idx)
 
 
@@ -234,7 +237,9 @@ def circle(radius: float, trait_fn: CircleTraitFn) -> LayerRef:
     entry = ShapeEntry('CIRCLE')
     entry.shape.circle.circle_radius = radius
     idx = register_entry(entry, 'SHAPE', '')
-    trait_fn(CircleTrait(idx))
+    t = CircleTrait(idx)
+    t.transform.pos(*lcenter())
+    trait_fn(t)
     return LayerRef(idx)
 
 
@@ -250,7 +255,9 @@ def tri(side: float, trait_fn: TriangleTraitFn) -> LayerRef:
     entry = ShapeEntry('TRIANGLE')
     entry.shape.tri.side = side
     idx = register_entry(entry, 'SHAPE', '')
-    trait_fn(TriangleTrait(idx))
+    t = TriangleTrait(idx)
+    t.transform.pos(*lcenter())
+    trait_fn(t)
     return LayerRef(idx)
 
 
@@ -266,5 +273,7 @@ def line(size: float, trait_fn: LineTraitFn) -> LayerRef:
     entry = ShapeEntry('LINE')
     entry.shape.line.size = size
     idx = register_entry(entry, 'SHAPE', '')
-    trait_fn(LineTrait(idx))
+    t = LineTrait(idx)
+    t.transform.pos(*lcenter())
+    trait_fn(t)
     return LayerRef(idx)

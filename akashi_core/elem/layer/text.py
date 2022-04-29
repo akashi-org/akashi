@@ -6,6 +6,7 @@ from typing import runtime_checkable
 
 from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
+from akashi_core.elem.context import lcenter
 
 from .base import (
     TransformField,
@@ -188,5 +189,7 @@ def text(text: str, trait_fn: TextTraitFn) -> LayerRef:
 
     entry = TextEntry(text)
     idx = register_entry(entry, 'TEXT', '')
-    trait_fn(TextTrait(idx))
+    t = TextTrait(idx)
+    t.transform.pos(*lcenter())
+    trait_fn(t)
     return LayerRef(idx)

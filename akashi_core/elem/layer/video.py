@@ -5,6 +5,7 @@ import typing as tp
 from typing import runtime_checkable
 
 from akashi_core.time import sec
+from akashi_core.elem.context import lcenter
 
 from .base import (
     MediaField,
@@ -144,5 +145,7 @@ def video(src: str, trait_fn: VideoTraitFn) -> LayerRef:
 
     entry = VideoEntry(src)
     idx = register_entry(entry, 'VIDEO', '')
-    trait_fn(VideoTrait(idx))
+    t = VideoTrait(idx)
+    t.transform.pos(*lcenter())
+    trait_fn(t)
     return LayerRef(idx)

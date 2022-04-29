@@ -20,6 +20,8 @@ from akashi_core.pysl.shader import ShaderCompiler, _frag_shader_header, _poly_s
 from akashi_core.pysl.shader import LEntryFragFn, LEntryPolyFn
 from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
 
+from akashi_core.elem.context import lcenter
+
 
 @dataclass
 class ImageUniform:
@@ -101,5 +103,7 @@ def image(src: str | list[str], trait_fn: ImageTraitFn) -> LayerRef:
 
     entry = ImageEntry([src] if isinstance(src, str) else src)
     idx = register_entry(entry, 'IMAGE', '')
-    trait_fn(ImageTrait(idx))
+    t = ImageTrait(idx)
+    t.transform.pos(*lcenter())
+    trait_fn(t)
     return LayerRef(idx)

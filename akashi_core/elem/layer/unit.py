@@ -195,7 +195,10 @@ def unit(width: int, height: int) -> UnitHandle:
     entry.transform.layer_size = (width, height)
     entry.unit.fb_size = (width, height)
     idx = register_entry(entry, 'UNIT', '')
-    return UnitHandle(idx)
+
+    h = UnitHandle(idx)
+    h.transform.pos(*ak_lcenter())
+    return h
 
 
 @dataclass
