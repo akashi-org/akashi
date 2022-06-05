@@ -118,7 +118,7 @@ namespace akashi {
             rect_params.cy = ph * 0.5;
             rect_params.w = pw;
             rect_params.h = ph;
-            rect_params.radius = 20.0; // [TODO]
+            rect_params.radius = 1.0; // [TODO]
             rect_params.color = m_ctx->root_bg_color;
             m_ctx->m_rect = core::make_owned<osc::BGRect>(rect_params);
         }
