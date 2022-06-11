@@ -29,6 +29,7 @@ class ParsedOption:
     conf_path: str
     asp_port: int
     out_fpath: str
+    run_args: list[str]
 
 
 def argument_parse() -> ParsedOption:
@@ -54,6 +55,13 @@ def argument_parse() -> ParsedOption:
         parser.add_argument(
             "conf_path",
             type=str
+        )
+
+        parser.add_argument(
+            "--args",
+            help="command line arguments used for akashi-server",
+            nargs='*',
+            required=False
         )
 
     if len(sys.argv) > 1 and sys.argv[1] == 'kernel':
@@ -83,5 +91,6 @@ def argument_parse() -> ParsedOption:
         config_parse(args_dict["conf_path"]).to_json() if 'conf_path' in args_dict else '',
         path.abspath(args_dict["conf_path"] if 'conf_path' in args_dict else ''),
         args_dict['port'] if 'port' in args_dict else 1234,
-        args_dict['out'] if 'out' in args_dict else ''
+        args_dict['out'] if 'out' in args_dict else '',
+        args_dict['args'] if 'args' in args_dict and args_dict['args'] else [],
     )

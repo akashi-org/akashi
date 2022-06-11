@@ -38,7 +38,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/opengl/actors/video_actor_texture.cpp"
   "./backend/opengl/actors/image_actor.cpp"
   "./backend/opengl/actors/text_actor.cpp"
-  "./backend/opengl/actors/effect_actor.cpp"
+  "./backend/opengl/actors/unit_actor.cpp"
   "./backend/opengl/actors/shape_actor.cpp"
 
   "./backend/opengl/osc/osc_root.cpp"
@@ -126,7 +126,7 @@ ExternalProject_Add(
   SOURCE_DIR ${CMAKE_BINARY_DIR}/.ext/glad/
   INSTALL_DIR ${AKASHI_PRIV_GLAD_ROOT_DIR}
 
-  CONFIGURE_COMMAND cd <SOURCE_DIR> && mkdir -p build && mkdir -p <INSTALL_DIR> && cd build && cmake .. -DBUILD_SHARED_LIBS=OFF -DGLAD_INSTALL=ON -DGLAD_ALL_EXTENSIONS=OFF -DGLAD_REPRODUCIBLE=OFF -DHAS_EGL=ON -DGLAD_PROFILE="core" -DGLAD_API="gl=4.2" -DGLAD_EXTENSIONS="GL_EXT_texture_compression_s3tc" -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -GNinja
+  CONFIGURE_COMMAND cd <SOURCE_DIR> && mkdir -p build && mkdir -p <INSTALL_DIR> && cd build && cmake .. -DBUILD_SHARED_LIBS=OFF -DGLAD_INSTALL=ON -DGLAD_ALL_EXTENSIONS=OFF -DGLAD_REPRODUCIBLE=OFF -DHAS_EGL=ON -DGLAD_PROFILE="core" -DGLAD_API="gl=4.2" -DGLAD_EXTENSIONS="GL_EXT_texture_compression_s3tc,GL_ARB_debug_output" -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -GNinja
   BUILD_COMMAND cd <SOURCE_DIR>/build && ninja -j4
   INSTALL_COMMAND cd <SOURCE_DIR>/build && ninja install
 )

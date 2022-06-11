@@ -3,6 +3,7 @@
 #include "../core/glc.h"
 
 #include <cstddef>
+#include <array>
 
 namespace akashi {
     namespace graphics {
@@ -17,6 +18,8 @@ namespace akashi {
 
             virtual size_t ibo_length() const { return m_ibo_length; }
 
+            virtual std::array<GLfloat, 2> mesh_size() const { return m_mesh_size; }
+
             void destroy();
 
           protected:
@@ -29,6 +32,7 @@ namespace akashi {
             GLuint m_vao;
             GLuint m_ibo;
             size_t m_ibo_length = 0;
+            std::array<GLfloat, 2> m_mesh_size{0, 0};
         };
 
         void create_buffer(GLuint& buffer, GLenum target, void* data, size_t data_size,

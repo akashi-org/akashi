@@ -45,6 +45,56 @@
 #define AKLOG_ERROR(msg, ...) AKLOG_LOG(akashi::core::LogLevel::ERROR, msg, __VA_ARGS__)
 #define AKLOG_ERRORN(msg) AKLOG_LOGN(akashi::core::LogLevel::ERROR, msg)
 
+#define AKLOG_RLOG(lvl, ...)                                                                       \
+    do {                                                                                           \
+        switch (lvl) {                                                                             \
+            case akashi::core::LogLevel::DEBUG: {                                                  \
+                AKLOG_DEBUG(__VA_ARGS__);                                                          \
+                break;                                                                             \
+            }                                                                                      \
+            case akashi::core::LogLevel::INFO: {                                                   \
+                AKLOG_INFO(__VA_ARGS__);                                                           \
+                break;                                                                             \
+            }                                                                                      \
+            case akashi::core::LogLevel::WARN: {                                                   \
+                AKLOG_WARN(__VA_ARGS__);                                                           \
+                break;                                                                             \
+            }                                                                                      \
+            case akashi::core::LogLevel::ERROR: {                                                  \
+                AKLOG_ERROR(__VA_ARGS__);                                                          \
+                break;                                                                             \
+            }                                                                                      \
+            default: {                                                                             \
+                break;                                                                             \
+            }                                                                                      \
+        }                                                                                          \
+    } while (0)
+
+#define AKLOG_RLOGN(lvl, ...)                                                                      \
+    do {                                                                                           \
+        switch (lvl) {                                                                             \
+            case akashi::core::LogLevel::DEBUG: {                                                  \
+                AKLOG_DEBUGN(__VA_ARGS__);                                                         \
+                break;                                                                             \
+            }                                                                                      \
+            case akashi::core::LogLevel::INFO: {                                                   \
+                AKLOG_INFON(__VA_ARGS__);                                                          \
+                break;                                                                             \
+            }                                                                                      \
+            case akashi::core::LogLevel::WARN: {                                                   \
+                AKLOG_WARNN(__VA_ARGS__);                                                          \
+                break;                                                                             \
+            }                                                                                      \
+            case akashi::core::LogLevel::ERROR: {                                                  \
+                AKLOG_ERRORN(__VA_ARGS__);                                                         \
+                break;                                                                             \
+            }                                                                                      \
+            default: {                                                                             \
+                break;                                                                             \
+            }                                                                                      \
+        }                                                                                          \
+    } while (0)
+
 namespace akashi {
     namespace core {
 

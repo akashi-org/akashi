@@ -60,11 +60,13 @@ namespace akashi {
             GLuint depth_buffer;
         };
 
-        bool FBO::create(int fbo_width, int fbo_height, int msaa) {
+        bool FBO::create(int fbo_width, int fbo_height, int msaa, bool enable_alpha) {
             if (m_pass) {
                 AKLOG_ERRORN("Pass already loaded");
                 return false;
             }
+
+            m_enable_alpha = enable_alpha;
 
             m_pass = new FBO::Pass;
 
@@ -194,8 +196,13 @@ namespace akashi {
             glBindTexture(GL_TEXTURE_2D, m_pass->tex.buffer);
 
             // [TODO] Image format queries?
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, m_pass->tex.width, m_pass->tex.height, 0,
-                         GL_RGB, GL_UNSIGNED_BYTE, m_pass->tex.image);
+            if (m_enable_alpha) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_pass->tex.width, m_pass->tex.height, 0,
+                             GL_RGBA, GL_UNSIGNED_BYTE, m_pass->tex.image);
+            } else {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, m_pass->tex.width, m_pass->tex.height, 0,
+                             GL_RGB, GL_UNSIGNED_BYTE, m_pass->tex.image);
+            }
 
             // GET_GLFUNC(ctx, glGenerateMipmap)(GL_TEXTURE_2D);
 

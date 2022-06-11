@@ -1,6 +1,7 @@
 #pragma once
 
 #include <libakcore/element.h>
+#include <libakcore/memory.h>
 
 namespace akashi {
     namespace core {
@@ -9,6 +10,8 @@ namespace akashi {
     namespace graphics {
 
         class OGLRenderContext;
+        class FBO;
+        class Camera;
 
         class Actor {
           public:
@@ -16,7 +19,8 @@ namespace akashi {
 
             virtual bool create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) = 0;
 
-            virtual bool render(OGLRenderContext& ctx, const core::Rational& pts) = 0;
+            virtual bool render(OGLRenderContext& ctx, const core::Rational& pts,
+                                const Camera& camera) = 0;
 
             virtual bool destroy(const OGLRenderContext& ctx) = 0;
 
@@ -25,6 +29,8 @@ namespace akashi {
             virtual void update_layer(const core::LayerContext& layer_ctx) {
                 m_layer_ctx = layer_ctx;
             };
+
+            virtual void set_fbo(const core::borrowed_ptr<FBO>& /*fbo_ptr*/){};
 
           protected:
             core::LayerContext m_layer_ctx;

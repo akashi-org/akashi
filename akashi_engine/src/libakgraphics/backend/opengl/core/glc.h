@@ -19,5 +19,9 @@
 namespace akashi {
     namespace graphics {
         const char* gl_err_to_str(GLenum gl_err);
+
+        void gl_debug_message_callback(GLenum source, GLenum type, unsigned int id, GLenum severity,
+                                       GLsizei length, const char* message, const void* userParam);
+
     }
 }

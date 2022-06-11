@@ -69,13 +69,13 @@ namespace akashi {
             m_dts_src = decode_start;
             m_dts_dest = (std::min)(m_dts_src + this->BLOCK_SIZE, m_global_duration);
 
-            for (size_t i = 0; i < atom_profile.layers.size(); i++) {
+            for (size_t i = 0; i < atom_profile.av_layers.size(); i++) {
                 m_layer_sources.push_back(make_owned<FFLayerSource>());
             }
 
             if (!this->collect_active_layers()) {
                 // [TODO] sane solution?
-                throw std::runtime_error("Not found active layers");
+                AKLOG_ERRORN("Not found active layers");
             }
             // m_dts_avg = detail::calc_dts_avg(m_active_layers);
             m_current_active_layer_idx = 0;
@@ -139,15 +139,15 @@ namespace akashi {
             m_active_layers.clear();
             m_current_active_layer_idx = 0;
 
-            for (size_t i = 0; i < m_atom_profile.layers.size(); i++) {
-                const auto& layer_prof = m_atom_profile.layers[i];
+            for (size_t i = 0; i < m_atom_profile.av_layers.size(); i++) {
+                const auto& layer_prof = m_atom_profile.av_layers[i];
                 auto within_block = m_dts_src <= layer_prof.to && layer_prof.from <= m_dts_dest;
                 if (!within_block) {
                     continue;
                 }
 
                 if (!m_layer_sources[i]->done_init()) {
-                    m_layer_sources[i]->init(m_atom_profile.layers[i], m_dts_src, m_decode_method,
+                    m_layer_sources[i]->init(m_atom_profile.av_layers[i], m_dts_src, m_decode_method,
                                              m_video_max_queue_count);
                 }
 

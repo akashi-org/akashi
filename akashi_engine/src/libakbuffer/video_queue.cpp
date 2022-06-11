@@ -138,7 +138,7 @@ namespace akashi {
                 auto atom_profiles = m_state->m_prop.render_prof.atom_profiles;
                 auto current_atom_index = m_state->m_atomic_state.current_atom_index.load();
                 auto loop_cnt = m_state->m_atomic_state.play_loop_cnt.load();
-                for (const auto& layer : atom_profiles[current_atom_index].layers) {
+                for (const auto& layer : atom_profiles[current_atom_index].av_layers) {
                     layer_uuids.push_back(layer.uuid + std::to_string(loop_cnt));
                 }
             }

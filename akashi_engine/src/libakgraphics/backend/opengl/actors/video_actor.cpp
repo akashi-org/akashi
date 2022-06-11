@@ -19,9 +19,10 @@ using namespace akashi::core;
 static constexpr const char* vshader_src = u8R"(
     #version 420 core
     uniform mat4 mvpMatrix;
+    uniform ivec2 uv_flip_hv; // [uv_flip_h, uv_flip_v]
     in vec3 vertices;
     in vec2 lumaUvs;
-    in vec2 chromaUvs;
+    layout (location = 2) in vec2 chromaUvs;
 
     out VS_OUT {
         vec2 vLumaUvs;
@@ -29,10 +30,17 @@ static constexpr const char* vshader_src = u8R"(
     } vs_out;
 
     void poly_main(inout vec4 pos);
+
+    vec2 get_uvs(vec2 raw_uvs){
+        return vec2(
+            uv_flip_hv[0] == 1 ? 1.0 - raw_uvs.x : raw_uvs.x,
+            uv_flip_hv[1] == 1 ? 1.0 - raw_uvs.y : raw_uvs.y
+        );
+    }
     
     void main(void){
-        vs_out.vLumaUvs = lumaUvs;
-        vs_out.vChromaUvs = chromaUvs;
+        vs_out.vLumaUvs = get_uvs(lumaUvs);
+        vs_out.vChromaUvs = get_uvs(chromaUvs);
         vec4 t_vertices = vec4(vertices, 1.0);
         poly_main(t_vertices);
         gl_Position = mvpMatrix * t_vertices;
@@ -46,6 +54,7 @@ static constexpr const char* fshader_src = u8R"(
     uniform float local_duration;
     uniform float fps;
     uniform vec2 resolution;
+    uniform vec2 mesh_size;
 
     out vec4 fragColor;
 
@@ -131,6 +140,7 @@ static constexpr const char* default_user_pshader_src = u8R"(
     uniform float local_duration;
     uniform float fps;
     uniform vec2 resolution;
+    uniform vec2 mesh_size;
     void poly_main(inout vec4 position){
     }
 )";
@@ -139,6 +149,7 @@ static constexpr const char* default_user_fshader_src = u8R"(
     #version 420 core
     uniform float time;
     uniform vec2 resolution;
+    uniform vec2 mesh_size;
     void frag_main(inout vec4 _fragColor){
     }
 )";
@@ -189,11 +200,12 @@ namespace akashi {
             return true;
         }
 
-        bool VideoActor::render(OGLRenderContext& ctx, const core::Rational& pts) {
+        bool VideoActor::render(OGLRenderContext& ctx, const core::Rational& pts,
+                                const Camera& camera) {
             if (m_current_pts == pts) {
                 AKLOG_INFON("PTS unchanged");
                 if (m_pass) {
-                    CHECK_AK_ERROR2(this->render_inner(ctx, pts));
+                    CHECK_AK_ERROR2(this->render_inner(ctx, pts, camera));
                     AKLOG_INFON("Rendering with the last frame");
                 }
                 return true;
@@ -203,7 +215,7 @@ namespace akashi {
             if (!buf_data) {
                 AKLOG_INFON("Dequeue failed");
                 if (m_pass) {
-                    CHECK_AK_ERROR2(this->render_inner(ctx, pts));
+                    CHECK_AK_ERROR2(this->render_inner(ctx, pts, camera));
                     AKLOG_INFON("Rendering with the last frame");
                 }
                 return true;
@@ -217,7 +229,7 @@ namespace akashi {
                     m_pass->vtex.update(ctx, m_layer_ctx.video_layer_ctx, std::move(buf_data)));
             }
 
-            CHECK_AK_ERROR2(this->render_inner(ctx, pts));
+            CHECK_AK_ERROR2(this->render_inner(ctx, pts, camera));
             m_current_pts = pts;
             return true;
         }
@@ -233,19 +245,13 @@ namespace akashi {
             return true;
         }
 
-        bool VideoActor::render_inner(OGLRenderContext& ctx, const core::Rational& pts) {
+        bool VideoActor::render_inner(OGLRenderContext& ctx, const core::Rational& pts,
+                                      const Camera& camera) {
             glUseProgram(m_pass->prog);
 
             m_pass->vtex.use_textures({m_pass->texY_loc, m_pass->texCb_loc, m_pass->texCr_loc});
 
-            glm::mat4 new_mvp = ctx.camera()->vp_mat() * m_pass->model_mat;
-            // glm::mat4 new_mvp = mesh_prop.mvp();
-            // update_translate(ctx, layer_ctx, new_mvp);
-            // // [XXX] looks confusing, but we only need to process the texY,
-            // // because update_scale gets the magnification rate from the size of the tex, and
-            // // reflect it to mvp
-            // update_scale(ctx, mesh_prop.textures()[0], new_mvp, layer_ctx.video_layer_ctx.scale);
-
+            glm::mat4 new_mvp = camera.vp_mat() * m_pass->model_mat;
             glUniformMatrix4fv(m_pass->mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 
             auto local_pts = pts - m_layer_ctx.from;
@@ -287,10 +293,12 @@ namespace akashi {
             m_pass->local_duration_loc = glGetUniformLocation(m_pass->prog, "local_duration");
             m_pass->fps_loc = glGetUniformLocation(m_pass->prog, "fps");
             m_pass->resolution_loc = glGetUniformLocation(m_pass->prog, "resolution");
+            m_pass->mesh_size_loc = glGetUniformLocation(m_pass->prog, "mesh_size");
 
             auto vertices_loc = glGetAttribLocation(m_pass->prog, "vertices");
             auto luma_uvs_loc = glGetAttribLocation(m_pass->prog, "lumaUvs");
-            auto chroma_uvs_loc = glGetAttribLocation(m_pass->prog, "chromaUvs");
+            // auto chroma_uvs_loc = glGetAttribLocation(m_pass->prog, "chromaUvs");
+            auto chroma_uvs_loc = 2;
 
             std::array<float, 2> mesh_size = layer_commons::get_mesh_size(
                 m_layer_ctx, {m_pass->vtex.info().video_width, m_pass->vtex.info().video_height});
@@ -301,7 +309,15 @@ namespace akashi {
             m_pass->trans_vec =
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
             m_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.video_layer_ctx.scale;
-            layer_commons::update_model_mat(m_pass);
+            layer_commons::update_model_mat(m_pass, m_layer_ctx);
+
+            {
+                glUseProgram(m_pass->prog);
+                auto uv_flip_hv_loc = glGetUniformLocation(m_pass->prog, "uv_flip_hv");
+                glUniform2i(uv_flip_hv_loc, m_layer_ctx.uv_flip_h, m_layer_ctx.uv_flip_v);
+                glUniform2fv(m_pass->mesh_size_loc, 1, m_pass->mesh.mesh_size().data());
+                glUseProgram(0);
+            }
 
             return true;
         }

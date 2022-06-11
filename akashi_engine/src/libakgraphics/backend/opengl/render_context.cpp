@@ -39,7 +39,7 @@ namespace akashi {
 
             int msaa = this->msaa();
 
-            CHECK_AK_ERROR2(m_fbo->create(video_width, video_height, msaa));
+            CHECK_AK_ERROR2(m_fbo->create(video_width, video_height, msaa, false));
 
             ProjectionState proj_state;
             proj_state.video_width = video_width;

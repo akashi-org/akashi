@@ -21,23 +21,19 @@ namespace akashi {
                                              core::borrowed_ptr<buffer::AVBuffer> buffer,
                                              core::borrowed_ptr<event::AKEvent> event)
             : AudioContext(state, buffer, event), m_state(state), m_buffer(buffer) {
-            pa_mainloop_api* mainloop_api;
-
             m_mainloop = pa_threaded_mainloop_new();
             assert(m_mainloop);
-            mainloop_api = pa_threaded_mainloop_get_api(m_mainloop);
-
-            m_context = pa_context_new(mainloop_api, PulseAudioContext::PA_APPLICATION_NAME);
-            assert(m_context);
-
-            pa_context_set_state_callback(m_context, PulseAudioContext::context_state_cb,
-                                          m_mainloop);
-
-            m_cb_ctx = new CallbackContext(core::borrowed_ptr(this), state, buffer, event);
-            m_stream = new AudioStream(core::borrowed_ptr(this), m_mainloop, m_context);
-
             {
                 MainloopLockGuard main_lk(m_mainloop);
+                m_context = pa_context_new(pa_threaded_mainloop_get_api(m_mainloop),
+                                           PulseAudioContext::PA_APPLICATION_NAME);
+                assert(m_context);
+
+                pa_context_set_state_callback(m_context, PulseAudioContext::context_state_cb,
+                                              m_mainloop);
+
+                m_cb_ctx = new CallbackContext(core::borrowed_ptr(this), state, buffer, event);
+                m_stream = new AudioStream(core::borrowed_ptr(this), m_mainloop, m_context);
 
                 pa_threaded_mainloop_start(m_mainloop);
 

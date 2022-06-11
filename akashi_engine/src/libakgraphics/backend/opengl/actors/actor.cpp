@@ -2,7 +2,7 @@
 
 #include "./image_actor.h"
 #include "./video_actor.h"
-#include "./effect_actor.h"
+#include "./unit_actor.h"
 #include "./text_actor.h"
 #include "./shape_actor.h"
 
@@ -24,7 +24,7 @@ namespace akashi {
                     break;
                 }
                 case LayerType::AUDIO: {
-                    AKLOG_WARNN("Not implemented");
+                    AKLOG_WARNN("AudioActor is not implemented yet");
                     return nullptr;
                 }
                 case LayerType::TEXT: {
@@ -35,8 +35,8 @@ namespace akashi {
                     actor = new ImageActor;
                     break;
                 }
-                case LayerType::EFFECT: {
-                    actor = new EffectActor;
+                case LayerType::UNIT: {
+                    actor = new UnitActor;
                     break;
                 }
                 case LayerType::SHAPE: {

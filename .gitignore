@@ -10,6 +10,7 @@ assets/
 !scripts/*
 1
 !akashi_engine/akashi_version.sh
+core
 
 #cpp
 compile_commands.json

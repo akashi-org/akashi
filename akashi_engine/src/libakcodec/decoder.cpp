@@ -39,7 +39,7 @@ namespace akashi {
         DecodeResult AKDecoder::decode(const DecodeArg& decode_arg) {
             auto& cur_atom_source = m_atom_sources[m_current_atom_idx];
 
-            if (!m_render_prof.atom_profiles[m_current_atom_idx].layers.empty()) {
+            if (!m_render_prof.atom_profiles[m_current_atom_idx].av_layers.empty()) {
                 if (!cur_atom_source->done_init()) {
                     cur_atom_source->init(
                         m_render_prof.duration, m_render_prof.atom_profiles[m_current_atom_idx],

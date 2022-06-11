@@ -66,8 +66,9 @@ WindowMode = Literal['', 'split', 'immersive', 'independent']
 @dataclass(frozen=True)
 class UIConf:
     resolution: Tuple[int, int] = (800, 600)
-    window_mode: WindowMode = 'split'
+    window_mode: WindowMode = 'independent'
     smart_immersive: bool = False
+    frameless_window: bool = True
 
 
 VideoEncodeMethod = Literal['', 'sw']

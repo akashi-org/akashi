@@ -33,6 +33,8 @@ namespace akashi {
 
         bool CircleMesh::create(const std::array<GLfloat, 2>& size, const int lod,
                                 const GLuint vertices_loc) {
+            m_mesh_size = size;
+
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);
@@ -47,6 +49,8 @@ namespace akashi {
 
         bool CircleMesh::create_border(const std::array<GLfloat, 2>& size, const int lod,
                                        const GLfloat border_width, const GLuint vertices_loc) {
+            m_mesh_size = {size[0] + (border_width * 2), size[1] + (border_width * 2)};
+
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);

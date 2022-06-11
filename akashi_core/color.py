@@ -32,6 +32,7 @@ def hsva(h: int, s: int, v: int, a: int) -> _color_type:
 
 
 class Color(Enum):
+    Transparent = "#00000000"
     # ref: https://developer.mozilla.org/en-US/docs/Web/CSS/color_value#color_keywords
     Black = "#000000"
     Silver = "#c0c0c0"

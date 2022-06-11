@@ -45,6 +45,7 @@ namespace akashi {
             std::pair<int, int> resolution;
             WindowMode window_mode;
             bool smart_immersive;
+            bool frameless_window;
         };
 
         struct EncodeConf {

@@ -1,45 +1,69 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import typing as tp
+from typing import runtime_checkable
 
 from akashi_core.time import sec
-from .base import LayerField, LayerTrait
+from .base import LayerField, LayerTrait, LayerRef
 from .base import peek_entry, register_entry
+
+from .base import (
+    MediaField,
+    MediaTrait
+)
 
 
 @dataclass
 class AudioLocalField:
-    src: str
-    gain: float = 1.0
-    start: sec = sec(0)
+    ...
+
+
+@runtime_checkable
+class HasAudioLocalField(tp.Protocol):
+    audio: AudioLocalField
 
 
 @dataclass
-class AudioEntry(LayerField, AudioLocalField):
+class RequiredParams:
+    _req_src: str
+
+
+@dataclass
+class AudioLocalTrait:
+    _idx: int
+
+
+@dataclass
+class AudioEntry(LayerField, RequiredParams):
+
+    audio: AudioLocalField = field(init=False)
+    media: MediaField = field(init=False)
 
     def __post_init__(self):
-        self.duration = sec(-1)
+        self._duration = sec(-1)
+        self.audio = AudioLocalField()
+        self.media = MediaField(src=self._req_src)
 
 
 @dataclass
-class AudioHandle(LayerTrait):
+class AudioTrait(LayerTrait):
 
-    def gain(self, gain: float) -> 'AudioHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, AudioEntry):
-            cur_layer.gain = gain
-        return self
+    audio: AudioLocalTrait = field(init=False)
+    media: MediaTrait = field(init=False)
 
-    def start(self, start: sec | float) -> 'AudioHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, AudioEntry):
-            cur_layer.start = sec(start)
-        return self
+    def __post_init__(self):
+        self.audio = AudioLocalTrait(self._idx)
+        self.media = MediaTrait(self._idx)
 
 
-class audio(object):
+AudioTraitFn = tp.Callable[[AudioTrait], tp.Any]
 
-    def __new__(cls, src: str, key: str = '') -> AudioHandle:
 
-        entry = AudioEntry(src)
-        idx = register_entry(entry, 'AUDIO', key)
-        return AudioHandle(idx)
+def audio(src: str, *trait_fns: AudioTraitFn) -> LayerRef:
+
+    entry = AudioEntry(src)
+    idx = register_entry(entry, 'AUDIO', '')
+    t = AudioTrait(idx)
+    [tfn(t) for tfn in trait_fns]
+    return LayerRef(idx)

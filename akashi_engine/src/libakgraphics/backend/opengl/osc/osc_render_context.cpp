@@ -128,31 +128,28 @@ namespace akashi {
         double OSCRenderContext::gain() { return m_state->m_atomic_state.volume; }
 
         namespace priv {
-            // assumes (vunit % nlabels) == (vunit % ruler_unit) == 0
-            // clang-format off
-            static osc::SeekBase seek_base_table[] = {
-                osc::SeekBase{360, 40, 1},    // level0: aunit(360), 6sec(60fps), 15sec(24fps)
-                osc::SeekBase{360, 40, 10},   // level1: aunit(3600), 1m(60fps), 2.5m(24fps) 
-                osc::SeekBase{360, 40, 600},  // level2: aunit(216000), 1h(60fps), 2.5h(24fps) 
-                osc::SeekBase{360, 40, 1800}, // level3: aunit(648000), 3h(60fps), 7.5h(24fps) 
-                osc::SeekBase{360, 40, 6000}, // level4: aunit(2160000), 10h(60fps), 25h(24fps) 
-                osc::SeekBase{360, 40, 60000} // level5: aunit(21600000), 100h(60fps), 250h(24fps) 
-            };
-            // clang-format on
 
-            constexpr const static size_t seek_base_table_length =
-                sizeof(seek_base_table) / sizeof(osc::SeekBase);
-            constexpr const static size_t seek_base_table_max_index = seek_base_table_length - 1;
+            static osc::SeekBase get_seek_base(size_t level) {
+                // assumes (vunit % nlabels) == (vunit % ruler_unit) == 0
+                osc::SeekBase base{360, 40, 1}; // level0: aunit(360), 6sec(60fps), 15sec(24fps)
+                if (level == 0) {
+                    return base;
+                } else {
+                    base.sec_per_unit_coef *= 2 * level;
+                    return base;
+                }
+            }
+            constexpr const static size_t seek_max_level = 7200; // 24h(60fps)
         }
 
         osc::SeekBase OSCRenderContext::seek_base() const {
             // frame mode
             if (!m_is_second_mode) {
-                return priv::seek_base_table[0];
+                return priv::get_seek_base(0);
             }
             // second mode
             else {
-                return priv::seek_base_table[m_second_zoom_level];
+                return priv::get_seek_base(m_second_zoom_level);
             }
         }
 
@@ -167,16 +164,27 @@ namespace akashi {
 
         void OSCRenderContext::update_second_seek_base() {
             auto sec_per_frame = core::Rational(1l) / this->fps();
-            for (size_t i = 1; i < priv::seek_base_table_max_index; i++) {
-                auto cur_table = priv::seek_base_table[i];
-                auto band_dur =
+            for (size_t i = 0; i < priv::seek_max_level - 1; i++) {
+                auto cur_table = priv::get_seek_base(i);
+                auto cur_band_dur =
                     core::Rational(cur_table.unit * cur_table.sec_per_unit_coef, 1) * sec_per_frame;
-                if (this->duration() < (band_dur * core::Rational(4 + 1, 4))) {
+                if (this->duration() <= cur_band_dur) {
+                    m_second_zoom_level = i;
+                    return;
+                }
+
+                auto next_table = priv::get_seek_base(i + 1);
+                auto next_band_dur =
+                    core::Rational(next_table.unit * next_table.sec_per_unit_coef, 1) *
+                    sec_per_frame;
+
+                if ((this->duration() / next_band_dur) <= core::Rational(5, 4)) {
                     m_second_zoom_level = i;
                     return;
                 }
             }
-            m_second_zoom_level = priv::seek_base_table_max_index;
+
+            m_second_zoom_level = priv::seek_max_level;
         }
 
         void OSCRenderContext::initialize_camera(const RenderParams& params) {

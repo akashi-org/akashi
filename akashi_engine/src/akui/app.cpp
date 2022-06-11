@@ -59,12 +59,18 @@ namespace akashi {
             } else {
                 format.setSamples(akconf.video.msaa);
             }
+            if (std::getenv("AK_OGL_DEBUG_OUT")) {
+                format.setOption(QSurfaceFormat::DebugContext);
+            }
             QSurfaceFormat::setDefaultFormat(format);
 
             Window window{borrowed_ptr(&state)};
             // disable auto focus on startup
             if (state.m_ui_conf.window_mode != core::WindowMode::INDEPENDENT) {
                 window.setAttribute(Qt::WA_ShowWithoutActivating);
+            }
+
+            if (state.m_ui_conf.frameless_window) {
                 window.setWindowFlags(window.windowFlags() | Qt::FramelessWindowHint);
             }
 

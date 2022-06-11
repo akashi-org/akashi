@@ -9,68 +9,77 @@
 #include <libakcore/memory.h>
 
 #include <pybind11/embed.h>
+#include <pybind11/stl.h>
 namespace py = pybind11;
 
 namespace akashi {
     namespace eval {
 
-        struct AtomTracerContext {
-            core::AtomProfile atom_profile;
-            std::vector<core::owned_ptr<LayerProxy>> layer_proxies;
-            core::Rational atom_duration;
-            bool atom_duration_fixed;
-        };
+        static std::vector<PlaneProxy>
+        trace_plane_context(const std::vector<unsigned long>& layer_indices,
+                            const GlobalContext& ctx, const size_t level,
+                            const core::LayerContext* unit_layer = nullptr) {
+            std::vector<PlaneProxy> plane_proxies;
 
-        struct LayerTracerContext {
-            core::LayerContext layer_ctx = {};
-            core::owned_ptr<pybind11::object> params_obj = nullptr;
-            core::owned_ptr<pybind11::object> update_func = nullptr;
-        };
-
-        void trace_kron_context(const pybind11::object& elem, GlobalContext& ctx) {
-            for (const auto& atom : elem.attr("atoms").cast<py::list>()) {
-                AtomTracerContext atom_ctx;
-                atom_ctx.atom_profile = {};
-                atom_ctx.atom_duration = to_rational(atom.attr("_duration"));
-
-                atom_ctx.atom_profile.uuid = atom.attr("uuid").cast<std::string>();
-                atom_ctx.atom_profile.bg_color = atom.attr("bg_color").cast<std::string>();
-
-                for (const auto& layer_idx : atom.attr("layer_indices").cast<py::list>()) {
-                    LayerTracerContext layer_trace_ctx = {
-                        .layer_ctx = {}, .params_obj = nullptr, .update_func = nullptr};
-
-                    auto layer = elem.attr("layers")[layer_idx];
-                    layer_trace_ctx.layer_ctx = parse_layer_context(layer);
-                    layer_trace_ctx.params_obj = core::make_owned<pybind11::object>(layer);
-
-                    atom_ctx.layer_proxies.push_back(core::make_owned<LayerProxy>(
-                        layer_trace_ctx.layer_ctx, std::move(layer_trace_ctx.params_obj),
-                        std::move(layer_trace_ctx.update_func)));
-                }
-
-                if (atom_ctx.atom_duration < ctx.sec_per_frame) {
-                    atom_ctx.atom_duration = ctx.sec_per_frame;
-                }
-                atom_ctx.atom_profile.from = ctx.duration;
-                atom_ctx.atom_profile.to = ctx.duration + atom_ctx.atom_duration;
-                atom_ctx.atom_profile.duration = atom_ctx.atom_duration;
-
-                for (auto&& layer_proxy : atom_ctx.layer_proxies) {
-                    auto& layer_ctx = layer_proxy->layer_ctx_mut();
-                    layer_ctx.atom_uuid = atom_ctx.atom_profile.uuid;
-                }
-
-                ctx.atom_proxies.push_back(core::make_owned<AtomProxy>(
-                    atom_ctx.atom_profile, std::move(atom_ctx.layer_proxies)));
-                ctx.duration += atom_ctx.atom_duration;
+            core::PlaneContext plane_ctx{.level = level};
+            if (unit_layer) {
+                plane_ctx.base = *unit_layer;
             }
 
-            // add intervals
-            // auto atom_length = ctx.atom_proxies.size();
-            // if (atom_length > 1) {
-            //     ctx.duration += core::Rational(atom_length - 1, 1) * ctx.interval;
-            // }
+            std::vector<core::LayerContext> unit_layer_ctxs;
+            for (const auto& layer_idx : layer_indices) {
+                const auto& layer = ctx.layer_proxies[layer_idx];
+
+                auto layer_ctx = layer.layer_ctx();
+                plane_ctx.layers.push_back(layer_ctx);
+
+                if (static_cast<core::LayerType>(layer_ctx.type) == core::LayerType::UNIT) {
+                    unit_layer_ctxs.push_back(layer_ctx);
+                }
+            }
+
+            plane_proxies.push_back(PlaneProxy{plane_ctx});
+
+            for (const auto& layer_ctx : unit_layer_ctxs) {
+                for (const auto& rest_plane_ctx : trace_plane_context(
+                         layer_ctx.unit_layer_ctx.layer_indices, ctx, level + 1, &layer_ctx)) {
+                    plane_proxies.push_back(rest_plane_ctx);
+                }
+            }
+
+            return plane_proxies;
+        }
+
+        void trace_kron_context(const pybind11::object& elem, GlobalContext& ctx) {
+            for (const auto& layer_obj : elem.attr("layers").cast<py::list>()) {
+                auto layer_ctx = parse_layer_context(layer_obj.cast<py::object>());
+                ctx.layer_proxies.push_back(LayerProxy{layer_ctx});
+            }
+
+            for (const auto& atom : elem.attr("atoms").cast<py::list>()) {
+                core::AtomProfile atom_profile = {};
+                auto atom_duration = to_rational(atom.attr("_duration"));
+
+                atom_profile.uuid = atom.attr("uuid").cast<std::string>();
+                atom_profile.bg_color = atom.attr("bg_color").cast<std::string>();
+
+                if (atom_duration < ctx.sec_per_frame) {
+                    atom_duration = ctx.sec_per_frame;
+                }
+                atom_profile.from = ctx.duration;
+                atom_profile.to = ctx.duration + atom_duration;
+                atom_profile.duration = atom_duration;
+
+                auto layer_indices = atom.attr("layer_indices").cast<std::vector<unsigned long>>();
+                for (const auto& layer_idx : layer_indices) {
+                    auto& layer_ctx = ctx.layer_proxies[layer_idx].layer_ctx_mut();
+                    layer_ctx.atom_uuid = atom_profile.uuid;
+                }
+
+                ctx.atom_proxies.push_back(
+                    AtomProxy{atom_profile, trace_plane_context(layer_indices, ctx, 0, nullptr)});
+                ctx.duration += atom_duration;
+            }
         }
 
     }

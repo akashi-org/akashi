@@ -31,7 +31,7 @@ namespace akashi {
         static int64_t find_proxy_index(const GlobalContext& ctx, const KronArg& arg) {
             // [TODO] impl faster way (binary search?)
             for (size_t i = 0; i < ctx.atom_proxies.size(); i++) {
-                auto profile = ctx.atom_proxies[i]->computed_profile();
+                auto profile = ctx.atom_proxies[i].computed_profile();
                 if (profile.from <= arg.play_time && arg.play_time <= profile.to) {
                     return i;
                 }
@@ -47,8 +47,8 @@ namespace akashi {
                 AKLOG_DEBUG("Could not find the suitable pts for: {}", arg.play_time.to_decimal());
                 return frame_ctx;
             }
-            frame_ctx.layer_ctxs = ctx.atom_proxies[proxy_idx]->eval(arg);
-            frame_ctx.atom_static_profile = ctx.atom_proxies[proxy_idx]->static_profile();
+            frame_ctx.plane_ctxs = ctx.atom_proxies[proxy_idx].eval(arg);
+            frame_ctx.atom_static_profile = ctx.atom_proxies[proxy_idx].static_profile();
             return frame_ctx;
         }
 

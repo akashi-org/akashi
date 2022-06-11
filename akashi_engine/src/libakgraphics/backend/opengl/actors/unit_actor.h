@@ -11,25 +11,28 @@ namespace akashi {
 
         class OGLRenderContext;
 
-        class EffectActor : public Actor {
+        class UnitActor : public Actor {
             struct Pass;
 
           public:
-            explicit EffectActor() = default;
-            virtual ~EffectActor() = default;
-            EffectActor(EffectActor&&) = default;
+            explicit UnitActor() = default;
+            virtual ~UnitActor() = default;
+            UnitActor(UnitActor&&) = default;
 
             bool create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) override;
 
-            bool render(OGLRenderContext& ctx, const core::Rational& pts) override;
+            bool render(OGLRenderContext& ctx, const core::Rational& pts,
+                        const Camera& camera) override;
 
             bool destroy(const OGLRenderContext& ctx) override;
+
+            void set_fbo(const core::borrowed_ptr<FBO>& fbo_ptr) override;
 
           private:
             bool load_pass(const OGLRenderContext& ctx);
 
           private:
-            EffectActor::Pass* m_pass = nullptr;
+            UnitActor::Pass* m_pass = nullptr;
         };
     }
 

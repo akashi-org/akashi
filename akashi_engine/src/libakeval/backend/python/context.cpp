@@ -55,6 +55,12 @@ namespace akashi {
                     std::getenv("AK_LIBPROBE_PATH");
             }
 
+            if (std::getenv("AK_CORE_ARGS")) {
+                py::module_::import("akashi_core")
+                    .attr("args")
+                    .attr("_register_argv")(std::getenv("AK_CORE_ARGS"));
+            }
+
             // version check
             // auto res = py::module_::import("akashi_core").attr("utils").attr("version_check")();
             // if (!res.cast<py::tuple>()[0].cast<bool>()) {
@@ -170,7 +176,7 @@ namespace akashi {
             render_prof.uuid = m_gctx->uuid;
             render_prof.duration = m_gctx->duration;
             for (const auto& atom_proxy : m_gctx->atom_proxies) {
-                render_prof.atom_profiles.push_back(atom_proxy->computed_profile());
+                render_prof.atom_profiles.push_back(atom_proxy.computed_profile());
             }
 
             return render_prof;

@@ -1,12 +1,24 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import typing as tp
+from typing import runtime_checkable
 
 from akashi_core.time import sec
+from akashi_core.elem.context import lcenter
 
-from .base import PositionField, PositionTrait, LayerField, LayerTrait
-from .base import peek_entry, register_entry, frag, poly
+from .base import (
+    MediaField,
+    MediaTrait,
+    TransformField,
+    TransformTrait,
+    TextureField,
+    TextureTrait,
+    LayerField,
+    LayerTrait,
+    ShaderField
+)
+from .base import peek_entry, register_entry, frag, poly, LayerRef
 
 from akashi_core.pysl import _gl as gl
 from akashi_core.pysl.shader import ShaderCompiler, _video_frag_shader_header, _video_poly_shader_header
@@ -59,63 +71,81 @@ _VideoPolyFn = LEntryPolyFn[VideoPolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn
 
 @dataclass
 class VideoLocalField:
-    src: str
-    frame: tuple[int, int] = (0, -1)
-    gain: float = 1.0
-    start: sec = sec(0)  # temporary
-    atom_offset: sec = sec(0)
-    frag_shader: tp.Optional[ShaderCompiler] = None
-    poly_shader: tp.Optional[ShaderCompiler] = None
+    ...
+
+
+@runtime_checkable
+class HasVideoLocalField(tp.Protocol):
+    video: VideoLocalField
 
 
 @dataclass
-class VideoEntry(PositionField, LayerField, VideoLocalField):
+class RequiredParams:
+    _req_src: str
+
+
+@dataclass
+class VideoLocalTrait:
+    _idx: int
+
+
+@dataclass
+class VideoEntry(LayerField, RequiredParams):
+
+    video: VideoLocalField = field(init=False)
+    media: MediaField = field(init=False)
+    transform: TransformField = field(init=False)
+    tex: TextureField = field(init=False)
+    shader: ShaderField = field(init=False)
 
     def __post_init__(self):
-        self.duration = sec(-1)
+        self._duration = sec(-1)
+        self.video = VideoLocalField()
+        self.media = MediaField(self._req_src)
+        self.transform = TransformField()
+        self.tex = TextureField()
+        self.shader = ShaderField()
 
 
 @dataclass
-class VideoHandle(PositionTrait, LayerTrait):
+class VideoTrait(LayerTrait):
 
-    def frame(self, begin_frame: int, end_frame: int = -1) -> 'VideoHandle':
+    video: VideoLocalTrait = field(init=False)
+    media: MediaTrait = field(init=False)
+    transform: TransformTrait = field(init=False)
+    tex: TextureTrait = field(init=False)
+
+    def __post_init__(self):
+        self.video = VideoLocalTrait(self._idx)
+        self.media = MediaTrait(self._idx)
+        self.tex = TextureTrait(self._idx)
+        self.transform = TransformTrait(self._idx)
+
+    def frag(self, *frag_fns: _VideoFragFn, preamble: tuple[str, ...] = tuple()) -> 'VideoTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.frame = (begin_frame, end_frame)
+            cur_layer.shader.frag_shader = ShaderCompiler(
+                frag_fns, VideoFragBuffer, _video_frag_shader_header, preamble)
         return self
 
-    def gain(self, gain: float) -> 'VideoHandle':
+    def poly(self, *poly_fns: _VideoPolyFn, preamble: tuple[str, ...] = tuple()) -> 'VideoTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.gain = gain
-        return self
-
-    def start(self, start: sec | float) -> 'VideoHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.start = sec(start)
-        return self
-
-    def offset(self, offset: sec | float) -> 'VideoHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.atom_offset = sec(offset)
-        return self
-
-    def frag(self, *frag_fns: _VideoFragFn, preamble: tuple[str, ...] = tuple()) -> 'VideoHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.frag_shader = ShaderCompiler(frag_fns, VideoFragBuffer, _video_frag_shader_header, preamble)
-        return self
-
-    def poly(self, *poly_fns: _VideoPolyFn, preamble: tuple[str, ...] = tuple()) -> 'VideoHandle':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.poly_shader = ShaderCompiler(poly_fns, VideoPolyBuffer, _video_poly_shader_header, preamble)
+            cur_layer.shader.poly_shader = ShaderCompiler(
+                poly_fns, VideoPolyBuffer, _video_poly_shader_header, preamble)
         return self
 
 
-class video(object):
+video_frag = VideoFragBuffer
 
-    frag: tp.ClassVar[tp.Type[VideoFragBuffer]] = VideoFragBuffer
-    poly: tp.ClassVar[tp.Type[VideoPolyBuffer]] = VideoPolyBuffer
+video_poly = VideoPolyBuffer
 
-    def __new__(cls, src: str, key: str = '') -> VideoHandle:
+VideoTraitFn = tp.Callable[[VideoTrait], tp.Any]
 
-        entry = VideoEntry(src)
-        idx = register_entry(entry, 'VIDEO', key)
-        return VideoHandle(idx)
+
+def video(src: str, *trait_fns: VideoTraitFn) -> LayerRef:
+
+    entry = VideoEntry(src)
+    idx = register_entry(entry, 'VIDEO', '')
+    t = VideoTrait(idx)
+    t.transform.pos(*lcenter())
+    [tfn(t) for tfn in trait_fns]
+    return LayerRef(idx)

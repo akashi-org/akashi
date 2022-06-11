@@ -31,7 +31,9 @@ namespace akashi {
             // on linux/x11 system, force egl over glx
             glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
 
-            // glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+            if (std::getenv("AK_OGL_DEBUG_OUT")) {
+                glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+            }
             // glfwWindowHint(GLFW_CONTEXT_NO_ERROR, GLFW_TRUE);
 
             glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);

@@ -258,3 +258,12 @@ class TestLambdaOther(unittest.TestCase):
         expected = 'void frag_main(inout vec4 color){12;}'
 
         self.assertEqual(compile_shaders((gen()(99),), ak.frag), expected)
+
+    def test_dist_unary_sub(self):
+
+        def gen() -> tp.Callable[[int], ak.LEntryFragFn]:
+            return lambda h: lambda e, b, c: e(x := 12).tp(int) | e(y := 12).tp(int) | e(-(x + y))
+
+        expected = 'void frag_main(inout vec4 color){int x = 12;int y = 12;-((x) + (y));}'
+
+        self.assertEqual(compile_shaders((gen()(99),), ak.frag), expected)

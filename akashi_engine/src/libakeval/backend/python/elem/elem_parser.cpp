@@ -7,6 +7,9 @@
 #include <libakcore/logger.h>
 
 #include <pybind11/embed.h>
+#include <pybind11/stl.h>
+
+namespace py = pybind11;
 
 namespace akashi {
     namespace eval {
@@ -109,6 +112,32 @@ namespace akashi {
             return true;
         }
 
+        static void try_parse_texture_field(core::LayerContext* layer_ctx,
+                                            const pybind11::object& layer_params) {
+            if (py::hasattr(layer_params, "tex")) {
+                layer_ctx->uv_flip_v = layer_params.attr("tex").attr("flip_v").cast<bool>();
+                layer_ctx->uv_flip_h = layer_params.attr("tex").attr("flip_h").cast<bool>();
+            }
+        }
+
+        static void try_parse_transform_field(core::LayerContext* layer_ctx,
+                                              const pybind11::object& layer_params) {
+            if (py::hasattr(layer_params, "transform")) {
+                const auto& pos =
+                    layer_params.attr("transform").attr("pos").cast<std::tuple<long, long>>();
+                layer_ctx->x = std::get<0>(pos);
+                layer_ctx->y = std::get<1>(pos);
+                layer_ctx->z = layer_params.attr("transform").attr("z").cast<double>();
+
+                const auto& layer_size = layer_params.attr("transform")
+                                             .attr("layer_size")
+                                             .cast<std::tuple<long, long>>();
+                layer_ctx->layer_size = {std::get<0>(layer_size), std::get<1>(layer_size)};
+
+                layer_ctx->rotation = to_rational(layer_params.attr("transform").attr("rotation"));
+            }
+        }
+
         core::LayerContext parse_layer_context(const pybind11::object& layer_params) {
             core::LayerContext layer_ctx;
 
@@ -122,63 +151,71 @@ namespace akashi {
             layer_ctx.to = (to_rational(layer_params.attr("duration")) +
                             to_rational(layer_params.attr("atom_offset")));
 
-            if (has_field(layer_params, "PositionField")) {
-                const auto& pos = layer_params.attr("pos").cast<std::tuple<long, long>>();
-                layer_ctx.x = std::get<0>(pos);
-                layer_ctx.y = std::get<1>(pos);
-                layer_ctx.z = layer_params.attr("z").cast<double>();
+            try_parse_transform_field(&layer_ctx, layer_params);
+            try_parse_texture_field(&layer_ctx, layer_params);
 
-                const auto& layer_size =
-                    layer_params.attr("layer_size").cast<std::tuple<long, long>>();
-                layer_ctx.layer_size = {std::get<0>(layer_size), std::get<1>(layer_size)};
-            }
+            // media
+            // shader
 
             std::string type_str = layer_params.attr("kind").cast<std::string>();
 
             if (type_str == "VIDEO") {
                 layer_ctx.type = static_cast<int>(core::LayerType::VIDEO);
-                layer_ctx.video_layer_ctx.src = layer_params.attr("src").cast<std::string>();
-                layer_ctx.video_layer_ctx.gain = layer_params.attr("gain").cast<double>();
-
-                layer_ctx.video_layer_ctx.start = to_rational(layer_params.attr("start"));
+                layer_ctx.video_layer_ctx.src =
+                    layer_params.attr("media").attr("src").cast<std::string>();
+                layer_ctx.video_layer_ctx.gain =
+                    layer_params.attr("media").attr("gain").cast<double>();
+                layer_ctx.video_layer_ctx.start =
+                    to_rational(layer_params.attr("media").attr("start"));
                 layer_ctx.video_layer_ctx.scale = 1.0;
 
-                layer_ctx.video_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
-                layer_ctx.video_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
+                layer_ctx.video_layer_ctx.frag =
+                    parse_shader(layer_params.attr("shader").attr("frag_shader"));
+                layer_ctx.video_layer_ctx.poly =
+                    parse_shader(layer_params.attr("shader").attr("poly_shader"));
 
             } else if (type_str == "AUDIO") {
                 layer_ctx.type = static_cast<int>(core::LayerType::AUDIO);
-                layer_ctx.audio_layer_ctx.src = layer_params.attr("src").cast<std::string>();
-                layer_ctx.audio_layer_ctx.gain = layer_params.attr("gain").cast<double>();
-                layer_ctx.audio_layer_ctx.start = to_rational(layer_params.attr("start"));
-
+                layer_ctx.audio_layer_ctx.src =
+                    layer_params.attr("media").attr("src").cast<std::string>();
+                layer_ctx.audio_layer_ctx.gain =
+                    layer_params.attr("media").attr("gain").cast<double>();
+                layer_ctx.audio_layer_ctx.start =
+                    to_rational(layer_params.attr("media").attr("start"));
             } else if (type_str == "IMAGE") {
                 layer_ctx.type = static_cast<int>(core::LayerType::IMAGE);
-                for (const auto& src : layer_params.attr("srcs").cast<pybind11::list>()) {
+                for (const auto& src :
+                     layer_params.attr("image").attr("srcs").cast<pybind11::list>()) {
                     layer_ctx.image_layer_ctx.srcs.push_back(src.cast<std::string>());
                 }
 
                 layer_ctx.image_layer_ctx.scale = 1.0;
 
-                layer_ctx.image_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
-                layer_ctx.image_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
+                layer_ctx.image_layer_ctx.frag =
+                    parse_shader(layer_params.attr("shader").attr("frag_shader"));
+                layer_ctx.image_layer_ctx.poly =
+                    parse_shader(layer_params.attr("shader").attr("poly_shader"));
 
                 const auto& crop_begin =
-                    layer_params.attr("crop_begin").cast<std::tuple<long, long>>();
+                    layer_params.attr("crop").attr("crop_begin").cast<std::tuple<long, long>>();
                 layer_ctx.image_layer_ctx.crop.begin[0] = std::get<0>(crop_begin);
                 layer_ctx.image_layer_ctx.crop.begin[1] = std::get<1>(crop_begin);
 
-                const auto& crop_end = layer_params.attr("crop_end").cast<std::tuple<long, long>>();
+                const auto& crop_end =
+                    layer_params.attr("crop").attr("crop_end").cast<std::tuple<long, long>>();
                 layer_ctx.image_layer_ctx.crop.end[0] = std::get<0>(crop_end);
                 layer_ctx.image_layer_ctx.crop.end[1] = std::get<1>(crop_end);
 
             } else if (type_str == "TEXT") {
                 layer_ctx.type = static_cast<int>(core::LayerType::TEXT);
-                layer_ctx.text_layer_ctx.text = layer_params.attr("text").cast<std::string>();
-                layer_ctx.text_layer_ctx.style = parse_style(layer_params.attr("style"));
+                layer_ctx.text_layer_ctx.text =
+                    layer_params.attr("text").attr("text").cast<std::string>();
+                layer_ctx.text_layer_ctx.style =
+                    parse_style(layer_params.attr("text").attr("style"));
                 layer_ctx.text_layer_ctx.scale = 1.0;
 
-                std::string text_align_str = layer_params.attr("text_align").cast<std::string>();
+                std::string text_align_str =
+                    layer_params.attr("text").attr("text_align").cast<std::string>();
                 if (text_align_str == "center") {
                     layer_ctx.text_layer_ctx.text_align = core::TextAlign::CENTER;
                 } else if (text_align_str == "right") {
@@ -187,33 +224,52 @@ namespace akashi {
                     layer_ctx.text_layer_ctx.text_align = core::TextAlign::LEFT;
                 }
 
-                auto pads = layer_params.attr("pad").cast<std::tuple<long, long, long, long>>();
+                auto pads = layer_params.attr("text")
+                                .attr("pad")
+                                .cast<std::tuple<long, long, long, long>>();
                 layer_ctx.text_layer_ctx.pad[0] = std::get<0>(pads);
                 layer_ctx.text_layer_ctx.pad[1] = std::get<1>(pads);
                 layer_ctx.text_layer_ctx.pad[2] = std::get<2>(pads);
                 layer_ctx.text_layer_ctx.pad[3] = std::get<3>(pads);
 
-                layer_ctx.text_layer_ctx.line_span = layer_params.attr("line_span").cast<int32_t>();
+                layer_ctx.text_layer_ctx.line_span =
+                    layer_params.attr("text").attr("line_span").cast<int32_t>();
 
-                layer_ctx.text_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
-                layer_ctx.text_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
-            } else if (type_str == "EFFECT") {
-                layer_ctx.type = static_cast<int>(core::LayerType::EFFECT);
-                layer_ctx.effect_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
-                layer_ctx.effect_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
+                layer_ctx.text_layer_ctx.frag =
+                    parse_shader(layer_params.attr("shader").attr("frag_shader"));
+                layer_ctx.text_layer_ctx.poly =
+                    parse_shader(layer_params.attr("shader").attr("poly_shader"));
+            } else if (type_str == "UNIT") {
+                layer_ctx.type = static_cast<int>(core::LayerType::UNIT);
+                layer_ctx.unit_layer_ctx.layer_indices = layer_params.attr("unit")
+                                                             .attr("layer_indices")
+                                                             .cast<std::vector<unsigned long>>();
+                layer_ctx.unit_layer_ctx.bg_color =
+                    layer_params.attr("unit").attr("bg_color").cast<std::string>();
+                const auto& fb_size =
+                    layer_params.attr("unit").attr("fb_size").cast<std::tuple<long, long>>();
+                layer_ctx.unit_layer_ctx.fb_size = {std::get<0>(fb_size), std::get<1>(fb_size)};
+                layer_ctx.unit_layer_ctx.frag =
+                    parse_shader(layer_params.attr("shader").attr("frag_shader"));
+                layer_ctx.unit_layer_ctx.poly =
+                    parse_shader(layer_params.attr("shader").attr("poly_shader"));
             } else if (type_str == "SHAPE") {
                 layer_ctx.type = static_cast<int>(core::LayerType::SHAPE);
-                layer_ctx.shape_layer_ctx.frag = parse_shader(layer_params.attr("frag_shader"));
-                layer_ctx.shape_layer_ctx.poly = parse_shader(layer_params.attr("poly_shader"));
+                layer_ctx.shape_layer_ctx.frag =
+                    parse_shader(layer_params.attr("shader").attr("frag_shader"));
+                layer_ctx.shape_layer_ctx.poly =
+                    parse_shader(layer_params.attr("shader").attr("poly_shader"));
 
                 layer_ctx.shape_layer_ctx.border_size =
-                    layer_params.attr("border_size").cast<double>();
+                    layer_params.attr("shape").attr("border_size").cast<double>();
                 layer_ctx.shape_layer_ctx.edge_radius =
-                    layer_params.attr("edge_radius").cast<double>();
-                layer_ctx.shape_layer_ctx.fill = layer_params.attr("fill").cast<bool>();
-                layer_ctx.shape_layer_ctx.color = layer_params.attr("color").cast<std::string>();
+                    layer_params.attr("shape").attr("edge_radius").cast<double>();
+                layer_ctx.shape_layer_ctx.fill =
+                    layer_params.attr("shape").attr("fill").cast<bool>();
+                layer_ctx.shape_layer_ctx.color =
+                    layer_params.attr("shape").attr("color").cast<std::string>();
 
-                parse_shape_detail(&layer_ctx, layer_params);
+                parse_shape_detail(&layer_ctx, layer_params.attr("shape"));
             } else {
                 AKLOG_ERROR("Invalid type '{}' found", type_str.c_str());
                 layer_ctx.type = -1;

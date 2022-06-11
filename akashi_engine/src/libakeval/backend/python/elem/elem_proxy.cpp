@@ -7,66 +7,23 @@
 #include <libakcore/element.h>
 #include <libakcore/logger.h>
 
-#include <pybind11/embed.h>
-namespace py = pybind11;
-
 namespace akashi {
     namespace eval {
 
-        namespace detail {
-
-            py::object Second(const core::Rational& rat) {
-                auto callable = py::module_::import("akashi_core").attr("time").attr("Second");
-                return callable(rat.num(), rat.den());
-            }
-
-            py::object KronArgs(const core::Rational& playtime, const long fps) {
-                auto callable = py::module_::import("akashi_core").attr("kron").attr("KronArgs");
-                return callable(detail::Second(playtime), fps);
-            }
-
-            py::object layer_update(const py::object& func, const KronArg& arg,
-                                    const py::object& params_obj,
-                                    const core::LayerContext& params) {
-                auto kron_args_obj = KronArgs(arg.play_time, arg.fps);
-
-                auto comp_params_obj = params_obj.attr("_update")(detail::Second(params.from),
-                                                                  detail::Second(params.to));
-                comp_params_obj.attr("_uuid") = py::str(params.uuid);
-                comp_params_obj.attr("_atom_uuid") = py::str(params.atom_uuid);
-                comp_params_obj.attr("_display") = py::bool_(params.display);
-
-                return func(kron_args_obj, comp_params_obj);
-            }
-
-        }
-
-        LayerProxy::LayerProxy(const core::LayerContext& layer_ctx,
-                               core::owned_ptr<pybind11::object>&& params,
-                               core::owned_ptr<pybind11::object>&& update)
-            : m_layer_ctx(layer_ctx), m_params(std::move(params)), m_update(std::move(update)){};
+        LayerProxy::LayerProxy(const core::LayerContext& layer_ctx) : m_layer_ctx(layer_ctx){};
 
         LayerProxy::~LayerProxy(){};
 
         core::LayerContext LayerProxy::eval(const KronArg& arg,
                                             const core::Rational& base_time) const {
             core::LayerContext layer_ctx = m_layer_ctx;
-            layer_ctx.display = false;
 
             layer_ctx.from = m_layer_ctx.from + base_time;
             layer_ctx.to = m_layer_ctx.to + base_time;
 
-            if (layer_ctx.from <= arg.play_time && arg.play_time <= layer_ctx.to) {
-                layer_ctx.display = true;
-                if (m_update && !m_update->is_none()) {
-                    return parse_layer_context(
-                        detail::layer_update(*m_update, arg, *m_params, layer_ctx));
-                } else {
-                    return layer_ctx;
-                }
-            } else {
-                return layer_ctx;
-            }
+            layer_ctx.display =
+                (layer_ctx.from <= arg.play_time) && (arg.play_time <= layer_ctx.to);
+            return layer_ctx;
         };
 
         const core::LayerContext& LayerProxy::layer_ctx() const { return m_layer_ctx; }
@@ -99,28 +56,64 @@ namespace akashi {
             return computed;
         }
 
+        PlaneProxy::PlaneProxy(const core::PlaneContext& plane_ctx) : m_plane_ctx(plane_ctx) {
+            for (const auto& layer_ctx : plane_ctx.layers) {
+                m_layer_proxies.push_back(LayerProxy{layer_ctx});
+            }
+        };
+
+        PlaneProxy::~PlaneProxy(){};
+
+        core::PlaneContext PlaneProxy::eval(const KronArg& arg,
+                                            const core::Rational& base_time) const {
+            core::PlaneContext plane_ctx;
+            plane_ctx.level = m_plane_ctx.level;
+            plane_ctx.base = m_plane_ctx.base;
+
+            plane_ctx.base.from += base_time;
+            plane_ctx.base.to += base_time;
+            plane_ctx.base.display =
+                (plane_ctx.base.from <= arg.play_time) && (arg.play_time <= plane_ctx.base.to);
+
+            for (const auto& layer_proxy : m_layer_proxies) {
+                plane_ctx.layers.push_back(layer_proxy.eval(arg, base_time));
+            }
+
+            return plane_ctx;
+        };
+
+        std::vector<core::LayerProfile>
+        PlaneProxy::computed_profile(const core::Rational& base_time) const {
+            std::vector<core::LayerProfile> avlayer_profiles;
+            for (const auto& layer_proxy : m_layer_proxies) {
+                auto layer_type = static_cast<core::LayerType>(layer_proxy.layer_ctx().type);
+                if (layer_type == core::LayerType::VIDEO || layer_type == core::LayerType::AUDIO) {
+                    avlayer_profiles.push_back(layer_proxy.computed_profile(base_time));
+                }
+            }
+            return avlayer_profiles;
+        }
+
         AtomProxy::AtomProxy(const core::AtomProfile& profile,
-                             std::vector<core::owned_ptr<LayerProxy>>&& layer_proxies)
-            : m_profile(profile), m_layer_proxies(std::move(layer_proxies)){};
+                             const std::vector<PlaneProxy>& plane_proxies)
+            : m_profile(profile), m_plane_proxies(plane_proxies){};
 
         AtomProxy::~AtomProxy(){};
 
-        std::vector<core::LayerContext> AtomProxy::eval(const KronArg& arg) const {
-            std::vector<core::LayerContext> layer_ctxs;
-            for (const auto& layer_proxy : m_layer_proxies) {
-                auto layer_ctx = layer_proxy->eval(arg, m_profile.from);
-                layer_ctxs.push_back(layer_ctx);
+        std::vector<core::PlaneContext> AtomProxy::eval(const KronArg& arg) const {
+            std::vector<core::PlaneContext> plane_ctxs;
+            for (const auto& plane_proxy : m_plane_proxies) {
+                plane_ctxs.push_back(plane_proxy.eval(arg, m_profile.from));
             }
-            return layer_ctxs;
+            return plane_ctxs;
         };
 
         core::AtomProfile AtomProxy::computed_profile() const {
             core::AtomProfile computed = m_profile;
-            computed.layers = {};
-            for (const auto& layer_proxy : m_layer_proxies) {
-                auto layer_type = static_cast<core::LayerType>(layer_proxy->layer_ctx().type);
-                if (layer_type == core::LayerType::VIDEO || layer_type == core::LayerType::AUDIO) {
-                    computed.layers.push_back(layer_proxy->computed_profile(m_profile.from));
+            computed.av_layers = {};
+            for (const auto& plane_proxy : m_plane_proxies) {
+                for (const auto& layer_profile : plane_proxy.computed_profile(m_profile.from)) {
+                    computed.av_layers.push_back(layer_profile);
                 }
             }
             return computed;
@@ -129,11 +122,8 @@ namespace akashi {
         core::AtomStaticProfile AtomProxy::static_profile() const {
             core::AtomStaticProfile static_profile;
             static_profile.bg_color = m_profile.bg_color;
+            static_profile.atom_uuid = m_profile.uuid;
             return static_profile;
-        }
-
-        const std::vector<core::owned_ptr<LayerProxy>>& AtomProxy::layer_proxies() const {
-            return m_layer_proxies;
         }
 
     }

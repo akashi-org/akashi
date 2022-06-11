@@ -318,7 +318,10 @@ def from_UnaryOp(node: ast.UnaryOp, ctx: CompilerContext) -> UnaryOpOut:
 
     op_str = converter.unaryop_converter(node.op)
     operand_str = compile_expr(node.operand, ctx).content
-    content = f'{op_str}{operand_str}'
+    if isinstance(node.operand, ast.Constant):
+        content = f'{op_str}{operand_str}'
+    else:
+        content = f'{op_str}({operand_str})'
 
     return UnaryOpOut(node, content)
 

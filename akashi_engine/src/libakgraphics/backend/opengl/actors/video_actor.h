@@ -23,12 +23,14 @@ namespace akashi {
 
             bool create(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) override;
 
-            bool render(OGLRenderContext& ctx, const core::Rational& pts) override;
+            bool render(OGLRenderContext& ctx, const core::Rational& pts,
+                        const Camera& camera) override;
 
             bool destroy(const OGLRenderContext& ctx) override;
 
           private:
-            bool render_inner(OGLRenderContext& ctx, const core::Rational& pts);
+            bool render_inner(OGLRenderContext& ctx, const core::Rational& pts,
+                              const Camera& camera);
 
             bool load_pass(const OGLRenderContext& ctx,
                            core::owned_ptr<buffer::AVBufferData>&& buf_data);

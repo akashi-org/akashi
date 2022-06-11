@@ -30,7 +30,7 @@ namespace akashi {
                  .to = Rational{10, 1},
                  .duration = Rational{10, 1},
                  .uuid = "0c5f3d5f-56b2-4977-b799-20115f72dbd7",
-                 .layers = {
+                 .av_layers = {
                      {.type = LayerType::VIDEO,
                       .from = Rational{0, 1},
                       .to = Rational{7, 1},
@@ -49,7 +49,7 @@ namespace akashi {
                  .to = Rational{721, 24},   // 30.041666666666668
                  .duration = Rational{20, 1},
                  .uuid = "3de58572-9d86-41a6-9f24-c957a3fef2cc",
-                 .layers = {
+                 .av_layers = {
                      {.type = LayerType::VIDEO,
                       .from = Rational{12, 1},
                       .to = Rational{17, 1},

@@ -37,12 +37,13 @@ namespace akashi {
             return true;
         }
 
-        bool ImageActor::render(OGLRenderContext& ctx, const core::Rational& pts) {
+        bool ImageActor::render(OGLRenderContext& ctx, const core::Rational& pts,
+                                const Camera& camera) {
             glUseProgram(m_pass->prog);
 
             use_ogl_texture(m_pass->tex, m_pass->tex_loc);
 
-            glm::mat4 new_mvp = ctx.camera()->vp_mat() * m_pass->model_mat;
+            glm::mat4 new_mvp = camera.vp_mat() * m_pass->model_mat;
 
             glUniformMatrix4fv(m_pass->mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 
@@ -98,6 +99,7 @@ namespace akashi {
             m_pass->local_duration_loc = glGetUniformLocation(m_pass->prog, "local_duration");
             m_pass->fps_loc = glGetUniformLocation(m_pass->prog, "fps");
             m_pass->resolution_loc = glGetUniformLocation(m_pass->prog, "resolution");
+            m_pass->mesh_size_loc = glGetUniformLocation(m_pass->prog, "mesh_size");
 
             auto vertices_loc = glGetAttribLocation(m_pass->prog, "vertices");
             auto uvs_loc = glGetAttribLocation(m_pass->prog, "uvs");
@@ -134,7 +136,15 @@ namespace akashi {
                 layer_commons::get_trans_vec({m_layer_ctx.x, m_layer_ctx.y, m_layer_ctx.z});
             m_pass->scale_vec = glm::vec3(1.0f) * (float)m_layer_ctx.image_layer_ctx.scale;
 
-            layer_commons::update_model_mat(m_pass);
+            layer_commons::update_model_mat(m_pass, m_layer_ctx);
+
+            {
+                glUseProgram(m_pass->prog);
+                auto uv_flip_hv_loc = glGetUniformLocation(m_pass->prog, "uv_flip_hv");
+                glUniform2i(uv_flip_hv_loc, m_layer_ctx.uv_flip_h, m_layer_ctx.uv_flip_v);
+                glUniform2fv(m_pass->mesh_size_loc, 1, m_pass->mesh.mesh_size().data());
+                glUseProgram(0);
+            }
 
             return true;
         }

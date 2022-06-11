@@ -28,7 +28,7 @@ namespace akashi {
             explicit FBO() = default;
             virtual ~FBO() = default;
 
-            bool create(int fbo_width, int fbo_height, int msaa = 0);
+            bool create(int fbo_width, int fbo_height, int msaa = 0, bool enable_alpha = true);
 
             bool render(OGLRenderContext& ctx);
 
@@ -63,6 +63,7 @@ namespace akashi {
             Pass* m_pass = nullptr;
             FBInfo m_info;
             bool m_initialized = false;
+            bool m_enable_alpha = true;
         };
     }
 

@@ -79,6 +79,7 @@ namespace akashi {
         /* Rect */
 
         bool RectMesh::create(const std::array<float, 2>& size, const GLuint vertices_loc) {
+            m_mesh_size = size;
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);
@@ -96,6 +97,8 @@ namespace akashi {
 
         bool RectMesh::create_border(const std::array<float, 2>& size, const GLfloat border_width,
                                      const GLuint vertices_loc) {
+            m_mesh_size = {size[0] + (border_width * 2), size[1] + (border_width * 2)};
+
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);
@@ -329,6 +332,8 @@ namespace akashi {
 
         bool RoundRectMesh::create(const std::array<float, 2>& size, const GLfloat radius,
                                    const GLuint vertices_loc) {
+            m_mesh_size = size;
+
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);
@@ -344,6 +349,8 @@ namespace akashi {
 
         bool RoundRectMesh::create_border(const std::array<float, 2>& size, const GLfloat radius,
                                           const GLfloat border_width, const GLuint vertices_loc) {
+            m_mesh_size = {size[0] + (border_width * 2), size[1] + (border_width * 2)};
+
             // load vao
             glGenVertexArrays(1, &m_vao);
             glBindVertexArray(m_vao);
