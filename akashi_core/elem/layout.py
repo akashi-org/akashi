@@ -18,9 +18,9 @@ class LayoutLayerContext:
 
 @dataclass
 class LayoutInfo:
-    pos: tuple[int, int] = (0, 0)
-    z: float = 0.0
-    layer_size: tuple[int, int] = (-1, -1)
+    pos: tp.Optional[tuple[int, int]] = None
+    z: tp.Optional[float] = None
+    layer_size: tp.Optional[tuple[int, int]] = None
 
 
 LayoutFn: tp.TypeAlias = tp.Callable[[LayoutLayerContext], LayoutInfo | None]

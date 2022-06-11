@@ -117,19 +117,22 @@ class UnitHandle(LayerTrait):
                         len(cur_unit_layer.unit.layer_indices)
                     ))
                     if layout_info:
-                        cur_layer.transform.pos = layout_info.pos
-                        cur_layer.transform.z = layout_info.z
 
-                        temp_layer_size = list(layout_info.layer_size)
-                        if cur_layer.kind == 'UNIT':
-                            aspect_ratio = sec(tp.cast(UnitEntry, cur_layer).unit.fb_size[0], tp.cast(
-                                UnitEntry, cur_layer).unit.fb_size[1])
-                            if temp_layer_size[0] == -1:
-                                temp_layer_size[0] = (sec(temp_layer_size[1]) * aspect_ratio).trunc()
-                            if temp_layer_size[1] == -1:
-                                temp_layer_size[1] = (sec(temp_layer_size[0]) / aspect_ratio).trunc()
+                        if layout_info.pos:
+                            cur_layer.transform.pos = layout_info.pos
 
-                        cur_layer.transform.layer_size = (temp_layer_size[0], temp_layer_size[1])
+                        if layout_info.z:
+                            cur_layer.transform.z = layout_info.z
+
+                        if layout_info.layer_size and (temp_layer_size := list(layout_info.layer_size)):
+                            if cur_layer.kind == 'UNIT':
+                                aspect_ratio = sec(tp.cast(UnitEntry, cur_layer).unit.fb_size[0], tp.cast(
+                                    UnitEntry, cur_layer).unit.fb_size[1])
+                                if temp_layer_size[0] == -1:
+                                    temp_layer_size[0] = (sec(temp_layer_size[1]) * aspect_ratio).trunc()
+                                if temp_layer_size[1] == -1:
+                                    temp_layer_size[1] = (sec(temp_layer_size[0]) / aspect_ratio).trunc()
+                            cur_layer.transform.layer_size = (temp_layer_size[0], temp_layer_size[1])
 
                 if isinstance(cur_layer._duration, sec):
 
