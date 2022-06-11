@@ -152,8 +152,8 @@ class UnitHandle(LayerTrait):
                         max_to = layer_to
                 elif isinstance(cur_layer._duration, UnitHandle):
                     unit_fitted_layer_indices.append((layer_idx, cur_layer._duration._idx))
-                else:  # asuumes AtomHandle
-                    raise Exception('Passing a layer handle to duration is prohibited for child layers of an unit layer')
+                else:  # assumes AtomHandle
+                    raise Exception('Passing a layer handle to duration is prohibited for child layers of an unit layer')  # noqa: E501
 
             cur_unit_layer.duration = max_to
 

@@ -12,7 +12,6 @@ import sys
 
 if TYPE_CHECKING:
     from .layer.base import LayerField, HasMediaField
-    from .layer.base import LayerField
     from .layer.unit import UnitEntry
     ElemFn = Callable[[], None]
     # ConfFn = Callable[[], AKConf]
