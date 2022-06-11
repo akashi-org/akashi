@@ -1,6 +1,6 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Callable, cast, Any
+from typing import TYPE_CHECKING, Optional, Callable, cast, Any, Type
 from dataclasses import dataclass, field
 from .uuid import gen_uuid, UUID
 from akashi_core.config import AKConf, config_parse
@@ -110,8 +110,16 @@ class AtomHandle:
         return self
 
 
+ATOM_INDEX = 0  # temporary
+
+
 class root:
-    ...
+
+    @classmethod
+    def bg_color(cls, color: str | 'ColorEnum') -> Type['root']:
+        cur_atom = _GlobalKronContext.get_ctx().atoms[ATOM_INDEX]
+        cur_atom.bg_color = color_value(color)
+        return cls
 
 
 def _root() -> AtomHandle:
