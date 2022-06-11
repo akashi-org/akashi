@@ -23,22 +23,21 @@ from akashi_core import ak, gl
 
 @ak.entry()
 def main():
-    with ak.atom() as a1:
 
-        with ak.lane() as _:
-            ak.text('Sample Text').fit_to(a1).poly(
-                lambda e, b, p: e(p.x) << e(p.x + 300) | e(p.y) << e(p.y + 300)
-            )
-            
-        with ak.lane() as _:
-            @gl.entry(ak.frag)
-            def blue_filter(buffer: ak.frag, color: gl.frag_color) -> None:
-                color.b *= 2.0
-                
-            ak.video('./dog.mp4').ap(
-                lambda h: h.duration(10).layer_size(ak.width(), -1),
-                lambda h: h.frag(blue_filter)
-            )
+    ak.text('Sample Text', lambda t: (
+        t.text.fg('#00ff00', 100),
+        t.duration(ak.root),
+    ))
+
+    @gl.entry(ak.frag)
+    def blue_filter(buffer: ak.frag, color: gl.frag_color) -> None:
+        color.b *= 2.0
+
+    ak.video(ak.from_relpath(__file__, './dog.mp4'), lambda t: (
+        t.duration(10),
+        t.transform.layer_size(ak.width(), -1),
+        t.frag(blue_filter)
+    ))
 ```
 
 ## Installation
@@ -113,44 +112,43 @@ https://user-images.githubusercontent.com/70841910/148137328-02665a2e-962a-4d82-
 from akashi_core import ak, gl
 
 def subtitle(msg: str, dur: float):
-    ak.text(msg).ap(
-        lambda h: h.duration(ak.sec(dur)),
-        lambda h: h.fg(ak.Color.White, 40),
-        lambda h: h.font_path('./myfont.ttf'),
-    )
 
-def layout(lane_ctx: ak.LaneContext):
-    match lane_ctx.key:
+    ak.text(msg, lambda t: (
+        t.duration(ak.sec(dur)),
+        t.text.fg(ak.Color.White, 32),
+        t.text.font_path('./myfont.ttf'),
+    ))
+
+
+def layout(layout_ctx: ak.LayoutLayerContext):
+
+    match layout_ctx.key:
         case 'subtitle':
-            pos = (ak.center()[0], ak.center()[1] + 495)
-            layer_size = (-1, -1)
-            return ak.LayoutInfo(pos=pos, layer_size=layer_size)
-        case 'main_video':
-            pos = ak.center()
-            layer_size = (ak.width(), ak.height())
-            return ak.LayoutInfo(pos=pos, layer_size=layer_size)
+            subt_height = int(ak.height() * 0.1)
+            pos = (ak.center()[0], ak.height() - subt_height // 2)
+            return ak.LayoutInfo(pos=pos)
         case _:
             return None
 
 @ak.entry()
 def main():
-    with ak.atom() as a1:
-        with ak.layout(layout):
 
-            with ak.lane('subtitle') as _:
-                subtitle('Lorem ipsum dolor sit amet', 3)
-                subtitle('At magnam natus ut mollitia reprehenderit', 3)
+    with ak.unit() as u1:
 
-            with ak.lane() as _:
-                center = ak.center()
-                ak.line(100).ap(
-                    lambda h: h.begin(0, center[1] + 500).end(center[0] * 2, center[1] + 500),
-                    lambda h: h.fit_to(a1),
-                )
+        u1.layout(layout)
 
-            with ak.lane('main_video') as _:
-                ak.video('./blue_city.mp4').duration(3)
-                ak.video('./cherry.mp4').duration(3)
+        with ak.scene(ak.width(), int(ak.height() * 0.1)) as s1:
+            s1.key('subtitle')
+            s1.bg_color(ak.Color.Black)
+
+            subtitle('Lorem ipsum dolor sit amet', 3)
+            subtitle('At magnam natus ut mollitia reprehenderit', 3)
+
+        with ak.scene() as s2:
+            s2.key('main_video')
+
+            ak.video('./blue_city.mp4', lambda t: t.duration(3))
+            ak.video('./cherry.mp4', lambda t: t.duration(3))
 ```
 
 ### Circle Animation
@@ -173,22 +171,23 @@ def random_pos() -> tuple[int, int]:
 def random_color() -> str:
     return ak.hsv(random.randint(0, 360), 50, 100)
 
-def circle_lane(radius: float, pos: tuple[int, int], color: str):
-    with ak.lane() as _:
-        @gl.entry(ak.poly)
-        def fly(buffer: ak.poly, pos: gl.poly_pos) -> None:
-            pos.y += buffer.time * 50
+def circle_layer(radius: float, pos: tuple[int, int], color: str):
 
-        ak.circle(radius).ap(
-            lambda h: h.pos(*pos),
-            lambda h: h.color(color),
-            lambda h: h.poly(fly)
-        )
+    @gl.entry(ak.poly)
+    def fly(buffer: ak.poly, pos: gl.poly_pos) -> None:
+        pos.y += buffer.time * 50
+
+    ak.circle(radius, lambda t: (
+        t.transform.pos(*pos),
+        t.shape.color(color),
+        t.poly(fly)
+    ))
 
 @ak.entry()
 def main():
-    with ak.atom() as a1:
-        a1.bg_color(ak.Color.White)
-        for i in range(100):
-            circle_lane(random_radius(), random_pos(), random_color())
+
+    ak.root.bg_color(ak.Color.White)
+
+    for i in range(100):
+        circle_layer(random_radius(), random_pos(), random_color())
 ```
