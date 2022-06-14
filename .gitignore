@@ -21,7 +21,7 @@ release/
 #shared/
 shared_temp/
 vendor/
-!**/akui/assets/
+!**/akrenderer/assets/
 *.so
 *.so.*
 *.a
