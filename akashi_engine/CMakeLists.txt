@@ -116,3 +116,8 @@ add_custom_target(${AKASHI_PRIV_CONFIG_TARGET_NAME} ALL
   BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/include/version.h
   COMMAND /bin/bash ${CMAKE_CURRENT_SOURCE_DIR}/akashi_version.sh ${CMAKE_CURRENT_BINARY_DIR}/include ${AKASHI_ENGINE_VERSION_MAJOR} ${AKASHI_ENGINE_VERSION_MINOR}
 )
+
+add_subdirectory("./src/akplayer")
+set_target_properties(akashi_player PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
