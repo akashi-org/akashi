@@ -17,12 +17,10 @@ add_executable(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME}
   PRIVATE "../../src"
-  PRIVATE ${AKASHI_PRIV_BOOST_INCLUDE_DIR}
 )
 
-target_link_directories(${PROJECT_NAME}
-  PRIVATE ${AKASHI_PRIV_BOOST_LIBRARY_DIR}
-)
+# target_link_directories(${PROJECT_NAME}
+# )
 
 target_link_libraries(${PROJECT_NAME}
   PRIVATE akcore
@@ -30,7 +28,7 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE akserver # for asp
   PRIVATE Threads::Threads
   PRIVATE atomic
-  PRIVATE ${AKASHI_PRIV_BOOST_TARGET_NAME}
+  PRIVATE ${AKASHI_PRIV_SHARED_DEPS}_boost
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")

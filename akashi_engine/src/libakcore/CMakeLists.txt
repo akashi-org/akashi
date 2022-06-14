@@ -104,18 +104,16 @@ target_compile_definitions(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME}
   PUBLIC ${spdlog_SOURCE_DIR}/include/
   PUBLIC ${nlohmann_json_SOURCE_DIR}/include
-  PUBLIC ${AKASHI_PRIV_BOOST_INCLUDE_DIR}
 )
 
 target_link_directories(${PROJECT_NAME}
   PUBLIC ${spdlog_BINARY_DIR}
-  PUBLIC ${AKASHI_PRIV_BOOST_LIBRARY_DIR} 
 )
 
 target_link_libraries(${PROJECT_NAME}
   PUBLIC spdlog::spdlog
   PRIVATE nlohmann_json::nlohmann_json
-  PRIVATE ${AKASHI_PRIV_BOOST_TARGET_NAME} 
+  PRIVATE ${AKASHI_PRIV_SHARED_DEPS}_boost
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")

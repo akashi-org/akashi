@@ -3,6 +3,7 @@ project (akashi_engine C CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # public options
+
 option(AKASHI_BUILD_TESTS "" ON)
 
 option(AKASHI_BUILD_SHARED_LIBS "" OFF)
@@ -18,13 +19,14 @@ set(AKASHI_BOOST_TAR_PATH "" CACHE STRING "If non-null string provided, use it a
 
 # private options
 
-set(AKASHI_PRIV_BOOST_TARGET_NAME "akashi_priv_boost_target")
-set(AKASHI_PRIV_BOOST_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shared_temp/boost/)
-set(AKASHI_PRIV_BOOST_INCLUDE_DIR ${AKASHI_PRIV_BOOST_ROOT_DIR}/include)
-set(AKASHI_PRIV_BOOST_LIBRARY_DIR ${AKASHI_PRIV_BOOST_ROOT_DIR}/lib)
 set(AKASHI_PRIV_CONFIG_TARGET_NAME "akashi_priv_config_target")
 set(AKASHI_ENGINE_VERSION_MAJOR "0")
 set(AKASHI_ENGINE_VERSION_MINOR "1")
+
+set(AKASHI_PRIV_SHARED_DEPS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/shared_temp/)
+set(AKASHI_PRIV_SHARED_DEPS "akashi_shared_deps")
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PrepareSharedDeps.cmake)
 
 if(CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "" FORCE)
@@ -65,7 +67,6 @@ link_libraries(
 include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}/include
 )
-
 
 if(AKASHI_BUILD_TESTS)
   enable_testing()
@@ -109,39 +110,9 @@ set_target_properties(akashi_encoder PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-
 add_dependencies(akashi_kernel ${AKASHI_PRIV_CONFIG_TARGET_NAME})
 add_custom_target(${AKASHI_PRIV_CONFIG_TARGET_NAME} ALL
   VERBATIM
   BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/include/version.h
   COMMAND /bin/bash ${CMAKE_CURRENT_SOURCE_DIR}/akashi_version.sh ${CMAKE_CURRENT_BINARY_DIR}/include ${AKASHI_ENGINE_VERSION_MAJOR} ${AKASHI_ENGINE_VERSION_MINOR}
-)
-
-add_library(${AKASHI_PRIV_BOOST_TARGET_NAME} INTERFACE)
-include(ExternalProject)
-
-if(AKASHI_BOOST_TAR_PATH STREQUAL "")
-  set(AKASHI_BOOST_REAL_TAR_PATH "https://boostorg.jfrog.io/artifactory/main/release/1.74.0/source/boost_1_74_0.tar.gz")
-else()
-  set(AKASHI_BOOST_REAL_TAR_PATH ${AKASHI_BOOST_TAR_PATH})
-  message("-- Using Custom Boost File Path: " ${AKASHI_BOOST_REAL_TAR_PATH})
-endif()
-
-ExternalProject_Add(
-  boost_akashi
-  URL ${AKASHI_BOOST_REAL_TAR_PATH}
-  TIMEOUT 600
-  URL_MD5 3c8fb92ce08b9ad5a5f0b35731ac2c8e
-
-  SOURCE_DIR ${CMAKE_BINARY_DIR}/.ext/boost/
-  INSTALL_DIR ${AKASHI_PRIV_BOOST_ROOT_DIR}
-
-  CONFIGURE_COMMAND ""
-  BUILD_COMMAND cd <SOURCE_DIR> && ./bootstrap.sh && ./b2 install -j4 --with-filesystem --prefix=<INSTALL_DIR> link=static threading=multi variant=release
-  INSTALL_COMMAND COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/vendor/credits/boost/
-    COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/LICENSE_1_0.txt ${CMAKE_CURRENT_SOURCE_DIR}/vendor/credits/boost/
-)
-add_dependencies(${AKASHI_PRIV_BOOST_TARGET_NAME} boost_akashi)
-target_compile_definitions(${AKASHI_PRIV_BOOST_TARGET_NAME}
-  INTERFACE "BOOST_CHRONO_HEADER_ONLY"
 )
