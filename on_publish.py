@@ -56,7 +56,7 @@ def _exec_cmake_build(sdist_cmd: Command):
 
     sdist_assets_dir = path.join(SDIST_TEMP, 'assets')
     mkpath(sdist_assets_dir)
-    sdist_cmd.copy_tree(path.join('akashi_engine', 'src', 'akui', 'assets'), sdist_assets_dir)
+    sdist_cmd.copy_tree(path.join('akashi_engine', 'src', 'akrenderer', 'assets'), sdist_assets_dir)
 
     sdist_lib_dir = path.join(SDIST_TEMP, 'lib')
     mkpath(sdist_lib_dir)

@@ -100,7 +100,7 @@ set_target_properties(akashi_kernel PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-add_subdirectory("./src/akui")
+add_subdirectory("./src/akrenderer")
 set_target_properties(akashi_renderer PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
