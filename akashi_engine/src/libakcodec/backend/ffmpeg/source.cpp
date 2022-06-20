@@ -32,12 +32,12 @@ namespace akashi {
 
         bool FFLayerSource::init(const core::LayerProfile& layer_profile,
                                  const core::Rational& decode_start,
-                                 const core::VideoDecodeMethod& decode_method,
+                                 const core::VideoDecodeMethod& preferred_decode_method,
                                  const size_t video_max_queue_count) {
             m_done_init = true;
 
-            if (read_inputsrc(m_input_src, layer_profile, decode_method, video_max_queue_count) <
-                0) {
+            if (read_inputsrc(m_input_src, layer_profile, preferred_decode_method,
+                              video_max_queue_count) < 0) {
                 AKLOG_ERRORN("FFLayerSource::init(): Failed to parse input from argument");
                 return false;
             }

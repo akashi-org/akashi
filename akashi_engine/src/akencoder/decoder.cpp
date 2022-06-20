@@ -23,7 +23,7 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(state->m_prop_mtx);
                 decode_args.out_audio_spec = state->m_atomic_state.audio_spec.load();
-                decode_args.decode_method = state->m_atomic_state.decode_method.load();
+                decode_args.preferred_decode_method = state->m_atomic_state.preferred_decode_method.load();
                 // [TODO] this value should be changed
                 decode_args.video_max_queue_count = state->m_prop.video_max_queue_count;
             }

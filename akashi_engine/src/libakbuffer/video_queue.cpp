@@ -24,7 +24,7 @@ namespace akashi {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 m_max_queue_size = m_state->m_prop.video_max_queue_size;
                 m_max_queue_count = m_state->m_prop.video_max_queue_count;
-                m_decode_method = m_state->m_atomic_state.decode_method.load();
+                m_decode_method = m_state->m_atomic_state.preferred_decode_method.load();
             }
         }
 

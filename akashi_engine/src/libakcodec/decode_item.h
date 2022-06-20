@@ -18,7 +18,7 @@ namespace akashi {
 
         struct DecodeArg {
             core::AKAudioSpec out_audio_spec;
-            core::VideoDecodeMethod decode_method;
+            core::VideoDecodeMethod preferred_decode_method;
             size_t video_max_queue_count;
         };
 

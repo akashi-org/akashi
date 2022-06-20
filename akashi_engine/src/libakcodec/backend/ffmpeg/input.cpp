@@ -1,6 +1,7 @@
 #include "./input.h"
 
 #include "./error.h"
+#include "./utils.h"
 
 #include <libakcore/logger.h>
 #include <libakcore/hw_accel.h>
@@ -12,6 +13,8 @@ extern "C" {
 #include <libswresample/swresample.h>
 #include <libavutil/hwcontext.h>
 #include <libavutil/hwcontext_vaapi.h>
+
+#include <libavutil/pixdesc.h>
 }
 
 #include <vector>
@@ -62,7 +65,7 @@ namespace akashi {
         };
 
         int read_inputsrc(InputSource*& input_src, const core::LayerProfile& layer_profile,
-                          const core::VideoDecodeMethod& decode_method,
+                          const core::VideoDecodeMethod& preferred_decode_method,
                           const size_t video_max_queue_count) {
             int ret_code = 0;
 
@@ -75,8 +78,12 @@ namespace akashi {
             input_src->uuid = layer_profile.uuid.c_str();
             input_src->layer_profile = layer_profile;
 
-            input_src->decode_method = decode_method;
+            input_src->preferred_decode_method = preferred_decode_method;
             input_src->video_max_queue_count = video_max_queue_count;
+
+            if (input_src->preferred_decode_method == core::VideoDecodeMethod::SW) {
+                input_src->decode_method = preferred_decode_method;
+            }
 
             // input_src[i].io_ctx = new IOContext(input_paths[i]);
             if (read_av_input(input_src) < 0) {
@@ -87,6 +94,7 @@ namespace akashi {
                 ret_code = -1;
                 goto exit;
             }
+
         exit:
             return ret_code;
         };
@@ -115,15 +123,21 @@ namespace akashi {
                 goto end;
             }
 
-            switch (input_src->decode_method) {
+        end:
+            return ret;
+        };
+
+        static int hwdevice_ctx_create(InputSource* input_src,
+                                       core::VideoDecodeMethod decode_method) {
+            switch (decode_method) {
                 case core::VideoDecodeMethod::VAAPI:
                 case core::VideoDecodeMethod::VAAPI_COPY: {
-                    ret = av_hwdevice_ctx_create(&input_src->hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI,
-                                                 NULL, NULL, 0);
+                    auto ret = av_hwdevice_ctx_create(&input_src->hw_device_ctx,
+                                                      AV_HWDEVICE_TYPE_VAAPI, NULL, NULL, 0);
                     if (ret < 0) {
                         AKLOG_ERROR("av_hwdevice_ctx_create(() failed, code={}({})", AVERROR(ret),
                                     av_err2str(ret));
-                        goto end;
+                        return ret;
                     }
 
                     {
@@ -158,9 +172,8 @@ namespace akashi {
                 }
             }
 
-        end:
-            return ret;
-        };
+            return 0;
+        }
 
         int read_stream(InputSource* input_src) {
             AVFormatContext* format_ctx = input_src->ifmt_ctx;
@@ -185,6 +198,31 @@ namespace akashi {
                     if (av_codec == nullptr) {
                         AKLOG_ERROR("avcodec_find_decoder codec not found. codec_id={}", codec_id);
                         return -1;
+                    }
+
+                    if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO &&
+                        static_cast<int>(input_src->preferred_decode_method) > 0) {
+                        int config_idx = 0;
+                        auto hw_device_type = AV_HWDEVICE_TYPE_VAAPI;
+                        while (1) {
+                            const AVCodecHWConfig* config =
+                                avcodec_get_hw_config(av_codec, config_idx);
+                            if (!config) {
+                                AKLOG_ERROR("Codec {} does not support hw device type {}",
+                                            av_codec->name,
+                                            av_hwdevice_get_type_name(hw_device_type));
+                                input_src->decode_method = core::VideoDecodeMethod::SW;
+                                break;
+                            }
+                            if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX &&
+                                config->device_type == hw_device_type) {
+                                // AKLOG_INFO("{}", av_get_pix_fmt_name(config->pix_fmt));
+                                input_src->decode_method = input_src->preferred_decode_method;
+                                hwdevice_ctx_create(input_src, input_src->decode_method);
+                                break;
+                            }
+                            config_idx++;
+                        }
                     }
 
                     input_src->dec_streams[i].is_active = true;
@@ -217,12 +255,14 @@ namespace akashi {
                         }
                         codec_ctx->get_format = [](AVCodecContext* cb_codec_ctx,
                                                    const enum AVPixelFormat* pix_fmts) {
-                            const enum AVPixelFormat* p;
+                            auto input_src = reinterpret_cast<InputSource*>(cb_codec_ctx->opaque);
 
-                            for (p = pix_fmts; *p != AV_PIX_FMT_NONE; p++) {
+                            enum AVPixelFormat last_sw_pix_fmt = AV_PIX_FMT_NONE;
+                            for (auto p = pix_fmts; *p != AV_PIX_FMT_NONE; p++) {
+                                if (!is_hw_pix_fmt(*p)) {
+                                    last_sw_pix_fmt = *p;
+                                }
                                 if (*p == AV_PIX_FMT_VAAPI) {
-                                    auto input_src =
-                                        reinterpret_cast<InputSource*>(cb_codec_ctx->opaque);
                                     if (input_src->decode_method ==
                                         core::VideoDecodeMethod::VAAPI) {
                                         cb_codec_ctx->hw_frames_ctx =
@@ -246,8 +286,10 @@ namespace akashi {
                                 }
                             }
 
-                            AKLOG_ERRORN("Failed to get a suitable HW surface format. ");
-                            return AV_PIX_FMT_NONE;
+                            AKLOG_ERRORN("Failed to get a suitable HW surface format.");
+                            // try to fallback sw decoding
+                            input_src->decode_method = core::VideoDecodeMethod::SW;
+                            return last_sw_pix_fmt;
                         };
 
                         codec_ctx->opaque = input_src;

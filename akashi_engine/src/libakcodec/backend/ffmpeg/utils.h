@@ -32,5 +32,7 @@ namespace akashi {
 
         core::AKAudioSampleFormat from_ff_sample_format(const AVSampleFormat& format);
 
+        bool is_hw_pix_fmt(const AVPixelFormat& format);
+
     }
 }

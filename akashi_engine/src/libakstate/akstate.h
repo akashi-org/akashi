@@ -141,7 +141,8 @@ namespace akashi {
 
             std::atomic<bool> ui_can_seek = true;
 
-            std::atomic<core::VideoDecodeMethod> decode_method = core::VideoDecodeMethod::NONE;
+            std::atomic<core::VideoDecodeMethod> preferred_decode_method =
+                core::VideoDecodeMethod::NONE;
 
             std::atomic<size_t> play_loop_cnt = 0;
 

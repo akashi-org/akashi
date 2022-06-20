@@ -9,6 +9,7 @@ extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/samplefmt.h>
 #include <libavutil/channel_layout.h>
+#include <libavutil/pixdesc.h>
 }
 
 using namespace akashi::core;
@@ -55,7 +56,7 @@ namespace akashi {
                     return AV_CH_LAYOUT_MONO;
                 case core::AKAudioChannelLayout::STEREO:
                     return AV_CH_LAYOUT_STEREO;
-                case core::AKAudioChannelLayout::NONE: {
+                default: {
                     AKLOG_ERROR("Invalid layout {}", channel_layout);
                     return -1;
                 }
@@ -116,6 +117,11 @@ namespace akashi {
                     AKLOG_ERROR("Invalid format {}", format);
                     return AKAudioSampleFormat::NONE;
             }
+        }
+
+        bool is_hw_pix_fmt(const AVPixelFormat& format) {
+            const AVPixFmtDescriptor* desc = av_pix_fmt_desc_get(format);
+            return desc->flags & AV_PIX_FMT_FLAG_HWACCEL;
         }
 
     }

@@ -32,7 +32,7 @@ namespace akashi {
 
             virtual bool init(const core::LayerProfile& layer_profile,
                               const core::Rational& decode_start,
-                              const core::VideoDecodeMethod& decode_method,
+                              const core::VideoDecodeMethod& preferred_decode_method,
                               const size_t video_max_queue_count) override;
 
             virtual DecodeResult decode(const DecodeArg& decode_arg) override;

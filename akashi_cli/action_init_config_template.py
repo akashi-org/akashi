@@ -20,7 +20,7 @@ def akconfig():
             channel_layout='stereo'
         ),
         playback=ak.PlaybackConf(
-            decode_method='vaapi',  # if you prefer software decoding, set 'sw' instead
+            preferred_decode_method='vaapi',  # if you prefer software decoding, set 'sw' instead
         ),
         ui=ak.UIConf(
             resolution=(800, 450)  # initial resolution of the monitor
