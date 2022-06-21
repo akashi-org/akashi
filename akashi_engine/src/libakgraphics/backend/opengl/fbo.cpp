@@ -214,7 +214,7 @@ namespace akashi {
 
             glBindTexture(GL_TEXTURE_2D, 0);
 
-            CHECK_GL_ERRORS();
+            // CHECK_GL_ERRORS();
 
             return true;
         }
@@ -236,7 +236,7 @@ namespace akashi {
                                     m_pass->msaa_tex.height, GL_TRUE);
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
-            CHECK_GL_ERRORS();
+            // CHECK_GL_ERRORS();
 
             return true;
         }
