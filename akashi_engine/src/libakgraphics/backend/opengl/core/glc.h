@@ -20,6 +20,8 @@ namespace akashi {
     namespace graphics {
         const char* gl_err_to_str(GLenum gl_err);
 
+        static constexpr const int DEFAULT_UNPACK_ALIGNMENT = 4;
+
         void gl_debug_message_callback(GLenum source, GLenum type, unsigned int id, GLenum severity,
                                        GLsizei length, const char* message, const void* userParam);
 

@@ -110,12 +110,13 @@ namespace akashi {
         bool VideoTexture::create_inner_sw(const OGLRenderContext& ctx,
                                            const core::VideoLayerContext& vlayer_ctx,
                                            const buffer::AVBufferData& buf_data) {
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
             for (size_t i = 0; i < m_textures.size(); i++) {
                 auto& tex = m_textures[i];
                 tex.image = buf_data.prop().video_data[i].buf;
-                tex.width = buf_data.prop().video_data[i].stride - 1;
+                tex.width = i == 0 ? buf_data.prop().width : buf_data.prop().chroma_width;
                 tex.height = i == 0 ? buf_data.prop().height : buf_data.prop().chroma_height;
-                tex.effective_width = i == 0 ? buf_data.prop().width : buf_data.prop().chroma_width;
+                tex.effective_width = tex.width;
                 tex.effective_height = tex.height;
 
                 tex.format = GL_RED;
@@ -125,8 +126,15 @@ namespace akashi {
                 tex.index = i;
 
                 glBindTexture(GL_TEXTURE_2D, tex.buffer);
+
+                int bytes_per_pixel = 1;
+                glPixelStorei(GL_UNPACK_ROW_LENGTH,
+                              buf_data.prop().video_data[i].stride / bytes_per_pixel);
+
                 glTexImage2D(GL_TEXTURE_2D, 0, tex.internal_format, tex.width, tex.height, 0,
                              tex.format, GL_UNSIGNED_BYTE, tex.image);
+
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
                 // [XXX] make sure to explicity setup when not using mimap
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -136,6 +144,7 @@ namespace akashi {
 
                 glBindTexture(GL_TEXTURE_2D, 0);
             }
+            glPixelStorei(GL_UNPACK_ALIGNMENT, graphics::DEFAULT_UNPACK_ALIGNMENT);
             return true;
         }
 
@@ -256,13 +265,13 @@ namespace akashi {
         bool VideoTexture::create_inner_vaapi_copy(const OGLRenderContext& ctx,
                                                    const core::VideoLayerContext& vlayer_ctx,
                                                    const buffer::AVBufferData& buf_data) {
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
             for (size_t i = 0; i < 2; i++) {
                 auto& tex = m_textures[i];
                 tex.image = buf_data.prop().video_data[i].buf;
-                tex.width = i == 0 ? buf_data.prop().video_data[i].stride - 1
-                                   : buf_data.prop().chroma_width;
+                tex.width = i == 0 ? buf_data.prop().width : buf_data.prop().chroma_width;
                 tex.height = i == 0 ? buf_data.prop().height : buf_data.prop().chroma_height;
-                tex.effective_width = i == 0 ? buf_data.prop().width : buf_data.prop().chroma_width;
+                tex.effective_width = tex.width;
                 tex.effective_height = tex.height;
 
                 tex.format = i == 0 ? GL_RED : GL_RG;
@@ -271,9 +280,14 @@ namespace akashi {
                 // [TODO] could this be duplicate with the other indices
                 tex.index = i;
 
+                int bytes_per_pixel = i == 0 ? 1 : 2;
+                glPixelStorei(GL_UNPACK_ROW_LENGTH,
+                              buf_data.prop().video_data[i].stride / bytes_per_pixel);
+
                 glBindTexture(GL_TEXTURE_2D, tex.buffer);
                 glTexImage2D(GL_TEXTURE_2D, 0, tex.internal_format, tex.width, tex.height, 0,
                              tex.format, GL_UNSIGNED_BYTE, tex.image);
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
                 // [XXX] make sure to explicity setup when not using mimap
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -283,6 +297,7 @@ namespace akashi {
 
                 glBindTexture(GL_TEXTURE_2D, 0);
             }
+            glPixelStorei(GL_UNPACK_ALIGNMENT, graphics::DEFAULT_UNPACK_ALIGNMENT);
             return true;
         }
 

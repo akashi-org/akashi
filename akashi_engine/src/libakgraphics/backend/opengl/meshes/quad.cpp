@@ -85,8 +85,7 @@ namespace akashi {
                 // luma
                 GLfloat lx0 = 0.0;
                 GLfloat ly0 = 1.0;
-                // [XXX] since there is a stride, not all of the uploaded textures are used
-                GLfloat lx1 = (GLfloat)(info.video_width) / info.luma_tex_width;
+                GLfloat lx1 = 1.0;
                 GLfloat ly1 = 0.0;
 
                 GLfloat luma_uvs[] = {
@@ -106,8 +105,7 @@ namespace akashi {
                 // chroma
                 GLfloat cx0 = 0.0;
                 GLfloat cy0 = 1.0;
-                // [XXX] since there is a stride, not all of the uploaded textures are used
-                GLfloat cx1 = (GLfloat)(info.video_width) / info.chroma_tex_width;
+                GLfloat cx1 = 1.0;
                 GLfloat cy1 = 0.0;
 
                 GLfloat chroma_uvs[] = {
