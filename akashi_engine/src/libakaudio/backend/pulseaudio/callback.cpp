@@ -252,7 +252,11 @@ namespace akashi {
 
             for (size_t i = 0; i < cur_layers.size(); i++) {
                 if (has_overlap(cur_layers[i], cur_pts, next_pts)) {
-                    const auto offset_pts = std::max(cur_layers[i].from - cur_pts, Rational(0, 1));
+                    auto offset_pts = std::max(cur_layers[i].from - cur_pts, Rational(0, 1));
+                    if (offset_pts.den() != 1) {
+                        AKLOG_INFON("offset_pts is not integer");
+                        offset_pts = core::Rational((int64_t)offset_pts.to_decimal(), 1);
+                    }
                     size_t offset_bytes = (offset_pts * cb_ctx->bytes_per_second()).to_decimal();
 
                     fill_layer(&s_mask_buf.buf[offset_bytes], requested_bytes - offset_bytes,
