@@ -17,28 +17,12 @@ namespace akashi {
 
         using TActiveLayers = std::vector<core::borrowed_ptr<LayerSource>>;
 
-        namespace detail {
-
-            static core::Rational calc_dts_avg(const TActiveLayers& active_layers) {
-                core::Rational avg = core::Rational(0, 1);
-                for (const auto& layer : active_layers) {
-                    avg += layer->dts();
-                }
-                return avg / core::Rational(active_layers.size(), 1);
-            }
-
-            static core::Rational update_dts_avg(const core::Rational& cur_dts_avg,
-                                                 const size_t layer_len,
-                                                 const core::Rational& last_layer_dts,
-                                                 const core::Rational& new_layer_dts) {
-                return cur_dts_avg +
-                       ((new_layer_dts - last_layer_dts) / core::Rational(layer_len, 1));
-            }
+        namespace priv {
 
             static core::Rational update_dts_src(const TActiveLayers& active_layers) {
-                core::Rational dts_src = active_layers[0]->dts();
+                core::Rational dts_src = core::Rational(INT32_MAX, 1);
                 for (const auto& layer : active_layers) {
-                    if (layer->dts() < dts_src) {
+                    if (layer->can_decode() && layer->dts() < dts_src) {
                         dts_src = layer->dts();
                     }
                 }
@@ -73,11 +57,10 @@ namespace akashi {
                 m_layer_sources.push_back(make_owned<FFLayerSource>());
             }
 
-            if (!this->collect_active_layers()) {
+            if (!this->update_active_layers()) {
                 // [TODO] sane solution?
                 AKLOG_ERRORN("Not found active layers");
             }
-            // m_dts_avg = detail::calc_dts_avg(m_active_layers);
             m_current_active_layer_idx = 0;
         }
 
@@ -88,31 +71,25 @@ namespace akashi {
             if (m_current_active_layer_idx < m_active_layers.size()) {
                 auto& cur_layer_source = m_active_layers[m_current_active_layer_idx];
 
-                // [TODO] temporary disable balancing
-                // const auto layer_too_early =
-                //     (cur_layer_source->dts() - m_dts_avg) > core::Rational(500, 1000);
-                const auto layer_too_early = false;
-                if (layer_too_early || !cur_layer_source->can_decode()) {
+                if (!cur_layer_source->can_decode()) {
                     m_current_active_layer_idx += 1;
                     return this->decode(decode_arg);
                 }
 
-                // const auto last_layer_dts = cur_layer_source->dts();
                 decode_result = cur_layer_source->decode(decode_arg);
-                // m_dts_avg = detail::update_dts_avg(m_dts_avg, m_active_layers.size(),
-                //                                    last_layer_dts, cur_layer_source->dts());
                 m_current_active_layer_idx += 1;
                 return decode_result;
             }
 
-            if (!this->all_active_layers_dead()) {
-                m_dts_src = detail::update_dts_src(m_active_layers);
+            const auto active_layer_len = this->active_layer_length();
+
+            if (active_layer_len != 0) {
+                m_dts_src = priv::update_dts_src(m_active_layers);
             }
 
             auto atom_eof = false;
-            if (this->all_active_layers_dead() ||
-                (m_dts_dest - m_dts_src) < core::Rational(10, 1000)) {
-                atom_eof = !this->collect_active_layers();
+            if (active_layer_len < 2 || (m_dts_dest - m_dts_src) < core::Rational(100, 1000)) {
+                atom_eof = !this->update_active_layers();
             }
 
             if (atom_eof) {
@@ -120,22 +97,22 @@ namespace akashi {
                 decode_result.result = DecodeResultCode::DECODE_ATOM_ENDED;
                 return decode_result;
             } else {
-                // m_dts_avg = detail::calc_dts_avg(m_active_layers);
                 m_current_active_layer_idx = 0;
                 return this->decode(decode_arg);
             }
         }
 
-        bool AtomSource::all_active_layers_dead(void) {
+        size_t AtomSource::active_layer_length(void) {
+            size_t len = 0;
             for (const auto& layer_source : m_active_layers) {
                 if (layer_source->can_decode()) {
-                    return false;
+                    len += 1;
                 }
             }
-            return true;
+            return len;
         }
 
-        bool AtomSource::collect_active_layers(void) {
+        bool AtomSource::update_active_layers(void) {
             m_active_layers.clear();
             m_current_active_layer_idx = 0;
 
@@ -162,7 +139,7 @@ namespace akashi {
                 } else {
                     m_dts_src = m_dts_dest;
                     m_dts_dest = (std::min)(m_dts_src + this->BLOCK_SIZE, m_global_duration);
-                    return this->collect_active_layers();
+                    return this->update_active_layers();
                 }
             }
 

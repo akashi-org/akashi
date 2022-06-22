@@ -54,9 +54,9 @@ namespace akashi {
             bool done_init(void) const { return m_done_init; }
 
           private:
-            bool all_active_layers_dead(void);
+            size_t active_layer_length(void);
 
-            bool collect_active_layers(void);
+            bool update_active_layers(void);
 
           private:
             const core::Rational BLOCK_SIZE = core::Rational(3l); // 3s
@@ -68,7 +68,6 @@ namespace akashi {
             bool m_done_init = false;
             core::VideoDecodeMethod m_preferred_decode_method;
             size_t m_video_max_queue_count = 0;
-            core::Rational m_dts_avg = core::Rational(0, 1);
             core::Rational m_dts_src = core::Rational(0, 1);
             core::Rational m_dts_dest = core::Rational(0, 1);
             core::Rational m_global_duration = core::Rational(0, 1);
