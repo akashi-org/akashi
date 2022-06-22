@@ -127,6 +127,12 @@ namespace akashi {
                 return spec.sample_rate * size_table(spec.format);
             }
 
+            static float parse_float(const uint8_t* buf) {
+                float value = 0.0f;
+                memcpy(&value, buf, sizeof(float));
+                return value;
+            }
+
             void mix_layer(const size_t write_idx, const uint8_t* w_buf, const size_t w_buf_length,
                            double gain) {
                 alignas(float) uint8_t temp_buf[sizeof(float)] = {0};
@@ -134,8 +140,8 @@ namespace akashi {
                     for (size_t d = 0; d < sizeof(float); d++) {
                         temp_buf[d] = m_buffer[(i + d + write_idx) % m_buf_length];
                     }
-                    float old_v = *(float*)(temp_buf);
-                    float new_v = *(float*)(&w_buf[i]) * gain;
+                    float old_v = parse_float(temp_buf);
+                    float new_v = parse_float(&w_buf[i]) * gain;
                     float mix_gain = 1.0;
                     float res = old_v + (mix_gain * new_v);
 
