@@ -32,20 +32,13 @@ namespace akashi {
             auto frame_time_base = input_src->ifmt_ctx->streams[stream_index]->time_base;
             auto adjusted_pts = this->calc_adjusted_pts_time(frame, dec_stream);
 
-            switch (dec_stream->media_type) {
-                case AVMEDIA_TYPE_VIDEO: {
-                    m_frame_rpts = pts_to_rational(adjusted_pts, frame_time_base);
-                    break;
-                }
-                case AVMEDIA_TYPE_AUDIO: {
-                    m_frame_rpts = pts_to_rational(adjusted_pts, {1, frame->sample_rate});
-                    break;
-                }
-                default: {
-                    break;
-                }
-            }
-            m_frame_pts = rpts_to_pts(m_frame_rpts, m_input_src->from, m_input_src->start);
+            adjusted_pts -=
+                av_rescale_q(dec_stream->input_start_pts, AV_TIME_BASE_Q, frame_time_base);
+
+            m_frame_rpts = pts_to_rational(adjusted_pts, frame_time_base);
+
+            m_frame_pts = (m_input_src->act_dur * m_input_src->loop_cnt) +
+                          rpts_to_pts(m_frame_rpts, m_input_src->from, m_input_src->start);
         }
 
         bool PTSSet::is_valid(void) const {
@@ -87,12 +80,7 @@ namespace akashi {
 
             // [TODO] maybe we should check that the timebase of both values is same
 
-            int64_t frame_pts = frame->pts;
-            if (dec_stream->media_type == AVMEDIA_TYPE_AUDIO) {
-                frame_pts = dec_stream->effective_pts;
-            }
-
-            return frame_pts - dec_stream->input_start_pts;
+            return frame->pts;
         }
 
     }

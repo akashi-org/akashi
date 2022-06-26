@@ -35,6 +35,7 @@ namespace akashi {
                                  const core::VideoDecodeMethod& preferred_decode_method,
                                  const size_t video_max_queue_count) {
             m_done_init = true;
+            m_layer_profile = layer_profile;
 
             if (read_inputsrc(m_input_src, layer_profile, preferred_decode_method,
                               video_max_queue_count) < 0) {
@@ -42,15 +43,25 @@ namespace akashi {
                 return false;
             }
 
+            auto r_dts = decode_start - m_input_src->from;
+            if (r_dts < core::Rational(0, 1)) {
+                m_input_src->loop_cnt = 0;
+            } else {
+                m_input_src->loop_cnt = (r_dts / m_input_src->act_dur).to_decimal();
+            }
+
             for (auto&& dec_stream : m_input_src->dec_streams) {
+                // [TODO] there might be accuracy issues here
                 dec_stream.cur_decode_pts = std::max(m_input_src->from, decode_start);
             }
-            m_dts = std::max(m_input_src->from, decode_start);
 
-            auto seek_pts = m_input_src->start + (decode_start - m_input_src->from);
-            // auto seek_pts = m_input_src->start + m_input_src->cur_decode_pts;
-            if (seek_pts > Rational(0, 1)) {
-                if (!this->seek(seek_pts)) {
+            auto act_from = m_input_src->from +
+                            (core::Rational(m_input_src->loop_cnt, 1) * m_input_src->act_dur);
+
+            auto seek_rpts = m_input_src->start + (decode_start - act_from);
+
+            if (seek_rpts > Rational(0, 1)) {
+                if (!this->seek(seek_rpts)) {
                     return false;
                 }
             }
@@ -94,14 +105,6 @@ namespace akashi {
                     goto exit;
                 }
 
-                // bool within_range = m_input_src->from <= m_input_src->cur_decode_pts &&
-                //                     m_input_src->cur_decode_pts <= m_input_src->to;
-                // if (!within_range) {
-                //     m_input_src->decode_ended = true;
-                //     decode_result.result = DecodeResultCode::DECODE_LAYER_ENDED;
-                //     goto exit;
-                // }
-
                 if (this->is_streams_end()) {
                     m_input_src->decode_ended = true;
                     decode_result.result = DecodeResultCode::DECODE_LAYER_ENDED;
@@ -111,10 +114,15 @@ namespace akashi {
                 // get a pkt
                 ret_tmp = av_read_frame(m_input_src->ifmt_ctx, m_pkt);
                 if (ret_tmp == AVERROR_EOF) {
-                    m_input_src->decode_ended = true;
-                    m_input_src->eof = 1;
-                    AKLOG_DEBUGN("FFLayerSource::transcode_step(): eof reached");
-                    decode_result.result = DecodeResultCode::DECODE_LAYER_EOF;
+                    if (this->seek(m_input_src->start)) {
+                        m_input_src->loop_cnt += 1;
+                        decode_result.result = DecodeResultCode::DECODE_AGAIN;
+                    } else {
+                        m_input_src->decode_ended = true;
+                        m_input_src->eof = 1;
+                        AKLOG_DEBUGN("FFLayerSource::transcode_step(): eof reached");
+                        decode_result.result = DecodeResultCode::DECODE_LAYER_EOF;
+                    }
                     goto exit;
                 } else if (ret_tmp < 0) {
                     AKLOG_ERROR("FFLayerSource::transcode_step(): av_read_frame failed, ret={}",
@@ -157,11 +165,6 @@ namespace akashi {
 
                 if (!dec_stream->is_checked_first_pts) {
                     dec_stream->first_pts = m_frame->pts;
-                    dec_stream->effective_pts =
-                        av_rescale_q(dec_stream->first_pts,
-                                     m_input_src->ifmt_ctx->streams[m_pkt->stream_index]->time_base,
-                                     {1, m_frame->sample_rate});
-
                     dec_stream->is_checked_first_pts = true;
                 }
 
@@ -171,16 +174,12 @@ namespace akashi {
                 if (!pts_set.is_valid()) {
                     AKLOG_INFON("FFLayerSource::transcode_step(): Invalid pts found. Skipped");
                     decode_result.result = DecodeResultCode::DECODE_SKIPPED;
-                    m_input_src->dec_streams[m_pkt->stream_index].effective_pts +=
-                        m_frame->nb_samples;
                     goto exit;
                 }
 
                 if (!pts_set.within_range()) {
                     m_input_src->dec_streams[m_pkt->stream_index].decode_ended = true;
                     decode_result.result = DecodeResultCode::DECODE_STREAM_ENDED;
-                    m_input_src->dec_streams[m_pkt->stream_index].effective_pts +=
-                        m_frame->nb_samples;
                     goto exit;
                 }
 
@@ -217,10 +216,7 @@ namespace akashi {
                 decode_result.buffer = std::move(buf_data);
                 decode_result.layer_uuid = m_input_src->uuid;
 
-                // update the state
                 m_input_src->dec_streams[m_pkt->stream_index].cur_decode_pts = pts_set.frame_pts();
-                m_dts = pts_set.frame_pts();
-                m_input_src->dec_streams[m_pkt->stream_index].effective_pts += m_frame->nb_samples;
                 decode_result.result = DecodeResultCode::OK;
             }
 
@@ -291,7 +287,19 @@ namespace akashi {
         }
 
         bool FFLayerSource::can_decode(void) const {
-            return !(m_input_src->eof || m_input_src->decode_ended);
+            return m_input_src->eof != 1 && !m_input_src->decode_ended;
+        }
+
+        core::Rational FFLayerSource::dts(void) const {
+            if (m_input_src->dec_streams.size() == 0) {
+                AKLOG_ERRORN("FFLayerSource::dts(): No streams found");
+                return core::Rational(0, 1);
+            }
+            core::Rational res_dts = core::Rational(INT32_MAX, 1);
+            for (const auto& dec_stream : m_input_src->dec_streams) {
+                res_dts = std::min(dec_stream.cur_decode_pts, res_dts);
+            }
+            return res_dts;
         }
 
         bool FFLayerSource::is_streams_end(void) const {

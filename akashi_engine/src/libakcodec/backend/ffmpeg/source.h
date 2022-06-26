@@ -45,7 +45,9 @@ namespace akashi {
 
             virtual bool done_init(void) const override { return m_done_init; }
 
-            core::Rational dts(void) const override { return m_dts; }
+            core::Rational dts(void) const override;
+
+            const core::LayerProfile& layer_profile() const override { return m_layer_profile; }
 
           private:
             bool is_streams_end(void) const;
@@ -56,7 +58,8 @@ namespace akashi {
             AVFrame* m_proxy_frame = nullptr;
             AVFrame* m_frame = nullptr;
             bool m_done_init = false;
-            core::Rational m_dts = core::Rational(0, 1);
+
+            core::LayerProfile m_layer_profile;
         };
     }
 }

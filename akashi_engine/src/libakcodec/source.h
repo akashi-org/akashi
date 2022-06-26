@@ -35,6 +35,15 @@ namespace akashi {
             virtual bool done_init(void) const = 0;
 
             virtual core::Rational dts(void) const = 0;
+
+            virtual const core::LayerProfile& layer_profile() const = 0;
+
+            void set_decode_halted(bool halted) { m_decode_halted = halted; }
+
+            bool decode_halted() const { return m_decode_halted; }
+
+          private:
+            bool m_decode_halted = false;
         };
 
         class AtomSource final {

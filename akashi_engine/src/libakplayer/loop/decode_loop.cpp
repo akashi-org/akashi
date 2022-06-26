@@ -114,7 +114,8 @@ namespace akashi {
                 {
                     std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
                     decode_args.out_audio_spec = ctx.state->m_atomic_state.audio_spec.load();
-                    decode_args.preferred_decode_method = ctx.state->m_atomic_state.preferred_decode_method.load();
+                    decode_args.preferred_decode_method =
+                        ctx.state->m_atomic_state.preferred_decode_method.load();
                     decode_args.video_max_queue_count = ctx.state->m_prop.video_max_queue_count;
                 }
                 auto decode_res = decoder->decode(decode_args);

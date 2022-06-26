@@ -71,12 +71,19 @@ namespace akashi {
             if (m_current_active_layer_idx < m_active_layers.size()) {
                 auto& cur_layer_source = m_active_layers[m_current_active_layer_idx];
 
-                if (!cur_layer_source->can_decode()) {
+                if (m_dts_dest < cur_layer_source->dts()) {
+                    cur_layer_source->set_decode_halted(true);
+                } else {
+                    cur_layer_source->set_decode_halted(false);
+                }
+
+                if (!cur_layer_source->can_decode() || cur_layer_source->decode_halted()) {
                     m_current_active_layer_idx += 1;
                     return this->decode(decode_arg);
                 }
 
                 decode_result = cur_layer_source->decode(decode_arg);
+
                 m_current_active_layer_idx += 1;
                 return decode_result;
             }
@@ -124,6 +131,7 @@ namespace akashi {
                 }
 
                 if (!m_layer_sources[i]->done_init()) {
+                    // [TODO] is it really ok to pass m_dts_src?
                     m_layer_sources[i]->init(m_atom_profile.av_layers[i], m_dts_src,
                                              m_preferred_decode_method, m_video_max_queue_count);
                 }
