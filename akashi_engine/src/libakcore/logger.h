@@ -95,6 +95,16 @@
         }                                                                                          \
     } while (0)
 
+#define AKPRIV_RETURN_TAGSTR(ret_str)                                                              \
+    if (contains_char(str, ret_str) > 0) {                                                         \
+        return ret_str;                                                                            \
+    }
+
+#define AKPRIV_RETURN_TAGSTR2(match_str, ret_str)                                                  \
+    if (contains_char(str, match_str) > 0) {                                                       \
+        return ret_str;                                                                            \
+    }
+
 namespace akashi {
     namespace core {
 
@@ -151,48 +161,23 @@ namespace akashi {
             }
 
             constexpr inline const char* get_log_tag_str(const char* str) {
-                if (contains_char(str, "akui") > 0) {
-                    return "akui";
-                }
-                if (contains_char(str, "libakplayer") > 0) {
-                    return "akplayer";
-                }
-                if (contains_char(str, "libakcore") > 0) {
-                    return "akcore";
-                }
-                if (contains_char(str, "libakcodec") > 0) {
-                    return "akcodec";
-                }
-                if (contains_char(str, "libakaudio") > 0) {
-                    return "akaudio";
-                }
-                if (contains_char(str, "libakgraphics") > 0) {
-                    return "akgraphics";
-                }
-                if (contains_char(str, "libakbuffer") > 0) {
-                    return "akbuffer";
-                }
-                if (contains_char(str, "libakeval") > 0) {
-                    return "akeval";
-                }
-                if (contains_char(str, "libakwatch") > 0) {
-                    return "akwatch";
-                }
-                if (contains_char(str, "libakserver") > 0) {
-                    return "akserver";
-                }
-                if (contains_char(str, "libakstate") > 0) {
-                    return "akstate";
-                }
-                if (contains_char(str, "libakevent") > 0) {
-                    return "akevent";
-                }
-                if (contains_char(str, "akencoder") > 0) {
-                    return "akencoder";
-                }
-                if (contains_char(str, "akkernel") > 0) {
-                    return "akkernel";
-                }
+                AKPRIV_RETURN_TAGSTR("akrenderer");
+                AKPRIV_RETURN_TAGSTR("akencoder");
+                AKPRIV_RETURN_TAGSTR("akkernel");
+                AKPRIV_RETURN_TAGSTR2("/akplayer/", "akplayer");
+
+                AKPRIV_RETURN_TAGSTR("libakui");
+                AKPRIV_RETURN_TAGSTR("libakplayer");
+                AKPRIV_RETURN_TAGSTR("libakcore");
+                AKPRIV_RETURN_TAGSTR("libakcodec");
+                AKPRIV_RETURN_TAGSTR("libakaudio");
+                AKPRIV_RETURN_TAGSTR("libakgraphics");
+                AKPRIV_RETURN_TAGSTR("libakbuffer");
+                AKPRIV_RETURN_TAGSTR("libakeval");
+                AKPRIV_RETURN_TAGSTR("libakwatch");
+                AKPRIV_RETURN_TAGSTR("libakserver");
+                AKPRIV_RETURN_TAGSTR("libakstate");
+                AKPRIV_RETURN_TAGSTR("libakevent");
                 return "???";
             }
 
