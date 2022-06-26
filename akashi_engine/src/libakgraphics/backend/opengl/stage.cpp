@@ -119,8 +119,12 @@ namespace akashi {
         }
 
         bool RenderPlane::add_layer(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
-            auto actor = create_actor(ctx, layer_ctx);
+            if (layer_ctx.type == static_cast<int>(core::LayerType::AUDIO)) {
+                AKLOG_DEBUG("skip adding the audio layer: {}", layer_ctx.uuid);
+                return false;
+            }
 
+            auto actor = create_actor(ctx, layer_ctx);
             if (actor) {
                 m_actors.push_back(actor);
                 m_actor_map.insert({layer_ctx.uuid, actor});
