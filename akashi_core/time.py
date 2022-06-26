@@ -29,6 +29,9 @@ def parse_timestr(tstr: str) -> datetime:
     raise Exception('parse_timestr() Failed')
 
 
+_SEC_LIKE = Union['sec', int, float]
+
+
 class sec(Fraction):
 
     def __new__(cls, num: Union[int, float, Fraction, str], den: Union[int, None] = None) -> sec:
@@ -49,73 +52,65 @@ class sec(Fraction):
     def __repr__(self):
         return f'sec({self.numerator}/{self.denominator}, {float(self)})'
 
-    def __add__(self, other: sec) -> sec:
-        return sec(super().__add__(other))  # type: ignore
+    def __add__(self, other: _SEC_LIKE) -> sec:
+        return sec(super().__add__(sec(other)))
 
-    def __radd__(self, other: sec) -> sec:
-        return sec(super().__radd__(other))  # type: ignore
+    def __radd__(self, other: _SEC_LIKE) -> sec:
+        return sec(super().__radd__(sec(other)))
 
-    def __sub__(self, other: sec) -> sec:
-        return sec(super().__sub__(other))  # type: ignore
+    def __sub__(self, other: _SEC_LIKE) -> sec:
+        return sec(super().__sub__(sec(other)))
 
-    def __rsub__(self, other: sec) -> sec:
-        return sec(super().__rsub__(other))  # type: ignore
+    def __rsub__(self, other: _SEC_LIKE) -> sec:
+        return sec(super().__rsub__(sec(other)))
 
-    def __mul__(self, other: sec) -> sec:
-        return sec(super().__mul__(other))  # type: ignore
+    def __mul__(self, other: _SEC_LIKE) -> sec:
+        return sec(super().__mul__(sec(other)))
 
-    def __rmul__(self, other: sec) -> sec:
-        return sec(super().__rmul__(other))  # type: ignore
+    def __rmul__(self, other: _SEC_LIKE) -> sec:
+        return sec(super().__rmul__(sec(other)))
 
-    def __truediv__(self, other: sec) -> sec:
-        return sec(super().__truediv__(other))  # type: ignore
+    def __truediv__(self, other: _SEC_LIKE) -> sec:
+        return sec(super().__truediv__(sec(other)))
 
-    def __rtruediv__(self, other: sec) -> sec:
-        return sec(super().__rtruediv__(other))  # type: ignore
+    def __rtruediv__(self, other: _SEC_LIKE) -> sec:
+        return sec(super().__rtruediv__(sec(other)))
 
-    def __floordiv__(self, other: sec) -> sec:
-        return sec(super().__floordiv__(other))  # type: ignore
+    def __floordiv__(self, other: _SEC_LIKE) -> sec:
+        return sec(super().__floordiv__(sec(other)))
 
-    def __rfloordiv__(self, other: sec) -> sec:
-        return sec(super().__rfloordiv__(other))  # type: ignore
+    def __rfloordiv__(self, other: _SEC_LIKE) -> sec:
+        return sec(super().__rfloordiv__(sec(other)))
 
-    def __mod__(self, other: sec) -> sec:
-        return sec(super().__mod__(other))  # type: ignore
+    # def __mod__(self, other: _SEC_LIKE) -> sec:
+    #     return sec(super().__mod__(sec(other)))
 
-    def __rmod__(self, other: sec) -> sec:
-        return sec(super().__rmod__(other))  # type: ignore
+    # def __rmod__(self, other: _SEC_LIKE) -> sec:
+    #     return sec(super().__rmod__(sec(other)))
 
-    def __divmod__(self, other: sec) -> sec:
-        return sec(super().__divmod__(other))  # type: ignore
+    # def __pow__(self, other: int) -> sec:
+    #     return sec(super().__pow__(sec(other)))
 
-    def __rdivmod__(self, other: sec) -> sec:
-        return sec(super().__rdivmod__(other))  # type: ignore
+    # def __rpow__(self, other: _SEC_LIKE) -> sec:
+    #     return sec(super().__rpow__(sec(other)))
 
-    def __pow__(self, other: sec) -> sec:
-        return sec(super().__pow__(other))  # type: ignore
+    def __eq__(self, other: _SEC_LIKE) -> bool:
+        return super().__eq__(sec(other))
 
-    def __rpow__(self, other: sec) -> sec:
-        return sec(super().__rpow__(other))  # type: ignore
+    def __ne__(self, other: _SEC_LIKE) -> bool:
+        return not(super().__eq__(sec(other)))
 
-    # [TODO] Even with the settings below, comparison with other types like int still can be possible.
+    def __lt__(self, other: _SEC_LIKE) -> bool:
+        return super().__lt__(sec(other))
 
-    def __eq__(self, other: sec) -> bool:
-        return super().__eq__(other)
+    def __gt__(self, other: _SEC_LIKE) -> bool:
+        return super().__gt__(sec(other))
 
-    def __ne__(self, other: sec) -> bool:
-        return not(super().__eq__(other))
+    def __le__(self, other: _SEC_LIKE) -> bool:
+        return super().__le__(sec(other))
 
-    def __lt__(self, other: sec) -> bool:
-        return super().__lt__(other)
-
-    def __gt__(self, other: sec) -> bool:
-        return super().__gt__(other)
-
-    def __le__(self, other: sec) -> bool:
-        return super().__le__(other)
-
-    def __ge__(self, other: sec) -> bool:
-        return super().__ge__(other)
+    def __ge__(self, other: _SEC_LIKE) -> bool:
+        return super().__ge__(sec(other))
 
     def trunc(self) -> int:
         return trunc(self)
