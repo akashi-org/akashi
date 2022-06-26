@@ -4,15 +4,42 @@ from typing import Union, Final
 from fractions import Fraction
 from decimal import Decimal
 from math import trunc
+from datetime import datetime, timedelta
+
+
+def parse_timestr(tstr: str) -> datetime:
+
+    formats = [
+        '%H:%M:%S.%f',
+        '%H:%M:%S',
+        '%Hh',
+        '%Hh%Mm',
+        '%Hh%Mm%Ss',
+        '%Mm',
+        '%Mm%Ss',
+        '%Ss',
+    ]
+
+    for fmt in formats:
+        try:
+            return datetime.strptime(tstr, fmt)
+        except ValueError:
+            continue
+
+    raise Exception('parse_timestr() Failed')
 
 
 class sec(Fraction):
 
-    def __new__(cls, num: Union[int, float, Fraction], den: Union[int, None] = None) -> sec:
+    def __new__(cls, num: Union[int, float, Fraction, str], den: Union[int, None] = None) -> sec:
         if isinstance(num, int):
             return super().__new__(cls, num, den)
         elif isinstance(num, float):
             return super().__new__(cls, Decimal(str(num)))
+        elif isinstance(num, str):
+            dt = parse_timestr(num)
+            delta = timedelta(hours=dt.hour, minutes=dt.minute, seconds=dt.second, microseconds=dt.microsecond)
+            return super().__new__(cls, Decimal(str(delta.total_seconds())))
         else:
             return super().__new__(cls, num.numerator, num.denominator)
 
