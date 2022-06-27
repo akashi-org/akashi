@@ -34,6 +34,7 @@ namespace akashi {
         struct VideoLayerContext {
             std::string src;
             Rational start = core::Rational(0, 1);
+            Rational end = core::Rational(0, 1);
             double scale;
             double gain;
             std::string frag;
@@ -43,6 +44,7 @@ namespace akashi {
         struct AudioLayerContext {
             std::string src;
             Rational start = core::Rational(0, 1);
+            Rational end = core::Rational(0, 1);
             double gain;
         };
 
@@ -149,6 +151,7 @@ namespace akashi {
             std::string uuid;
             std::string src;
             Rational start = core::Rational(0, 1);
+            Rational end = core::Rational(0, 1);
             double gain;
         };
 

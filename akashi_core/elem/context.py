@@ -79,15 +79,7 @@ class AtomHandle:
             cur_layer = cur_layers[layer_idx]
             if isinstance(cur_layer._duration, sec):
 
-                # resolve -1 duration
-                if cur_layer.kind in ["VIDEO", "AUDIO"] and cur_layer._duration == sec(-1):
-                    layer_src: str = cast('HasMediaField', cur_layer).media.src
-                    if layer_src in g_resource_map:
-                        cur_layer.duration = g_resource_map[layer_src]
-                    else:
-                        cur_layer.duration = get_duration(layer_src)
-                        g_resource_map[layer_src] = cur_layer.duration
-                elif cur_layer.duration == NOT_FIXED_SEC:
+                if cur_layer.duration == NOT_FIXED_SEC:
                     cur_layer.duration = cur_layer._duration
 
                 layer_to = cur_layer.atom_offset + cur_layer.duration

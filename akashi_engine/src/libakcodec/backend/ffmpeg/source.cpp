@@ -177,6 +177,16 @@ namespace akashi {
                     goto exit;
                 }
 
+                if (pts_set.frame_rpts() > m_input_src->end) {
+                    if (this->seek(m_input_src->start)) {
+                        m_input_src->loop_cnt += 1;
+                        decode_result.result = DecodeResultCode::DECODE_AGAIN;
+                    } else {
+                        m_input_src->decode_ended = true;
+                        decode_result.result = DecodeResultCode::ERROR;
+                    }
+                }
+
                 if (!pts_set.within_range()) {
                     m_input_src->dec_streams[m_pkt->stream_index].decode_ended = true;
                     decode_result.result = DecodeResultCode::DECODE_STREAM_ENDED;

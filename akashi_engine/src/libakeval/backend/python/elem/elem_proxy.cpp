@@ -40,12 +40,14 @@ namespace akashi {
                 case core::LayerType::VIDEO: {
                     computed.src = m_layer_ctx.video_layer_ctx.src;
                     computed.start = m_layer_ctx.video_layer_ctx.start;
+                    computed.end = m_layer_ctx.video_layer_ctx.end;
                     computed.gain = m_layer_ctx.video_layer_ctx.gain;
                     break;
                 }
                 case core::LayerType::AUDIO: {
                     computed.src = m_layer_ctx.audio_layer_ctx.src;
                     computed.start = m_layer_ctx.audio_layer_ctx.start;
+                    computed.end = m_layer_ctx.audio_layer_ctx.end;
                     computed.gain = m_layer_ctx.audio_layer_ctx.gain;
                     break;
                 }

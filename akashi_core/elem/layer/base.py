@@ -11,6 +11,8 @@ from akashi_core.pysl.shader import ShaderCompiler
 
 from akashi_core.pysl import _gl
 
+from akashi_core.probe import get_duration
+
 if tp.TYPE_CHECKING:
     from akashi_core.elem.context import root
     from .unit import UnitEntry, UnitHandle
@@ -23,6 +25,7 @@ LayerRef = tp.NewType('LayerRef', int)
 ''' Layer Concept '''
 
 _TLayerTrait = tp.TypeVar('_TLayerTrait', bound='LayerTrait')
+_TLayerTimeTrait = tp.TypeVar('_TLayerTimeTrait', bound='LayerTimeTrait')
 
 
 @dataclass
@@ -41,20 +44,26 @@ class LayerTrait:
 
     _idx: int
 
-    def duration(self: '_TLayerTrait', duration: sec | float | 'UnitHandle' | 'tp.Type[root]') -> '_TLayerTrait':
+    def key(self: '_TLayerTrait', value: str) -> '_TLayerTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            cur_layer.key = value
+        return self
+
+
+@dataclass
+class LayerTimeTrait:
+
+    _idx: int
+
+    def duration(self: '_TLayerTimeTrait', duration: sec | float | 'UnitHandle' | 'tp.Type[root]') -> '_TLayerTimeTrait':
         if (cur_layer := peek_entry(self._idx)):
             _duration = sec(duration) if isinstance(duration, (int, float)) else duration
             tp.cast(LayerField, cur_layer)._duration = _duration
         return self
 
-    def offset(self: '_TLayerTrait', offset: sec | float) -> '_TLayerTrait':
+    def offset(self: '_TLayerTimeTrait', offset: sec | float) -> '_TLayerTimeTrait':
         if (cur_layer := peek_entry(self._idx)):
             cur_layer.atom_offset = sec(offset)
-        return self
-
-    def key(self: '_TLayerTrait', value: str) -> '_TLayerTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            cur_layer.key = value
         return self
 
 
@@ -180,7 +189,10 @@ class TextureTrait:
 class MediaField:
     src: str
     gain: float = 1.0
-    start: sec = sec(0)  # temporary
+    start: sec = sec(0)
+    end: sec = sec(-1)
+    _span_cnt: int | None = None
+    _span_dur: None | sec | 'tp.Type[root]' | 'UnitHandle' = None
 
 
 @runtime_checkable
@@ -198,10 +210,39 @@ class MediaTrait:
             tp.cast(HasMediaField, cur_layer).media.gain = gain
         return self
 
-    def start(self, start: sec | float) -> 'MediaTrait':
+    def range(self, start: sec | float, end: sec | float = -1) -> 'MediaTrait':
+        if start < 0:
+            raise Exception('Negative start value is prohibited')
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(HasMediaField, cur_layer).media.start = sec(start)
+            tp.cast(HasMediaField, cur_layer).media.end = sec(end)
         return self
+
+    def span_cnt(self, count: int) -> 'MediaTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasMediaField, cur_layer).media._span_cnt = count
+            tp.cast(HasMediaField, cur_layer).media._span_dur = None
+        return self
+
+    def span_dur(self, duration: sec | float | 'UnitHandle' | 'tp.Type[root]') -> 'MediaTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            _duration = sec(duration) if isinstance(duration, (int, float)) else duration
+            tp.cast(HasMediaField, cur_layer).media._span_cnt = None
+            tp.cast(HasMediaField, cur_layer).media._span_dur = _duration
+        return self
+
+
+def _calc_media_duration(media: MediaField):
+    if media.end == sec(-1):
+        media.end = get_duration(media.src)
+
+    media_dur = media.end - media.start
+    if media._span_cnt:
+        return media_dur * media._span_cnt
+    elif media._span_dur:
+        return media._span_dur
+    else:
+        return media_dur
 
 
 def __is_atom_active(atom_uuid: UUID, raise_exp: bool = True) -> bool:

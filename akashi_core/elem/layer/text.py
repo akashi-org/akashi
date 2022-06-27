@@ -15,7 +15,8 @@ from .base import (
     TextureTrait,
     ShaderField,
     LayerField,
-    LayerTrait
+    LayerTrait,
+    LayerTimeTrait
 )
 from .base import peek_entry, register_entry, frag, poly, LayerRef
 from akashi_core.pysl import _gl as gl
@@ -156,7 +157,7 @@ class TextEntry(LayerField, RequiredParams):
 
 
 @dataclass
-class TextTrait(LayerTrait):
+class TextTrait(LayerTrait, LayerTimeTrait):
 
     text: TextLocalTrait = field(init=False)
     transform: TransformTrait = field(init=False)

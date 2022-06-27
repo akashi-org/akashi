@@ -37,10 +37,12 @@ g_resource_map: ResourceMapType = {}
 
 def get_duration(url: str) -> sec:
 
-    if not _API:
-        raise Exception('API is null')
+    if not url in g_resource_map:
+        if not _API:
+            raise Exception('API is null')
 
-    duration = _AKFraction()
-    _API.akprobe_get_duration(duration, url.encode('utf-8'))
+        duration = _AKFraction()
+        _API.akprobe_get_duration(duration, url.encode('utf-8'))
+        g_resource_map[url] = sec(duration.num, duration.den)
 
-    return sec(duration.num, duration.den)
+    return g_resource_map[url]

@@ -10,7 +10,8 @@ from .base import peek_entry, register_entry
 
 from .base import (
     MediaField,
-    MediaTrait
+    MediaTrait,
+    _calc_media_duration
 )
 
 
@@ -66,4 +67,7 @@ def audio(src: str, *trait_fns: AudioTraitFn) -> LayerRef:
     idx = register_entry(entry, 'AUDIO', '')
     t = AudioTrait(idx)
     [tfn(t) for tfn in trait_fns]
+
+    entry._duration = _calc_media_duration(entry.media)
+
     return LayerRef(idx)

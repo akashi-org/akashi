@@ -16,7 +16,8 @@ from .base import (
     TextureTrait,
     LayerField,
     LayerTrait,
-    ShaderField
+    ShaderField,
+    _calc_media_duration
 )
 from .base import peek_entry, register_entry, frag, poly, LayerRef
 
@@ -148,4 +149,6 @@ def video(src: str, *trait_fns: VideoTraitFn) -> LayerRef:
     t = VideoTrait(idx)
     t.transform.pos(*lcenter())
     [tfn(t) for tfn in trait_fns]
+
+    entry._duration = _calc_media_duration(entry.media)
     return LayerRef(idx)

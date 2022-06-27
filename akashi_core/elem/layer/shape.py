@@ -12,7 +12,8 @@ from .base import (
     TransformTrait,
     ShaderField,
     LayerField,
-    LayerTrait
+    LayerTrait,
+    LayerTimeTrait,
 )
 from .base import peek_entry, register_entry, frag, poly, LayerRef
 from akashi_core.pysl import _gl as gl
@@ -144,7 +145,7 @@ class ShapeEntry(LayerField, RequiredParams):
 
 
 @dataclass
-class ShapeHandle(LayerTrait):
+class ShapeTrait(LayerTrait, LayerTimeTrait):
 
     shape: ShapeLocalTrait = field(init=False)
     transform: TransformTrait = field(init=False)
@@ -153,24 +154,24 @@ class ShapeHandle(LayerTrait):
         self.shape = ShapeLocalTrait(self._idx)
         self.transform = TransformTrait(self._idx)
 
-    def frag(self, *frag_fns: _ShapeFragFn, preamble: tuple[str, ...] = tuple()) -> 'ShapeHandle':
+    def frag(self, *frag_fns: _ShapeFragFn, preamble: tuple[str, ...] = tuple()) -> 'ShapeTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
             cur_layer.shader.frag_shader = ShaderCompiler(frag_fns, ShapeFragBuffer, _frag_shader_header, preamble)
         return self
 
-    def poly(self, *poly_fns: _ShapePolyFn, preamble: tuple[str, ...] = tuple()) -> 'ShapeHandle':
+    def poly(self, *poly_fns: _ShapePolyFn, preamble: tuple[str, ...] = tuple()) -> 'ShapeTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
             cur_layer.shader.poly_shader = ShaderCompiler(poly_fns, ShapePolyBuffer, _poly_shader_header, preamble)
         return self
 
 
 @dataclass
-class RectTrait(ShapeHandle):
+class RectTrait(ShapeTrait):
     ...
 
 
 @dataclass
-class CircleTrait(ShapeHandle):
+class CircleTrait(ShapeTrait):
 
     def lod(self, value: int) -> 'CircleTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
@@ -179,12 +180,12 @@ class CircleTrait(ShapeHandle):
 
 
 @dataclass
-class TriangleTrait(ShapeHandle):
+class TriangleTrait(ShapeTrait):
     ...
 
 
 @dataclass
-class LineTrait(ShapeHandle):
+class LineTrait(ShapeTrait):
 
     def begin(self, x: int, y: int) -> 'LineTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):

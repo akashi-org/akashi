@@ -11,6 +11,7 @@ from .base import (
     ShaderField,
     LayerField,
     LayerTrait,
+    LayerTimeTrait,
     CropField,
     CropTrait
 )
@@ -70,7 +71,7 @@ class ImageEntry(LayerField, RequiredParams):
 
 
 @dataclass
-class ImageTrait(LayerTrait):
+class ImageTrait(LayerTrait, LayerTimeTrait):
 
     transform: TransformTrait = field(init=False)
     crop: CropTrait = field(init=False)

@@ -63,6 +63,8 @@ namespace akashi {
 
             akashi::core::Rational start;
 
+            akashi::core::Rational end;
+
             size_t loop_cnt = 0;
 
             akashi::core::Rational act_dur = akashi::core::Rational(0, 1);

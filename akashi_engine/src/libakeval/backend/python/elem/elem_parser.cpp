@@ -167,6 +167,8 @@ namespace akashi {
                     layer_params.attr("media").attr("gain").cast<double>();
                 layer_ctx.video_layer_ctx.start =
                     to_rational(layer_params.attr("media").attr("start"));
+                layer_ctx.video_layer_ctx.end = to_rational(layer_params.attr("media").attr("end"));
+
                 layer_ctx.video_layer_ctx.scale = 1.0;
 
                 layer_ctx.video_layer_ctx.frag =
@@ -182,6 +184,8 @@ namespace akashi {
                     layer_params.attr("media").attr("gain").cast<double>();
                 layer_ctx.audio_layer_ctx.start =
                     to_rational(layer_params.attr("media").attr("start"));
+                layer_ctx.audio_layer_ctx.end = to_rational(layer_params.attr("media").attr("end"));
+
             } else if (type_str == "IMAGE") {
                 layer_ctx.type = static_cast<int>(core::LayerType::IMAGE);
                 for (const auto& src :

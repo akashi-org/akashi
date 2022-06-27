@@ -75,11 +75,12 @@ namespace akashi {
             input_src->from = layer_profile.from;
             input_src->to = layer_profile.to;
             input_src->start = layer_profile.start;
+            input_src->end = layer_profile.end;
             input_src->uuid = layer_profile.uuid.c_str();
             input_src->layer_profile = layer_profile;
 
             input_src->loop_cnt = 0;
-            input_src->act_dur = core::Rational(0, 1);
+            input_src->act_dur = input_src->end - input_src->start;
 
             input_src->preferred_decode_method = preferred_decode_method;
             input_src->video_max_queue_count = video_max_queue_count;
@@ -125,11 +126,6 @@ namespace akashi {
                 AKLOG_ERRORN("failed to get avformat context");
                 goto end;
             }
-
-            // [TODO] really?
-            input_src->act_dur = std::min(
-                input_src->to - input_src->from,
-                core::Rational(input_src->ifmt_ctx->duration, AV_TIME_BASE) - input_src->start);
 
         end:
             return ret;
