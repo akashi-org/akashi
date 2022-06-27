@@ -17,7 +17,7 @@ ExternalProject_Add(
   URL_MD5 3c8fb92ce08b9ad5a5f0b35731ac2c8e
 
   SOURCE_DIR ${CMAKE_BINARY_DIR}/.ext/boost/
-  INSTALL_DIR ${AKASHI_PRIV_SHARED_DEPS_ROOT}/glfw
+  INSTALL_DIR ${AKASHI_PRIV_SHARED_DEPS_ROOT}/boost
 
   CONFIGURE_COMMAND ""
   BUILD_COMMAND cd <SOURCE_DIR> && ./bootstrap.sh && ./b2 install -j4 --with-filesystem --prefix=<INSTALL_DIR> link=static threading=multi variant=release
