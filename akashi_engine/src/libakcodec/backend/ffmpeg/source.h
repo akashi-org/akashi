@@ -8,6 +8,7 @@
 
 struct AVPacket;
 struct AVFrame;
+struct AVCodecContext;
 
 namespace akashi {
     namespace buffer {
@@ -50,6 +51,8 @@ namespace akashi {
             const core::LayerProfile& layer_profile() const override { return m_layer_profile; }
 
           private:
+            int decode_packet(AVPacket* pkt, AVFrame* frame, AVCodecContext* dec_ctx);
+
             bool is_streams_end(void) const;
 
           private:
