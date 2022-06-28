@@ -1,6 +1,6 @@
 #include "./buffer.h"
 
-#include "./input.h"
+#include "./source.h"
 #include "./error.h"
 #include "./utils.h"
 #include "./pts.h"
@@ -96,7 +96,7 @@ namespace akashi {
             return true;
         }
 
-        FFmpegBufferData::FFmpegBufferData(const InputData& input, DecodeStream* dec_stream) {
+        FFmpegBufferData::FFmpegBufferData(const FFFrameData& input, DecodeStream* dec_stream) {
             FFmpegBufferData::Property prop;
 
             prop.media_type = input.media_type;
@@ -154,7 +154,7 @@ namespace akashi {
             }
         }
 
-        void FFmpegBufferData::populate_video(const InputData& input) {
+        void FFmpegBufferData::populate_video(const FFFrameData& input) {
             auto frame = input.frame;
             m_prop.width = frame->width;
             m_prop.height = frame->height;
@@ -197,7 +197,7 @@ namespace akashi {
             }
         }
 
-        void FFmpegBufferData::populate_audio(const InputData& input, DecodeStream* dec_stream) {
+        void FFmpegBufferData::populate_audio(const FFFrameData& input, DecodeStream* dec_stream) {
             uint8_t* in_buf[AV_NUM_DATA_POINTERS];
 
             auto frame = input.frame;

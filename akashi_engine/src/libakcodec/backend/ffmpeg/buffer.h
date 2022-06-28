@@ -36,29 +36,28 @@ namespace akashi {
                               uint8_t* in_buf[AV_NUM_DATA_POINTERS], const FFAudioSpec& in_spec,
                               DecodeStream* dec_stream);
 
+        struct FFFrameData {
+            AVFrame* frame = nullptr;
+            akashi::core::LayerProfile layer_prof;
+            akashi::core::Rational pts;
+            akashi::core::Rational rpts;
+            akashi::core::AKAudioSpec out_audio_spec;
+            buffer::AVBufferType media_type = buffer::AVBufferType::UNKNOWN;
+            core::VideoDecodeMethod decode_method = core::VideoDecodeMethod::NONE;
+            VADisplay va_display = nullptr;
+        };
+
         class FFmpegBufferData final : public buffer::AVBufferData {
             AK_FORBID_COPY(FFmpegBufferData);
 
           public:
-            struct InputData {
-                AVFrame* frame = nullptr;
-                akashi::core::LayerProfile layer_prof;
-                akashi::core::Rational pts;
-                akashi::core::Rational rpts;
-                akashi::core::AKAudioSpec out_audio_spec;
-                buffer::AVBufferType media_type = buffer::AVBufferType::UNKNOWN;
-                core::VideoDecodeMethod decode_method = core::VideoDecodeMethod::NONE;
-                VADisplay va_display = nullptr;
-            };
-
-          public:
-            explicit FFmpegBufferData(const InputData& input, DecodeStream* dec_stream);
+            explicit FFmpegBufferData(const FFFrameData& input, DecodeStream* dec_stream);
             virtual ~FFmpegBufferData();
             FFmpegBufferData(FFmpegBufferData&& buf_data) = default;
 
           private:
-            void populate_video(const InputData& input);
-            void populate_audio(const InputData& input, DecodeStream* dec_stream);
+            void populate_video(const FFFrameData& input);
+            void populate_audio(const FFFrameData& input, DecodeStream* dec_stream);
 
           private:
             int m_linesize[AV_NUM_DATA_POINTERS];

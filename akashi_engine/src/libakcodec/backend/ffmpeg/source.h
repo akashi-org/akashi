@@ -5,10 +5,17 @@
 
 #include <libakcore/element.h>
 #include <libakcore/class.h>
+#include <libakcore/hw_accel.h>
+
+extern "C" {
+#include <libavutil/avutil.h>
+#include <libswresample/swresample.h>
+}
 
 struct AVPacket;
 struct AVFrame;
 struct AVCodecContext;
+struct AVFormatContext;
 
 namespace akashi {
     namespace buffer {
@@ -20,7 +27,52 @@ namespace akashi {
     }
     namespace codec {
 
-        struct InputSource;
+        struct DecodeStream {
+            bool is_active = false; // if false, we do not use this stream
+            AVCodecContext* dec_ctx = nullptr;
+            struct SwrContext* swr_ctx = nullptr;
+            bool swr_ctx_init_done = false;
+            int64_t first_pts = 0;
+            bool is_checked_first_pts = false;
+            int64_t input_start_pts = 0;
+            bool decode_ended = false;
+            akashi::core::Rational cur_decode_pts = akashi::core::Rational(0, 1);
+            AVMediaType media_type = AVMEDIA_TYPE_UNKNOWN;
+            int64_t conv_effective_pts = 0;
+        };
+
+        struct InputSource {
+            AVFormatContext* ifmt_ctx = nullptr;
+
+            AVBufferRef* hw_device_ctx = nullptr;
+
+            AVPacket* pkt = nullptr;
+
+            AVFrame* proxy_frame = nullptr;
+
+            AVFrame* frame = nullptr;
+
+            std::vector<DecodeStream> dec_streams;
+
+            core::VideoDecodeMethod decode_method = core::VideoDecodeMethod::NONE;
+
+            core::VideoDecodeMethod preferred_decode_method = core::VideoDecodeMethod::NONE;
+
+            size_t video_max_queue_count = 0;
+
+            bool init_called = false;
+
+            uint8_t eof = 0; // 1 if eof reached
+
+            bool decode_ended = false;
+
+            size_t loop_cnt = 0;
+
+            akashi::core::Rational act_dur = akashi::core::Rational(0, 1);
+
+            core::LayerProfile layer_prof;
+        };
+
         struct DecodeResult;
         struct DecodeArg;
 
@@ -44,23 +96,28 @@ namespace akashi {
 
             virtual bool can_decode(void) const override;
 
-            virtual bool done_init(void) const override { return m_done_init; }
+            virtual bool done_init(void) const override;
 
             core::Rational dts(void) const override;
 
             const core::LayerProfile& layer_profile() const override;
 
           private:
+            bool init_inputsrc(const core::LayerProfile& layer_profile,
+                               const core::Rational& decode_start,
+                               const core::VideoDecodeMethod& preferred_decode_method,
+                               const size_t video_max_queue_count);
+
+            int read_avformat();
+
+            int read_avstream();
+
             int decode_packet(AVPacket* pkt, AVFrame* frame, AVCodecContext* dec_ctx);
 
             bool is_streams_end(void) const;
 
           private:
-            InputSource* m_input_src = nullptr;
-            AVPacket* m_pkt = nullptr;
-            AVFrame* m_proxy_frame = nullptr;
-            AVFrame* m_frame = nullptr;
-            bool m_done_init = false;
+            InputSource m_input_src;
         };
     }
 }

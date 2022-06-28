@@ -1,6 +1,6 @@
 #include "./source.h"
 
-#include "./input.h"
+#include "./hwdec.h"
 #include "./pts.h"
 #include "./error.h"
 #include "./buffer.h"
@@ -16,8 +16,6 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
 #include <libswresample/swresample.h>
-#include <libavutil/hwcontext.h>
-#include <libavutil/hwcontext_vaapi.h>
 }
 
 #include <algorithm>
@@ -33,30 +31,17 @@ namespace akashi {
                                  const core::Rational& decode_start,
                                  const core::VideoDecodeMethod& preferred_decode_method,
                                  const size_t video_max_queue_count) {
-            m_done_init = true;
+            m_input_src.init_called = true;
 
-            if (read_inputsrc(m_input_src, layer_profile, preferred_decode_method,
-                              video_max_queue_count) < 0) {
+            if (!this->init_inputsrc(layer_profile, decode_start, preferred_decode_method,
+                                     video_max_queue_count)) {
                 AKLOG_ERRORN("FFLayerSource::init(): Failed to parse input from argument");
                 return false;
             }
 
-            auto r_dts = decode_start - m_input_src->layer_prof.from;
-            if (r_dts < core::Rational(0, 1)) {
-                m_input_src->loop_cnt = 0;
-            } else {
-                m_input_src->loop_cnt = (r_dts / m_input_src->act_dur).to_decimal();
-            }
-
-            for (auto&& dec_stream : m_input_src->dec_streams) {
-                // [TODO] there might be accuracy issues here
-                dec_stream.cur_decode_pts = std::max(m_input_src->layer_prof.from, decode_start);
-            }
-
-            auto act_from = m_input_src->layer_prof.from +
-                            (core::Rational(m_input_src->loop_cnt, 1) * m_input_src->act_dur);
-
-            auto seek_rpts = m_input_src->layer_prof.start + (decode_start - act_from);
+            auto act_from = m_input_src.layer_prof.from +
+                            (core::Rational(m_input_src.loop_cnt, 1) * m_input_src.act_dur);
+            auto seek_rpts = m_input_src.layer_prof.start + (decode_start - act_from);
 
             if (seek_rpts > Rational(0, 1)) {
                 if (!this->seek(seek_rpts)) {
@@ -64,60 +49,42 @@ namespace akashi {
                 }
             }
 
-            m_pkt = av_packet_alloc();
-            if (!m_pkt) {
-                AKLOG_ERRORN("FFLayerSource::init(): Failed to alloc packet");
-                return false;
-            }
-
-            m_proxy_frame = av_frame_alloc();
-            if (!m_proxy_frame) {
-                AKLOG_ERRORN("FFLayerSource::init(): Failed to alloc proxy frame");
-                return false;
-            }
-
-            m_frame = av_frame_alloc();
-            if (!m_frame) {
-                AKLOG_ERRORN("FFLayerSource::init(): Failed to alloc frame");
-                return false;
-            }
-
             return true;
         }
 
         DecodeResult FFLayerSource::decode(const DecodeArg& decode_arg) {
             DecodeResult decode_result;
-            decode_result.layer_uuid = m_input_src->layer_prof.uuid;
+            decode_result.layer_uuid = m_input_src.layer_prof.uuid;
 
             // [TODO] need refactoring
             auto out_audio_spec = decode_arg.out_audio_spec;
             {
                 int ret_tmp = 0;
 
-                if (m_input_src->eof) {
+                if (m_input_src.eof) {
                     decode_result.result = DecodeResultCode::DECODE_LAYER_EOF;
                     goto exit;
                 }
-                if (m_input_src->decode_ended) {
+                if (m_input_src.decode_ended) {
                     decode_result.result = DecodeResultCode::DECODE_LAYER_ENDED;
                     goto exit;
                 }
 
                 if (this->is_streams_end()) {
-                    m_input_src->decode_ended = true;
+                    m_input_src.decode_ended = true;
                     decode_result.result = DecodeResultCode::DECODE_LAYER_ENDED;
                     goto exit;
                 }
 
                 // get a pkt
-                ret_tmp = av_read_frame(m_input_src->ifmt_ctx, m_pkt);
+                ret_tmp = av_read_frame(m_input_src.ifmt_ctx, m_input_src.pkt);
                 if (ret_tmp == AVERROR_EOF) {
-                    if (this->seek(m_input_src->layer_prof.start)) {
-                        m_input_src->loop_cnt += 1;
+                    if (this->seek(m_input_src.layer_prof.start)) {
+                        m_input_src.loop_cnt += 1;
                         decode_result.result = DecodeResultCode::DECODE_AGAIN;
                     } else {
-                        m_input_src->decode_ended = true;
-                        m_input_src->eof = 1;
+                        m_input_src.decode_ended = true;
+                        m_input_src.eof = 1;
                         AKLOG_DEBUGN("FFLayerSource::transcode_step(): eof reached");
                         decode_result.result = DecodeResultCode::DECODE_LAYER_EOF;
                     }
@@ -129,14 +96,15 @@ namespace akashi {
                     goto exit;
                 }
 
-                DecodeStream* dec_stream = &m_input_src->dec_streams[m_pkt->stream_index];
+                DecodeStream* dec_stream = &m_input_src.dec_streams[m_input_src.pkt->stream_index];
                 if (!dec_stream->is_active) {
                     decode_result.result = DecodeResultCode::DECODE_SKIPPED;
                     goto exit;
                 }
 
                 // get a frame
-                ret_tmp = this->decode_packet(m_pkt, m_proxy_frame, dec_stream->dec_ctx);
+                ret_tmp = this->decode_packet(m_input_src.pkt, m_input_src.proxy_frame,
+                                              dec_stream->dec_ctx);
                 if (ret_tmp == AVERROR(EAGAIN)) {
                     decode_result.result = DecodeResultCode::DECODE_AGAIN;
                     goto exit;
@@ -147,27 +115,29 @@ namespace akashi {
                     goto exit;
                 }
 
-                if (m_proxy_frame->hw_frames_ctx &&
-                    m_input_src->decode_method == VideoDecodeMethod::VAAPI_COPY) {
-                    if (auto ret = av_hwframe_transfer_data(m_frame, m_proxy_frame, 0); ret < 0) {
+                if (m_input_src.proxy_frame->hw_frames_ctx &&
+                    m_input_src.decode_method == VideoDecodeMethod::VAAPI_COPY) {
+                    if (auto ret =
+                            av_hwframe_transfer_data(m_input_src.frame, m_input_src.proxy_frame, 0);
+                        ret < 0) {
                         AKLOG_ERROR("av_hwframe_transfer_data() failed, ret={}", av_err2str(ret));
                         goto exit;
                     } else {
-                        // [XXX] be careful that some fields of m_frame are nuked!
-                        // no need to re-set width, height, format, linesize to m_frame!
-                        m_frame->pts = m_proxy_frame->pts;
+                        // [XXX] be careful that some fields of m_input_src.frame are nuked!
+                        // no need to re-set width, height, format, linesize to m_input_src.frame!
+                        m_input_src.frame->pts = m_input_src.proxy_frame->pts;
                     }
                 } else {
-                    av_frame_ref(m_frame, m_proxy_frame);
+                    av_frame_ref(m_input_src.frame, m_input_src.proxy_frame);
                 }
 
                 if (!dec_stream->is_checked_first_pts) {
-                    dec_stream->first_pts = m_frame->pts;
+                    dec_stream->first_pts = m_input_src.frame->pts;
                     dec_stream->is_checked_first_pts = true;
                 }
 
                 // pts calculation
-                PTSSet pts_set(m_input_src, m_frame, m_pkt->stream_index);
+                PTSSet pts_set(&m_input_src, m_input_src.frame, m_input_src.pkt->stream_index);
 
                 if (!pts_set.is_valid()) {
                     AKLOG_INFON("FFLayerSource::transcode_step(): Invalid pts found. Skipped");
@@ -175,72 +145,71 @@ namespace akashi {
                     goto exit;
                 }
 
-                if (pts_set.frame_rpts() > m_input_src->layer_prof.end) {
-                    if (this->seek(m_input_src->layer_prof.start)) {
-                        m_input_src->loop_cnt += 1;
+                if (pts_set.frame_rpts() > m_input_src.layer_prof.end) {
+                    if (this->seek(m_input_src.layer_prof.start)) {
+                        m_input_src.loop_cnt += 1;
                         decode_result.result = DecodeResultCode::DECODE_AGAIN;
                     } else {
-                        m_input_src->decode_ended = true;
+                        m_input_src.decode_ended = true;
                         decode_result.result = DecodeResultCode::ERROR;
                     }
                 }
 
                 if (!pts_set.within_range()) {
-                    m_input_src->dec_streams[m_pkt->stream_index].decode_ended = true;
+                    m_input_src.dec_streams[m_input_src.pkt->stream_index].decode_ended = true;
                     decode_result.result = DecodeResultCode::DECODE_STREAM_ENDED;
                     goto exit;
                 }
 
-                FFmpegBufferData::InputData ffbuf_input;
+                FFFrameData ffbuf_input;
 
-                if (m_input_src->decode_method == VideoDecodeMethod::VAAPI) {
+                if (m_input_src.decode_method == VideoDecodeMethod::VAAPI) {
                     AVFrame* new_frame = av_frame_alloc();
-                    av_frame_ref(new_frame, m_frame);
+                    av_frame_ref(new_frame, m_input_src.frame);
                     ffbuf_input.frame = new_frame;
                 } else {
-                    ffbuf_input.frame =
-                        m_frame; // [XXX] after this, `m_frame` should not be accessed
+                    // [XXX] after this, `m_input_src.frame` should not be accessed
+                    ffbuf_input.frame = m_input_src.frame;
                 }
                 ffbuf_input.pts = pts_set.frame_pts();
                 ffbuf_input.rpts = pts_set.frame_rpts();
                 ffbuf_input.out_audio_spec = out_audio_spec;
                 ffbuf_input.media_type = to_res_buf_type(dec_stream->dec_ctx->codec_type);
-                ffbuf_input.decode_method = m_input_src->decode_method;
+                ffbuf_input.decode_method = m_input_src.decode_method;
 
-                if (m_input_src->decode_method == VideoDecodeMethod::VAAPI) {
-                    auto raw_hw_device_ctx = (AVHWDeviceContext*)m_input_src->hw_device_ctx->data;
-                    ffbuf_input.va_display =
-                        static_cast<AVVAAPIDeviceContext*>(raw_hw_device_ctx->hwctx)->display;
+                if (m_input_src.decode_method == VideoDecodeMethod::VAAPI) {
+                    codec::init_hwframe(ffbuf_input, m_input_src);
                 }
 
                 std::unique_ptr<FFmpegBufferData> buf_data(
                     new FFmpegBufferData(ffbuf_input, dec_stream));
 
                 decode_result.buffer = std::move(buf_data);
-                decode_result.layer_uuid = m_input_src->layer_prof.uuid;
+                decode_result.layer_uuid = m_input_src.layer_prof.uuid;
 
-                m_input_src->dec_streams[m_pkt->stream_index].cur_decode_pts = pts_set.frame_pts();
+                m_input_src.dec_streams[m_input_src.pkt->stream_index].cur_decode_pts =
+                    pts_set.frame_pts();
                 decode_result.result = DecodeResultCode::OK;
             }
 
         exit:
-            av_frame_unref(m_frame);
-            av_frame_unref(m_proxy_frame);
-            av_packet_unref(m_pkt);
+            av_frame_unref(m_input_src.frame);
+            av_frame_unref(m_input_src.proxy_frame);
+            av_packet_unref(m_input_src.pkt);
             return decode_result;
         }
 
         bool FFLayerSource::seek(const core::Rational& seek_pts) {
-            for (size_t stream_idx = 0; stream_idx < m_input_src->ifmt_ctx->nb_streams;
+            for (size_t stream_idx = 0; stream_idx < m_input_src.ifmt_ctx->nb_streams;
                  stream_idx++) {
-                if (!m_input_src->dec_streams[stream_idx].is_active) {
+                if (!m_input_src.dec_streams[stream_idx].is_active) {
                     continue;
                 }
-                auto media_type = m_input_src->dec_streams[stream_idx].media_type;
+                auto media_type = m_input_src.dec_streams[stream_idx].media_type;
 
                 if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO ||
                     media_type == AVMediaType::AVMEDIA_TYPE_AUDIO) {
-                    auto stream_time_base = m_input_src->ifmt_ctx->streams[stream_idx]->time_base;
+                    auto stream_time_base = m_input_src.ifmt_ctx->streams[stream_idx]->time_base;
 
                     auto dst_pts = av_rescale_q(seek_pts.num(),
                                                 (AVRational){1, static_cast<int>(seek_pts.den())},
@@ -257,12 +226,12 @@ namespace akashi {
                     //                      stream_time_base);
                     // }
 
-                    if (av_seek_frame(m_input_src->ifmt_ctx, stream_idx, dst_pts,
+                    if (av_seek_frame(m_input_src.ifmt_ctx, stream_idx, dst_pts,
                                       AVSEEK_FLAG_BACKWARD) < 0) {
                         AKLOG_ERRORN("FFLayerSource::seek(): Seek Failed");
                         return false;
                     } else {
-                        avcodec_flush_buffers(m_input_src->dec_streams[stream_idx].dec_ctx);
+                        avcodec_flush_buffers(m_input_src.dec_streams[stream_idx].dec_ctx);
                     }
                 }
             }
@@ -270,43 +239,224 @@ namespace akashi {
         }
 
         void FFLayerSource::finalize(void) {
-            if (m_pkt) {
-                av_packet_free(&m_pkt);
-                m_pkt = nullptr;
+            if (m_input_src.pkt) {
+                av_packet_free(&m_input_src.pkt);
+                m_input_src.pkt = nullptr;
             }
-            if (m_proxy_frame) {
-                av_frame_free(&m_proxy_frame);
-                m_proxy_frame = nullptr;
+            if (m_input_src.proxy_frame) {
+                av_frame_free(&m_input_src.proxy_frame);
+                m_input_src.proxy_frame = nullptr;
             }
-            if (m_frame) {
-                av_frame_free(&m_frame);
-                m_frame = nullptr;
+            if (m_input_src.frame) {
+                av_frame_free(&m_input_src.frame);
+                m_input_src.frame = nullptr;
             }
 
-            if (m_input_src) {
-                free_input_src(m_input_src);
+            if (m_input_src.ifmt_ctx != nullptr) {
+                for (auto&& dec_stream : m_input_src.dec_streams) {
+                    if (dec_stream.dec_ctx != nullptr) {
+                        avcodec_free_context(&dec_stream.dec_ctx);
+                        dec_stream.dec_ctx = nullptr;
+                    }
+                    if (dec_stream.swr_ctx != nullptr) {
+                        // [TODO] need to flush the internal buffer before freeing?
+                        swr_free(&dec_stream.swr_ctx);
+                        dec_stream.swr_ctx = nullptr;
+                    }
+                }
+                avformat_close_input(&m_input_src.ifmt_ctx);
+                avformat_free_context(m_input_src.ifmt_ctx);
             }
-            m_input_src = nullptr;
+
+            if (m_input_src.hw_device_ctx != nullptr) {
+                av_buffer_unref(&m_input_src.hw_device_ctx);
+                m_input_src.hw_device_ctx = nullptr;
+            }
         }
 
         bool FFLayerSource::can_decode(void) const {
-            return m_input_src->eof != 1 && !m_input_src->decode_ended;
+            return m_input_src.eof != 1 && !m_input_src.decode_ended;
         }
 
+        bool FFLayerSource::done_init(void) const { return m_input_src.init_called; }
+
         core::Rational FFLayerSource::dts(void) const {
-            if (m_input_src->dec_streams.size() == 0) {
+            if (m_input_src.dec_streams.size() == 0) {
                 AKLOG_ERRORN("FFLayerSource::dts(): No streams found");
                 return core::Rational(0, 1);
             }
             core::Rational res_dts = core::Rational(INT32_MAX, 1);
-            for (const auto& dec_stream : m_input_src->dec_streams) {
+            for (const auto& dec_stream : m_input_src.dec_streams) {
                 res_dts = std::min(dec_stream.cur_decode_pts, res_dts);
             }
             return res_dts;
         }
 
         const core::LayerProfile& FFLayerSource::layer_profile() const {
-            return m_input_src->layer_prof;
+            return m_input_src.layer_prof;
+        }
+
+        /* --- private methods --- */
+
+        bool FFLayerSource::init_inputsrc(const core::LayerProfile& layer_profile,
+                                          const core::Rational& decode_start,
+                                          const core::VideoDecodeMethod& preferred_decode_method,
+                                          const size_t video_max_queue_count) {
+            m_input_src.layer_prof = layer_profile;
+            m_input_src.act_dur = layer_profile.end - layer_profile.start;
+            m_input_src.preferred_decode_method = preferred_decode_method;
+            m_input_src.video_max_queue_count = video_max_queue_count;
+
+            if (m_input_src.preferred_decode_method == core::VideoDecodeMethod::SW) {
+                m_input_src.decode_method = preferred_decode_method;
+            }
+
+            auto r_dts = decode_start - m_input_src.layer_prof.from;
+            if (r_dts < core::Rational(0, 1)) {
+                m_input_src.loop_cnt = 0;
+            } else {
+                m_input_src.loop_cnt = (r_dts / m_input_src.act_dur).to_decimal();
+            }
+
+            // input_src[i].io_ctx = new IOContext(input_paths[i]);
+            if (this->read_avformat() < 0) {
+                return false;
+            }
+            if ((this->read_avstream() < 0)) {
+                return false;
+            }
+
+            for (auto&& dec_stream : m_input_src.dec_streams) {
+                // [TODO] there might be accuracy issues here
+                dec_stream.cur_decode_pts = std::max(m_input_src.layer_prof.from, decode_start);
+            }
+
+            m_input_src.pkt = av_packet_alloc();
+            if (!m_input_src.pkt) {
+                AKLOG_ERRORN("FFLayerSource::init(): Failed to alloc packet");
+                return false;
+            }
+
+            m_input_src.proxy_frame = av_frame_alloc();
+            if (!m_input_src.proxy_frame) {
+                AKLOG_ERRORN("FFLayerSource::init(): Failed to alloc proxy frame");
+                return false;
+            }
+
+            m_input_src.frame = av_frame_alloc();
+            if (!m_input_src.frame) {
+                AKLOG_ERRORN("FFLayerSource::init(): Failed to alloc frame");
+                return false;
+            }
+
+            return true;
+        }
+
+        int FFLayerSource::read_avformat() {
+            int ret = 0;
+
+            ret = avformat_open_input(&(m_input_src.ifmt_ctx), m_input_src.layer_prof.src.c_str(),
+                                      nullptr, nullptr);
+
+            if (ret < 0) {
+                AKLOG_ERROR("avformat_open_input() failed, code={}({})", AVERROR(ret),
+                            av_err2str(ret));
+                goto end;
+            }
+
+            ret = avformat_find_stream_info(m_input_src.ifmt_ctx, nullptr);
+            if (ret < 0) {
+                AKLOG_ERROR("avformat_find_stream_info() failed, code={}({})", AVERROR(ret),
+                            av_err2str(ret));
+                goto end;
+            }
+            if (m_input_src.ifmt_ctx == nullptr) {
+                ret = -1;
+                AKLOG_ERRORN("failed to get avformat context");
+                goto end;
+            }
+
+        end:
+            return ret;
+        }
+
+        int FFLayerSource::read_avstream() {
+            AVFormatContext* format_ctx = m_input_src.ifmt_ctx;
+            m_input_src.dec_streams.reserve(format_ctx->nb_streams);
+            m_input_src.dec_streams.resize(format_ctx->nb_streams);
+
+            for (unsigned int i = 0; i < format_ctx->nb_streams; i++) {
+                AVMediaType media_type = format_ctx->streams[i]->codecpar->codec_type;
+                m_input_src.dec_streams[i].media_type = media_type;
+                if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO ||
+                    media_type == AVMediaType::AVMEDIA_TYPE_AUDIO) {
+                    // skip a video stream if audio only
+                    if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO) {
+                        if (m_input_src.layer_prof.type == core::LayerType::AUDIO) {
+                            m_input_src.dec_streams[i].is_active = false;
+                            continue;
+                        }
+                    }
+
+                    AVCodecID codec_id = format_ctx->streams[i]->codecpar->codec_id;
+                    AVCodec* av_codec = avcodec_find_decoder(codec_id);
+                    if (av_codec == nullptr) {
+                        AKLOG_ERROR("avcodec_find_decoder codec not found. codec_id={}", codec_id);
+                        return -1;
+                    }
+
+                    if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO &&
+                        static_cast<int>(m_input_src.preferred_decode_method) > 0) {
+                        if (validate_hwconfig(&m_input_src.decode_method, av_codec,
+                                              m_input_src.preferred_decode_method)) {
+                            // [TODO] error handling?
+                            codec::create_hwdevice_ctx(m_input_src, m_input_src.decode_method);
+                        }
+                    }
+
+                    m_input_src.dec_streams[i].is_active = true;
+                    m_input_src.dec_streams[i].dec_ctx = avcodec_alloc_context3(av_codec);
+                    m_input_src.dec_streams[i].swr_ctx = nullptr;
+                    m_input_src.dec_streams[i].swr_ctx_init_done = false;
+                    m_input_src.dec_streams[i].is_checked_first_pts = false;
+                    m_input_src.dec_streams[i].input_start_pts =
+                        format_ctx->start_time == AV_NOPTS_VALUE ? 0 : format_ctx->start_time;
+                    m_input_src.dec_streams[i].cur_decode_pts = akashi::core::Rational(0, 1);
+
+                    AVCodecContext* codec_ctx = m_input_src.dec_streams[i].dec_ctx;
+
+                    if (codec_ctx == nullptr) {
+                        AKLOG_ERRORN("avcodec_alloc_context3() error");
+                        return -1;
+                    }
+
+                    if (avcodec_parameters_to_context(codec_ctx, format_ctx->streams[i]->codecpar) <
+                        0) {
+                        AKLOG_ERRORN("avcodec_parameters_to_context() error");
+                        return -1;
+                    }
+
+                    if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO &&
+                        m_input_src.hw_device_ctx) {
+                        codec_ctx->hw_device_ctx = av_buffer_ref(m_input_src.hw_device_ctx);
+                        if (!codec_ctx->hw_device_ctx) {
+                            AKLOG_ERRORN("A hardware device reference create failed");
+                            return -1;
+                        }
+                        codec_ctx->get_format = codec::configure_hwformat;
+                        // [TODO] lifetime?
+                        codec_ctx->opaque = &m_input_src;
+                    }
+
+                    int ret = 0;
+                    ret = avcodec_open2(codec_ctx, av_codec, nullptr);
+                    if (ret < 0) {
+                        AKLOG_ERROR("avcodec_open2() failed, code={}", AVERROR(ret));
+                        return -1;
+                    }
+                }
+            }
+            return 1;
         }
 
         // return 0 if success, -11 if EAGAIN.
@@ -333,7 +483,7 @@ namespace akashi {
         }
 
         bool FFLayerSource::is_streams_end(void) const {
-            for (const auto& dec_stream : m_input_src->dec_streams) {
+            for (const auto& dec_stream : m_input_src.dec_streams) {
                 if (!dec_stream.is_active) {
                     continue;
                 }
