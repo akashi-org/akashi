@@ -24,7 +24,6 @@ namespace akashi {
 
         void init_input_src(InputSource* input_src, const char* input_path) {
             input_src->eof = 0;
-            input_src->decode_started = false;
             input_src->decode_ended = false;
             input_src->input_path = input_path;
             input_src->ifmt_ctx = nullptr;

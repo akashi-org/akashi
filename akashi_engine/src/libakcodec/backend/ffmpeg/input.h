@@ -49,8 +49,6 @@ namespace akashi {
 
             uint8_t eof; // 1 if eof reached
 
-            bool decode_started = false;
-
             bool decode_ended = false;
 
             /* from layer profile */

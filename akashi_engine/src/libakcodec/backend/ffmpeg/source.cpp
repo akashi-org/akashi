@@ -202,7 +202,6 @@ namespace akashi {
                     ffbuf_input.frame =
                         m_frame; // [XXX] after this, `m_frame` should not be accessed
                 }
-                ffbuf_input.start_frame = false; // [TODO] remove this
                 ffbuf_input.pts = pts_set.frame_pts();
                 ffbuf_input.rpts = pts_set.frame_rpts();
                 ffbuf_input.from = m_input_src->from;

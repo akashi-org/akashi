@@ -41,7 +41,6 @@ namespace akashi {
           public:
             struct InputData {
                 AVFrame* frame = nullptr;
-                bool start_frame;
                 akashi::core::Rational pts;
                 akashi::core::Rational rpts;
                 core::Rational from;
