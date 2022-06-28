@@ -203,11 +203,7 @@ namespace akashi {
                 }
                 ffbuf_input.pts = pts_set.frame_pts();
                 ffbuf_input.rpts = pts_set.frame_rpts();
-                ffbuf_input.from = m_input_src->layer_prof.from;
-                ffbuf_input.start = m_input_src->layer_prof.start;
-                ffbuf_input.gain = m_input_src->layer_prof.gain;
                 ffbuf_input.out_audio_spec = out_audio_spec;
-                ffbuf_input.uuid = m_input_src->layer_prof.uuid;
                 ffbuf_input.media_type = to_res_buf_type(dec_stream->dec_ctx->codec_type);
                 ffbuf_input.decode_method = m_input_src->decode_method;
 

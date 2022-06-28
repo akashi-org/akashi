@@ -102,8 +102,8 @@ namespace akashi {
             prop.media_type = input.media_type;
             prop.pts = input.pts;
             prop.rpts = input.rpts;
-            prop.uuid = input.uuid;
-            prop.gain = input.gain;
+            prop.uuid = input.layer_prof.uuid;
+            prop.gain = input.layer_prof.gain;
             prop.decode_method = input.decode_method;
 
             m_prop = prop;
@@ -253,7 +253,7 @@ namespace akashi {
             // [XXX] notice that the first arg here is not RPTS in its true sense
             m_prop.pts = rpts_to_pts(
                 pts_to_rational(dec_stream->conv_effective_pts, {1, out_spec.sample_rate}),
-                input.from, Rational(0l));
+                input.layer_prof.from, Rational(0l));
 
             m_prop.sample_rate = input.out_audio_spec.sample_rate;
             m_prop.sample_format = input.out_audio_spec.format;

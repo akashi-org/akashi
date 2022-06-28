@@ -2,6 +2,7 @@
 
 #include <libakbuffer/avbuffer.h>
 #include <libakcore/rational.h>
+#include <libakcore/element.h>
 #include <libakcore/class.h>
 #include <libakcore/hw_accel.h>
 
@@ -41,13 +42,10 @@ namespace akashi {
           public:
             struct InputData {
                 AVFrame* frame = nullptr;
+                akashi::core::LayerProfile layer_prof;
                 akashi::core::Rational pts;
                 akashi::core::Rational rpts;
-                core::Rational from;
-                core::Rational start;
-                double gain;
                 akashi::core::AKAudioSpec out_audio_spec;
-                std::string uuid;
                 buffer::AVBufferType media_type = buffer::AVBufferType::UNKNOWN;
                 core::VideoDecodeMethod decode_method = core::VideoDecodeMethod::NONE;
                 VADisplay va_display = nullptr;
