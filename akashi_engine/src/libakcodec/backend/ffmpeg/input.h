@@ -51,18 +51,6 @@ namespace akashi {
 
             bool decode_ended = false;
 
-            /* from layer profile */
-
-            const char* input_path;
-
-            akashi::core::Rational from;
-
-            akashi::core::Rational to;
-
-            akashi::core::Rational start;
-
-            akashi::core::Rational end;
-
             size_t loop_cnt = 0;
 
             akashi::core::Rational act_dur = akashi::core::Rational(0, 1);
@@ -70,8 +58,7 @@ namespace akashi {
             // [TODO] if changed to std::string, liftime issues will occur
             const char* uuid;
 
-            // [TODO] need to merge
-            core::LayerProfile layer_profile;
+            core::LayerProfile layer_prof;
         };
 
         void init_input_src(InputSource* input_src, const char* input_path);

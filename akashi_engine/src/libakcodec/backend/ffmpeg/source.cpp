@@ -34,7 +34,6 @@ namespace akashi {
                                  const core::VideoDecodeMethod& preferred_decode_method,
                                  const size_t video_max_queue_count) {
             m_done_init = true;
-            m_layer_profile = layer_profile;
 
             if (read_inputsrc(m_input_src, layer_profile, preferred_decode_method,
                               video_max_queue_count) < 0) {
@@ -42,7 +41,7 @@ namespace akashi {
                 return false;
             }
 
-            auto r_dts = decode_start - m_input_src->from;
+            auto r_dts = decode_start - m_input_src->layer_prof.from;
             if (r_dts < core::Rational(0, 1)) {
                 m_input_src->loop_cnt = 0;
             } else {
@@ -51,13 +50,13 @@ namespace akashi {
 
             for (auto&& dec_stream : m_input_src->dec_streams) {
                 // [TODO] there might be accuracy issues here
-                dec_stream.cur_decode_pts = std::max(m_input_src->from, decode_start);
+                dec_stream.cur_decode_pts = std::max(m_input_src->layer_prof.from, decode_start);
             }
 
-            auto act_from = m_input_src->from +
+            auto act_from = m_input_src->layer_prof.from +
                             (core::Rational(m_input_src->loop_cnt, 1) * m_input_src->act_dur);
 
-            auto seek_rpts = m_input_src->start + (decode_start - act_from);
+            auto seek_rpts = m_input_src->layer_prof.start + (decode_start - act_from);
 
             if (seek_rpts > Rational(0, 1)) {
                 if (!this->seek(seek_rpts)) {
@@ -113,7 +112,7 @@ namespace akashi {
                 // get a pkt
                 ret_tmp = av_read_frame(m_input_src->ifmt_ctx, m_pkt);
                 if (ret_tmp == AVERROR_EOF) {
-                    if (this->seek(m_input_src->start)) {
+                    if (this->seek(m_input_src->layer_prof.start)) {
                         m_input_src->loop_cnt += 1;
                         decode_result.result = DecodeResultCode::DECODE_AGAIN;
                     } else {
@@ -176,8 +175,8 @@ namespace akashi {
                     goto exit;
                 }
 
-                if (pts_set.frame_rpts() > m_input_src->end) {
-                    if (this->seek(m_input_src->start)) {
+                if (pts_set.frame_rpts() > m_input_src->layer_prof.end) {
+                    if (this->seek(m_input_src->layer_prof.start)) {
                         m_input_src->loop_cnt += 1;
                         decode_result.result = DecodeResultCode::DECODE_AGAIN;
                     } else {
@@ -204,9 +203,9 @@ namespace akashi {
                 }
                 ffbuf_input.pts = pts_set.frame_pts();
                 ffbuf_input.rpts = pts_set.frame_rpts();
-                ffbuf_input.from = m_input_src->from;
-                ffbuf_input.start = m_input_src->start;
-                ffbuf_input.gain = m_input_src->layer_profile.gain;
+                ffbuf_input.from = m_input_src->layer_prof.from;
+                ffbuf_input.start = m_input_src->layer_prof.start;
+                ffbuf_input.gain = m_input_src->layer_prof.gain;
                 ffbuf_input.out_audio_spec = out_audio_spec;
                 ffbuf_input.uuid = m_input_src->uuid;
                 ffbuf_input.media_type = to_res_buf_type(dec_stream->dec_ctx->codec_type);
@@ -308,6 +307,10 @@ namespace akashi {
                 res_dts = std::min(dec_stream.cur_decode_pts, res_dts);
             }
             return res_dts;
+        }
+
+        const core::LayerProfile& FFLayerSource::layer_profile() const {
+            return m_input_src->layer_prof;
         }
 
         // return 0 if success, -11 if EAGAIN.

@@ -48,7 +48,7 @@ namespace akashi {
 
             core::Rational dts(void) const override;
 
-            const core::LayerProfile& layer_profile() const override { return m_layer_profile; }
+            const core::LayerProfile& layer_profile() const override;
 
           private:
             int decode_packet(AVPacket* pkt, AVFrame* frame, AVCodecContext* dec_ctx);
@@ -61,8 +61,6 @@ namespace akashi {
             AVFrame* m_proxy_frame = nullptr;
             AVFrame* m_frame = nullptr;
             bool m_done_init = false;
-
-            core::LayerProfile m_layer_profile;
         };
     }
 }

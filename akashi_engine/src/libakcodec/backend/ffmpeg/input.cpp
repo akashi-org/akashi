@@ -25,10 +25,9 @@ namespace akashi {
         void init_input_src(InputSource* input_src, const char* input_path) {
             input_src->eof = 0;
             input_src->decode_ended = false;
-            input_src->input_path = input_path;
             input_src->ifmt_ctx = nullptr;
             input_src->uuid = "";
-            input_src->layer_profile = core::LayerProfile{};
+            input_src->layer_prof = core::LayerProfile{};
         }
 
         void free_input_src(InputSource*& input_src) {
@@ -71,15 +70,11 @@ namespace akashi {
             input_src = new InputSource;
             init_input_src(input_src, layer_profile.src.c_str());
 
-            input_src->from = layer_profile.from;
-            input_src->to = layer_profile.to;
-            input_src->start = layer_profile.start;
-            input_src->end = layer_profile.end;
             input_src->uuid = layer_profile.uuid.c_str();
-            input_src->layer_profile = layer_profile;
+            input_src->layer_prof = layer_profile;
 
             input_src->loop_cnt = 0;
-            input_src->act_dur = input_src->end - input_src->start;
+            input_src->act_dur = layer_profile.end - layer_profile.start;
 
             input_src->preferred_decode_method = preferred_decode_method;
             input_src->video_max_queue_count = video_max_queue_count;
@@ -105,8 +100,8 @@ namespace akashi {
         int read_av_input(InputSource* input_src) {
             int ret = 0;
 
-            ret = avformat_open_input(&(input_src->ifmt_ctx), input_src->input_path, nullptr,
-                                      nullptr);
+            ret = avformat_open_input(&(input_src->ifmt_ctx), input_src->layer_prof.src.c_str(),
+                                      nullptr, nullptr);
 
             if (ret < 0) {
                 AKLOG_ERROR("avformat_open_input() failed, code={}({})", AVERROR(ret),
@@ -190,7 +185,7 @@ namespace akashi {
                     media_type == AVMediaType::AVMEDIA_TYPE_AUDIO) {
                     // skip a video stream if audio only
                     if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO) {
-                        if (input_src->layer_profile.type == core::LayerType::AUDIO) {
+                        if (input_src->layer_prof.type == core::LayerType::AUDIO) {
                             input_src->dec_streams[i].is_active = false;
                             continue;
                         }

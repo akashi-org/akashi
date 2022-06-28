@@ -38,7 +38,8 @@ namespace akashi {
             m_frame_rpts = pts_to_rational(adjusted_pts, frame_time_base);
 
             m_frame_pts = (m_input_src->act_dur * m_input_src->loop_cnt) +
-                          rpts_to_pts(m_frame_rpts, m_input_src->from, m_input_src->start);
+                          rpts_to_pts(m_frame_rpts, m_input_src->layer_prof.from,
+                                      m_input_src->layer_prof.start);
         }
 
         bool PTSSet::is_valid(void) const {
@@ -61,7 +62,8 @@ namespace akashi {
         }
 
         bool PTSSet::within_range(void) const {
-            return m_input_src->from <= m_frame_pts && m_frame_pts <= m_input_src->to;
+            return m_input_src->layer_prof.from <= m_frame_pts &&
+                   m_frame_pts <= m_input_src->layer_prof.to;
         }
 
         int64_t PTSSet::calc_adjusted_pts_time(const AVFrame* frame,
