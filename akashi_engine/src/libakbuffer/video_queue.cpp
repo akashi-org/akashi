@@ -47,10 +47,9 @@ namespace akashi {
                 queue_size = m_qmap.at(layer_uuid).buf.size();
                 m_queue_count += 1;
 
-                AKLOG_INFO(
-                    "Enqueued {}, {}, id: {}, start_frame: {}", m_qmap.at(layer_uuid).buf.size(),
-                    m_qmap.at(layer_uuid).buf.back()->prop().pts.to_decimal(), layer_uuid.c_str(),
-                    m_qmap.at(layer_uuid).buf.back()->prop().start_frame);
+                AKLOG_INFO("Enqueued {}, {}, id: {}", m_qmap.at(layer_uuid).buf.size(),
+                           m_qmap.at(layer_uuid).buf.back()->prop().pts.to_decimal(),
+                           layer_uuid.c_str());
 
                 not_full = this->is_not_full();
             }

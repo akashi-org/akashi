@@ -32,8 +32,7 @@ namespace akashi {
                 // [XXX] in audio, calculated by the original sample rate
                 // [TODO] we should remove this?
                 core::Rational rpts = core::Rational(-1, 1);
-                bool start_frame = false;
-                const char* uuid = "";
+                std::string uuid = "";
                 VideoEntry video_data[3];
                 uint8_t* audio_data[MAX_AUDIO_PLANE];
                 double gain = 1.0;

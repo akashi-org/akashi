@@ -87,7 +87,7 @@ namespace akashi {
 
         DecodeResult FFLayerSource::decode(const DecodeArg& decode_arg) {
             DecodeResult decode_result;
-            decode_result.layer_uuid = m_input_src->uuid;
+            decode_result.layer_uuid = m_input_src->layer_prof.uuid;
 
             // [TODO] need refactoring
             auto out_audio_spec = decode_arg.out_audio_spec;
@@ -207,7 +207,7 @@ namespace akashi {
                 ffbuf_input.start = m_input_src->layer_prof.start;
                 ffbuf_input.gain = m_input_src->layer_prof.gain;
                 ffbuf_input.out_audio_spec = out_audio_spec;
-                ffbuf_input.uuid = m_input_src->uuid;
+                ffbuf_input.uuid = m_input_src->layer_prof.uuid;
                 ffbuf_input.media_type = to_res_buf_type(dec_stream->dec_ctx->codec_type);
                 ffbuf_input.decode_method = m_input_src->decode_method;
 
@@ -221,7 +221,7 @@ namespace akashi {
                     new FFmpegBufferData(ffbuf_input, dec_stream));
 
                 decode_result.buffer = std::move(buf_data);
-                decode_result.layer_uuid = m_input_src->uuid;
+                decode_result.layer_uuid = m_input_src->layer_prof.uuid;
 
                 m_input_src->dec_streams[m_pkt->stream_index].cur_decode_pts = pts_set.frame_pts();
                 decode_result.result = DecodeResultCode::OK;

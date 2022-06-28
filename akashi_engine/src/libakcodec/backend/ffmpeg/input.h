@@ -55,9 +55,6 @@ namespace akashi {
 
             akashi::core::Rational act_dur = akashi::core::Rational(0, 1);
 
-            // [TODO] if changed to std::string, liftime issues will occur
-            const char* uuid;
-
             core::LayerProfile layer_prof;
         };
 

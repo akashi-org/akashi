@@ -66,7 +66,6 @@ namespace akashi {
 
         DecodeResult AtomSource::decode(const DecodeArg& decode_arg) {
             DecodeResult decode_result;
-            decode_result.atom_uuid = m_atom_profile.uuid.c_str();
 
             if (m_current_active_layer_idx < m_active_layers.size()) {
                 auto& cur_layer_source = m_active_layers[m_current_active_layer_idx];

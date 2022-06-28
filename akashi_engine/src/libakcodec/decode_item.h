@@ -50,8 +50,7 @@ namespace akashi {
         struct DecodeResult {
             DecodeResultCode result = DecodeResultCode::NONE;
             core::owned_ptr<buffer::AVBufferData> buffer;
-            const char* layer_uuid = ""; // [TODO] memory leak
-            const char* atom_uuid = "";  // [TODO] memory leak
+            std::string layer_uuid = "";
         };
 
     }

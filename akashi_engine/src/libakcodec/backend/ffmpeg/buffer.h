@@ -47,7 +47,7 @@ namespace akashi {
                 core::Rational start;
                 double gain;
                 akashi::core::AKAudioSpec out_audio_spec;
-                const char* uuid;
+                std::string uuid;
                 buffer::AVBufferType media_type = buffer::AVBufferType::UNKNOWN;
                 core::VideoDecodeMethod decode_method = core::VideoDecodeMethod::NONE;
                 VADisplay va_display = nullptr;

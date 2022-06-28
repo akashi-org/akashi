@@ -26,7 +26,6 @@ namespace akashi {
             input_src->eof = 0;
             input_src->decode_ended = false;
             input_src->ifmt_ctx = nullptr;
-            input_src->uuid = "";
             input_src->layer_prof = core::LayerProfile{};
         }
 
@@ -70,7 +69,6 @@ namespace akashi {
             input_src = new InputSource;
             init_input_src(input_src, layer_profile.src.c_str());
 
-            input_src->uuid = layer_profile.uuid.c_str();
             input_src->layer_prof = layer_profile;
 
             input_src->loop_cnt = 0;

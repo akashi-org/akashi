@@ -149,7 +149,7 @@ namespace akashi {
                     case codec::DecodeResultCode::DECODE_SKIPPED: {
                         AKLOG_INFO(
                             "DecodeLoop::decode_thread(): decode skipped or layer ended, code: {}, uuid: {}",
-                            decode_res.result, decode_res.layer_uuid);
+                            decode_res.result, decode_res.layer_uuid.c_str());
                         continue;
                     }
                     case codec::DecodeResultCode::OK: {

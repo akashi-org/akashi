@@ -102,7 +102,7 @@ namespace akashi {
                     case DecodeResultCode::DECODE_AGAIN:
                     case DecodeResultCode::DECODE_SKIPPED: {
                         fprintf(stderr, "decode skipped or layer ended, code: %d, uuid: %s\n",
-                                static_cast<int>(decode_res.result), decode_res.layer_uuid);
+                                static_cast<int>(decode_res.result), decode_res.layer_uuid.c_str());
                         continue;
                     }
                     case DecodeResultCode::OK: {
@@ -110,13 +110,13 @@ namespace akashi {
                             case buffer::AVBufferType::VIDEO: {
                                 printf("v: %f, uuid: %s\n",
                                        decode_res.buffer->prop().pts.to_decimal(),
-                                       decode_res.layer_uuid);
+                                       decode_res.layer_uuid.c_str());
                                 break;
                             }
                             case buffer::AVBufferType::AUDIO: {
                                 printf("a: %f, uuid: %s\n",
                                        decode_res.buffer->prop().pts.to_decimal(),
-                                       decode_res.layer_uuid);
+                                       decode_res.layer_uuid.c_str());
                                 break;
                             }
                             default: {
