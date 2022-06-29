@@ -75,6 +75,7 @@ namespace akashi {
 
         struct DecodeResult;
         struct DecodeArg;
+        class PTSSet;
 
         class FFLayerSource : public LayerSource {
             AK_FORBID_COPY(FFLayerSource);
@@ -112,9 +113,18 @@ namespace akashi {
 
             int read_avstream();
 
+            bool demux_priv(DecodeResult* decode_result);
+
             int decode_packet(AVPacket* pkt, AVFrame* frame, AVCodecContext* dec_ctx);
 
-            bool is_streams_end(void) const;
+            bool decode_priv(DecodeResult* decode_result);
+
+            bool validate_pts(DecodeResult* decode_result, const PTSSet& pts_set);
+
+            void populate_buffer(DecodeResult* decode_result, const DecodeArg& decode_arg,
+                                 const PTSSet& pts_set);
+
+            bool all_streams_ended(void) const;
 
           private:
             InputSource m_input_src;
