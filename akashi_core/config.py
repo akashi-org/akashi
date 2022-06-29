@@ -71,7 +71,7 @@ class UIConf:
     frameless_window: bool = True
 
 
-VideoEncodeMethod = Literal['', 'sw']
+VideoEncodeMethod = Literal['', 'sw', 'vaapi', 'vaapi_copy']
 
 
 @dataclass

@@ -64,7 +64,8 @@ namespace akashi {
         NLOHMANN_JSON_SERIALIZE_ENUM(VideoEncodeMethod, {
             {VideoEncodeMethod::NONE, nullptr},
             {VideoEncodeMethod::SW, "sw"},
-            {VideoEncodeMethod::VAAPI, "vaapi"}
+            {VideoEncodeMethod::VAAPI, "vaapi"},
+            {VideoEncodeMethod::VAAPI, "vaapi_copy"}
         })
         // clang-format on
 
