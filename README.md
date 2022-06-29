@@ -147,8 +147,8 @@ def main():
         with ak.scene() as s2:
             s2.key('main_video')
 
-            ak.video('./blue_city.mp4', lambda t: t.duration(3))
-            ak.video('./cherry.mp4', lambda t: t.duration(3))
+            ak.video('./blue_city.mp4', lambda t: t.media.span_dur(3))
+            ak.video('./cherry.mp4', lambda t: t.media.span_dur(3))
 ```
 
 ### Circle Animation
