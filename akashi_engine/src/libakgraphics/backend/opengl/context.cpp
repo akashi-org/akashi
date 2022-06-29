@@ -5,10 +5,14 @@
 
 #include "./core/glc.h"
 #include "./core/eglc.h"
+#include "./core/texture.h"
 #include "./render_context.h"
 #include "./stage.h"
 #include "./actors/actor.h"
 #include "./fbo.h"
+
+#include "./hwaccel/hwaccel.h"
+#include "./hwaccel/vaapi_encode.h"
 
 #include <libakcore/logger.h>
 #include <libakstate/akstate.h>
@@ -48,24 +52,42 @@ namespace akashi {
                                          GL_TRUE);
             }
 
+            m_encode_fbo = core::make_owned<VAAPIHWEncodeFBO>(*m_render_ctx);
+
             return m_stage->create(*m_render_ctx);
         }
 
         void OGLGraphicsContext::render(const RenderParams& params,
                                         const core::FrameContext& frame_ctx) {
             if (!m_render_ctx->fbo().initilized()) {
-                m_render_ctx->load_fbo();
+                m_render_ctx->load_fbo(false);
             }
             m_stage->render(*m_render_ctx, params, frame_ctx);
         }
 
         void OGLGraphicsContext::encode_render(EncodeRenderParams& params,
                                                const core::FrameContext& frame_ctx) {
-            if (!m_render_ctx->fbo().initilized()) {
-                m_render_ctx->load_fbo();
+            if (!m_stage) {
+                return;
             }
 
-            if (m_stage) {
+            if (params.hwframe) {
+                if (!m_render_ctx->fbo().initilized()) {
+                    // We are using Image Load Store in which RGB8 texture is not allowed.
+                    m_render_ctx->load_fbo(true);
+                }
+
+                m_stage->encode_render(*m_render_ctx, frame_ctx);
+
+                OGLTexture rgba_tex;
+                m_render_ctx->fbo().texture(rgba_tex);
+
+                m_encode_fbo->render(*m_render_ctx, rgba_tex.buffer, params.hwframe);
+            } else {
+                if (!m_render_ctx->fbo().initilized()) {
+                    m_render_ctx->load_fbo(false);
+                }
+
                 m_stage->encode_render(*m_render_ctx, frame_ctx);
                 params.width = m_render_ctx->fbo().info().width;
                 params.height = m_render_ctx->fbo().info().height;

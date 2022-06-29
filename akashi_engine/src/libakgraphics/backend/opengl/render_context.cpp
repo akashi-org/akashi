@@ -28,7 +28,7 @@ namespace akashi {
 
         FBO& OGLRenderContext::mut_fbo() { return *m_fbo; }
 
-        bool OGLRenderContext::load_fbo() {
+        bool OGLRenderContext::load_fbo(bool enable_alpha) {
             int video_width = 0;
             int video_height = 0;
             {
@@ -39,7 +39,7 @@ namespace akashi {
 
             int msaa = this->msaa();
 
-            CHECK_AK_ERROR2(m_fbo->create(video_width, video_height, msaa, false));
+            CHECK_AK_ERROR2(m_fbo->create(video_width, video_height, msaa, enable_alpha));
 
             ProjectionState proj_state;
             proj_state.video_width = video_width;

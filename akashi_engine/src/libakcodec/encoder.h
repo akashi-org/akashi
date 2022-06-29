@@ -9,6 +9,9 @@ namespace akashi {
     namespace state {
         class AKState;
     }
+    namespace buffer {
+        class HWFrame;
+    }
     namespace codec {
 
         class FrameSink;
@@ -32,6 +35,8 @@ namespace akashi {
 
             core::AKAudioSampleFormat
             validate_audio_format(const core::AKAudioSampleFormat& sample_format);
+
+            std::unique_ptr<buffer::HWFrame> create_hwframe(void);
 
           private:
             core::owned_ptr<FrameSink> m_frame_sink;

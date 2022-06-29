@@ -30,6 +30,7 @@ namespace akashi {
         struct EncodeRenderParams;
         class OGLRenderContext;
         class Stage;
+        class HWEncodeFBO;
         class OGLGraphicsContext : public GraphicsContext {
           public:
             explicit OGLGraphicsContext(core::borrowed_ptr<state::AKState> state,
@@ -47,6 +48,7 @@ namespace akashi {
           private:
             core::owned_ptr<OGLRenderContext> m_render_ctx;
             core::owned_ptr<Stage> m_stage;
+            core::owned_ptr<HWEncodeFBO> m_encode_fbo;
         };
 
         class OSCRoot;

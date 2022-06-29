@@ -4,6 +4,7 @@
 #include "../../encode_item.h"
 
 #include <libakcore/memory.h>
+#include <libakcore/hw_accel.h>
 
 struct AVFormatContext;
 struct AVCodecContext;
@@ -44,6 +45,8 @@ namespace akashi {
             virtual core::AKAudioSampleFormat
             validate_audio_format(const core::AKAudioSampleFormat& sample_format) override;
 
+            virtual std::unique_ptr<buffer::HWFrame> create_hwframe(void) override;
+
           private:
             bool init_video_stream();
 
@@ -63,10 +66,14 @@ namespace akashi {
             core::borrowed_ptr<state::AKState> m_state;
             AVFormatContext* m_ofmt_ctx = nullptr;
 
+            AVBufferRef* m_hw_device_ctx = nullptr;
+
             EncodeStream m_video_stream;
             EncodeStream m_audio_stream;
 
             bool m_encoder_flushed = false;
+
+            core::VideoEncodeMethod m_encode_method = core::VideoEncodeMethod::NONE;
         };
     }
 }

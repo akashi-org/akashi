@@ -1,9 +1,14 @@
 #pragma once
 
+#include <libakcore/memory.h>
+
 #include <functional>
 #include <cstdint>
 
 namespace akashi {
+    namespace buffer {
+        class HWFrame;
+    }
     namespace graphics {
 
         using FrameBufferHandle = uint32_t;
@@ -28,6 +33,7 @@ namespace akashi {
             uint8_t* buffer = nullptr;
             int width = -1;
             int height = -1;
+            core::borrowed_ptr<buffer::HWFrame> hwframe;
         };
 
     }

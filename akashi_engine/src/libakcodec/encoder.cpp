@@ -2,6 +2,7 @@
 
 #include "./backend/ffmpeg.h"
 
+#include <libakbuffer/hwframe.h>
 #include <libakcore/logger.h>
 #include <libakcore/memory.h>
 
@@ -39,6 +40,10 @@ namespace akashi {
         core::AKAudioSampleFormat
         AKEncoder::validate_audio_format(const core::AKAudioSampleFormat& sample_format) {
             return m_frame_sink->validate_audio_format(sample_format);
+        }
+
+        std::unique_ptr<buffer::HWFrame> AKEncoder::create_hwframe(void) {
+            return m_frame_sink->create_hwframe();
         }
 
     }

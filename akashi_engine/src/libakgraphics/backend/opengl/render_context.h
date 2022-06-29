@@ -24,7 +24,7 @@ namespace akashi {
                                       core::borrowed_ptr<buffer::AVBuffer> buffer);
             virtual ~OGLRenderContext();
 
-            bool load_fbo();
+            bool load_fbo(bool enable_alpha);
 
             const FBO& fbo() const;
 

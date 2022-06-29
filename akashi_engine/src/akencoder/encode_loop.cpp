@@ -16,6 +16,7 @@
 #include <libakbuffer/video_queue.h>
 #include <libakbuffer/audio_queue.h>
 #include <libakbuffer/audio_buffer.h>
+#include <libakbuffer/hwframe.h>
 #include <libakgraphics/akgraphics.h>
 #include <libakgraphics/item.h>
 #include <libakcodec/encoder.h>
@@ -54,7 +55,6 @@ namespace akashi {
             core::Rational audio_encode_pts = core::Rational(-1, 1);
 
             core::owned_ptr<graphics::AKGraphics> gfx;
-            graphics::EncodeRenderParams er_params;
             core::owned_ptr<Window> window;
 
             bool decode_ended = false;
@@ -149,7 +149,7 @@ namespace akashi {
             // send until EAGAIN or ERROR
             while (!encode_args.empty()) {
                 const auto& data = encode_args.front();
-                if (!is_valid_type(data.type) || !data.buffer) {
+                if (!is_valid_type(data.type) || (!data.buffer && !data.hwframe)) {
                     break;
                 }
                 auto send_result = encoder.send(data);
@@ -249,19 +249,36 @@ namespace akashi {
 
                 // video render
                 if (ctx.state->m_encode_conf.video_codec != "") {
-                    // glfwMakeContextCurrent(encode_ctx->window);
-                    encode_ctx->er_params.buffer =
-                        new uint8_t[encode_ctx->video_width * encode_ctx->video_height * 3];
-                    encode_ctx->gfx->encode_render(encode_ctx->er_params, frame_ctx[0]);
-                    // glfwSwapBuffers(encode_ctx->window);
+                    if (ctx.state->m_encode_conf.encode_method == core::VideoEncodeMethod::VAAPI) {
+                        auto hwframe = encoder->create_hwframe();
 
-                    codec::EncodeArg vencode_arg = {};
-                    vencode_arg.pts = encode_ctx->cur_pts;
-                    vencode_arg.buffer.reset(encode_ctx->er_params.buffer);
-                    vencode_arg.buf_size = encode_ctx->video_width * encode_ctx->video_height * 3;
-                    vencode_arg.type = buffer::AVBufferType::VIDEO;
-                    // std::move?
-                    encode_args.push_back(std::move(vencode_arg));
+                        graphics::EncodeRenderParams er_params = {.hwframe =
+                                                                      core::borrowed_ptr(hwframe)};
+                        encode_ctx->gfx->encode_render(er_params, frame_ctx[0]);
+
+                        codec::EncodeArg vencode_arg = {};
+                        vencode_arg.pts = encode_ctx->cur_pts;
+                        vencode_arg.hwframe = std::move(hwframe);
+                        vencode_arg.type = buffer::AVBufferType::VIDEO;
+                        // std::move?
+                        encode_args.push_back(std::move(vencode_arg));
+
+                    } else {
+                        graphics::EncodeRenderParams er_params = {
+                            .hwframe = core::borrowed_ptr((buffer::HWFrame*)nullptr)};
+                        er_params.buffer =
+                            new uint8_t[encode_ctx->video_width * encode_ctx->video_height * 3];
+                        encode_ctx->gfx->encode_render(er_params, frame_ctx[0]);
+
+                        codec::EncodeArg vencode_arg = {};
+                        vencode_arg.pts = encode_ctx->cur_pts;
+                        vencode_arg.buffer.reset(er_params.buffer);
+                        vencode_arg.buf_size =
+                            encode_ctx->video_width * encode_ctx->video_height * 3;
+                        vencode_arg.type = buffer::AVBufferType::VIDEO;
+                        // std::move?
+                        encode_args.push_back(std::move(vencode_arg));
+                    }
                 }
 
                 // audio render

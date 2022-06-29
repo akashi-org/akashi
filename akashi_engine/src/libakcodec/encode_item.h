@@ -2,10 +2,14 @@
 
 #include <libakcore/rational.h>
 #include <libakbuffer/avbuffer.h>
+#include <libakbuffer/hwframe.h>
 
 #include <memory.h>
 
 namespace akashi {
+    namespace buffer {
+        class HWFrame;
+    }
     namespace codec {
         struct EncodeArg {
             core::Rational pts = core::Rational(-1, 1);
@@ -15,6 +19,7 @@ namespace akashi {
             size_t nb_samples = 0;
             size_t abuffer_len = 0;
             buffer::AVBufferType type = buffer::AVBufferType::UNKNOWN;
+            std::unique_ptr<buffer::HWFrame> hwframe;
         };
 
         struct EncodeWriteArg {

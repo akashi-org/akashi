@@ -7,6 +7,9 @@ namespace akashi {
     namespace state {
         class AKState;
     }
+    namespace buffer {
+        class HWFrame;
+    }
     namespace codec {
 
         struct EncodeArg;
@@ -21,6 +24,7 @@ namespace akashi {
             virtual size_t nb_samples_per_frame(void) = 0;
             virtual core::AKAudioSampleFormat
             validate_audio_format(const core::AKAudioSampleFormat& sample_format) = 0;
+            virtual std::unique_ptr<buffer::HWFrame> create_hwframe(void) = 0;
         };
 
     }

@@ -197,11 +197,14 @@ namespace akashi {
 
             // [TODO] Image format queries?
             if (m_enable_alpha) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_pass->tex.width, m_pass->tex.height, 0,
-                             GL_RGBA, GL_UNSIGNED_BYTE, m_pass->tex.image);
+                // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_pass->tex.width, m_pass->tex.height, 0,
+                //              GL_RGBA, GL_UNSIGNED_BYTE, m_pass->tex.image);
+                glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, m_pass->tex.width, m_pass->tex.height);
+
             } else {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, m_pass->tex.width, m_pass->tex.height, 0,
-                             GL_RGB, GL_UNSIGNED_BYTE, m_pass->tex.image);
+                // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, m_pass->tex.width, m_pass->tex.height, 0,
+                //              GL_RGB, GL_UNSIGNED_BYTE, m_pass->tex.image);
+                glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB8, m_pass->tex.width, m_pass->tex.height);
             }
 
             // GET_GLFUNC(ctx, glGenerateMipmap)(GL_TEXTURE_2D);

@@ -65,7 +65,7 @@ namespace akashi {
             {VideoEncodeMethod::NONE, nullptr},
             {VideoEncodeMethod::SW, "sw"},
             {VideoEncodeMethod::VAAPI, "vaapi"},
-            {VideoEncodeMethod::VAAPI, "vaapi_copy"}
+            {VideoEncodeMethod::VAAPI_COPY, "vaapi_copy"}
         })
         // clang-format on
 

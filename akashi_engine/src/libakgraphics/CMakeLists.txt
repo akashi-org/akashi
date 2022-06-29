@@ -38,6 +38,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/opengl/actors/text_actor.cpp"
   "./backend/opengl/actors/unit_actor.cpp"
   "./backend/opengl/actors/shape_actor.cpp"
+  "./backend/opengl/hwaccel/vaapi_encode.cpp"
 
   "./backend/opengl/osc/osc_root.cpp"
   "./backend/opengl/osc/osc_render_context.cpp"

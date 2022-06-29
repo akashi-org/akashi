@@ -6,6 +6,8 @@
 
 #include <libakcore/logger.h>
 #include <libakstate/akstate.h>
+#include <libakbuffer/hwframe.h>
+#include <libakbuffer/hwframe_vaapi.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -14,15 +16,69 @@ extern "C" {
 #include <libavutil/imgutils.h>
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
+#include <libavutil/hwcontext.h>
+#include <libavutil/hwcontext_vaapi.h>
 }
+
+#include <va/va_str.h>
 
 using namespace akashi::core;
 
 namespace akashi {
+
+    namespace buffer {
+
+        class NativeFrame {
+          public:
+            explicit NativeFrame(AVFrame* frame) : frame(frame){};
+            virtual ~NativeFrame(){
+                // if (frame) {
+                //     av_frame_free(&frame);
+                // }
+            };
+            AVFrame* frame = nullptr;
+        };
+
+        VAAPIHWFrame::VAAPIHWFrame(NativeFrame* frame, VADisplay va_display)
+            : m_frame(frame), m_gfx_hwctx(nullptr) {
+            m_hw_info.va_display = va_display;
+            m_hw_info.va_surface_id = (uintptr_t)m_frame->frame->data[3];
+        }
+
+        VAAPIHWFrame::~VAAPIHWFrame() {
+            if (m_gfx_hwctx) {
+                m_gfx_hwctx.reset(nullptr);
+            }
+            if (m_frame) {
+                delete m_frame;
+            }
+        }
+
+        HWFrameInfo VAAPIHWFrame::hw_info() const { return m_hw_info; }
+
+        void VAAPIHWFrame::set_gfx_hwctx(core::owned_ptr<GFXHWContext> gfx_hwctx) {
+            if (m_gfx_hwctx) {
+                AKLOG_ERRORN("Already set");
+                throw std::runtime_error("Already set");
+            } else {
+                m_gfx_hwctx = std::move(gfx_hwctx);
+            }
+        }
+
+        NativeFrame* VAAPIHWFrame::native_frame() const { return m_frame; }
+
+        VAAPIHWFrame::NativeFrameKind VAAPIHWFrame::native_frame_kind() const {
+            return NativeFrameKind::FFMPEG;
+        }
+
+    }
+
     namespace codec {
 
         FFFrameSink::FFFrameSink(core::borrowed_ptr<state::AKState> state)
-            : FrameSink(state), m_state(state){};
+            : FrameSink(state), m_state(state) {
+            m_encode_method = m_state->m_encode_conf.encode_method;
+        };
 
         FFFrameSink::~FFFrameSink() {
             // video stream
@@ -58,15 +114,40 @@ namespace akashi {
                 avformat_close_input(&m_ofmt_ctx);
                 m_ofmt_ctx = nullptr;
             }
+            if (m_hw_device_ctx != nullptr) {
+                av_buffer_unref(&m_hw_device_ctx);
+                m_hw_device_ctx = nullptr;
+            }
         }
 
         bool FFFrameSink::open(void) {
+            // av_log_set_level(AV_LOG_VERBOSE);
+
             auto out_fname = m_state->m_encode_conf.out_fname;
             if (auto err = avformat_alloc_output_context2(&m_ofmt_ctx, nullptr, nullptr,
                                                           out_fname.c_str());
                 err < 0) {
                 AKLOG_ERROR("avformat_alloc_output_context2() failed, ret={}", av_err2str(err));
                 return false;
+            }
+
+            // init hwdevice ctx if necessary
+            if (m_encode_method == VideoEncodeMethod::VAAPI ||
+                m_encode_method == VideoEncodeMethod::VAAPI_COPY) {
+                if (auto ret = av_hwdevice_ctx_create(&m_hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI,
+                                                      NULL, NULL, 0);
+                    ret < 0) {
+                    AKLOG_ERROR("av_hwdevice_ctx_create() failed, code={}({})", AVERROR(ret),
+                                av_err2str(ret));
+                    return false;
+                }
+                {
+                    auto raw_hw_device_ctx = (AVHWDeviceContext*)m_hw_device_ctx->data;
+                    auto dpy =
+                        static_cast<AVVAAPIDeviceContext*>(raw_hw_device_ctx->hwctx)->display;
+                    AKLOG_INFO("VADisplay: {}", dpy ? "ok" : "null");
+                    AKLOG_INFO("VA Vendor String: {}", vaQueryVendorString(dpy));
+                }
             }
 
             // init streams
@@ -109,20 +190,31 @@ namespace akashi {
             // init avframe
             AVFrame* frame = nullptr;
             AVCodecContext* enc_ctx = nullptr;
-            AVStream* enc_stream = nullptr;
 
             switch (encode_arg.type) {
                 case buffer::AVBufferType::VIDEO: {
-                    if (!this->init_video_frame(&frame, encode_arg)) {
-                        av_frame_free(&frame);
-                        return EncodeResultCode::ERROR;
-                    }
-                    if (!this->populate_video_frame(frame, encode_arg)) {
-                        av_frame_free(&frame);
-                        return EncodeResultCode::ERROR;
+                    if (!encode_arg.hwframe) {
+                        if (!this->init_video_frame(&frame, encode_arg)) {
+                            av_frame_free(&frame);
+                            return EncodeResultCode::ERROR;
+                        }
+                        if (!this->populate_video_frame(frame, encode_arg)) {
+                            av_frame_free(&frame);
+                            return EncodeResultCode::ERROR;
+                        }
+                    } else {
+                        auto hwframe =
+                            dynamic_cast<buffer::VAAPIHWFrame*>(encode_arg.hwframe.operator->());
+                        if (!hwframe) {
+                            AKLOG_ERRORN("cast failed");
+                            return EncodeResultCode::ERROR;
+                        }
+                        frame = hwframe->native_frame()->frame;
+                        frame->pts =
+                            av_rescale_q(encode_arg.pts.num(), {1, (int)encode_arg.pts.den()},
+                                         m_video_stream.enc_ctx->time_base);
                     }
                     enc_ctx = m_video_stream.enc_ctx;
-                    enc_stream = m_video_stream.enc_stream;
                     break;
                 }
                 case buffer::AVBufferType::AUDIO: {
@@ -135,7 +227,6 @@ namespace akashi {
                         return EncodeResultCode::ERROR;
                     }
                     enc_ctx = m_audio_stream.enc_ctx;
-                    enc_stream = m_audio_stream.enc_stream;
                     break;
                 }
                 default: {
@@ -145,8 +236,52 @@ namespace akashi {
                 }
             }
 
+            AVFrame* proxy_frame = frame;
+
+            if (m_encode_method == VideoEncodeMethod::VAAPI_COPY && m_video_stream.enc_ctx &&
+                encode_arg.type == buffer::AVBufferType::VIDEO) {
+                // create hwframe
+                auto hwframe = av_frame_alloc();
+                if (!hwframe) {
+                    AKLOG_ERRORN("av_frame_alloc() failed");
+                    return EncodeResultCode::ERROR;
+                }
+
+                hwframe->width = m_video_stream.enc_ctx->width;
+                hwframe->height = m_video_stream.enc_ctx->height;
+                // hwframe->format = m_video_stream.enc_ctx->pix_fmt;
+                hwframe->pts = frame->pts;
+
+                if (auto err =
+                        av_hwframe_get_buffer(m_video_stream.enc_ctx->hw_frames_ctx, hwframe, 0);
+                    err < 0) {
+                    AKLOG_ERROR("av_hwframe_get_buffer() failed, ret={}", av_err2str(err));
+                    return EncodeResultCode::ERROR;
+                }
+                if (!hwframe->hw_frames_ctx) {
+                    AKLOG_ERRORN("hw_frames_ctx for AVFrame is null");
+                    return EncodeResultCode::ERROR;
+                }
+
+                if (auto err = av_hwframe_transfer_data(hwframe, frame, 0); err < 0) {
+                    AKLOG_ERROR("av_hwframe_transfer_data() failed, ret={}", av_err2str(err));
+                    return EncodeResultCode::ERROR;
+                }
+
+                if (auto err = av_frame_copy_props(hwframe, frame); err < 0) {
+                    AKLOG_ERROR("av_frame_copy_props() failed, ret={}", av_err2str(err));
+                    return EncodeResultCode::ERROR;
+                }
+
+                proxy_frame = hwframe;
+
+                if (frame) {
+                    av_frame_free(&frame);
+                }
+            }
+
             // send_frame
-            if (auto err = avcodec_send_frame(enc_ctx, frame); err < 0) {
+            if (auto err = avcodec_send_frame(enc_ctx, proxy_frame); err < 0) {
                 av_frame_free(&frame);
                 if (err == AVERROR(EAGAIN)) {
                     return EncodeResultCode::SEND_EAGAIN;
@@ -156,8 +291,8 @@ namespace akashi {
                 }
             }
 
-            if (frame) {
-                av_frame_free(&frame);
+            if (proxy_frame) {
+                av_frame_free(&proxy_frame);
             }
 
             return EncodeResultCode::OK;
@@ -294,6 +429,50 @@ namespace akashi {
             }
         }
 
+        std::unique_ptr<buffer::HWFrame> FFFrameSink::create_hwframe(void) {
+            if (!m_video_stream.enc_ctx) {
+                AKLOG_ERRORN("AVCodecContext for video streams is null");
+                return nullptr;
+            }
+            if (!m_hw_device_ctx) {
+                AKLOG_ERRORN("m_hw_device_ctx is null");
+                return nullptr;
+            }
+
+            auto frame = av_frame_alloc();
+            if (!frame) {
+                AKLOG_ERRORN("av_frame_alloc() failed");
+                return nullptr;
+            }
+
+            // [TODO] format, colorspace?
+            frame->width = m_video_stream.enc_ctx->width;
+            frame->height = m_video_stream.enc_ctx->height;
+            frame->format = AV_PIX_FMT_NV12;
+            // frame->colorspace = AVColorSpace::AVCOL_SPC_BT709;
+            // frame->color_range = AVColorRange::AVCOL_RANGE_MPEG;
+
+            // frame->format = AV_PIX_FMT_RGBA;
+            // frame->colorspace = AVColorSpace::AVCOL_SPC_RGB;
+            // frame->color_range = AVColorRange::AVCOL_RANGE_JPEG;
+
+            if (auto err = av_hwframe_get_buffer(m_video_stream.enc_ctx->hw_frames_ctx, frame, 0);
+                err < 0) {
+                AKLOG_ERROR("av_hwframe_get_buffer() failed, ret={}", av_err2str(err));
+                return nullptr;
+            }
+            if (!frame->hw_frames_ctx) {
+                AKLOG_ERRORN("hw_frames_ctx for AVFrame is null");
+                return nullptr;
+            }
+
+            auto raw_hw_device_ctx = (AVHWDeviceContext*)m_hw_device_ctx->data;
+            auto va_display = static_cast<AVVAAPIDeviceContext*>(raw_hw_device_ctx->hwctx)->display;
+
+            return std::make_unique<buffer::VAAPIHWFrame>(new buffer::NativeFrame{frame},
+                                                          va_display);
+        }
+
         bool FFFrameSink::init_video_stream() {
             // find codec
             auto codec = avcodec_find_encoder_by_name(m_state->m_encode_conf.video_codec.c_str());
@@ -322,13 +501,69 @@ namespace akashi {
                 // enc_ctx->color_primaries = AVColorPrimaries::AVCOL_PRI_BT709;
                 // enc_ctx->color_trc = AVColorTransferCharacteristic::AVCOL_TRC_BT709;
                 enc_ctx->color_range = AVColorRange::AVCOL_RANGE_MPEG;
-                // [TODO] add a field for AKState
-                enc_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
+
+                if (m_encode_method == VideoEncodeMethod::VAAPI ||
+                    m_encode_method == VideoEncodeMethod::VAAPI_COPY) {
+                    enc_ctx->pix_fmt = AV_PIX_FMT_VAAPI;
+                } else {
+                    // [TODO] add a field for AKState
+                    enc_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
+                }
+
                 // [XXX] settings for interlacing?
             }
 
             if (m_ofmt_ctx->flags & AVFMT_GLOBALHEADER) {
                 enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+            }
+
+            if (m_hw_device_ctx) {
+                AVBufferRef* hw_frames_ref = nullptr;
+                AVHWFramesContext* hw_frames_ctx = nullptr;
+
+                hw_frames_ref = av_hwframe_ctx_alloc(m_hw_device_ctx);
+                if (!hw_frames_ref) {
+                    AKLOG_ERRORN("Failed to alloc AVHWFramesContext");
+                    return false;
+                }
+
+                hw_frames_ctx = (AVHWFramesContext*)(hw_frames_ref->data);
+                hw_frames_ctx->format = AV_PIX_FMT_VAAPI;
+                hw_frames_ctx->sw_format = AV_PIX_FMT_NV12;
+                hw_frames_ctx->width = enc_ctx->width;
+                hw_frames_ctx->height = enc_ctx->height;
+
+                // [XXX] use an arbitrary number
+                hw_frames_ctx->initial_pool_size = 20;
+                hw_frames_ctx->pool = nullptr;
+
+                if (auto err = av_hwframe_ctx_init(hw_frames_ref); err < 0) {
+                    AKLOG_ERROR("av_hwframe_ctx_init() failed, ret={}", av_err2str(err));
+                    av_buffer_unref(&hw_frames_ref);
+                    return false;
+                }
+
+                enc_ctx->hw_frames_ctx = av_buffer_ref(hw_frames_ref);
+                if (!enc_ctx->hw_frames_ctx) {
+                    AKLOG_ERRORN("AVHWFramesContext reference create failed");
+                    av_buffer_unref(&hw_frames_ref);
+                    return false;
+                }
+
+                // auto raw_hw_device_ctx = (AVHWDeviceContext*)m_hw_device_ctx->data;
+                // VADisplay dpy =
+                // static_cast<AVVAAPIDeviceContext*>(raw_hw_device_ctx->hwctx)->display; auto
+                // num_profiles = vaMaxNumProfiles(dpy); auto profiles =
+                // static_cast<VAProfile*>(calloc(num_profiles, sizeof(VAProfile))); if (auto status
+                // = vaQueryConfigProfiles(dpy, profiles, &num_profiles);
+                //     status != VA_STATUS_SUCCESS) {
+                //     AKLOG_ERROR( "Failed to query va profiles: %s\n", vaErrorStr(status));
+                // }
+                // for (int i = 0; i < num_profiles; i++) {
+                //     AKLOG_ERROR( "%s\n", vaProfileStr(profiles[i]));
+                // }
+
+                av_buffer_unref(&hw_frames_ref);
             }
 
             // open encoder
@@ -352,30 +587,36 @@ namespace akashi {
                 return false;
             }
 
-            // init sws ctx
-            // clang-format off
-            m_video_stream.sws_ctx = sws_getCachedContext(nullptr,
-                // src
-                enc_ctx->width, enc_ctx->height, AV_PIX_FMT_RGB24,
-                // dst
-                enc_ctx->width, enc_ctx->height, enc_ctx->pix_fmt,
-                // flags
-                SWS_BICUBIC | SWS_FULL_CHR_H_INP | SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND, // SWS_LANCZOS | SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND,
-                // options
-                nullptr, nullptr, nullptr
-            );
-            // clang-format on
-            if (!m_video_stream.sws_ctx) {
-                AKLOG_ERRORN("sws_getCashedContext() failed");
-                return false;
-            }
+            if (m_encode_method != VideoEncodeMethod::VAAPI) {
+                auto dst_pixfmt = m_encode_method == VideoEncodeMethod::VAAPI_COPY
+                                      ? AV_PIX_FMT_NV12
+                                      : enc_ctx->pix_fmt;
 
-            // NB: This operation is really important for handling colorspace issues properly
-            if (auto err = sws_setColorspaceDetails(
-                    m_video_stream.sws_ctx, sws_getCoefficients(SWS_CS_DEFAULT), 1,
-                    sws_getCoefficients(SWS_CS_ITU709), 0, 0, (1 << 16), (1 << 16));
-                err < 0) {
-                AKLOG_ERRORN("sws_setColorspaceDetails() failed");
+                // init sws ctx
+                // clang-format off
+                m_video_stream.sws_ctx = sws_getCachedContext(nullptr,
+                    // src
+                    enc_ctx->width, enc_ctx->height, AV_PIX_FMT_RGB24,
+                    // dst
+                    enc_ctx->width, enc_ctx->height, dst_pixfmt,
+                    // flags
+                    SWS_BICUBIC | SWS_FULL_CHR_H_INP | SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND, // SWS_LANCZOS | SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND,
+                    // options
+                    nullptr, nullptr, nullptr
+                );
+                // clang-format on
+                if (!m_video_stream.sws_ctx) {
+                    AKLOG_ERRORN("sws_getCashedContext() failed");
+                    return false;
+                }
+
+                // NB: This operation is really important for handling colorspace issues properly
+                if (auto err = sws_setColorspaceDetails(
+                        m_video_stream.sws_ctx, sws_getCoefficients(SWS_CS_DEFAULT), 1,
+                        sws_getCoefficients(SWS_CS_ITU709), 0, 0, (1 << 16), (1 << 16));
+                    err < 0) {
+                    AKLOG_ERRORN("sws_setColorspaceDetails() failed");
+                }
             }
 
             return true;
@@ -451,13 +692,21 @@ namespace akashi {
             // frame settings
             (*frame)->width = m_video_stream.enc_ctx->width;
             (*frame)->height = m_video_stream.enc_ctx->height;
-            (*frame)->format = m_video_stream.enc_ctx->pix_fmt;
+
+            if (m_encode_method == VideoEncodeMethod::VAAPI_COPY) {
+                (*frame)->format = AV_PIX_FMT_NV12;
+            } else {
+                (*frame)->format = m_video_stream.enc_ctx->pix_fmt;
+            }
+
             // [TODO] settings for interlacing?
             // [TODO] is this really necessary?
             (*frame)->pts = av_rescale_q(encode_arg.pts.num(), {1, (int)encode_arg.pts.den()},
                                          m_video_stream.enc_ctx->time_base);
 
             (*frame)->colorspace = m_video_stream.enc_ctx->colorspace;
+            // (*frame)->colorspace = AVColorSpace::AVCOL_SPC_RGB;
+            // (*frame)->color_range = AVColorRange::AVCOL_RANGE_JPEG;
 
             // alloc video buffer
             if (auto err = av_frame_get_buffer(*frame, 0); err < 0) {
