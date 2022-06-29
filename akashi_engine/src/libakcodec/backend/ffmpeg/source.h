@@ -29,45 +29,40 @@ namespace akashi {
 
         struct DecodeStream {
             bool is_active = false; // if false, we do not use this stream
+            bool decode_ended = false;
+
+            AVMediaType media_type = AVMEDIA_TYPE_UNKNOWN;
+
             AVCodecContext* dec_ctx = nullptr;
+
             struct SwrContext* swr_ctx = nullptr;
             bool swr_ctx_init_done = false;
+
             int64_t first_pts = 0;
             bool is_checked_first_pts = false;
             int64_t input_start_pts = 0;
-            bool decode_ended = false;
+
             akashi::core::Rational cur_decode_pts = akashi::core::Rational(0, 1);
-            AVMediaType media_type = AVMEDIA_TYPE_UNKNOWN;
             int64_t conv_effective_pts = 0;
         };
 
         struct InputSource {
             AVFormatContext* ifmt_ctx = nullptr;
-
             AVBufferRef* hw_device_ctx = nullptr;
-
             AVPacket* pkt = nullptr;
-
             AVFrame* proxy_frame = nullptr;
-
             AVFrame* frame = nullptr;
 
             std::vector<DecodeStream> dec_streams;
 
             core::VideoDecodeMethod decode_method = core::VideoDecodeMethod::NONE;
-
             core::VideoDecodeMethod preferred_decode_method = core::VideoDecodeMethod::NONE;
 
             size_t video_max_queue_count = 0;
-
             bool init_called = false;
-
             uint8_t eof = 0; // 1 if eof reached
-
             bool decode_ended = false;
-
             size_t loop_cnt = 0;
-
             akashi::core::Rational act_dur = akashi::core::Rational(0, 1);
 
             core::LayerProfile layer_prof;
