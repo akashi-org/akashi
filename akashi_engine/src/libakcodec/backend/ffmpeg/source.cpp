@@ -496,6 +496,7 @@ namespace akashi {
             ffbuf_input.out_audio_spec = decode_arg.out_audio_spec;
             ffbuf_input.media_type = to_res_buf_type(dec_stream->dec_ctx->codec_type);
             ffbuf_input.decode_method = m_input_src.decode_method;
+            ffbuf_input.layer_prof = m_input_src.layer_prof;
 
             if (m_input_src.decode_method == VideoDecodeMethod::VAAPI) {
                 codec::init_hwframe(ffbuf_input, m_input_src);
