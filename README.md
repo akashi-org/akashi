@@ -91,7 +91,7 @@ This helps you write your codes more secure and easier.
    
 ### Basic Video Editing Features
 
-- Hardware Accerated Video Playback (VA-API)
+- Hardware Accerated Video Playback / Encoding (VA-API)
 - Audio Playback (PulseAudio)
 - Image Rendering
 - Text Rendering (ttf/otf, outline, shadow, etc.)
