@@ -93,6 +93,7 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE akcore
   PRIVATE akbuffer
   PRIVATE akstate
+  PRIVATE akvgfx
   PRIVATE ${SDL2_LIBRARIES}
   PRIVATE ${SDL2_IMAGE_LIBRARIES}
   PRIVATE ${SDL2_TTF_LIBRARIES}

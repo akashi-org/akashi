@@ -172,6 +172,7 @@ namespace akashi {
                 AKPRIV_RETURN_TAGSTR("libakcodec");
                 AKPRIV_RETURN_TAGSTR("libakaudio");
                 AKPRIV_RETURN_TAGSTR("libakgraphics");
+                AKPRIV_RETURN_TAGSTR("libakvgfx");
                 AKPRIV_RETURN_TAGSTR("libakbuffer");
                 AKPRIV_RETURN_TAGSTR("libakeval");
                 AKPRIV_RETURN_TAGSTR("libakwatch");

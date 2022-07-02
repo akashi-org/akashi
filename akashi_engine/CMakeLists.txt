@@ -84,6 +84,7 @@ set_target_properties(akprobe PROPERTIES
 add_subdirectory("./src/libakbuffer")
 add_subdirectory("./src/libakaudio")
 add_subdirectory("./src/libakgraphics")
+add_subdirectory("./src/libakvgfx")
 
 add_subdirectory("./src/libakeval")
 set_target_properties(akeval PROPERTIES
