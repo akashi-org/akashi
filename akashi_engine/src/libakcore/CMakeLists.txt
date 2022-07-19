@@ -74,6 +74,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./string.cpp"
   "./uuid.cpp"
   "./time.cpp"
+  "./color.cpp"
 )
 
 file(GLOB INTERFACE_HEADERS
@@ -90,6 +91,7 @@ file(GLOB INTERFACE_HEADERS
   string.h
   hw_accel.h
   uuid.h
+  color.h
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES 
   PUBLIC_HEADER "${INTERFACE_HEADERS}" # [XXX] we need double quotes here!

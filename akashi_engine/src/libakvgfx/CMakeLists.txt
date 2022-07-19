@@ -5,6 +5,10 @@ pkg_check_modules(CAIRO REQUIRED cairo)
 
 add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./akvgfx.cpp"
+
+  "./backend/cairo/surface.cpp"
+  "./backend/cairo/surface_creator.cpp"
+  "./backend/cairo/utils.cpp"
 )
 
 # file(GLOB INTERFACE_HEADERS

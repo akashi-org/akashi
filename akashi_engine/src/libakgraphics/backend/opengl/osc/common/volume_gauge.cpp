@@ -4,13 +4,13 @@
 
 #include "../../core/glc.h"
 #include "../../core/shader.h"
-#include "../../core/color.h"
 #include "../../meshes/rect.h"
 #include "../../../../item.h"
 
 #include <libakcore/error.h>
 #include <libakcore/logger.h>
 #include <libakcore/memory.h>
+#include <libakcore/color.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -161,7 +161,7 @@ namespace akashi {
                                             get_trans_vec({m_obj_params.cx, m_obj_params.cy, 0}));
 
             auto color_loc = glGetUniformLocation(pass.prog, "u_color");
-            auto color = to_rgba_float(m_obj_params.border_color);
+            auto color = core::to_rgba_float(m_obj_params.border_color);
 
             glUseProgram(pass.prog);
             glUniform4fv(color_loc, 1, color.data());
@@ -215,10 +215,10 @@ namespace akashi {
             this->update_content_model_mat();
 
             auto color_loc = glGetUniformLocation(pass.prog, "u_color");
-            auto color = to_rgba_float(m_obj_params.color);
+            auto color = core::to_rgba_float(m_obj_params.color);
 
             auto inactive_color_loc = glGetUniformLocation(pass.prog, "u_inactive_color");
-            auto inactive_color = to_rgba_float(m_obj_params.inactive_color);
+            auto inactive_color = core::to_rgba_float(m_obj_params.inactive_color);
 
             glUseProgram(pass.prog);
             glUniform4fv(color_loc, 1, color.data());

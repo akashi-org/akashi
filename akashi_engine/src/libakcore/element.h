@@ -75,7 +75,7 @@ namespace akashi {
             std::string poly;
         };
 
-        enum class ShapeKind { RECT = 0, CIRCLE, ELLIPSE, TRIANGLE, LINE, LENGTH };
+        enum class ShapeKind { RECT = 0, CIRCLE, TRIANGLE, LINE, LENGTH };
 
         struct RectDetail {
             int width = 0;
@@ -83,12 +83,14 @@ namespace akashi {
         };
 
         struct CircleDetail {
-            double radius;
             int lod;
         };
 
         struct TriangleDetail {
-            double side;
+            int width = 0;
+            int height = 0;
+            double wr = 0;
+            double hr = 1;
         };
 
         enum class LineStyle { DEFAULT = 0, ROUND_DOT, SQUARE_DOT, CAP, LENGTH };
@@ -100,9 +102,13 @@ namespace akashi {
             LineStyle style;
         };
 
+        enum class BorderDirection { INNER = 0, OUTER, FULL, LENGTH };
+
         struct ShapeLayerContext {
             ShapeKind shape_kind;
             double border_size;
+            std::string border_color;
+            BorderDirection border_direction;
             double edge_radius;
             bool fill = true;
             std::string color;

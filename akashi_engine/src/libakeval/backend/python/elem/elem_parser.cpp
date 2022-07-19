@@ -68,6 +68,22 @@ namespace akashi {
             return core::LineStyle::LENGTH;
         }
 
+        static core::BorderDirection parse_border_direction(const pybind11::object& dir_obj) {
+            std::string dir_str = dir_obj.cast<std::string>();
+
+            if (dir_str == "inner") {
+                return core::BorderDirection::INNER;
+            } else if (dir_str == "outer") {
+                return core::BorderDirection::OUTER;
+            } else if (dir_str == "full") {
+                return core::BorderDirection::FULL;
+            } else {
+                AKLOG_ERROR("Invalid border direction '{}' found", dir_str.c_str());
+            }
+
+            return core::BorderDirection::LENGTH;
+        }
+
         static bool parse_shape_detail(core::LayerContext* layer_ctx,
                                        const pybind11::object& layer_params) {
             std::string kind_str = layer_params.attr("shape_kind").cast<std::string>();
@@ -79,16 +95,18 @@ namespace akashi {
                     layer_params.attr("rect").attr("height").cast<long>();
             } else if (kind_str == "CIRCLE") {
                 layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::CIRCLE;
-                layer_ctx->shape_layer_ctx.circle.radius =
-                    layer_params.attr("circle").attr("circle_radius").cast<double>();
                 layer_ctx->shape_layer_ctx.circle.lod =
                     layer_params.attr("circle").attr("lod").cast<long>();
-            } else if (kind_str == "ELLIPSE") {
-                layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::ELLIPSE;
             } else if (kind_str == "TRIANGLE") {
                 layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::TRIANGLE;
-                layer_ctx->shape_layer_ctx.tri.side =
-                    layer_params.attr("tri").attr("side").cast<double>();
+                layer_ctx->shape_layer_ctx.tri.width =
+                    layer_params.attr("tri").attr("width").cast<long>();
+                layer_ctx->shape_layer_ctx.tri.height =
+                    layer_params.attr("tri").attr("height").cast<long>();
+                layer_ctx->shape_layer_ctx.tri.wr =
+                    layer_params.attr("tri").attr("wr").cast<double>();
+                layer_ctx->shape_layer_ctx.tri.hr =
+                    layer_params.attr("tri").attr("hr").cast<double>();
             } else if (kind_str == "LINE") {
                 layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::LINE;
                 layer_ctx->shape_layer_ctx.line.size =
@@ -266,6 +284,12 @@ namespace akashi {
 
                 layer_ctx.shape_layer_ctx.border_size =
                     layer_params.attr("shape").attr("border_size").cast<double>();
+                layer_ctx.shape_layer_ctx.border_color =
+                    layer_params.attr("shape").attr("border_color").cast<std::string>();
+
+                layer_ctx.shape_layer_ctx.border_direction =
+                    parse_border_direction(layer_params.attr("shape").attr("border_direction"));
+
                 layer_ctx.shape_layer_ctx.edge_radius =
                     layer_params.attr("shape").attr("edge_radius").cast<double>();
                 layer_ctx.shape_layer_ctx.fill =

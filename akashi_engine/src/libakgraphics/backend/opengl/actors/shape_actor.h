@@ -7,6 +7,9 @@ namespace akashi {
     namespace core {
         class Rational;
     }
+    namespace vgfx {
+        class Surface;
+    }
     namespace graphics {
 
         class OGLRenderContext;
@@ -27,9 +30,11 @@ namespace akashi {
             bool destroy(const OGLRenderContext& ctx) override;
 
           private:
-            bool load_pass(const OGLRenderContext& ctx);
+            bool load_pass(OGLRenderContext& ctx);
 
-            bool load_mesh(const OGLRenderContext& ctx);
+            bool load_mesh(OGLRenderContext& ctx);
+
+            bool load_texture(const vgfx::Surface& surface);
 
           private:
             ShapeActor::Pass* m_pass = nullptr;

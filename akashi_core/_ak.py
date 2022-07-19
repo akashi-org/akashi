@@ -26,7 +26,7 @@ __all__ = [
     "CircleTraitFn",
     "circle_frag",
     "circle_poly",
-    # "tri",
+    "tri",
     "line",
     "LineTraitFn",
     "line_frag",
@@ -98,7 +98,7 @@ from .elem.layer.shape import shape_frag, shape_poly
 from .elem.layer.shape import rect, RectTraitFn, rect_frag, rect_poly
 from .elem.layer.shape import circle, CircleTraitFn, circle_frag, circle_poly
 from .elem.layer.shape import line, LineTraitFn, line_frag, line_poly
-# from .elem.layer.shape import tri
+from .elem.layer.shape import tri, TriangleTraitFn, tri_frag, tri_poly
 from .elem.layer.unit import unit, unit_frag, unit_poly, scene
 
 from .time import sec

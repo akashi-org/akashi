@@ -4,7 +4,6 @@
 
 #include "../../../core/glc.h"
 #include "../../../core/shader.h"
-#include "../../../core/color.h"
 #include "../../../meshes/line.h"
 
 #include <libakcore/error.h>
@@ -16,6 +15,7 @@
 using namespace glm;
 
 #include <libakcore/rational.h>
+#include <libakcore/color.h>
 
 namespace akashi {
     namespace graphics::osc {
@@ -136,7 +136,7 @@ namespace akashi {
             m_ctx->model_mat = glm::translate(m_ctx->model_mat, get_trans_vec({0, 0, 0}));
 
             auto color_loc = glGetUniformLocation(m_ctx->prog, "u_color");
-            auto color = to_rgba_float(m_ctx->line_color);
+            auto color = core::to_rgba_float(m_ctx->line_color);
 
             glUseProgram(m_ctx->prog);
             glUniform4fv(color_loc, 1, color.data());

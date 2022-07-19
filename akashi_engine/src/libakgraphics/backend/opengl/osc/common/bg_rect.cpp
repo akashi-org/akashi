@@ -4,12 +4,12 @@
 
 #include "../../core/glc.h"
 #include "../../core/shader.h"
-#include "../../core/color.h"
 #include "../../meshes/rect.h"
 
 #include <libakcore/error.h>
 #include <libakcore/logger.h>
 #include <libakcore/memory.h>
+#include <libakcore/color.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -121,7 +121,7 @@ namespace akashi {
             this->update_content_model_mat();
 
             auto color_loc = glGetUniformLocation(m_ctx->prog, "u_color");
-            auto color = to_rgba_float(m_obj_params.color);
+            auto color = core::to_rgba_float(m_obj_params.color);
 
             glUseProgram(m_ctx->prog);
             glUniform4fv(color_loc, 1, color.data());

@@ -212,11 +212,9 @@ namespace akashi {
                                      const std::string& u_poly_shader,
                                      const std::string& u_frag_shader) {
                 CHECK_AK_ERROR2(compile_attach_shader(prog, GL_VERTEX_SHADER, vshader_src));
-                CHECK_AK_ERROR2(
-                    compile_attach_shader(prog, GL_FRAGMENT_SHADER,
-                                          type == core::LayerType::IMAGE   ? image_fshader_src
-                                          : type == core::LayerType::SHAPE ? shape_fshader_src
-                                                                           : fshader_src));
+                CHECK_AK_ERROR2(compile_attach_shader(
+                    prog, GL_FRAGMENT_SHADER,
+                    type == core::LayerType::IMAGE ? image_fshader_src : fshader_src));
 
                 std::string frag_shader =
                     u_frag_shader.empty() ? default_user_fshader_src : u_frag_shader;

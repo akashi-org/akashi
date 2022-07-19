@@ -17,7 +17,6 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./backend/opengl/stage.cpp"
   "./backend/opengl/camera.cpp"
   "./backend/opengl/core/shader.cpp"
-  "./backend/opengl/core/color.cpp"
   "./backend/opengl/core/error.cpp"
   "./backend/opengl/core/texture.cpp"
   "./backend/opengl/core/loader_gl.cpp"

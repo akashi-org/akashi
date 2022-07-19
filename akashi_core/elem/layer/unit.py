@@ -240,7 +240,6 @@ class SceneHandle(LayerTrait):
                 cur_layer.atom_offset += acc_duration
 
             if not isinstance(cur_layer._duration, sec):
-                print(cur_layer._duration)
                 raise Exception('Passing a layer handle to duration is prohibited for child layers of an scene layer')
 
             if cur_layer.duration == NOT_FIXED_SEC:

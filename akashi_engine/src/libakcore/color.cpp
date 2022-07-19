@@ -1,16 +1,21 @@
 #include "./color.h"
 
-#include <libakcore/rational.h>
+#include "./rational.h"
+#include "./logger.h"
 
 #include <cassert>
 
 namespace akashi {
-    namespace graphics {
+    namespace core {
 
         std::array<int, 4> to_rgba_int(std::string color_str) {
             std::array<int, 4> color = {0, 0, 0, 255};
 
-            assert(color_str[0] == '#');
+            if (color_str[0] != '#') {
+                AKLOG_WARNN("Invalid format found");
+                return {0, 0, 0, 0};
+            }
+
             color_str.erase(0, 1);
 
             unsigned long value = stoul(color_str, nullptr, 16);

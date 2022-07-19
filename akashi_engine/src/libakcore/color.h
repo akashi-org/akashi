@@ -4,7 +4,7 @@
 #include <array>
 
 namespace akashi {
-    namespace graphics {
+    namespace core {
 
         std::array<int, 4> to_rgba_int(std::string color_str);
 

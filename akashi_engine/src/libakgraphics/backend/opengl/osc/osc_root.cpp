@@ -15,12 +15,12 @@
 
 #include "../core/glc.h"
 #include "../core/shader.h"
-#include "../core/color.h"
 #include "../meshes/rect.h"
 
 #include <libakcore/error.h>
 #include <libakcore/logger.h>
 #include <libakcore/memory.h>
+#include <libakcore/color.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -44,7 +44,7 @@ namespace akashi {
             glEnable(GL_SCISSOR_TEST);
 
             std::array<float, 4> color = {0, 0, 0, 0};
-            color = to_rgba_float(ctx.root_bg_color);
+            color = core::to_rgba_float(ctx.root_bg_color);
             glClearColor(color[0], color[1], color[2], 0);
 
             glClear(GL_COLOR_BUFFER_BIT);

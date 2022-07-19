@@ -1,7 +1,6 @@
 #include "./stage.h"
 
 #include "./core/glc.h"
-#include "./core/color.h"
 #include "./render_context.h"
 #include "./fbo.h"
 #include "./camera.h"
@@ -12,6 +11,7 @@
 #include <libakcore/logger.h>
 #include <libakcore/element.h>
 #include <libakcore/error.h>
+#include <libakcore/color.h>
 
 namespace akashi {
     namespace graphics {
@@ -76,7 +76,7 @@ namespace akashi {
 
             auto bg_color = m_plane_ctx.level == 0 ? m_atom_static_profile.bg_color
                                                    : m_plane_ctx.base.unit_layer_ctx.bg_color;
-            std::array<float, 4> fb_bg_color = to_rgba_float(bg_color);
+            std::array<float, 4> fb_bg_color = core::to_rgba_float(bg_color);
             priv::init_renderer(cur_fbo.info(), fb_bg_color);
 
             if (m_initial_render) {
