@@ -355,6 +355,24 @@ class TestControl(unittest.TestCase):
         with self.assertRaisesRegex(CompileError, '^Else with For is not supported') as _:
             compile_named_shader(count3)
 
+        to = 10
+
+        @gl.lib('any')
+        def count4() -> int:
+            res: int = 0
+            for i in range(1, gl.outer(to), 2):
+                res += 1
+            return res
+
+        expected = (
+            'int test_named_compiler_count4(){' +
+            'int res = 0;' +
+            'for(int i=(1);i<(10);i+=(2)){res += 1;}' +
+            'return res;' +
+            '}')
+
+        self.assertEqual(compile_named_shader(count4, TEST_CONFIG), expected)
+
 
 class TestBuffer(unittest.TestCase):
 
