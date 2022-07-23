@@ -251,6 +251,10 @@ class ExprOut(stmtOut):
 def from_Expr(node: ast.Expr, ctx: CompilerContext) -> ExprOut:
 
     out = compile_expr(node.value, ctx)
+
+    if isinstance(out, ConstantOut) and isinstance(out.node.value, str):
+        raise CompileError("Strings are not allowed by default. Perhaps you are using triple quotes(''')?")
+
     last_str = ';' if out.content != '...' else ''
     content = compiler_utils.get_stmt_indent(node, ctx) + out.content + last_str
 

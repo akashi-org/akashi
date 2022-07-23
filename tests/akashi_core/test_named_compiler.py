@@ -29,6 +29,16 @@ class TestBasic(unittest.TestCase):
 
         self.assertEqual(compile_named_shader(decl_func, TEST_CONFIG), expected)
 
+    def test_comment(self):
+
+        @gl.lib('any')
+        def add_triple_comments(a: int, b: int) -> int:
+            ''' add '''
+            return a + b
+
+        with self.assertRaisesRegex(CompileError, 'Strings are not allowed by default') as _:
+            compile_named_shader(add_triple_comments)
+
     def test_inline_func(self):
 
         @gl.lib('any')
