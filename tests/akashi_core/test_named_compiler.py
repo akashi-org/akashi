@@ -29,15 +29,24 @@ class TestBasic(unittest.TestCase):
 
         self.assertEqual(compile_named_shader(decl_func, TEST_CONFIG), expected)
 
-    def test_comment(self):
+    def test_comments(self):
 
         @gl.lib('any')
-        def add_triple_comments(a: int, b: int) -> int:
-            ''' add '''
+        def add_normal_comment(a: int, b: int) -> int:
+            return a + b  # comment
+
+        expected_normal = '\n'.join([
+            'int test_named_compiler_add_normal_comment(int a, int b){return (a) + (b);}',
+        ])
+        self.assertEqual(compile_named_shader(add_normal_comment, TEST_CONFIG), expected_normal)
+
+        @gl.lib('any')
+        def add_triple_quotes(a: int, b: int) -> int:
+            ''' In fact, this is not a comment. '''
             return a + b
 
         with self.assertRaisesRegex(CompileError, 'Strings are not allowed by default') as _:
-            compile_named_shader(add_triple_comments)
+            compile_named_shader(add_triple_quotes)
 
     def test_inline_func(self):
 
