@@ -301,7 +301,7 @@ namespace akashi {
                     }
 
                     AVCodecID codec_id = format_ctx->streams[i]->codecpar->codec_id;
-                    AVCodec* av_codec = avcodec_find_decoder(codec_id);
+                    auto av_codec = avcodec_find_decoder(codec_id);
                     if (av_codec == nullptr) {
                         AKLOG_ERROR("avcodec_find_decoder codec not found. codec_id={}", codec_id);
                         return -1;
