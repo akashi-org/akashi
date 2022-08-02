@@ -181,6 +181,20 @@ class TestBasic(unittest.TestCase):
         with self.assertRaisesRegex(CompileError, 'Return type must not have its parameter qualifier') as _:
             compile_named_shader(vec_attr2, TEST_CONFIG)
 
+    def test_boolean_literal(self):
+
+        out_true = True
+
+        @gl.lib('any')
+        def is_positive(a: int) -> bool:
+            return gl.outer(out_true) if a >= 0 else False
+
+        expected = '\n'.join([
+            'bool test_named_compiler_is_positive(int a){return (a) >= (0) ? true : false;}',
+        ])
+
+        self.assertEqual(compile_named_shader(is_positive, TEST_CONFIG), expected)
+
 
 class TestControl(unittest.TestCase):
 
