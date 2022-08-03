@@ -88,3 +88,27 @@ class TestOther(unittest.TestCase):
         self.assertEqual(compile_shaders((
             gen(),
         ), ak.frag, TEST_CONFIG), expected)
+
+    def test_complex_imports(self):
+
+        @gl.lib('any')
+        def common_func() -> float:
+            return 41
+
+        @gl.lib('any')
+        def another_func() -> float:
+            return common_func() * 12
+
+        @gl.entry(ak.frag)
+        def entry(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
+            r: float = common_func()
+            color.x = another_func()
+
+        expected = ''.join([
+            'float test_compiler_common_func(){return 41;}',
+            'float test_compiler_another_func(){return (test_compiler_common_func()) * (12);}',
+            'void frag_main(inout vec4 color){float r = test_compiler_common_func();color.x = test_compiler_another_func();}'
+        ])
+
+        self.maxDiff = None
+        self.assertEqual(compile_shaders((entry,), ak.frag, TEST_CONFIG), expected)

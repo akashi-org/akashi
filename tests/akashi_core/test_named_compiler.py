@@ -13,6 +13,10 @@ TEST_CONFIG: CompilerConfig.Config = {
 }
 
 
+def exec_compile_named_shader(fn: tp.Callable, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
+    return ''.join([l.src for l in compile_named_shader(fn, config)])
+
+
 @gl.lib('any')
 def module_global_add(a: int, b: int) -> int:
     return a + b
@@ -27,7 +31,7 @@ class TestBasic(unittest.TestCase):
 
         expected = 'int test_named_compiler_decl_func(int a, int b);'
 
-        self.assertEqual(compile_named_shader(decl_func, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_named_shader(decl_func, TEST_CONFIG), expected)
 
     def test_comments(self):
 
@@ -38,7 +42,7 @@ class TestBasic(unittest.TestCase):
         expected_normal = '\n'.join([
             'int test_named_compiler_add_normal_comment(int a, int b){return (a) + (b);}',
         ])
-        self.assertEqual(compile_named_shader(add_normal_comment, TEST_CONFIG), expected_normal)
+        self.assertEqual(exec_compile_named_shader(add_normal_comment, TEST_CONFIG), expected_normal)
 
         @gl.lib('any')
         def add_triple_quotes(a: int, b: int) -> int:
@@ -46,7 +50,7 @@ class TestBasic(unittest.TestCase):
             return a + b
 
         with self.assertRaisesRegex(CompileError, 'Strings are not allowed by default') as _:
-            compile_named_shader(add_triple_quotes)
+            exec_compile_named_shader(add_triple_quotes)
 
     def test_inline_func(self):
 
@@ -58,7 +62,7 @@ class TestBasic(unittest.TestCase):
             'int test_named_compiler_add(int a, int b){return (a) + (b);}',
         ])
 
-        self.assertEqual(compile_named_shader(add, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_named_shader(add, TEST_CONFIG), expected)
 
     def test_undecorated_func(self):
 
@@ -66,14 +70,14 @@ class TestBasic(unittest.TestCase):
             return a + b
 
         with self.assertRaisesRegex(CompileError, 'Named shader function must be decorated properly') as _:
-            compile_named_shader(add)
+            exec_compile_named_shader(add)
 
         @gl.lib('error kind')  # type: ignore
         def add2(a: int, b: int) -> int:
             return a + b
 
         with self.assertRaisesRegex(CompileError, 'Invalid shader kind') as _:
-            compile_named_shader(add2)
+            exec_compile_named_shader(add2)
 
     def test_import(self):
 
@@ -96,14 +100,14 @@ class TestBasic(unittest.TestCase):
         ])
 
         self.maxDiff = None
-        self.assertEqual(compile_named_shader(assign_fn, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_named_shader(assign_fn, TEST_CONFIG), expected)
 
         @gl.lib('any')
         def error_import(a: int) -> int:
             return add(a, 12)
 
         with self.assertRaisesRegex(CompileError, 'Forbidden import FragShader from AnyShader') as _:
-            compile_named_shader(error_import, TEST_CONFIG)
+            exec_compile_named_shader(error_import, TEST_CONFIG)
 
     def test_module_import(self):
 
@@ -117,7 +121,7 @@ class TestBasic(unittest.TestCase):
             'int test_named_compiler_add(int a, int b){return compiler_fixtures_boost_add(a, b);}'
         ])
 
-        self.assertEqual(compile_named_shader(add, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_named_shader(add, TEST_CONFIG), expected)
 
     def test_paren_arith_func(self):
 
@@ -129,7 +133,7 @@ class TestBasic(unittest.TestCase):
             'int test_named_compiler_paren_arith(int a, int b){return (100) - (int((((12) * (90)) + (a)) / (b)));}',
         ])
 
-        self.assertEqual(compile_named_shader(paren_arith, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_named_shader(paren_arith, TEST_CONFIG), expected)
 
     def test_vec_attr(self):
 
@@ -141,7 +145,7 @@ class TestBasic(unittest.TestCase):
             'void test_named_compiler_vec_attr(vec4 _fragColor){_fragColor.x = 12;}',
         ])
 
-        self.assertEqual(compile_named_shader(vec_attr, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_named_shader(vec_attr, TEST_CONFIG), expected)
 
         vec4 = gl.vec4
 
@@ -154,7 +158,7 @@ class TestBasic(unittest.TestCase):
             'vec4 test_named_compiler_vec_attr2(vec4 _fragColor){_fragColor.x = 12;return _fragColor;}',
         ])
 
-        self.assertEqual(compile_named_shader(vec_attr2, TEST_CONFIG), expected2)
+        self.assertEqual(exec_compile_named_shader(vec_attr2, TEST_CONFIG), expected2)
 
     def test_params_qualifier(self):
 
@@ -172,14 +176,14 @@ class TestBasic(unittest.TestCase):
         ])
 
         self.maxDiff = None
-        self.assertEqual(compile_named_shader(vec_attr, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_named_shader(vec_attr, TEST_CONFIG), expected)
 
         @gl.lib('frag')
         def vec_attr2(_fragColor: gl.out_p[gl.vec4]) -> gl.out_p[gl.vec4]:
             return _fragColor
 
         with self.assertRaisesRegex(CompileError, 'Return type must not have its parameter qualifier') as _:
-            compile_named_shader(vec_attr2, TEST_CONFIG)
+            exec_compile_named_shader(vec_attr2, TEST_CONFIG)
 
     def test_boolean_literal(self):
 
@@ -193,7 +197,7 @@ class TestBasic(unittest.TestCase):
             'bool test_named_compiler_is_positive(int a){return (a) >= (0) ? true : false;}',
         ])
 
-        self.assertEqual(compile_named_shader(is_positive, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_named_shader(is_positive, TEST_CONFIG), expected)
 
 
 class TestControl(unittest.TestCase):
@@ -208,7 +212,7 @@ class TestControl(unittest.TestCase):
 
         expected = 'int test_named_compiler_add(int a, int b){if(bool(a)){return -1;}return (a) + (b);}'
 
-        self.assertEqual(compile_named_shader(add, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_named_shader(add, TEST_CONFIG), expected)
 
         @gl.lib('any')
         def add2(a: int, b: int) -> int:
@@ -219,7 +223,7 @@ class TestControl(unittest.TestCase):
 
         expected2 = 'int test_named_compiler_add2(int a, int b){if(bool(a)){return -1;}else{return (a) + (b);}}'
 
-        self.assertEqual(compile_named_shader(add2, TEST_CONFIG), expected2)
+        self.assertEqual(exec_compile_named_shader(add2, TEST_CONFIG), expected2)
 
         @gl.lib('any')
         def add3(a: int, b: int) -> int:
@@ -232,7 +236,7 @@ class TestControl(unittest.TestCase):
 
         expected3 = 'int test_named_compiler_add3(int a, int b){if(bool(a)){return -1;}else{if(bool(b)){return -100;}else{return (a) + (b);}}}'  # noqa: E501
 
-        self.assertEqual(compile_named_shader(add3, TEST_CONFIG), expected3)
+        self.assertEqual(exec_compile_named_shader(add3, TEST_CONFIG), expected3)
 
         @gl.lib('any')
         def add4(a: int, b: int) -> int:
@@ -242,7 +246,7 @@ class TestControl(unittest.TestCase):
 
         expected4 = 'int test_named_compiler_add4(int a, int b){if(bool(a)){;}return (a) + (b);}'
 
-        self.assertEqual(compile_named_shader(add4, TEST_CONFIG), expected4)
+        self.assertEqual(exec_compile_named_shader(add4, TEST_CONFIG), expected4)
 
     def test_ternary_op(self):
 
@@ -252,7 +256,7 @@ class TestControl(unittest.TestCase):
 
         expected = 'int test_named_compiler_add(int a, int b){return bool(a) ? (a) + (b) : 12;}'
 
-        self.assertEqual(compile_named_shader(add, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_named_shader(add, TEST_CONFIG), expected)
 
         @gl.lib('any')
         def add2(a: int, b: int) -> int:
@@ -260,7 +264,7 @@ class TestControl(unittest.TestCase):
 
         expected2 = 'int test_named_compiler_add2(int a, int b){return bool(a) ? (a) + (b) : bool(b) ? 900 : 12;}'
 
-        self.assertEqual(compile_named_shader(add2, TEST_CONFIG), expected2)
+        self.assertEqual(exec_compile_named_shader(add2, TEST_CONFIG), expected2)
 
     def test_compare_and_bool_op(self):
 
@@ -272,7 +276,7 @@ class TestControl(unittest.TestCase):
 
         expected = 'int test_named_compiler_add(int a, int b){if((a) > (1)){return -1;}return (a) + (b);}'
 
-        self.assertEqual(compile_named_shader(add, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_named_shader(add, TEST_CONFIG), expected)
 
         @gl.lib('any')
         def add2(a: int, b: int) -> int:
@@ -281,7 +285,7 @@ class TestControl(unittest.TestCase):
             return a + b
 
         with self.assertRaisesRegex(CompileError, 'Multiple comparison operators in one expression') as _:
-            compile_named_shader(add2)
+            exec_compile_named_shader(add2)
 
         @gl.lib('any')
         def add3(a: int, b: int) -> int:
@@ -295,7 +299,7 @@ class TestControl(unittest.TestCase):
             'return (a) + (b);' +
             '}')
 
-        self.assertEqual(compile_named_shader(add3, TEST_CONFIG), expected3)
+        self.assertEqual(exec_compile_named_shader(add3, TEST_CONFIG), expected3)
 
     def test_while(self):
 
@@ -313,7 +317,7 @@ class TestControl(unittest.TestCase):
             'return res;' +
             '}')
 
-        self.assertEqual(compile_named_shader(count, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_named_shader(count, TEST_CONFIG), expected)
 
         @gl.lib('any')
         def count2() -> int:
@@ -325,7 +329,7 @@ class TestControl(unittest.TestCase):
             return res
 
         with self.assertRaisesRegex(CompileError, 'Else with while is not supported') as _:
-            compile_named_shader(count2)
+            exec_compile_named_shader(count2)
 
         @gl.lib('any')
         def count3() -> int:
@@ -346,7 +350,7 @@ class TestControl(unittest.TestCase):
             'return res;' +
             '}')
 
-        self.assertEqual(compile_named_shader(count3, TEST_CONFIG), expected3)
+        self.assertEqual(exec_compile_named_shader(count3, TEST_CONFIG), expected3)
 
     def test_for(self):
 
@@ -364,7 +368,7 @@ class TestControl(unittest.TestCase):
             'return res;' +
             '}')
 
-        self.assertEqual(compile_named_shader(count, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_named_shader(count, TEST_CONFIG), expected)
 
         @gl.lib('any')
         def count2() -> int:
@@ -374,7 +378,7 @@ class TestControl(unittest.TestCase):
             return res
 
         with self.assertRaisesRegex(CompileError, '^On For statement') as _:
-            compile_named_shader(count2)
+            exec_compile_named_shader(count2)
 
         @gl.lib('any')
         def count3() -> int:
@@ -386,7 +390,7 @@ class TestControl(unittest.TestCase):
             return res
 
         with self.assertRaisesRegex(CompileError, '^Else with For is not supported') as _:
-            compile_named_shader(count3)
+            exec_compile_named_shader(count3)
 
         to = 10
 
@@ -404,7 +408,7 @@ class TestControl(unittest.TestCase):
             'return res;' +
             '}')
 
-        self.assertEqual(compile_named_shader(count4, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_named_shader(count4, TEST_CONFIG), expected)
 
 
 class TestBuffer(unittest.TestCase):

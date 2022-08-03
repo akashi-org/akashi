@@ -51,3 +51,9 @@ class CompilerContext:
         self.imported_func_symbol = {}
 
         self.buffers = []
+
+
+@dataclass(frozen=True)
+class GLSLFunc:
+    src: str
+    mangled_func_name: str

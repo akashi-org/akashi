@@ -2,7 +2,7 @@
 from __future__ import annotations
 import typing as tp
 
-from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
+from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL, GLSLFunc
 from .utils import can_import, entry_point, mangled_func_name, get_shader_kind_from_buffer
 from .compiler_named import compile_named_shader, to_shader_kind, compile_named_entry_shader_partial
 from .compiler_lambda import compile_lambda_shader_partial
@@ -51,12 +51,19 @@ def compile_shaders(
 
         stmts.insert(0, entry_point(kind, stmt, self_postfix, next_postfix))
 
-    imported_strs = []
+    imported_glsl_fns: list[GLSLFunc] = []
 
     for imp_fn in imported_named_shader_fns_dict.values():
         imp_shader_kind = to_shader_kind(tp.cast(tuple, inspect.getfullargspec(imp_fn).defaults)[0])
         if not can_import(kind, imp_shader_kind):
             raise CompileError(f'Forbidden import {imp_shader_kind} from {kind}')
-        imported_strs.append(compile_named_shader(imp_fn, ctx.config))
+        imported_glsl_fns += compile_named_shader(imp_fn, ctx.config)
+
+    out_func_names = []
+    imported_strs = []
+    for glsl_fn in imported_glsl_fns:
+        if glsl_fn.mangled_func_name not in out_func_names:
+            imported_strs.append(glsl_fn.src)
+            out_func_names.append(glsl_fn.mangled_func_name)
 
     return "".join(imported_strs) + ''.join(stmts)

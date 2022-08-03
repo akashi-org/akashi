@@ -106,7 +106,16 @@ def unwrap_shader_func(fn: tp.Callable) -> tp.Callable | None:
 
     if not(hasattr(fn, '__closure__') and fn.__closure__ and len(fn.__closure__) > 0):
         return None
-    return fn.__closure__[0].cell_contents
+
+    if not fn.__module__.startswith('akashi_core'):
+        # asuumes already unwrapped function
+        return None
+
+    unwrapped = fn.__closure__[0].cell_contents
+    if unwrapped.__module__.startswith('akashi_core'):
+        return unwrap_shader_func(unwrapped)
+    else:
+        return unwrapped
 
 
 def get_mangle_prefix(ctx: CompilerContext, deco_fn: tp.Callable):

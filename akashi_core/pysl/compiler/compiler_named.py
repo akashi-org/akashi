@@ -1,7 +1,7 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
 
-from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL
+from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL, GLSLFunc
 from .utils import (
     get_source,
     get_function_def,
@@ -108,7 +108,9 @@ def compile_func_body(node: ast.FunctionDef, ctx: CompilerContext) -> _TGLSL:
 
 def compile_named_shader(
         fn: tp.Callable,
-        config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
+        config: CompilerConfig.Config = CompilerConfig.default()) -> list[GLSLFunc]:
+
+    glsl_fns: list[GLSLFunc] = []
 
     ctx = CompilerContext(config)
 
@@ -130,16 +132,18 @@ def compile_named_shader(
     if not is_named_func(func_def, ctx.global_symbol):
         raise CompileError('Named shader function must be decorated properly')
 
-    out = compile_func_all(func_def, ctx, mangled_func_name(ctx, deco_fn, False))
+    main_func_name = mangled_func_name(ctx, deco_fn, False)
+    out = compile_func_all(func_def, ctx, main_func_name)
 
-    imported_strs = []
     for imp_fn in imported_named_shader_fns:
         imp_shader_kind = to_shader_kind(tp.cast(tuple, inspect.getfullargspec(imp_fn).defaults)[0])
         if not can_import(shader_kind, imp_shader_kind):
             raise CompileError(f'Forbidden import {imp_shader_kind} from {shader_kind}')
-        imported_strs.append(compile_named_shader(imp_fn, ctx.config))
+        glsl_fns += compile_named_shader(imp_fn, ctx.config)
 
-    return "".join(imported_strs) + out
+    glsl_fns.append(GLSLFunc(src=out, mangled_func_name=main_func_name))
+
+    return glsl_fns
 
 
 def compile_named_entry_shader_partial(
