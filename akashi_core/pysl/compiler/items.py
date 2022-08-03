@@ -57,3 +57,4 @@ class CompilerContext:
 class GLSLFunc:
     src: str
     mangled_func_name: str
+    func_decl: str

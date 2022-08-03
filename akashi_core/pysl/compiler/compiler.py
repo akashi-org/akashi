@@ -60,10 +60,12 @@ def compile_shaders(
         imported_glsl_fns += compile_named_shader(imp_fn, ctx.config)
 
     out_func_names = []
-    imported_strs = []
+    imported_decls = []
+    imported_defs = []
     for glsl_fn in imported_glsl_fns:
         if glsl_fn.mangled_func_name not in out_func_names:
-            imported_strs.append(glsl_fn.src)
+            imported_decls.append(glsl_fn.func_decl)
+            imported_defs.append(glsl_fn.src)
             out_func_names.append(glsl_fn.mangled_func_name)
 
-    return "".join(imported_strs) + ''.join(stmts)
+    return "".join(imported_decls) + "".join(imported_defs) + ''.join(stmts)

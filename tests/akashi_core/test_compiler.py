@@ -61,6 +61,7 @@ class TestMixed(unittest.TestCase):
             cl.x = module_global_add(1, 2)
 
         expected = ''.join([
+            'int test_compiler_module_global_add(int a, int b);',
             'int test_compiler_module_global_add(int a, int b){return (a) + (b);}',
             'void frag_main_1(inout vec4 color){color.x = test_compiler_module_global_add(1, 2);}',
             'void frag_main(inout vec4 color){(test_compiler_module_global_add(1, 2)) * (102);frag_main_1(color);}'
@@ -105,6 +106,8 @@ class TestOther(unittest.TestCase):
             color.x = another_func()
 
         expected = ''.join([
+            'float test_compiler_common_func();',
+            'float test_compiler_another_func();',
             'float test_compiler_common_func(){return 41;}',
             'float test_compiler_another_func(){return (test_compiler_common_func()) * (12);}',
             'void frag_main(inout vec4 color){float r = test_compiler_common_func();color.x = test_compiler_another_func();}'

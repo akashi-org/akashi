@@ -66,7 +66,7 @@ def collect_entry_argument_symbols(ctx: CompilerContext, deco_fn: tp.Callable, k
         ctx.lambda_args[var_name] = 'pos'
 
 
-def compile_func_all(node: ast.FunctionDef, ctx: CompilerContext, func_name: str) -> _TGLSL:
+def compile_func_all(node: ast.FunctionDef, ctx: CompilerContext, func_name: str) -> tuple[_TGLSL, _TGLSL]:
 
     ctx.top_indent = node.col_offset
 
@@ -89,7 +89,10 @@ def compile_func_all(node: ast.FunctionDef, ctx: CompilerContext, func_name: str
 
     body_str = body_converter(node.body, ctx, brace_on_ellipsis=False)
 
-    return f'{returns_str} {func_name}({args_str}){body_str}'
+    return (
+        f'{returns_str} {func_name}({args_str}){body_str}',
+        f'{returns_str} {func_name}({args_str});',
+    )
 
 
 def compile_func_body(node: ast.FunctionDef, ctx: CompilerContext) -> _TGLSL:
@@ -133,7 +136,7 @@ def compile_named_shader(
         raise CompileError('Named shader function must be decorated properly')
 
     main_func_name = mangled_func_name(ctx, deco_fn, False)
-    out = compile_func_all(func_def, ctx, main_func_name)
+    main_func_def, main_func_decl = compile_func_all(func_def, ctx, main_func_name)
 
     for imp_fn in imported_named_shader_fns:
         imp_shader_kind = to_shader_kind(tp.cast(tuple, inspect.getfullargspec(imp_fn).defaults)[0])
@@ -141,7 +144,11 @@ def compile_named_shader(
             raise CompileError(f'Forbidden import {imp_shader_kind} from {shader_kind}')
         glsl_fns += compile_named_shader(imp_fn, ctx.config)
 
-    glsl_fns.append(GLSLFunc(src=out, mangled_func_name=main_func_name))
+    glsl_fns.append(GLSLFunc(
+        src=main_func_def,
+        mangled_func_name=main_func_name,
+        func_decl=main_func_decl
+    ))
 
     return glsl_fns
 

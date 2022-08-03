@@ -92,6 +92,8 @@ class TestLambdaExpr(unittest.TestCase):
             )
 
         expected1 = ''.join([
+            'int compiler_fixtures_boost(int v);',
+            'int compiler_fixtures_boost_add(int a, int b);',
             'int compiler_fixtures_boost(int v){return (v) * (1000);}',
             'int compiler_fixtures_boost_add(int a, int b){return (a) + (compiler_fixtures_boost(b));}',
             'void frag_main(inout vec4 color){(compiler_fixtures_boost_add(1, 1890)) + ((999) * (sin(12)));}'
@@ -111,6 +113,7 @@ class TestLambdaExpr(unittest.TestCase):
             return lambda e, b, c: e(module_global_add(1, 2))
 
         expected1 = ''.join([
+            'int test_lambda_compiler_module_global_add(int a, int b);',
             'int test_lambda_compiler_module_global_add(int a, int b){return (a) + (b);}',
             'void frag_main(inout vec4 color){test_lambda_compiler_module_global_add(1, 2);}'
         ])
@@ -221,6 +224,8 @@ class TestLambdaMultiple(unittest.TestCase):
             )
 
         expected = ''.join([
+            'int compiler_fixtures_boost(int v);',
+            'int compiler_fixtures_boost_add(int a, int b);',
             'int compiler_fixtures_boost(int v){return (v) * (1000);}',
             'int compiler_fixtures_boost_add(int a, int b){return (a) + (compiler_fixtures_boost(b));}',
             'void frag_main_1(inout vec4 color){float z = (999) * (sin(time));(compiler_fixtures_boost_add(1, 1890)) + (z);}',

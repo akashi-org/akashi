@@ -438,6 +438,9 @@ class TestBuffer(unittest.TestCase):
             color.x = buffer.time * module_global_add(12, 1) * compiler_fixtures.boost_add(20, gl.outer(ddd))
 
         expected = ''.join([
+            'int test_named_compiler_module_global_add(int a, int b);',
+            'int compiler_fixtures_boost(int v);',
+            'int compiler_fixtures_boost_add(int a, int b);',
             'int test_named_compiler_module_global_add(int a, int b){return (a) + (b);}',
             'int compiler_fixtures_boost(int v){return (v) * (1000);}',
             'int compiler_fixtures_boost_add(int a, int b){return (a) + (compiler_fixtures_boost(b));}',
