@@ -95,8 +95,6 @@ namespace akashi {
                     layer_params.attr("rect").attr("height").cast<long>();
             } else if (kind_str == "CIRCLE") {
                 layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::CIRCLE;
-                layer_ctx->shape_layer_ctx.circle.lod =
-                    layer_params.attr("circle").attr("lod").cast<long>();
             } else if (kind_str == "TRIANGLE") {
                 layer_ctx->shape_layer_ctx.shape_kind = core::ShapeKind::TRIANGLE;
                 layer_ctx->shape_layer_ctx.tri.width =

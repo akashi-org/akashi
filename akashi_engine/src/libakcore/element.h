@@ -82,9 +82,7 @@ namespace akashi {
             int height = 0;
         };
 
-        struct CircleDetail {
-            int lod;
-        };
+        struct CircleDetail {};
 
         struct TriangleDetail {
             int width = 0;
