@@ -22,8 +22,26 @@ from typing import (
     Annotated,
     Type,
     Final,
+    NoReturn,
     TYPE_CHECKING
 )
+
+from _gl_common import uint
+from _gl_vec import gvec2, gvec3, gvec4
+
+
+vec4 = gvec4[float]
+ivec4 = gvec4[int]
+uvec4 = gvec4[uint]
+# bvec4 = gvec4[bool]
+
+vec3 = gvec3[float]
+ivec3 = gvec3[int]
+uvec3 = gvec3[uint]
+
+vec2 = gvec2[float]
+ivec2 = gvec2[int]
+uvec2 = gvec2[uint]
 
 if TYPE_CHECKING:
     from .shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
@@ -36,9 +54,6 @@ _TNumber = TypeVar('_TNumber', int, float)
 def outer(__expr: _T) -> _T:
     return __expr
 
-
-# [TODO] should we wrap it with NewType?
-uint = int
 
 ''' Builtin Functions '''
 
@@ -350,7 +365,7 @@ def texture(sampler: gsamplerCubeArrayShadow['_TGenSamplerType'],
             P: vec4, Q: float) -> float: ...
 
 
-def texture(sampler, P, Q=0) -> Any: ...
+def texture(sampler, P, Q: Any = 0) -> Any: ...
 
 
 #
@@ -363,413 +378,6 @@ in_p = Annotated[_T, 'in_p']
 out_p = Annotated[_T, 'out_p']
 
 inout_p = Annotated[_T, 'inout_p']
-
-
-@dataclass
-class __2d_prop(Generic[_TNumber]):
-
-    __value: list[_TNumber]
-
-    @property
-    def x(self) -> _TNumber:
-        return self.__value[0]
-
-    @x.setter
-    def x(self, item: _TNumber):
-        self.__value[0] = item
-
-    @property
-    def y(self) -> _TNumber:
-        return self.__value[1]
-
-    @y.setter
-    def y(self, item: _TNumber):
-        self.__value[1] = item
-
-    @property
-    def r(self) -> _TNumber:
-        return self.__value[0]
-
-    @r.setter
-    def r(self, item: _TNumber):
-        self.__value[0] = item
-
-    @property
-    def g(self) -> _TNumber:
-        return self.__value[1]
-
-    @g.setter
-    def g(self, item: _TNumber):
-        self.__value[1] = item
-
-    @property
-    def xy(self) -> gvec2[_TNumber]:
-        return gvec2[_TNumber](self.__value[0], self.__value[1])
-
-    @xy.setter
-    def xy(self, item: gvec2[_TNumber]):
-        self.__value[0] = item.x
-        self.__value[1] = item.y
-
-    @property
-    def rg(self) -> gvec2[_TNumber]:
-        return gvec2[_TNumber](self.__value[0], self.__value[1])
-
-    @rg.setter
-    def rg(self, item: gvec2[_TNumber]):
-        self.__value[0] = item.x
-        self.__value[1] = item.y
-
-
-@dataclass
-class __3d_prop(__2d_prop[_TNumber], Generic[_TNumber]):
-
-    __value: list[_TNumber]
-
-    @property
-    def z(self) -> _TNumber:
-        return self.__value[2]
-
-    @z.setter
-    def z(self, item: _TNumber):
-        self.__value[2] = item
-
-    @property
-    def b(self) -> _TNumber:
-        return self.__value[2]
-
-    @b.setter
-    def b(self, item: _TNumber):
-        self.__value[2] = item
-
-    @property
-    def yz(self) -> gvec2[_TNumber]:
-        return gvec2[_TNumber](self.__value[1], self.__value[2])
-
-    @yz.setter
-    def yz(self, item: gvec2[_TNumber]):
-        self.__value[1] = item.x
-        self.__value[2] = item.y
-
-    @property
-    def gb(self) -> gvec2[_TNumber]:
-        return gvec2[_TNumber](self.__value[1], self.__value[2])
-
-    @gb.setter
-    def gb(self, item: gvec2[_TNumber]):
-        self.__value[1] = item.x
-        self.__value[2] = item.y
-
-    @property
-    def xyz(self) -> gvec3[_TNumber]:
-        return gvec3[_TNumber](self.__value[0], self.__value[1], self.__value[2])
-
-    @xyz.setter
-    def xyz(self, item: gvec3[_TNumber]):
-        self.__value[0] = item.x
-        self.__value[1] = item.y
-        self.__value[2] = item.z
-
-    @property
-    def rgb(self) -> gvec3[_TNumber]:
-        return gvec3[_TNumber](self.__value[0], self.__value[1], self.__value[2])
-
-    @rgb.setter
-    def rgb(self, item: gvec3[_TNumber]):
-        self.__value[0] = item.x
-        self.__value[1] = item.y
-        self.__value[2] = item.z
-
-
-@dataclass
-class __4d_prop(__3d_prop[_TNumber], Generic[_TNumber]):
-
-    __value: list[_TNumber]
-
-    @property
-    def w(self) -> _TNumber:
-        return self.__value[3]
-
-    @w.setter
-    def w(self, item: _TNumber):
-        self.__value[3] = item
-
-    @property
-    def a(self) -> _TNumber:
-        return self.__value[3]
-
-    @a.setter
-    def a(self, item: _TNumber):
-        self.__value[3] = item
-
-    @property
-    def zw(self) -> gvec2[_TNumber]:
-        return gvec2[_TNumber](self.__value[2], self.__value[3])
-
-    @zw.setter
-    def zw(self, item: gvec2[_TNumber]):
-        self.__value[2] = item.x
-        self.__value[3] = item.y
-
-    @property
-    def ba(self) -> gvec2[_TNumber]:
-        return gvec2[_TNumber](self.__value[2], self.__value[3])
-
-    @ba.setter
-    def ba(self, item: gvec2[_TNumber]):
-        self.__value[2] = item.x
-        self.__value[3] = item.y
-
-    @property
-    def yzw(self) -> gvec3[_TNumber]:
-        return gvec3[_TNumber](self.__value[1], self.__value[2], self.__value[3])
-
-    @yzw.setter
-    def yzw(self, item: gvec3[_TNumber]):
-        self.__value[1] = item.x
-        self.__value[2] = item.y
-        self.__value[3] = item.z
-
-    @property
-    def gba(self) -> gvec3[_TNumber]:
-        return gvec3[_TNumber](self.__value[1], self.__value[2], self.__value[3])
-
-    @gba.setter
-    def gba(self, item: gvec3[_TNumber]):
-        self.__value[1] = item.x
-        self.__value[2] = item.y
-        self.__value[3] = item.z
-
-    @property
-    def xyzw(self) -> gvec4[_TNumber]:
-        return gvec4[_TNumber](self.__value[0], self.__value[1], self.__value[2], self.__value[3])
-
-    @xyzw.setter
-    def xyzw(self, item: gvec4[_TNumber]):
-        self.__value[0] = item.x
-        self.__value[1] = item.y
-        self.__value[2] = item.z
-        self.__value[3] = item.w
-
-    @property
-    def rgba(self) -> gvec4[_TNumber]:
-        return gvec4[_TNumber](self.__value[0], self.__value[1], self.__value[2], self.__value[3])
-
-    @rgba.setter
-    def rgba(self, item: gvec4[_TNumber]):
-        self.__value[0] = item.x
-        self.__value[1] = item.y
-        self.__value[2] = item.z
-        self.__value[3] = item.w
-
-
-@dataclass
-class gvec4(__4d_prop[_TNumber], Generic[_TNumber]):
-
-    __value: list[_TNumber]
-
-    def __init__(self, a1: _TNumber, a2: _TNumber, a3: _TNumber, a4: _TNumber):
-        self.__value = [a1, a2, a3, a4]
-
-    def __getitem__(self, idx: int):
-        return self.__value[idx]
-
-    def __setitem__(self, idx: int, item: _TNumber):
-        self.__value[idx] = item
-
-    def __len__(self):
-        return len(self.__value)
-
-    @overload
-    def __add__(self, other: _TNumber) -> gvec4[_TNumber]:
-        ...
-
-    @overload
-    def __add__(self, other: gvec4[_TNumber]) -> gvec4[_TNumber]:
-        ...
-
-    def __add__(self, other) -> gvec4[_TNumber]:
-        ...
-
-    @overload
-    def __sub__(self, other: _TNumber) -> gvec4[_TNumber]:
-        ...
-
-    @overload
-    def __sub__(self, other: gvec4[_TNumber]) -> gvec4[_TNumber]:
-        ...
-
-    def __sub__(self, other) -> gvec4[_TNumber]:
-        ...
-
-    @overload
-    def __mul__(self: gvec4[_TNumber], other: _TNumber) -> gvec4[_TNumber]:
-        ...
-
-    @overload
-    def __mul__(self: gvec4[_TNumber], other: gvec4[_TNumber]) -> gvec4[_TNumber]:
-        ...
-
-    def __mul__(self: gvec4[_TNumber], other: Any) -> gvec4[_TNumber]:
-        if isinstance(other, gvec4):
-            return gvec4(*[a * b for a, b in zip(self._value(), other._value())])
-        elif isinstance(other, int) or isinstance(other, float):
-            return gvec4(*cast(tuple[_TNumber, _TNumber, _TNumber, _TNumber], (a * other for a in self._value())))
-        else:
-            raise Exception('__mul__ is not supported')
-
-    @overload
-    def __truediv__(self, other: _TNumber) -> gvec4[_TNumber]:
-        ...
-
-    @overload
-    def __truediv__(self, other: gvec4[_TNumber]) -> gvec4[_TNumber]:
-        ...
-
-    def __truediv__(self, other) -> gvec4[_TNumber]:
-        ...
-
-    def _value(self) -> list[_TNumber]:
-        return self.__value
-
-
-vec4 = gvec4[float]
-ivec4 = gvec4[int]
-uvec4 = gvec4[uint]
-# bvec4 = gvec4[bool]
-
-
-@dataclass
-class gvec3(__3d_prop[_TNumber], Generic[_TNumber]):
-
-    __value: list[_TNumber]
-
-    def __init__(self, a1: _TNumber, a2: _TNumber, a3: _TNumber):
-        self.__value = [a1, a2, a3]
-
-    def __getitem__(self, idx: int):
-        return self.__value[idx]
-
-    def __setitem__(self, idx: int, item: _TNumber):
-        self.__value[idx] = item
-
-    def __len__(self):
-        return len(self.__value)
-
-    @overload
-    def __add__(self, other: _TNumber) -> gvec3[_TNumber]:
-        ...
-
-    @overload
-    def __add__(self, other: gvec3[_TNumber]) -> gvec3[_TNumber]:
-        ...
-
-    def __add__(self, other) -> gvec3[_TNumber]:
-        ...
-
-    @overload
-    def __sub__(self, other: _TNumber) -> gvec3[_TNumber]:
-        ...
-
-    @overload
-    def __sub__(self, other: gvec3[_TNumber]) -> gvec3[_TNumber]:
-        ...
-
-    def __sub__(self, other) -> gvec3[_TNumber]:
-        ...
-
-    @overload
-    def __mul__(self, other: _TNumber) -> gvec3[_TNumber]:
-        ...
-
-    @overload
-    def __mul__(self, other: gvec3[_TNumber]) -> gvec3[_TNumber]:
-        ...
-
-    def __mul__(self, other) -> gvec3[_TNumber]:
-        ...
-
-    @overload
-    def __truediv__(self, other: _TNumber) -> gvec3[_TNumber]:
-        ...
-
-    @overload
-    def __truediv__(self, other: gvec3[_TNumber]) -> gvec3[_TNumber]:
-        ...
-
-    def __truediv__(self, other) -> gvec3[_TNumber]:
-        ...
-
-
-@dataclass
-class gvec2(__2d_prop[_TNumber], Generic[_TNumber]):
-
-    __value: list[_TNumber]
-
-    def __init__(self, a1: _TNumber, a2: _TNumber):
-        self.__value = [a1, a2]
-
-    def __getitem__(self, idx: int):
-        return self.__value[idx]
-
-    def __setitem__(self, idx: int, item: _TNumber):
-        self.__value[idx] = item
-
-    def __len__(self):
-        return len(self.__value)
-
-    @overload
-    def __add__(self, other: _TNumber) -> gvec2[_TNumber]:
-        ...
-
-    @overload
-    def __add__(self, other: gvec2[_TNumber]) -> gvec2[_TNumber]:
-        ...
-
-    def __add__(self, other) -> gvec2[_TNumber]:
-        ...
-
-    @overload
-    def __sub__(self, other: _TNumber) -> gvec2[_TNumber]:
-        ...
-
-    @overload
-    def __sub__(self, other: gvec2[_TNumber]) -> gvec2[_TNumber]:
-        ...
-
-    def __sub__(self, other) -> gvec2[_TNumber]:
-        ...
-
-    @overload
-    def __mul__(self, other: _TNumber) -> gvec2[_TNumber]:
-        ...
-
-    @overload
-    def __mul__(self, other: gvec2[_TNumber]) -> gvec2[_TNumber]:
-        ...
-
-    def __mul__(self, other) -> gvec2[_TNumber]:
-        ...
-
-    @overload
-    def __truediv__(self, other: _TNumber) -> gvec2[_TNumber]:
-        ...
-
-    @overload
-    def __truediv__(self, other: gvec2[_TNumber]) -> gvec2[_TNumber]:
-        ...
-
-    def __truediv__(self, other) -> gvec2[_TNumber]:
-        ...
-
-
-vec3 = gvec3[float]
-ivec3 = gvec3[int]
-uvec3 = gvec3[uint]
-
-vec2 = gvec2[float]
-ivec2 = gvec2[int]
-uvec2 = gvec2[uint]
 
 
 def _default() -> Any:
@@ -1057,7 +665,7 @@ def lib(stage: _NamedFnStage) -> Callable[[Callable[_NamedFnP, _NamedFnR]], Call
     def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
         def wrapper(_stage: _NamedFnStage = stage, *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
             return f(*args, **kwargs)
-        return wrapper
+        return cast(Callable[_NamedFnP, _NamedFnR], wrapper)
     return deco
 
 
@@ -1091,7 +699,7 @@ def _entry_frag() -> Callable[['_NamedEntryFragFn'], _TEntryFnOpaque['_NamedEntr
     def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
         def wrapper(_stage: _NamedFnStage = 'frag', *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
             return f(*args, **kwargs)
-        return wrapper
+        return cast(Callable[_NamedFnP, _NamedFnR], wrapper)
     return deco  # type: ignore
 
 
@@ -1099,5 +707,5 @@ def _entry_poly() -> Callable[['_NamedEntryPolyFn'], _TEntryFnOpaque['_NamedEntr
     def deco(f: Callable[_NamedFnP, _NamedFnR]) -> Callable[_NamedFnP, _NamedFnR]:
         def wrapper(_stage: _NamedFnStage = 'poly', *args: _NamedFnP.args, **kwargs: _NamedFnP.kwargs) -> _NamedFnR:
             return f(*args, **kwargs)
-        return wrapper
+        return cast(Callable[_NamedFnP, _NamedFnR], wrapper)
     return deco  # type: ignore
