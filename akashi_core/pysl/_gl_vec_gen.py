@@ -66,30 +66,37 @@ def gen_props() -> list[str]:
 
 def gen_op() -> list[str]:
 
-    return [
+    headers = [
         '@dataclass',
-        'class _vec_op(tp.Generic[_TNumber]):',
-        '    @overload',
-        '    def __add__(self, other: _TNumber) -> Self: ...',
-        '    @overload',
-        '    def __add__(self, other: Self) -> Self: ...',
-        '    def __add__(self, other) -> Self: ...',
-        '    @overload',
-        '    def __sub__(self, other: _TNumber) -> Self: ...',
-        '    @overload',
-        '    def __sub__(self, other: Self) -> Self: ...',
-        '    def __sub__(self, other) -> Self: ...',
-        '    @overload',
-        '    def __mul__(self, other: _TNumber) -> Self: ...',
-        '    @overload',
-        '    def __mul__(self, other: Self) -> Self: ...',
-        '    def __mul__(self, other) -> Self: ...',
-        '    @overload',
-        '    def __truediv__(self, other: _TNumber) -> Self: ...',
-        '    @overload',
-        '    def __truediv__(self, other: Self) -> Self: ...',
-        '    def __truediv__(self, other) -> Self: ...'
+        'class _vec_op(tp.Generic[_TNumber]):'
     ]
+
+    bodies = []
+    for r in ['', 'r']:
+        bodies += [
+            f'@overload',
+            f'def __{r}add__(self, other: _TNumber) -> Self: ...',
+            f'@overload',
+            f'def __{r}add__(self, other: Self) -> Self: ...',
+            f'def __{r}add__(self, other) -> Self: ...',
+            f'@overload',
+            f'def __{r}sub__(self, other: _TNumber) -> Self: ...',
+            f'@overload',
+            f'def __{r}sub__(self, other: Self) -> Self: ...',
+            f'def __{r}sub__(self, other) -> Self: ...',
+            f'@overload',
+            f'def __{r}mul__(self, other: _TNumber) -> Self: ...',
+            f'@overload',
+            f'def __{r}mul__(self, other: Self) -> Self: ...',
+            f'def __{r}mul__(self, other) -> Self: ...',
+            f'@overload',
+            f'def __{r}truediv__(self, other: _TNumber) -> Self: ...',
+            f'@overload',
+            f'def __{r}truediv__(self, other: Self) -> Self: ...',
+            f'def __{r}truediv__(self, other) -> Self: ...'
+        ]
+
+    return headers + _indent(bodies)
 
 
 def gen_seq() -> list[str]:
