@@ -319,7 +319,8 @@ def tri(size: int | tuple[int, int, float] | tuple[int, int, float, float], *tra
         entry.shape.tri.height = size[1]
         entry.shape.tri.wr = size[2]
         if len(size) > 3:
-            entry.shape.tri.hr = 0 if (size[3] < 0 or size[3] > 1) else size[3]
+            _size = tp.cast(tuple[int, int, float, float], size)
+            entry.shape.tri.hr = 0 if (_size[3] < 0 or _size[3] > 1) else _size[3]
     else:
         entry.shape.tri.width = size
         entry.shape.tri.height = int(size * 0.5 * math.sqrt(3))

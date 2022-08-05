@@ -51,6 +51,10 @@ def collect_local_symbols(ctx: CompilerContext, deco_fn: tp.Callable) -> list[tp
 
     # variables which are referenced by deco_fn's closure
     for idx, freevar in enumerate(deco_fn.__code__.co_freevars):
+
+        if not(hasattr(deco_fn, '__closure__')) or not(deco_fn.__closure__):
+            continue
+
         value = deco_fn.__closure__[idx].cell_contents
 
         if callable(value) and (_fn := unwrap_shader_func(value)):
