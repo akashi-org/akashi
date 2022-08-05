@@ -1,3 +1,3 @@
+import typing as tp
 
-# [TODO] should we wrap it with NewType?
-uint = int
+uint = tp.NewType('uint', int)
