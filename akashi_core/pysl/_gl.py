@@ -33,15 +33,17 @@ from _gl_vec import gvec2, gvec3, gvec4
 vec4 = gvec4[float]
 ivec4 = gvec4[int]
 uvec4 = gvec4[uint]
-# bvec4 = gvec4[bool]
+bvec4 = gvec4[bool]
 
 vec3 = gvec3[float]
 ivec3 = gvec3[int]
 uvec3 = gvec3[uint]
+bvec3 = gvec3[bool]
 
 vec2 = gvec2[float]
 ivec2 = gvec2[int]
 uvec2 = gvec2[uint]
+bvec2 = gvec2[bool]
 
 if TYPE_CHECKING:
     from .shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
@@ -64,7 +66,7 @@ def EmitVertex() -> None: ...
 def EndPrimitive() -> None: ...
 
 
-# _TGenBType = TypeVar('_TGenBType', bool, 'bvec2', 'bvec3', 'bvec4')
+_TGenBType = TypeVar('_TGenBType', bool, 'bvec2', 'bvec3', 'bvec4')
 _TGenIType = TypeVar('_TGenIType', int, 'ivec2', 'ivec3', 'ivec4')
 _TGenUType = TypeVar('_TGenUType', uint, 'uvec2', 'uvec3', 'uvec4')
 _TGenType = TypeVar('_TGenType', float, 'vec2', 'vec3', 'vec4')
@@ -258,8 +260,9 @@ def smoothstep(edge0: float, edge1: float, x: _TGenType) -> _TGenType: ...
 
 def smoothstep(edge0, edge1, x) -> Any: ...
 
-# [TODO] mix has several overloads with _TGenBType.
-# Maybe we should define these later.
+
+@overload
+def mix(x: _TGenType, y: _TGenType, a: _TGenBType) -> _TGenType: ...
 
 
 @overload
@@ -298,6 +301,12 @@ def clamp(x: _TGenType, minVal: float, maxVal: float) -> _TGenType: ...
 
 
 def clamp(x, minVal, maxVal) -> Any: ...
+
+
+def isnan(x: _TGenType) -> _TGenBType: ...
+
+
+def isinf(x: _TGenType) -> _TGenBType: ...
 
 
 @overload
