@@ -410,6 +410,12 @@ def from_Call(node: ast.Call, ctx: CompilerContext) -> CallOut:
         content = evaluator.eval_node(node.args[0], ctx)
         return CallOut(node, args=[], content=content)
 
+    if ast.unparse(node).startswith('gl.inline_stmt'):
+        content = compile_expr(node.args[0], ctx).content
+        if content.endswith(';'):
+            content = content[0:-1]
+        return CallOut(node, args=[], content=content)
+
     func_str = compile_expr(node.func, ctx).content
     if func_str in ctx.imported_func_symbol:
         func_str = ctx.imported_func_symbol[func_str]
@@ -469,13 +475,15 @@ def from_Attribute(node: ast.Attribute, ctx: CompilerContext) -> AttributeOut:
     # global
     if value_str in ctx.global_symbol:
 
-        # ignore module variable
-        if inspect.ismodule(ctx.global_symbol[value_str]):
-            content = f'{attr_str}'
-            return AttributeOut(node, content)
-
         # ignore gl variable
         if value_str == 'gl' and hasattr(_gl, attr_str):
+            content = f'{attr_str}'
+            if attr_str in ['any_', 'all_', 'not_']:
+                content = content[0:-1]
+            return AttributeOut(node, content)
+
+        # ignore module variable
+        if inspect.ismodule(ctx.global_symbol[value_str]):
             content = f'{attr_str}'
             return AttributeOut(node, content)
 

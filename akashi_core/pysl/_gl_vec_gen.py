@@ -29,7 +29,7 @@ def _gen_prop(dim: int) -> list[str]:
 
     headers = [
         '@dataclass',
-        f'class _{dim}d_prop(tp.Generic[_TNumber]):',
+        f'class _{dim}d_prop(tp.Generic[_TItem]):',
         ''
     ]
 
@@ -38,7 +38,7 @@ def _gen_prop(dim: int) -> list[str]:
     for lsets in ['xyzw', 'rgba', 'stpq']:
         ndps = _nodup_letters(lsets[0:dim])
         for ndp in ndps:
-            tp = f'gvec{len(ndp)}[_TNumber]' if len(ndp) > 1 else '_TNumber'
+            tp = f'gvec{len(ndp)}[_TItem]' if len(ndp) > 1 else '_TItem'
             bodies += [
                 '@property',
                 f'def {ndp}(self) -> {tp}: ...',
@@ -46,7 +46,7 @@ def _gen_prop(dim: int) -> list[str]:
                 f'def {ndp}(self, value: {tp}): ...'
             ]
         for odp in _odup_letters(lsets[0:dim], ndps):
-            tp = f'gvec{len(odp)}[_TNumber]' if len(odp) > 1 else '_TNumber'
+            tp = f'gvec{len(odp)}[_TItem]' if len(odp) > 1 else '_TItem'
             bodies += [
                 '@property',
                 f'def {odp}(self) -> {tp}: ...'
@@ -68,29 +68,29 @@ def gen_op() -> list[str]:
 
     headers = [
         '@dataclass',
-        'class _vec_op(tp.Generic[_TNumber]):'
+        'class _vec_op(tp.Generic[_TItem]):'
     ]
 
     bodies = []
     for r in ['', 'r']:
         bodies += [
             f'@overload',
-            f'def __{r}add__(self, other: _TNumber) -> Self: ...',
+            f'def __{r}add__(self, other: _TItem) -> Self: ...',
             f'@overload',
             f'def __{r}add__(self, other: Self) -> Self: ...',
             f'def __{r}add__(self, other) -> Self: ...',
             f'@overload',
-            f'def __{r}sub__(self, other: _TNumber) -> Self: ...',
+            f'def __{r}sub__(self, other: _TItem) -> Self: ...',
             f'@overload',
             f'def __{r}sub__(self, other: Self) -> Self: ...',
             f'def __{r}sub__(self, other) -> Self: ...',
             f'@overload',
-            f'def __{r}mul__(self, other: _TNumber) -> Self: ...',
+            f'def __{r}mul__(self, other: _TItem) -> Self: ...',
             f'@overload',
             f'def __{r}mul__(self, other: Self) -> Self: ...',
             f'def __{r}mul__(self, other) -> Self: ...',
             f'@overload',
-            f'def __{r}truediv__(self, other: _TNumber) -> Self: ...',
+            f'def __{r}truediv__(self, other: _TItem) -> Self: ...',
             f'@overload',
             f'def __{r}truediv__(self, other: Self) -> Self: ...',
             f'def __{r}truediv__(self, other) -> Self: ...'
@@ -103,9 +103,9 @@ def gen_seq() -> list[str]:
 
     return [
         '@dataclass',
-        'class _vec_seq(tp.Generic[_TNumber]):',
-        '    def __getitem__(self, index: int) -> _TNumber: ...',
-        '    def __setitem__(self, index: int, value: _TNumber): ...',
+        'class _vec_seq(tp.Generic[_TItem]):',
+        '    def __getitem__(self, index: int) -> _TItem: ...',
+        '    def __setitem__(self, index: int, value: _TItem): ...',
         '    def length(self) -> int: ...',
     ]
 
@@ -116,27 +116,27 @@ def gen_vecs() -> list[str]:
 
     res += [
         '@dataclass',
-        'class gvec2(_2d_prop[_TNumber], _vec_seq[_TNumber], _vec_op[_TNumber], tp.Generic[_TNumber]):',
+        'class gvec2(_2d_prop[_TItem], _vec_seq[_TItem], _vec_op[_TItem], tp.Generic[_TItem]):',
         '    @overload',
-        '    def __init__(self, p1: _TNumber, p2: _TNumber): ...',
+        '    def __init__(self, p1: _UItem, p2: _UItem): ...',
         '    @overload',
         '    def __init__(self, p1: gvec2, p2: _Never = _NV): ...',
         '    @overload',
-        '    def __init__(self, p1: _TNumber, p2: _Never = _NV): ...',
+        '    def __init__(self, p1: _UItem, p2: _Never = _NV): ...',
         '    def __init__(self, p1: tp.Any, p2: tp.Any = None): ...'
     ]
 
     res += [
         '@dataclass',
-        'class gvec3(_3d_prop[_TNumber], _vec_seq[_TNumber], _vec_op[_TNumber], tp.Generic[_TNumber]):',
+        'class gvec3(_3d_prop[_TItem], _vec_seq[_TItem], _vec_op[_TItem], tp.Generic[_TItem]):',
         '    @overload',
-        '    def __init__(self, p1: _TNumber, p2: _TNumber, p3: _TNumber): ...',
+        '    def __init__(self, p1: _UItem, p2: _UItem, p3: _UItem): ...',
         '    @overload',
-        '    def __init__(self, p1: gvec2, p2: _TNumber, p3: _Never = _NV): ...',
+        '    def __init__(self, p1: gvec2, p2: _UItem, p3: _Never = _NV): ...',
         '    @overload',
-        '    def __init__(self, p1: _TNumber, p2: gvec2, p3: _Never = _NV): ...',
+        '    def __init__(self, p1: _UItem, p2: gvec2, p3: _Never = _NV): ...',
         '    @overload',
-        '    def __init__(self, p1: _TNumber, p2: _Never = _NV, p3: _Never = _NV): ...',
+        '    def __init__(self, p1: _UItem, p2: _Never = _NV, p3: _Never = _NV): ...',
         '    @overload',
         '    def __init__(self, p1: gvec3, p2: _Never = _NV, p3: _Never = _NV): ...',
         '    def __init__(self, p1: tp.Any, p2: tp.Any = None, p3: tp.Any = None): ...'
@@ -144,21 +144,21 @@ def gen_vecs() -> list[str]:
 
     res += [
         '@dataclass',
-        'class gvec4(_4d_prop[_TNumber], _vec_seq[_TNumber], _vec_op[_TNumber], tp.Generic[_TNumber]):',
+        'class gvec4(_4d_prop[_TItem], _vec_seq[_TItem], _vec_op[_TItem], tp.Generic[_TItem]):',
         '    @overload',
-        '    def __init__(self, p1: _TNumber, p2: _TNumber, p3: _TNumber, p4: _TNumber): ...',
+        '    def __init__(self, p1: _UItem, p2: _UItem, p3: _UItem, p4: _UItem): ...',
         '    @overload',
-        '    def __init__(self, p1: gvec3, p2: _TNumber, p3: _Never = _NV, p4: _Never = _NV): ...',
+        '    def __init__(self, p1: gvec3, p2: _UItem, p3: _Never = _NV, p4: _Never = _NV): ...',
         '    @overload',
-        '    def __init__(self, p1: _TNumber, p2: gvec3, p3: _Never = _NV, p4: _Never = _NV): ...',
+        '    def __init__(self, p1: _UItem, p2: gvec3, p3: _Never = _NV, p4: _Never = _NV): ...',
         '    @overload',
-        '    def __init__(self, p1: gvec2, p2: _TNumber, p3: _TNumber, p4: _Never = _NV): ...',
+        '    def __init__(self, p1: gvec2, p2: _UItem, p3: _UItem, p4: _Never = _NV): ...',
         '    @overload',
-        '    def __init__(self, p1: _TNumber, p2: gvec2, p3: _TNumber, p4: _Never = _NV): ...',
+        '    def __init__(self, p1: _UItem, p2: gvec2, p3: _UItem, p4: _Never = _NV): ...',
         '    @overload',
-        '    def __init__(self, p1: _TNumber, p2: _TNumber, p3: gvec2, p4: _Never = _NV): ...',
+        '    def __init__(self, p1: _UItem, p2: _UItem, p3: gvec2, p4: _Never = _NV): ...',
         '    @overload',
-        '    def __init__(self, p1: _TNumber, p2: _Never = _NV, p3: _Never = _NV, p4: _Never = _NV): ...',
+        '    def __init__(self, p1: _UItem, p2: _Never = _NV, p3: _Never = _NV, p4: _Never = _NV): ...',
         '    @overload',
         '    def __init__(self, p1: gvec4, p2: _Never = _NV, p3: _Never = _NV, p4: _Never = _NV): ...',
         '    def __init__(self, p1: tp.Any, p2: tp.Any = None, p3: tp.Any = None, p4: tp.Any = None): ...'
@@ -175,53 +175,45 @@ def gen_headers() -> list[str]:
         'import typing as tp',
         'from typing import overload',
         'from typing_extensions import Self',
-        "_TNumber = tp.TypeVar('_TNumber', int, float)",
+        'from ._gl_common import uint, double',
+        "_TItem = tp.TypeVar('_TItem', int, float, uint, double, bool)",
+        "_UItem = int | float | uint | double | bool",
         '_Never = tp.NoReturn',
         "_NV: tp.Any = None"
     ]
 
 
-def gen_alias() -> list[str]:
+def gen_aliases() -> list[str]:
 
     return [
-        'vec4 = gvec4[float]',
-        'ivec4 = gvec4[int]',
-        'uvec4 = gvec4[uint]',
-        'vec3 = gvec3[float]',
-        'ivec3 = gvec3[int]',
-        'uvec3 = gvec3[uint]',
-        'vec2 = gvec2[float]',
-        'ivec2 = gvec2[int]',
-        'uvec2 = gvec2[uint]'
+        "vec4 = gvec4[float]",
+        "ivec4 = gvec4[int]",
+        "uvec4 = gvec4[uint]",
+        "bvec4 = gvec4[bool]",
+        "dvec4 = gvec4[double]",
+        "vec3 = gvec3[float]",
+        "ivec3 = gvec3[int]",
+        "uvec3 = gvec3[uint]",
+        "bvec3 = gvec3[bool]",
+        "dvec3 = gvec3[double]",
+        "vec2 = gvec2[float]",
+        "ivec2 = gvec2[int]",
+        "uvec2 = gvec2[uint]",
+        "bvec2 = gvec2[bool]",
+        "dvec2 = gvec2[double]",
+        "_TGenBType = tp.TypeVar('_TGenBType', bool, 'bvec2', 'bvec3', 'bvec4')",
+        "_TGenUType = tp.TypeVar('_TGenUType', uint, 'uvec2', 'uvec3', 'uvec4')",
+        "_TGenDType = tp.TypeVar('_TGenDType', double, 'dvec2', 'dvec3', 'dvec4')",
+        "_TGenIType = tp.TypeVar('_TGenIType', int, 'ivec2', 'ivec3', 'ivec4')",
+        "_TGenType = tp.TypeVar('_TGenType', float, 'vec2', 'vec3', 'vec4')"
     ]
-
-
-def __quickcheck():
-
-    from _gl_vec import gvec2, gvec3, gvec4
-    # from _gl_common import uint
-
-    vec4 = gvec4[float]
-    ivec4 = gvec4[int]
-    # uvec4 = gvec4[uint]
-    bvec4 = gvec4[bool]
-
-    vec3 = gvec3[float]
-    ivec3 = gvec3[int]
-    # uvec3 = gvec3[uint]
-
-    vec2 = gvec2[float]
-    ivec2 = gvec2[int]
-    # uvec2 = gvec2[uint]
-
-    vec2(1).y = 12
 
 
 def main():
 
     outpath = path.normpath(path.join(path.dirname(path.abspath(__file__)), './_gl_vec.py'))
 
-    src = '\n'.join(gen_headers() + gen_seq() + gen_op() + gen_props() + gen_vecs())
+    src = '\n'.join(gen_headers() + gen_seq() + gen_op() + gen_props() + gen_vecs() + gen_aliases())
 
     with open(outpath, 'w') as f:
         f.write(src)

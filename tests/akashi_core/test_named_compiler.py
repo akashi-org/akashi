@@ -199,6 +199,32 @@ class TestBasic(unittest.TestCase):
 
         self.assertEqual(exec_compile_named_shader(is_positive, TEST_CONFIG), expected)
 
+    def test_slice(self):
+
+        @gl.lib('any')
+        def slice_exp() -> gl.vec2:
+            return gl.mat2(gl.vec2(1)[1], 1)[0]
+
+        expected = '\n'.join([
+            'vec2 test_named_compiler_slice_exp(){return mat2(vec2(1)[1], 1)[0];}',
+        ])
+
+        self.assertEqual(exec_compile_named_shader(slice_exp, TEST_CONFIG), expected)
+
+    def test_aliased_builtin_func(self):
+
+        @gl.lib('any')
+        def aliased_func() -> None:
+            gl.any_(gl.bvec2(True, False))
+            gl.all_(gl.bvec2(True, False))
+            gl.not_(gl.bvec2(True, False))
+
+        expected = '\n'.join([
+            'void test_named_compiler_aliased_func(){any(bvec2(true, false));all(bvec2(true, false));not(bvec2(true, false));}',
+        ])
+
+        self.assertEqual(exec_compile_named_shader(aliased_func, TEST_CONFIG), expected)
+
 
 class TestControl(unittest.TestCase):
 
@@ -518,3 +544,16 @@ class TestClosure(unittest.TestCase):
         ])
 
         self.assertEqual(compile_shaders((gen(999),), ak.frag, TEST_CONFIG), expected)
+
+
+class TestExtension(unittest.TestCase):
+
+    def test_inline(self):
+
+        @gl.lib('any')
+        def inline_stmt_func() -> None:
+            gl.inline_stmt('return 12;')
+
+        expected = 'void test_named_compiler_inline_stmt_func(){return 12;}'
+
+        self.assertEqual(exec_compile_named_shader(inline_stmt_func, TEST_CONFIG), expected)

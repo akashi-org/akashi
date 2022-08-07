@@ -1,0 +1,11 @@
+{
+  "include": ["tests/akashi_core/typing_tests"],
+  "verboseOutput": true,
+  "typeCheckingMode": "basic",
+  "reportImportCycles": "none",
+  "strictListInference": true,
+  "strictDictionaryInference": true,
+  "strictParameterNoneValue": true,
+  "reportPrivateUsage": "error",
+  "reportIncompatibleMethodOverride": true
+}
