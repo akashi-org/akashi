@@ -31,6 +31,7 @@ add_library(${PROJECT_NAME} STATIC
 
 target_compile_definitions(${PROJECT_NAME} 
   PRIVATE CATCH_CONFIG_ENABLE_BENCHMARKING
+  PRIVATE CATCH_CONFIG_NO_POSIX_SIGNALS # https://github.com/catchorg/Catch2/issues/2192
 )
 
 target_include_directories(${PROJECT_NAME}
