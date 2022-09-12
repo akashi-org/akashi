@@ -68,7 +68,7 @@ namespace akashi {
             bool update_active_layers(void);
 
           private:
-            const core::Rational BLOCK_SIZE = core::Rational(3l); // 3s
+            const core::Rational BLOCK_SIZE = core::Rational(1l); // 3s
 
           private:
             std::vector<core::owned_ptr<LayerSource>> m_layer_sources;
