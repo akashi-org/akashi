@@ -94,6 +94,15 @@ class sec(Fraction):
     # def __rpow__(self, other: _SEC_LIKE) -> sec:
     #     return sec(super().__rpow__(sec(other)))
 
+    def __pos__(self) -> sec:
+        return sec(super().__pos__())
+
+    def __neg__(self) -> sec:
+        return sec(super().__neg__())
+
+    def __abs__(self) -> sec:
+        return sec(super().__abs__())
+
     def __eq__(self, other: _SEC_LIKE) -> bool:
         return super().__eq__(sec(other))
 
