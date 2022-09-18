@@ -52,6 +52,9 @@ namespace akashi {
             std::string out_fname;
             std::string video_codec;
             std::string audio_codec;
+            std::string ffmpeg_format_opts;
+            std::string video_ffmpeg_codec_opts;
+            std::string audio_ffmpeg_codec_opts;
             size_t encode_max_queue_count;
             VideoEncodeMethod encode_method;
         };

@@ -78,6 +78,9 @@ VideoEncodeMethod = Literal['', 'sw', 'vaapi', 'vaapi_copy']
 class EncodeConf:
     video_codec: str = ''
     audio_codec: str = ''
+    ffmpeg_format_opts: str = ''
+    video_ffmpeg_codec_opts: str = ''
+    audio_ffmpeg_codec_opts: str = ''
     encode_max_queue_count: int = 10  # max queue element counts
     encode_method: VideoEncodeMethod = 'sw'
     out_fname: str = field(default='', init=False)

@@ -26,7 +26,15 @@ def akconfig():
             resolution=(800, 450)  # initial resolution of the monitor
         ),
         encode=ak.EncodeConf(
-            video_codec='libx264',
-            audio_codec='aac'
+            # ffmpeg_format_opts="movflags=+faststart",
+
+            video_codec='libx264', encode_method='sw',
+            # video_ffmpeg_codec_opts="profile=high level=4.0 crf=22",
+
+            # video_codec='h264_vaapi', encode_method='vaapi',
+            # video_ffmpeg_codec_opts="profile=high level=4.0 qp=15",
+
+            audio_codec='aac',
+            # audio_ffmpeg_codec_opts="b=384k",
         )
     )

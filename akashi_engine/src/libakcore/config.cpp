@@ -24,7 +24,9 @@ namespace akashi {
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(UIConf, resolution, window_mode, smart_immersive,
                                            frameless_window);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(EncodeConf, out_fname, video_codec, audio_codec,
-                                           encode_max_queue_count, encode_method);
+                                           ffmpeg_format_opts, video_ffmpeg_codec_opts,
+                                           audio_ffmpeg_codec_opts, encode_max_queue_count,
+                                           encode_method);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AKConf, general, video, audio, playback, ui, encode);
 
         // clang-format off
