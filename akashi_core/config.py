@@ -31,6 +31,7 @@ class VideoConf:
     resolution: Tuple[int, int] = (1920, 1080)
     default_font_path: str = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
     msaa: int = 1  # msaa >= 1
+    vaapi_device: str = ''  # ex. /dev/dri/renderD128
 
 
 AudioSampleFormat = Literal['', 'u8', 's16', 's32', 'flt', 'dbl']

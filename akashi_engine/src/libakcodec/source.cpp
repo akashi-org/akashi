@@ -43,13 +43,11 @@ namespace akashi {
         void AtomSource::init(const core::Rational& global_duration,
                               const core::AtomProfile& atom_profile,
                               const core::Rational& decode_start,
-                              const core::VideoDecodeMethod& preferred_decode_method,
-                              const size_t video_max_queue_count) {
+                              const DecodeArg& init_decode_arg) {
             m_done_init = true;
             m_atom_profile = atom_profile;
             m_global_duration = global_duration;
-            m_preferred_decode_method = preferred_decode_method;
-            m_video_max_queue_count = video_max_queue_count;
+            m_init_decode_arg = init_decode_arg;
             m_dts_src = decode_start;
             m_dts_dest = (std::min)(m_dts_src + this->BLOCK_SIZE, m_global_duration);
 
@@ -132,7 +130,7 @@ namespace akashi {
                 if (!m_layer_sources[i]->done_init()) {
                     // [TODO] is it really ok to pass m_dts_src?
                     m_layer_sources[i]->init(m_atom_profile.av_layers[i], m_dts_src,
-                                             m_preferred_decode_method, m_video_max_queue_count);
+                                             m_init_decode_arg);
                 }
 
                 if (m_layer_sources[i]->can_decode()) {

@@ -26,6 +26,7 @@ namespace akashi {
             std::pair<int, int> resolution;
             std::string default_font_path;
             int msaa;
+            std::string vaapi_device;
         };
 
         struct AudioConf : AKAudioSpec {};

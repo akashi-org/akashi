@@ -27,6 +27,7 @@ namespace akashi {
                     state->m_atomic_state.preferred_decode_method.load();
                 // [TODO] this value should be changed
                 decode_args.video_max_queue_count = state->m_prop.video_max_queue_count;
+                decode_args.vaapi_device = state->m_video_conf.vaapi_device;
             }
 
             while (true) {

@@ -2,6 +2,7 @@
 
 #include "./error.h"
 #include "./utils.h"
+#include "./hwaccel.h"
 #include "../../encode_item.h"
 
 #include <libakcore/logger.h>
@@ -178,23 +179,11 @@ namespace akashi {
             }
 
             // init hwdevice ctx if necessary
-            if (m_encode_method == VideoEncodeMethod::VAAPI ||
-                m_encode_method == VideoEncodeMethod::VAAPI_COPY) {
-                if (auto ret = av_hwdevice_ctx_create(&m_hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI,
-                                                      NULL, NULL, 0);
-                    ret < 0) {
-                    AKLOG_ERROR("av_hwdevice_ctx_create() failed, code={}({})", AVERROR(ret),
-                                av_err2str(ret));
-                    return false;
-                }
-                {
-                    auto raw_hw_device_ctx = (AVHWDeviceContext*)m_hw_device_ctx->data;
-                    auto dpy =
-                        static_cast<AVVAAPIDeviceContext*>(raw_hw_device_ctx->hwctx)->display;
-                    AKLOG_INFO("VADisplay: {}", dpy ? "ok" : "null");
-                    AKLOG_INFO("VA Vendor String: {}", vaQueryVendorString(dpy));
-                }
+            if (create_hwdevice_ctx(m_hw_device_ctx, hwaccel::safe_map(m_encode_method),
+                                    m_state->m_video_conf.vaapi_device) < 0) {
+                return false;
             }
+            show_hwdevice_info(m_hw_device_ctx, hwaccel::safe_map(m_encode_method));
 
             // init streams
             if (m_state->m_encode_conf.video_codec != "" && !this->init_video_stream()) {

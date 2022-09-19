@@ -20,6 +20,7 @@ namespace akashi {
             core::AKAudioSpec out_audio_spec;
             core::VideoDecodeMethod preferred_decode_method;
             size_t video_max_queue_count;
+            std::string vaapi_device;
         };
 
         enum class DecodeResultCode {

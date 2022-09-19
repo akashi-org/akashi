@@ -1,6 +1,6 @@
 #include "./source.h"
 
-#include "./hwdec.h"
+#include "./hwaccel.h"
 #include "./pts.h"
 #include "./error.h"
 #include "./buffer.h"
@@ -29,12 +29,10 @@ namespace akashi {
 
         bool FFLayerSource::init(const core::LayerProfile& layer_profile,
                                  const core::Rational& decode_start,
-                                 const core::VideoDecodeMethod& preferred_decode_method,
-                                 const size_t video_max_queue_count) {
+                                 const DecodeArg& init_decode_arg) {
             m_input_src.init_called = true;
 
-            if (!this->init_inputsrc(layer_profile, decode_start, preferred_decode_method,
-                                     video_max_queue_count)) {
+            if (!this->init_inputsrc(layer_profile, decode_start, init_decode_arg)) {
                 AKLOG_ERRORN("FFLayerSource::init(): Failed to parse input from argument");
                 return false;
             }
@@ -202,15 +200,14 @@ namespace akashi {
 
         bool FFLayerSource::init_inputsrc(const core::LayerProfile& layer_profile,
                                           const core::Rational& decode_start,
-                                          const core::VideoDecodeMethod& preferred_decode_method,
-                                          const size_t video_max_queue_count) {
+                                          const DecodeArg& init_decode_arg) {
             m_input_src.layer_prof = layer_profile;
             m_input_src.act_dur = layer_profile.end - layer_profile.start;
-            m_input_src.preferred_decode_method = preferred_decode_method;
-            m_input_src.video_max_queue_count = video_max_queue_count;
+            m_input_src.preferred_decode_method = init_decode_arg.preferred_decode_method;
+            m_input_src.video_max_queue_count = init_decode_arg.video_max_queue_count;
 
             if (m_input_src.preferred_decode_method == core::VideoDecodeMethod::SW) {
-                m_input_src.decode_method = preferred_decode_method;
+                m_input_src.decode_method = init_decode_arg.preferred_decode_method;
             }
 
             auto r_dts = decode_start - m_input_src.layer_prof.from;
@@ -224,7 +221,7 @@ namespace akashi {
             if (this->read_avformat() < 0) {
                 return false;
             }
-            if ((this->read_avstream() < 0)) {
+            if ((this->read_avstream(init_decode_arg) < 0)) {
                 return false;
             }
 
@@ -282,7 +279,7 @@ namespace akashi {
             return ret;
         }
 
-        int FFLayerSource::read_avstream() {
+        int FFLayerSource::read_avstream(const DecodeArg& init_decode_arg) {
             AVFormatContext* format_ctx = m_input_src.ifmt_ctx;
             m_input_src.dec_streams.reserve(format_ctx->nb_streams);
             m_input_src.dec_streams.resize(format_ctx->nb_streams);
@@ -312,7 +309,9 @@ namespace akashi {
                         if (validate_hwconfig(&m_input_src.decode_method, av_codec,
                                               m_input_src.preferred_decode_method)) {
                             // [TODO] error handling?
-                            codec::create_hwdevice_ctx(m_input_src, m_input_src.decode_method);
+                            codec::create_hwdevice_ctx(m_input_src.hw_device_ctx,
+                                                       m_input_src.decode_method,
+                                                       init_decode_arg.vaapi_device);
                         }
                     }
 

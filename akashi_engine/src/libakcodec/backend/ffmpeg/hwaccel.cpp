@@ -1,4 +1,4 @@
-#include "./hwdec.h"
+#include "./hwaccel.h"
 
 #include "./source.h"
 #include "./buffer.h"
@@ -21,13 +21,15 @@ using namespace akashi::core;
 namespace akashi {
     namespace codec {
 
-        int create_hwdevice_ctx(InputSource& input_src,
-                                const core::VideoDecodeMethod decode_method) {
+        int create_hwdevice_ctx(AVBufferRef*& hw_device_ctx,
+                                const core::VideoDecodeMethod decode_method,
+                                const std::string& device_str) {
             switch (decode_method) {
                 case core::VideoDecodeMethod::VAAPI:
                 case core::VideoDecodeMethod::VAAPI_COPY: {
-                    auto ret = av_hwdevice_ctx_create(&input_src.hw_device_ctx,
-                                                      AV_HWDEVICE_TYPE_VAAPI, NULL, NULL, 0);
+                    auto ret = av_hwdevice_ctx_create(
+                        &hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI,
+                        device_str.empty() ? nullptr : device_str.c_str(), nullptr, 0);
                     if (ret < 0) {
                         AKLOG_ERROR("av_hwdevice_ctx_create(() failed, code={}({})", AVERROR(ret),
                                     av_err2str(ret));
@@ -42,33 +44,36 @@ namespace akashi {
             return 0;
         }
 
-        void show_hwdevice_info(const InputSource& input_src,
-                                const core::VideoDecodeMethod decode_method) {
+        void show_hwdevice_info(AVBufferRef*& hw_device_ctx,
+                                const core::VideoDecodeMethod decode_method, bool show_profiles) {
             switch (decode_method) {
                 case core::VideoDecodeMethod::VAAPI:
                 case core::VideoDecodeMethod::VAAPI_COPY: {
-                    auto raw_hw_device_ctx = (AVHWDeviceContext*)input_src.hw_device_ctx->data;
+                    auto raw_hw_device_ctx = (AVHWDeviceContext*)hw_device_ctx->data;
                     auto dpy =
                         static_cast<AVVAAPIDeviceContext*>(raw_hw_device_ctx->hwctx)->display;
 
                     AKLOG_INFO("VADisplay: {}", dpy ? "ok" : "null");
                     AKLOG_INFO("VA Vendor String: {}", vaQueryVendorString(dpy));
 
-                    int va_max_num_profiles = vaMaxNumProfiles(dpy);
-                    auto va_profiles =
-                        static_cast<VAProfile*>(malloc(sizeof(VAProfile) * va_max_num_profiles));
-                    if (va_profiles) {
-                        int va_num_profiles = -1;
-                        if (VAStatus status =
-                                vaQueryConfigProfiles(dpy, va_profiles, &va_num_profiles);
-                            status != VA_STATUS_SUCCESS) {
-                            AKLOG_INFO("vaQueryConfigProfiles() failed: {}", vaErrorStr(status));
-                        } else {
-                            for (int i = 0; i < va_num_profiles; i++) {
-                                AKLOG_INFO("VAProfiles: {}", static_cast<int>(va_profiles[i]));
+                    if (show_profiles) {
+                        int va_max_num_profiles = vaMaxNumProfiles(dpy);
+                        auto va_profiles = static_cast<VAProfile*>(
+                            malloc(sizeof(VAProfile) * va_max_num_profiles));
+                        if (va_profiles) {
+                            int va_num_profiles = -1;
+                            if (VAStatus status =
+                                    vaQueryConfigProfiles(dpy, va_profiles, &va_num_profiles);
+                                status != VA_STATUS_SUCCESS) {
+                                AKLOG_INFO("vaQueryConfigProfiles() failed: {}",
+                                           vaErrorStr(status));
+                            } else {
+                                for (int i = 0; i < va_num_profiles; i++) {
+                                    AKLOG_INFO("VAProfiles: {}", static_cast<int>(va_profiles[i]));
+                                }
                             }
+                            free(va_profiles);
                         }
-                        free(va_profiles);
                     }
                     break;
                 }

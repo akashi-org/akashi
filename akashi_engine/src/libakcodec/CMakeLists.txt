@@ -18,7 +18,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./source.cpp"
   "./backend/ffmpeg/source.cpp"
   "./backend/ffmpeg/sink.cpp"
-  "./backend/ffmpeg/hwdec.cpp"
+  "./backend/ffmpeg/hwaccel.cpp"
   "./backend/ffmpeg/buffer.cpp"
   "./backend/ffmpeg/utils.cpp"
   "./backend/ffmpeg/pts.cpp"
