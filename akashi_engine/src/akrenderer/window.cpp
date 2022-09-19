@@ -221,7 +221,7 @@ namespace akashi {
             }
         }
 
-        void Window::mousePressEvent(QMouseEvent* event) { m_lastMouse = event->pos(); }
+        void Window::mousePressEvent(QMouseEvent* event) { m_lastMouse = event->globalPos(); }
 
         void Window::mouseReleaseEvent(QMouseEvent*) {
             // ensure the parent window to be raised
@@ -229,7 +229,8 @@ namespace akashi {
         }
 
         void Window::mouseMoveEvent(QMouseEvent* event) {
-            this->move(this->pos() + (event->pos() - m_lastMouse));
+            this->move(this->pos() + (event->globalPos() - m_lastMouse));
+            m_lastMouse = event->globalPos();
         }
 
         void Window::mouseDoubleClickEvent(QMouseEvent*) {
