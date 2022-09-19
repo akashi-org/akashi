@@ -25,12 +25,16 @@ class GenerelConf:
     include_dir: str
 
 
+VideoDecodeMethod = Literal['', 'sw', 'vaapi', 'vaapi_copy']
+
+
 @dataclass(frozen=True)
 class VideoConf:
     fps: sec = sec(24)
     resolution: Tuple[int, int] = (1920, 1080)
     default_font_path: str = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
     msaa: int = 1  # msaa >= 1
+    preferred_decode_method: VideoDecodeMethod = 'vaapi'
     vaapi_device: str = ''  # ex. /dev/dri/renderD128
 
 
@@ -48,14 +52,10 @@ class AudioConf:
     channel_layout: AudioChannelLayout = 'stereo'
 
 
-VideoDecodeMethod = Literal['', 'sw', 'vaapi', 'vaapi_copy']
-
-
 @dataclass(frozen=True)
 class PlaybackConf:
     enable_loop: bool = True
     gain: float = 0.5  # 0 ~ 1.0
-    preferred_decode_method: VideoDecodeMethod = 'vaapi'
     video_max_queue_size: int = 1024 * 1024 * 300  # 300mb
     video_max_queue_count: int = 64  # max frame counts (applicable for hwdec)
     audio_max_queue_size: int = 1024 * 1024 * 10  # 10mb

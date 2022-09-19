@@ -11,7 +11,8 @@ def akconfig():
         video=ak.VideoConf(
             fps=ak.sec(30),
             resolution=(1920, 1080),
-            msaa=1
+            msaa=1,
+            preferred_decode_method='vaapi',  # if you prefer software decoding, set 'sw' instead
         ),
         audio=ak.AudioConf(
             format='flt',
@@ -20,7 +21,7 @@ def akconfig():
             channel_layout='stereo'
         ),
         playback=ak.PlaybackConf(
-            preferred_decode_method='vaapi',  # if you prefer software decoding, set 'sw' instead
+            gain=0.5  # 0 ~ 1.0
         ),
         ui=ak.UIConf(
             resolution=(800, 450)  # initial resolution of the monitor

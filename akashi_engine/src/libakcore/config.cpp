@@ -16,12 +16,11 @@ namespace akashi {
 
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GenerelConf, entry_file, include_dir);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VideoConf, fps, resolution, default_font_path, msaa,
-                                           vaapi_device);
+                                           preferred_decode_method, vaapi_device);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AudioConf, format, sample_rate, channels,
                                            channel_layout);
-        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PlaybackConf, enable_loop, gain, preferred_decode_method,
-                                           video_max_queue_size, video_max_queue_count,
-                                           audio_max_queue_size);
+        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PlaybackConf, enable_loop, gain, video_max_queue_size,
+                                           video_max_queue_count, audio_max_queue_size);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(UIConf, resolution, window_mode, smart_immersive,
                                            frameless_window);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(EncodeConf, out_fname, video_codec, audio_codec,
