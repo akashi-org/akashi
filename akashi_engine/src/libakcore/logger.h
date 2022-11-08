@@ -179,6 +179,7 @@ namespace akashi {
                 AKPRIV_RETURN_TAGSTR("libakserver");
                 AKPRIV_RETURN_TAGSTR("libakstate");
                 AKPRIV_RETURN_TAGSTR("libakevent");
+                AKPRIV_RETURN_TAGSTR("libakdebug");
                 return "???";
             }
 

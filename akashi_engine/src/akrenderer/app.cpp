@@ -11,6 +11,10 @@
 #include <libakcore/logger.h>
 #include <libakcore/config.h>
 
+#ifndef NDEBUG
+#include <libakdebug/akdebug.h>
+#endif
+
 #include <QApplication>
 #include <QTextCodec>
 #include <thread>
@@ -84,6 +88,13 @@ namespace akashi {
                 window.showFullScreen();
             }
 
+#ifndef NDEBUG
+            if (std::getenv("AK_DEBUG_WINDOW")) {
+                debug::ListWidget::get().init({});
+                debug::ListWidget::get().run();
+            }
+#endif
+
             if (state.m_ui_conf.window_mode != core::WindowMode::INDEPENDENT) {
                 auto disp = get_x_display();
                 auto parent_win = get_current_active_window(disp);
@@ -133,6 +144,12 @@ namespace akashi {
             asp_thread.detach();
 
             app.exec();
+
+#ifndef NDEBUG
+            if (std::getenv("AK_DEBUG_WINDOW")) {
+                debug::ListWidget::get().destroy();
+            }
+#endif
 
             AKLOG_INFON("UILoop::ui_thread(): Successfully exited");
         };

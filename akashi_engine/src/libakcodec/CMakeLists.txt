@@ -54,6 +54,7 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE akcore
   PRIVATE akbuffer
   PRIVATE akstate # for akencoder
+  PUBLIC $<$<CONFIG:Debug>:akdebug>
   PRIVATE Threads::Threads
   PRIVATE ${AVDEVICE_LIBRARIES}
   PRIVATE ${AVFORMAT_LIBRARIES}
