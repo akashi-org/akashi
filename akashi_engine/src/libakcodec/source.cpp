@@ -9,6 +9,10 @@
 #include <libakcore/string.h>
 #include <libakbuffer/avbuffer.h>
 
+#ifndef NDEBUG
+#include <libakdebug/akdebug.h>
+#endif
+
 using namespace akashi::core;
 
 namespace akashi {
@@ -19,19 +23,43 @@ namespace akashi {
 
         namespace priv {
 
-            static core::Rational update_dts_src(const TActiveLayers& active_layers) {
+            static bool ENV_AK_DEBUG_WINDOW = false;
+
+            static core::Rational find_dts_src(const TActiveLayers& active_layers) {
                 core::Rational dts_src = core::Rational(INT32_MAX, 1);
                 for (const auto& layer : active_layers) {
                     if (layer->can_decode() && layer->dts() < dts_src) {
                         dts_src = layer->dts();
                     }
                 }
+
                 return dts_src;
+            }
+
+            static void debug_out_dts(const std::string& field_name, const core::Rational& dts) {
+#ifndef NDEBUG
+                if (ENV_AK_DEBUG_WINDOW) {
+                    debug::ListWidget::get().add_field(field_name.c_str(),
+                                                       std::to_string(dts.to_decimal()));
+                }
+#endif
+            }
+
+            static void debug_out_layer_dts(const LayerProfile& layer, const core::Rational& dts) {
+#ifndef NDEBUG
+                if (ENV_AK_DEBUG_WINDOW) {
+                    auto layer_key = layer.src + "(" + layer.uuid + "," +
+                                     std::to_string(layer.from.to_decimal()) + ")";
+                    debug::ListWidget::get().add_field(layer_key, std::to_string(dts.to_decimal()));
+                }
+#endif
             }
 
         }
 
-        AtomSource::AtomSource() {}
+        AtomSource::AtomSource() {
+            priv::ENV_AK_DEBUG_WINDOW = std::getenv("AK_DEBUG_WINDOW") != nullptr;
+        }
 
         AtomSource::~AtomSource() {
             for (auto&& layer_source : m_layer_sources) {
@@ -51,7 +79,11 @@ namespace akashi {
             m_dts_src = decode_start;
             m_dts_dest = (std::min)(m_dts_src + this->BLOCK_SIZE, m_global_duration);
 
+            priv::debug_out_dts("m_dts_src", m_dts_src);
+            priv::debug_out_dts("m_dts_dest", m_dts_dest);
+
             for (size_t i = 0; i < atom_profile.av_layers.size(); i++) {
+                priv::debug_out_layer_dts(atom_profile.av_layers[i], core::Rational(0l));
                 m_layer_sources.push_back(make_owned<FFLayerSource>());
             }
 
@@ -82,17 +114,24 @@ namespace akashi {
                 decode_result = cur_layer_source->decode(decode_arg);
 
                 m_current_active_layer_idx += 1;
+
+                priv::debug_out_layer_dts(cur_layer_source->layer_profile(),
+                                          cur_layer_source->dts());
+
                 return decode_result;
             }
 
             const auto active_layer_len = this->active_layer_length();
 
             if (active_layer_len != 0) {
-                m_dts_src = priv::update_dts_src(m_active_layers);
+                m_dts_src = priv::find_dts_src(m_active_layers);
+                priv::debug_out_dts("m_dts_src", m_dts_src);
             }
 
             auto atom_eof = false;
             if (active_layer_len < 2 || (m_dts_dest - m_dts_src) < core::Rational(100, 1000)) {
+                m_dts_dest = (std::min)(m_dts_src + this->BLOCK_SIZE, m_global_duration);
+                priv::debug_out_dts("m_dts_dest", m_dts_dest);
                 atom_eof = !this->update_active_layers();
             }
 
@@ -122,8 +161,9 @@ namespace akashi {
 
             for (size_t i = 0; i < m_atom_profile.av_layers.size(); i++) {
                 const auto& layer_prof = m_atom_profile.av_layers[i];
-                auto within_block = m_dts_src <= layer_prof.to && layer_prof.from <= m_dts_dest;
-                if (!within_block) {
+                auto has_intersect =
+                    not(layer_prof.to < m_dts_src) && not(layer_prof.from > m_dts_dest);
+                if (!has_intersect) {
                     continue;
                 }
 
@@ -140,15 +180,20 @@ namespace akashi {
 
             if (m_active_layers.size() == 0) {
                 if (m_dts_dest == m_global_duration) {
+                    priv::debug_out_dts("m_dts_src", m_dts_src);
+                    priv::debug_out_dts("m_dts_dest", m_dts_dest);
                     return false;
                 } else {
                     m_dts_src = m_dts_dest;
                     m_dts_dest = (std::min)(m_dts_src + this->BLOCK_SIZE, m_global_duration);
+                    priv::debug_out_dts("m_dts_src", m_dts_src);
+                    priv::debug_out_dts("m_dts_dest", m_dts_dest);
                     return this->update_active_layers();
                 }
             }
 
-            m_dts_dest = (std::min)(m_dts_src + this->BLOCK_SIZE, m_global_duration);
+            priv::debug_out_dts("m_dts_src", m_dts_src);
+            priv::debug_out_dts("m_dts_dest", m_dts_dest);
             return true;
         }
 
