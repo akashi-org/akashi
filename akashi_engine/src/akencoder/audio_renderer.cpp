@@ -8,6 +8,8 @@
 #include <libakbuffer/avbuffer.h>
 #include <libakbuffer/audio_buffer.h>
 
+#include <stdexcept>
+
 using namespace akashi::core;
 
 namespace akashi {
@@ -38,16 +40,21 @@ namespace akashi {
                 queue_data.nb_samples = nb_samples_per_frame;
                 queue_data.type = buffer::AVBufferType::AUDIO;
 
-                auto result = abuffer->dequeue(queue_data.buffer.get(), queue_data.buf_size);
-                if (result == buffer::AudioBuffer::Result::OUT_OF_RANGE) {
-                    auto before_pts = abuffer->cur_pts();
-                    abuffer->seek(queue_data.buf_size);
-                    AKLOG_ERROR("AudioBuffer Seeked {} => {}", before_pts.to_decimal(),
-                                abuffer->cur_pts().to_decimal());
-                    continue;
-                } else if (result != buffer::AudioBuffer::Result::OK) {
+                auto result =
+                    abuffer->dequeue(queue_data.buffer.get(), queue_data.buf_size, queue_data.pts);
+                // if (result == buffer::AudioBuffer::Result::OUT_OF_RANGE) {
+                //     auto before_pts = abuffer->cur_pts();
+                //     abuffer->seek(queue_data.buf_size);
+                //     AKLOG_ERROR("AudioBuffer Seeked {} => {}", before_pts.to_decimal(),
+                //                 abuffer->cur_pts().to_decimal());
+                //     continue;
+                // } else if (result != buffer::AudioBuffer::Result::OK) {
+                //     AKLOG_ERROR("Got invalid result {}", result);
+                //     // what should we do here?
+                // }
+                if (result != buffer::AudioBuffer::Result::OK) {
                     AKLOG_ERROR("Got invalid result {}", result);
-                    // what should we do here?
+                    throw std::runtime_error("");
                 }
 
                 AKLOG_INFO("AudioBuffer Dequeued, pts: {}", frame_pts.to_decimal());

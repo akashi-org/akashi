@@ -55,10 +55,21 @@ namespace akashi {
                 return true;
             }
 
-            bool read(uint8_t* r_buf, const size_t r_buf_length) const {
+            bool read(uint8_t* r_buf, const size_t r_buf_length,
+                      const core::Rational& r_pts) const {
                 if (r_buf_length > m_buf_length) {
                     return false;
                 }
+
+                // lower bound
+                if (r_pts < m_buf_pts) {
+                    return false;
+                }
+                // upper bound
+                if (r_pts + this->to_pts(r_buf_length) > this->max_buf_pts()) {
+                    return false;
+                }
+
                 for (size_t i = 0; i < r_buf_length; i++) {
                     r_buf[i] = m_buffer[(m_read_idx + i) % m_buf_length];
                 }
@@ -200,12 +211,13 @@ namespace akashi {
             return AudioBuffer::Result::OK;
         }
 
-        AudioBuffer::Result AudioBuffer::dequeue(uint8_t* buf, const size_t len) {
+        AudioBuffer::Result AudioBuffer::dequeue(uint8_t* buf, const size_t len,
+                                                 const core::Rational& r_pts) {
             auto nb_channels = m_buffers.size();
             for (size_t i = 0; i < nb_channels; i++) {
                 auto len_per_ch = len / nb_channels;
                 auto offset = i * (len_per_ch);
-                if (!m_buffers[i]->read(&buf[offset], len_per_ch)) {
+                if (!m_buffers[i]->read(&buf[offset], len_per_ch, r_pts)) {
                     return AudioBuffer::Result::OUT_OF_RANGE;
                 }
                 if (!m_buffers[i]->seek(len_per_ch)) {

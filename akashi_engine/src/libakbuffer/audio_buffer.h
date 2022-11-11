@@ -42,7 +42,8 @@ namespace akashi {
              * @detail
              * precondition: `buf` is properly allocated
              */
-            AudioBuffer::Result dequeue(uint8_t* buf, const size_t len);
+            AudioBuffer::Result dequeue(uint8_t* buf, const size_t len,
+                                        const core::Rational& r_pts);
 
             bool seek(const size_t byte_size);
 
