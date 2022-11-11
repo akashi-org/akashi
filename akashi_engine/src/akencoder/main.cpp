@@ -10,6 +10,10 @@
 #include <signal.h>
 #include <string.h>
 
+#ifndef NDEBUG
+#include <libakdebug/akdebug.h>
+#endif
+
 using namespace akashi::core;
 
 void do_sigwait(sigset_t& ss) {
@@ -49,6 +53,13 @@ int main(int argc, char** argv) {
 
     create_logger(cap);
 
+#ifndef NDEBUG
+    if (std::getenv("AK_DEBUG_WINDOW")) {
+        akashi::debug::ListWidget::get().init({});
+        akashi::debug::ListWidget::get().run();
+    }
+#endif
+
     auto akconf = akashi::core::parse_akconfig(argv[1]);
     akconf.encode.out_fname = argv[3];
     akashi::state::AKState state(akconf, argv[2]);
@@ -57,6 +68,12 @@ int main(int argc, char** argv) {
 
     do_sigwait(ss);
     encode_loop.terminate();
+
+#ifndef NDEBUG
+    if (std::getenv("AK_DEBUG_WINDOW")) {
+        akashi::debug::ListWidget::get().destroy();
+    }
+#endif
 
     destroy_logger();
     return 0;
