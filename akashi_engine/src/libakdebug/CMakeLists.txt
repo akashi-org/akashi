@@ -20,7 +20,8 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE akcore
   PRIVATE akstate
   PRIVATE imgui
-  PUBLIC ${AKASHI_PRIV_SHARED_DEPS}_glad
+  # PUBLIC ${AKASHI_PRIV_SHARED_DEPS}_glad
+  PRIVATE GL # include this if glad is not used
   PUBLIC ${AKASHI_PRIV_SHARED_DEPS}_glfw
 )
 

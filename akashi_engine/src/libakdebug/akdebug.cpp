@@ -40,12 +40,12 @@ namespace akashi {
                 glfwMakeContextCurrent(window);
                 glfwSwapInterval(1);
 
-                if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-                    AKLOG_ERRORN("Failed to load OpenGL functions");
-                    glfwDestroyWindow(window);
-                    glfwTerminate();
-                    return nullptr;
-                }
+                // if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+                //     AKLOG_ERRORN("Failed to load OpenGL functions");
+                //     glfwDestroyWindow(window);
+                //     glfwTerminate();
+                //     return nullptr;
+                // }
 
                 return window;
             }
