@@ -9,9 +9,6 @@ from dataclasses import dataclass, field
 
 ShaderKind = tp.Literal['AnyShader', 'FragShader', 'PolygonShader', 'GeomShader']
 
-LEntryFragFn = tp.Callable[[tp.Type[_gl._expr], _gl._TFragBuffer, _gl.frag_color], _gl._expr]
-LEntryPolyFn = tp.Callable[[tp.Type[_gl._expr], _gl._TPolyBuffer, _gl.poly_pos], _gl._expr]
-
 
 _T_co = tp.TypeVar('_T_co', covariant=True)
 

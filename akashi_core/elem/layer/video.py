@@ -23,7 +23,6 @@ from .base import peek_entry, register_entry, frag, poly, LayerRef
 
 from akashi_core.pysl import _gl as gl
 from akashi_core.pysl.shader import ShaderCompiler, _video_frag_shader_header, _video_poly_shader_header
-from akashi_core.pysl.shader import LEntryFragFn, LEntryPolyFn
 from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
 
 
@@ -66,8 +65,8 @@ class VideoPolyBuffer(poly, VideoUniform, VideoPolyOutput):
     ...
 
 
-_VideoFragFn = LEntryFragFn[VideoFragBuffer] | _TEntryFnOpaque[_NamedEntryFragFn[VideoFragBuffer]]
-_VideoPolyFn = LEntryPolyFn[VideoPolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn[VideoPolyBuffer]]
+_VideoFragFn = _TEntryFnOpaque[_NamedEntryFragFn[VideoFragBuffer]]
+_VideoPolyFn = _TEntryFnOpaque[_NamedEntryPolyFn[VideoPolyBuffer]]
 
 
 @dataclass

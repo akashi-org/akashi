@@ -20,7 +20,6 @@ from .base import (
 from .base import peek_entry, register_entry, frag, poly, LayerRef
 from akashi_core.pysl import _gl as gl
 from akashi_core.pysl.shader import ShaderCompiler, _frag_shader_header, _poly_shader_header
-from akashi_core.pysl.shader import LEntryFragFn, LEntryPolyFn
 from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
 
 import math
@@ -41,8 +40,8 @@ class ShapePolyBuffer(poly, ShapeUniform, gl._LayerPolyOutput):
     ...
 
 
-_ShapeFragFn = LEntryFragFn[ShapeFragBuffer] | _TEntryFnOpaque[_NamedEntryFragFn[ShapeFragBuffer]]
-_ShapePolyFn = LEntryPolyFn[ShapePolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn[ShapePolyBuffer]]
+_ShapeFragFn = _TEntryFnOpaque[_NamedEntryFragFn[ShapeFragBuffer]]
+_ShapePolyFn = _TEntryFnOpaque[_NamedEntryPolyFn[ShapePolyBuffer]]
 
 
 @dataclass

@@ -22,8 +22,6 @@ from akashi_core.pysl.shader import (
     ShaderCompiler,
     _frag_shader_header,
     _poly_shader_header,
-    LEntryFragFn,
-    LEntryPolyFn,
     _NamedEntryFragFn,
     _NamedEntryPolyFn,
     _TEntryFnOpaque
@@ -80,8 +78,8 @@ class UnitEntry(LayerField):
         self.shader = ShaderField()
 
 
-_UnitFragFn = LEntryFragFn[UnitFragBuffer] | _TEntryFnOpaque[_NamedEntryFragFn[UnitFragBuffer]]
-_UnitPolyFn = LEntryPolyFn[UnitPolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn[UnitPolyBuffer]]
+_UnitFragFn = _TEntryFnOpaque[_NamedEntryFragFn[UnitFragBuffer]]
+_UnitPolyFn = _TEntryFnOpaque[_NamedEntryPolyFn[UnitPolyBuffer]]
 
 
 @dataclass
