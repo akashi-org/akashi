@@ -149,14 +149,15 @@ def compile_named_shader(
     glsl_fns.append(GLSLFunc(
         src=main_func_def,
         mangled_func_name=main_func_name,
-        func_decl=main_func_decl
+        func_decl=main_func_decl,
+        outer_expr_map=ctx.outer_expr_map
     ))
 
     return glsl_fns
 
 
 def compile_named_entry_shader_partial(
-        fn: '_TEntryFnOpaque', ctx: CompilerContext) -> tuple[_TGLSL, list[tp.Callable]]:
+        fn: '_TEntryFnOpaque', ctx: CompilerContext) -> tuple[GLSLFunc, list[tp.Callable]]:
 
     deco_fn = unwrap_shader_func(tp.cast(tp.Callable, fn))
     if not deco_fn:
@@ -179,31 +180,39 @@ def compile_named_entry_shader_partial(
 
     func_body = compile_func_body(func_def, ctx)
 
-    return (func_body, imported_named_shader_fns)
+    entry_glsl_fn = GLSLFunc(
+        src=func_body,
+        mangled_func_name='',
+        func_decl='',
+        is_entry=True,
+        outer_expr_map=ctx.outer_expr_map
+    )
+
+    return (entry_glsl_fn, imported_named_shader_fns)
 
 
 def compile_shaders(
         fns: tuple,
         buffer_type: tp.Type[_gl._buffer_type],
-        config: CompilerConfig.Config = CompilerConfig.default()) -> _TGLSL:
+        config: CompilerConfig.Config = CompilerConfig.default()) -> list[GLSLFunc]:
 
     kind = get_shader_kind_from_buffer(buffer_type)
 
     if len(fns) == 0:
-        return entry_point(kind, '')
+        return [GLSLFunc(src=entry_point(kind, ''), mangled_func_name='', func_decl='', is_entry=True)]
 
-    stmts = []
+    entry_glsl_fns: list[GLSLFunc] = []
     imported_named_shader_fns_dict = {}
 
     ctx = CompilerContext(config)
 
     for idx, fn in enumerate(fns):
 
-        stmt = ''
+        entry_glsl_fn = None
 
         ctx.clear_symbols()
 
-        stmt, imported_named_shader_fns = compile_named_entry_shader_partial(
+        entry_glsl_fn, imported_named_shader_fns = compile_named_entry_shader_partial(
             tp.cast('_TEntryFnOpaque', fn), ctx)
 
         for imp_fn in imported_named_shader_fns:
@@ -212,7 +221,8 @@ def compile_shaders(
         self_postfix = f'_{idx}' if idx > 0 else ''
         next_postfix = f'_{idx + 1}' if idx != len(fns) - 1 else ''
 
-        stmts.insert(0, entry_point(kind, stmt, self_postfix, next_postfix))
+        entry_glsl_fn.src = entry_point(kind, entry_glsl_fn.src, self_postfix, next_postfix)
+        entry_glsl_fns.insert(0, entry_glsl_fn)
 
     imported_glsl_fns: list[GLSLFunc] = []
 
@@ -222,13 +232,14 @@ def compile_shaders(
             raise CompileError(f'Forbidden import {imp_shader_kind} from {kind}')
         imported_glsl_fns += compile_named_shader(imp_fn, ctx.config)
 
+    res_glsl_fns: list[GLSLFunc] = []
+
     out_func_names = []
     imported_decls = []
     imported_defs = []
     for glsl_fn in imported_glsl_fns:
         if glsl_fn.mangled_func_name not in out_func_names:
-            imported_decls.append(glsl_fn.func_decl)
-            imported_defs.append(glsl_fn.src)
+            res_glsl_fns.append(glsl_fn)
             out_func_names.append(glsl_fn.mangled_func_name)
 
-    return "".join(imported_decls) + "".join(imported_defs) + ''.join(stmts)
+    return res_glsl_fns + entry_glsl_fns

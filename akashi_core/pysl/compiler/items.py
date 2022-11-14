@@ -32,6 +32,11 @@ class CompilerConfig:
         }
 
 
+GLSLOuterExprKey = str
+
+GLSLOuterExprEvalResult = str
+
+
 @dataclass
 class CompilerContext:
     config: CompilerConfig.Config
@@ -41,6 +46,8 @@ class CompilerContext:
     eval_local_symbol: dict = field(default_factory=dict)
     lambda_args: dict = field(default_factory=dict)
     imported_func_symbol: dict = field(default_factory=dict)
+
+    outer_expr_map: dict[GLSLOuterExprKey, GLSLOuterExprEvalResult] = field(default_factory=dict)
 
     buffers: list = field(default_factory=list[tuple])
 
@@ -53,8 +60,10 @@ class CompilerContext:
         self.buffers = []
 
 
-@dataclass(frozen=True)
+@dataclass
 class GLSLFunc:
     src: str
     mangled_func_name: str
     func_decl: str
+    is_entry: bool = False
+    outer_expr_map: dict[GLSLOuterExprKey, GLSLOuterExprEvalResult] = field(default_factory=dict)

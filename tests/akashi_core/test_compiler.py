@@ -1,6 +1,8 @@
+# pyright: reportPrivateUsage=false
 import unittest
 from akashi_core.pysl.compiler.items import CompileError, CompilerConfig
 from akashi_core.pysl.compiler.compiler import compile_shaders, compile_named_shader
+from akashi_core.pysl.compiler.evaluator import eval_glsl_fns, eval_entry_glsl_fns
 from akashi_core import gl, ak
 from . import compiler_fixtures
 import typing as tp
@@ -13,7 +15,14 @@ TEST_CONFIG: CompilerConfig.Config = {
 
 
 def exec_compile_named_shader(fn: tp.Callable, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
-    return ''.join([l.src for l in compile_named_shader(fn, config)])
+    return ''.join(eval_glsl_fns(compile_named_shader(fn, config)))
+
+
+def exec_compile_shaders(
+        fns: tuple,
+        buffer_type: tp.Type[gl._buffer_type],
+        config: CompilerConfig.Config = CompilerConfig.default()) -> str:
+    return ''.join(eval_entry_glsl_fns(compile_shaders(fns, buffer_type, config)))
 
 
 @gl.lib('any')
@@ -448,7 +457,7 @@ class TestBuffer(unittest.TestCase):
             'void frag_main(inout vec4 color){color.x = (time) * (12);}',
         ])
 
-        self.assertEqual(compile_shaders((vec_attr,), ak.frag, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_shaders((vec_attr,), ak.frag, TEST_CONFIG), expected)
 
     def test_uniform_import(self):
 
@@ -473,7 +482,7 @@ class TestBuffer(unittest.TestCase):
         ])
 
         self.maxDiff = None
-        self.assertEqual(compile_shaders((vec_attr, ), ak.frag, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_shaders((vec_attr, ), ak.frag, TEST_CONFIG), expected)
 
     def test_forbidden_import(self):
 
@@ -486,7 +495,7 @@ class TestBuffer(unittest.TestCase):
             color.x = local_add(1, 2)
 
         with self.assertRaisesRegex(CompileError, 'Forbidden import PolygonShader from FragShader') as _:
-            compile_shaders((vec_attr, ), ak.frag, TEST_CONFIG)
+            exec_compile_shaders((vec_attr, ), ak.frag, TEST_CONFIG)
 
 
 class TestEntry(unittest.TestCase):
@@ -501,7 +510,7 @@ class TestEntry(unittest.TestCase):
             'void frag_main(inout vec4 color){color.x = (time) * (12);}',
         ])
 
-        self.assertEqual(compile_shaders((vec_attr,), ak.frag, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_shaders((vec_attr,), ak.frag, TEST_CONFIG), expected)
 
     def test_chain(self):
 
@@ -524,7 +533,7 @@ class TestEntry(unittest.TestCase):
         ])
 
         self.maxDiff = None
-        self.assertEqual(compile_shaders((vec_attr, vec_attr2, vec_attr3),
+        self.assertEqual(exec_compile_shaders((vec_attr, vec_attr2, vec_attr3),
                          ak.frag, TEST_CONFIG), expected)
 
 
@@ -542,7 +551,7 @@ class TestClosure(unittest.TestCase):
             'void frag_main(inout vec4 color){color.x = ((time) * (12)) + (999);}',
         ])
 
-        self.assertEqual(compile_shaders((gen(999),), ak.frag, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_shaders((gen(999),), ak.frag, TEST_CONFIG), expected)
 
 
 class TestExtension(unittest.TestCase):
@@ -584,4 +593,4 @@ class TestOther(unittest.TestCase):
         ])
 
         self.maxDiff = None
-        self.assertEqual(compile_shaders((entry,), ak.frag, TEST_CONFIG), expected)
+        self.assertEqual(exec_compile_shaders((entry,), ak.frag, TEST_CONFIG), expected)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 from .compiler.items import CompilerConfig
 from .compiler.compiler import compile_shaders
+from .compiler.evaluator import eval_entry_glsl_fns
 from . import _gl
 
 import typing as tp
@@ -52,7 +53,8 @@ class ShaderCompiler:
     def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
         if not self._assemble_cache:
             self._assemble_cache = self._preamble(config) + self._header(config)
-            self._assemble_cache += compile_shaders(self.shaders, self.buffer_type, config)
+            self._assemble_cache += ''.join(eval_entry_glsl_fns(compile_shaders(self.shaders,
+                                            self.buffer_type, config)))
         return self._assemble_cache
 
 

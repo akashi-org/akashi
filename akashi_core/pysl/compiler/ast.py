@@ -182,14 +182,14 @@ def from_For(node: ast.For, ctx: CompilerContext) -> ForOut:
     idx_start = 0
     idx_step = 1
     if len(iter_out.args) == 1:
-        idx_length = int(iter_out.args[0])
+        idx_length = iter_out.args[0]
     elif len(iter_out.args) == 2:
-        idx_start = int(iter_out.args[0])
-        idx_length = int(iter_out.args[1])
+        idx_start = iter_out.args[0]
+        idx_length = iter_out.args[1]
     elif len(iter_out.args) == 3:
-        idx_start = int(iter_out.args[0])
-        idx_length = int(iter_out.args[1])
-        idx_step = int(iter_out.args[2])
+        idx_start = iter_out.args[0]
+        idx_length = iter_out.args[1]
+        idx_step = iter_out.args[2]
 
     idx = compile_expr(node.target, ctx).content
 
@@ -407,8 +407,13 @@ class CallOut(exprOut):
 def from_Call(node: ast.Call, ctx: CompilerContext) -> CallOut:
 
     if ast.unparse(node).startswith('gl.outer'):
-        content = evaluator.eval_node(node.args[0], ctx)
-        return CallOut(node, args=[], content=content)
+        eval_raw_body = ast.unparse(node.args[0])
+        eval_mangled_body = evaluator.mangle_outer_expr(eval_raw_body)
+        if eval_mangled_body not in ctx.outer_expr_map:
+            eval_res = evaluator.eval_node(node.args[0], ctx)
+            ctx.outer_expr_map[eval_mangled_body] = eval_res
+
+        return CallOut(node, args=[], content=eval_mangled_body)
 
     if ast.unparse(node).startswith('gl.inline_stmt'):
         content = compile_expr(node.args[0], ctx).content
