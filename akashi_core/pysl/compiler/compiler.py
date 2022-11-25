@@ -230,7 +230,7 @@ def _compile_shader_partial(
     return (main_glsl_fn, imported_named_shader_fns, [])
 
 
-def compile_shader(
+def compile_lib_shader(
         fn: tp.Callable,
         config: CompilerConfig.Config,
         cache: CompileCache | None = None) -> list[GLSLFunc]:
@@ -244,12 +244,12 @@ def compile_shader(
             imp_shader_kind = _to_shader_kind(tp.cast(tuple, inspect.getfullargspec(imp_fn).defaults)[0])
             if not can_import(main_glsl.shader_kind, imp_shader_kind):
                 raise CompileError(f'Forbidden import {imp_shader_kind} from {main_glsl.shader_kind}')
-            glsl_fns += compile_shader(imp_fn, config, cache)
+            glsl_fns += compile_lib_shader(imp_fn, config, cache)
 
         return glsl_fns + [main_glsl]
 
 
-def compile_shaders(
+def compile_entry_shaders(
         fns: tuple['_TEntryFnOpaque', ...],
         buffer_type: tp.Type[_gl._buffer_type],
         config: CompilerConfig.Config,
@@ -295,7 +295,7 @@ def compile_shaders(
         imp_shader_kind = _to_shader_kind(tp.cast(tuple, inspect.getfullargspec(imp_fn).defaults)[0])
         if not can_import(kind, imp_shader_kind):
             raise CompileError(f'Forbidden import {imp_shader_kind} from {kind}')
-        imported_glsl_fns += compile_shader(imp_fn, ctx.config, cache)
+        imported_glsl_fns += compile_lib_shader(imp_fn, ctx.config, cache)
 
     res_glsl_fns: list[GLSLFunc] = []
 
