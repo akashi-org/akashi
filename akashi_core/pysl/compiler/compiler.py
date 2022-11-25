@@ -15,7 +15,7 @@ from .utils import (
 )
 from .converter import type_converter, body_converter
 from .ast import compile_expr, compile_stmt, from_arguments, is_named_func
-from .symbol import collect_global_symbols, collect_all_local_symbols
+from .symbol import collect_global_symbols, collect_all_local_symbols, collect_eval_local_symbols
 from .evaluator import demangle_outer_expr, eval_expr_str
 
 from akashi_core.pysl import _gl
@@ -159,19 +159,24 @@ def _compile_shader_partial(
                 main_cached_glsl_fn = cache.fn_map[main_func_name]
                 cache.fn_dirty_map[main_func_name] = False
 
-        # Skip compiling when all srcs including the main and the deps have no outer exprs
-        if main_has_cache and main_cached_glsl_fn and len(main_cached_glsl_fn.outer_expr_keys) == 0:
+        if main_has_cache and main_cached_glsl_fn:
             res_glsl: list[GLSLFunc] = []
             for imp_fname in main_cached_glsl_fn.imported_mangled_func_names:
                 if imp_fname not in cache.fn_map:
                     break
-                if cache.fn_dirty_map[imp_fname]:
-                    break
-                if len(cache.fn_map[imp_fname].outer_expr_keys) > 0:
+                if imp_fname in cache.fn_dirty_map and cache.fn_dirty_map[imp_fname]:
                     break
                 res_glsl.append(cache.fn_map[imp_fname])
             else:
-                return (main_cached_glsl_fn, [], res_glsl)
+                res_main_glsl = main_cached_glsl_fn
+                if is_entry:
+                    collect_global_symbols(ctx, deco_fn)
+                    collect_eval_local_symbols(ctx, deco_fn, cache)
+                    new_outer_expr_values = [eval_expr_str(demangle_outer_expr(k), ctx)
+                                             for k in main_cached_glsl_fn.outer_expr_keys]
+                    res_main_glsl = GLSLFunc(**asdict(main_cached_glsl_fn) |
+                                             {'outer_expr_values': new_outer_expr_values})
+                return (res_main_glsl, [], res_glsl)
 
     shader_kind = _to_shader_kind(tp.cast(tuple, inspect.getfullargspec(fn).defaults)[0])
     if not shader_kind:

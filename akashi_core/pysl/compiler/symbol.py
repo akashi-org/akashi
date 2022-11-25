@@ -71,3 +71,24 @@ def collect_all_local_symbols(
         ctx.eval_local_symbol[freevar] = value
 
     return imported_named_shader_fn
+
+
+# Expects collect_global_symbols() to be executed before
+def collect_eval_local_symbols(
+        ctx: CompilerContext,
+        deco_fn: tp.Callable,
+        cache: CompileCache | None = None):
+
+    # variables which are referenced by deco_fn's closure
+    for idx, freevar in enumerate(deco_fn.__code__.co_freevars):
+
+        if not(hasattr(deco_fn, '__closure__')) or not(deco_fn.__closure__):
+            continue
+
+        value = deco_fn.__closure__[idx].cell_contents
+
+        if callable(value) and (_fn := unwrap_shader_func(value)):
+            if is_named_func(get_function_def(get_ast(_fn, ctx.config, cache)), ctx.global_symbol):
+                continue
+
+        ctx.eval_local_symbol[freevar] = value

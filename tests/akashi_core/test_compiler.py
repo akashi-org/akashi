@@ -606,7 +606,7 @@ class TestOther(unittest.TestCase):
 
 class TestCache(unittest.TestCase):
 
-    def test_cached_shader(self):
+    def test_cached_lib_shader(self):
 
         @gl.lib('frag')
         def add(a: int, b: int) -> int:
@@ -628,10 +628,41 @@ class TestCache(unittest.TestCase):
         cache_time = _check(cache)
         no_cache_time = _check(None)
 
-        print(f'test_cached_shader: no_cache: {no_cache_time}, cache: {cache_time}')
+        print(f'test_cached_lib_shader: no_cache: {no_cache_time}, cache: {cache_time}')
         self.assertGreaterEqual(no_cache_time, cache_time)
 
-    def test_cached_shader_with_outer(self):
+    def test_cached_lib_shader_has_dynamic_outer(self):
+        ''' 
+          For lib shader, we assume that the first argument of gl.outer() has no side effects.
+          So, we will reuse the result of gl.outer() in the same evalution round. 
+          It should be noted that this behavior is not applicable when hot reloading occurs.
+        '''
+
+        local_value = 0
+
+        def dyn_outer() -> int:
+            nonlocal local_value
+            local_value += 1
+            return local_value
+
+        @gl.lib('frag')
+        def add(a: int, b: int) -> int:
+            return a + gl.outer(dyn_outer())
+
+        expected = lambda x: ''.join([
+            f'int test_compiler_add(int a, int b){{return (a) + ({x});}}'
+        ])
+
+        cache = CompileCache()
+        self.assertEqual(exec_compile_lib_shader(add, TEST_CONFIG, cache), expected(1))
+        # In this line, dyn_outer() returns `2` in practice. But we reuse the previous result.
+        self.assertEqual(exec_compile_lib_shader(add, TEST_CONFIG, cache), expected(1))
+
+        local_value = 0  # reset
+        self.assertEqual(exec_compile_lib_shader(add, TEST_CONFIG), expected(1))
+        self.assertEqual(exec_compile_lib_shader(add, TEST_CONFIG), expected(2))
+
+    def test_cached_lib_shader_with_outer(self):
 
         @gl.lib('frag')
         def add(a: int, b: int) -> int:
@@ -653,10 +684,10 @@ class TestCache(unittest.TestCase):
         cache_time = _check(cache)
         no_cache_time = _check(None)
 
-        print(f'test_cached_shader_with_outer: no_cache: {no_cache_time}, cache: {cache_time}')
+        print(f'test_cached_lib_shader_with_outer: no_cache: {no_cache_time}, cache: {cache_time}')
         self.assertGreaterEqual(no_cache_time, cache_time)
 
-    def test_cached_shaders(self):
+    def test_cached_entry_shaders(self):
 
         @gl.entry(ak.frag)
         def entry_add(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
@@ -679,10 +710,10 @@ class TestCache(unittest.TestCase):
         cache_time = _check(cache)
         no_cache_time = _check(None)
 
-        print(f'test_cached_shaders: no_cache: {no_cache_time}, cache: {cache_time}')
+        print(f'test_cached_entry_shaders: no_cache: {no_cache_time}, cache: {cache_time}')
         self.assertGreaterEqual(no_cache_time, cache_time)
 
-    def test_cached_shaders_with_outer(self):
+    def test_cached_entry_shaders_with_outer(self):
 
         @gl.entry(ak.frag)
         def entry_add(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
@@ -705,5 +736,5 @@ class TestCache(unittest.TestCase):
         cache_time = _check(cache)
         no_cache_time = _check(None)
 
-        print(f'test_cached_shaders_with_outer: no_cache: {no_cache_time}, cache: {cache_time}')
+        print(f'test_cached_entry_shaders_with_outer: no_cache: {no_cache_time}, cache: {cache_time}')
         self.assertGreaterEqual(no_cache_time, cache_time)
