@@ -1,7 +1,7 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
 
-from .items import CompileError, CompilerContext, CompilerConfig
+from .items import CompileError, CompilerContext, CompilerConfig, CompileCache
 from akashi_core.pysl import _gl
 
 import typing as tp
@@ -14,14 +14,62 @@ if tp.TYPE_CHECKING:
     from akashi_core.pysl.shader import ShaderCompiler, ShaderKind
 
 
-def get_source(obj) -> str:
-    raw_src = inspect.getsource(obj)
+def _get_raw_source(obj) -> str:
+
+    fname = obj.__code__.co_filename
+    lnum_begin = obj.__code__.co_firstlineno - 1
+    lnum_end = [l for l in obj.__code__.co_lines()][-1][-1] - 1
+    lines: list[str] = []
+    with open(fname, 'r') as f:
+        lnum = 0
+        for line in f:
+            if lnum_begin <= lnum <= lnum_end:
+                lines.append(line)
+            if lnum > lnum_end:
+                break
+            lnum += 1
+
+    return ''.join(lines)
+
+
+def get_ast(deco_fn: tp.Callable, config: CompilerConfig.Config, cache: CompileCache | None = None) -> ast.Module:
+
+    raw_src, root = _get_source(deco_fn, config, cache)
+    if root:
+        return root
+    else:
+        return ast.parse(raw_src)
+
+
+def _strip_indents(raw_src: str) -> str:
 
     # raw_src can be indented already, and that will cause IndentationError in ast.parse().
     # So here we explicitly strip the indents.
     lines = raw_src.split('\n')
     top_indent = m.span()[0] if (m := re.search(r'[^\s]', lines[0])) else 0
     return '\n'.join([ln[top_indent:] for ln in lines])
+
+
+# [TODO] This function is one of the major bottlenecks for compiler
+# Expects `deco_fn` to be already unwrapped
+def _get_source(
+        deco_fn: tp.Callable,
+        config: CompilerConfig.Config,
+        cache: CompileCache | None = None) -> tuple[str, ast.Module | None]:
+
+    if cache:
+        fn_name = mangled_func_name(config, deco_fn, False)
+        if fn_name in cache.fn_map and not cache.fn_dirty_map[fn_name]:
+            raw_src = _strip_indents(cache.fn_map[fn_name].orig_src)
+            return (raw_src, ast.parse(raw_src))
+
+    raw_src = _strip_indents(_get_raw_source(deco_fn))
+    try:
+        # Cases when the last stmt is single line
+        return (raw_src, ast.parse(raw_src))
+    except:
+        # [TODO] inspect.getsource is really slow. Maybe we should replace it with another one
+        return (_strip_indents(inspect.getsource(deco_fn)), None)
 
 
 def get_function_def(root: ast.AST) -> ast.FunctionDef:
@@ -44,7 +92,11 @@ def get_function_def(root: ast.AST) -> ast.FunctionDef:
         return tp.cast(ast.FunctionDef, ctx['node'])
 
 
-def resolve_module(mod_name: str, deco_fn: tp.Callable) -> list[str]:
+def resolve_module(
+        mod_name: str,
+        deco_fn: tp.Callable,
+        config: CompilerConfig.Config,
+        cache: CompileCache | None = None) -> list[str]:
 
     attr_names = []
 
@@ -57,8 +109,7 @@ def resolve_module(mod_name: str, deco_fn: tp.Callable) -> list[str]:
 
             super().visit(node.value)
 
-    py_src = get_source(deco_fn)
-    root = ast.parse(py_src)
+    root = get_ast(deco_fn, config, cache)
 
     Visitor().visit(root)
 

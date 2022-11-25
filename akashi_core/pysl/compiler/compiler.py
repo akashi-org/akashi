@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from .items import CompilerConfig, CompileError, CompilerContext, _TGLSL, GLSLFunc, CompileCache
 from .utils import (
-    get_source,
+    _get_source,
     get_function_def,
     can_import,
     has_params_qualifier,
@@ -11,12 +11,11 @@ from .utils import (
     unwrap_shader_func,
     mangled_func_name,
     get_shader_kind_from_buffer,
-    resolve_module,
     get_hash
 )
 from .converter import type_converter, body_converter
 from .ast import compile_expr, compile_stmt, from_arguments, is_named_func
-from .symbol import collect_global_symbols, collect_local_symbols
+from .symbol import collect_global_symbols, collect_all_local_symbols
 from .evaluator import demangle_outer_expr, eval_expr_str
 
 from akashi_core.pysl import _gl
@@ -145,13 +144,16 @@ def _compile_shader_partial(
     main_func_name = mangled_func_name(ctx.config, deco_fn, False)
     main_has_cache = False
     main_cached_glsl_fn = None
+    root = None
+    py_src = None
 
     if cache and main_func_name in cache.fn_map:
         if not cache.fn_dirty_map[main_func_name]:
             main_has_cache = True
             main_cached_glsl_fn = cache.fn_map[main_func_name]
         else:
-            cur_hash = get_hash(get_source(deco_fn))
+            py_src, root = _get_source(deco_fn, config)
+            cur_hash = get_hash(py_src)
             if cur_hash == cache.fn_map[main_func_name].orig_src_hash:
                 main_has_cache = True
                 main_cached_glsl_fn = cache.fn_map[main_func_name]
@@ -171,9 +173,6 @@ def _compile_shader_partial(
             else:
                 return (main_cached_glsl_fn, [], res_glsl)
 
-    py_src = get_source(deco_fn)
-    root = ast.parse(py_src)
-
     shader_kind = _to_shader_kind(tp.cast(tuple, inspect.getfullargspec(fn).defaults)[0])
     if not shader_kind:
         raise CompileError('Named shader function must be decorated with its shader kind')
@@ -181,7 +180,7 @@ def _compile_shader_partial(
     _collect_argument_symbols(ctx, deco_fn)
     if is_entry:
         _collect_entry_argument_symbols(ctx, deco_fn, shader_kind)
-    imported_named_shader_fns = collect_local_symbols(ctx, deco_fn)
+    imported_named_shader_fns = collect_all_local_symbols(ctx, deco_fn, cache)
 
     main_glsl_fn: GLSLFunc
     if main_has_cache and main_cached_glsl_fn:
@@ -189,6 +188,12 @@ def _compile_shader_partial(
                                  for k in main_cached_glsl_fn.outer_expr_keys]
         main_glsl_fn = GLSLFunc(**asdict(main_cached_glsl_fn) | {'outer_expr_values': new_outer_expr_values})
     else:
+        if not py_src:
+            py_src, root = _get_source(deco_fn, ctx.config, cache)
+
+        if not root:
+            root = ast.parse(py_src)
+
         func_def = get_function_def(root)
         if not is_named_func(func_def, ctx.global_symbol):
             raise CompileError('Named shader function must be decorated properly')
@@ -206,6 +211,7 @@ def _compile_shader_partial(
 
         main_glsl_fn = GLSLFunc(
             src=main_func_def,
+            orig_src=py_src,
             orig_src_hash=get_hash(py_src),
             mangled_func_name=main_func_name,
             func_decl=main_func_decl,

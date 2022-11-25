@@ -63,6 +63,7 @@ class CompilerContext:
 @dataclass(frozen=True)
 class GLSLFunc:
     src: str
+    orig_src: str
     orig_src_hash: str
     mangled_func_name: str
     func_decl: str

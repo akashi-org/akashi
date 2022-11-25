@@ -631,6 +631,31 @@ class TestCache(unittest.TestCase):
         print(f'test_cached_shader: no_cache: {no_cache_time}, cache: {cache_time}')
         self.assertGreaterEqual(no_cache_time, cache_time)
 
+    def test_cached_shader_with_outer(self):
+
+        @gl.lib('frag')
+        def add(a: int, b: int) -> int:
+            return compiler_fixtures.outer_func1(a, b)
+
+        expected = ''.join([
+            'int compiler_fixtures_outer_func1(int a, int b){return (a) + (12);}',
+            'int test_compiler_add(int a, int b){return compiler_fixtures_outer_func1(a, b);}'
+        ])
+
+        def _check(_cache: CompileCache | None) -> float:
+            st = time.time()
+            for _ in range(50):
+                self.assertEqual(exec_compile_shader(add, TEST_CONFIG, _cache), expected)
+            return time.time() - st
+
+        cache = CompileCache()
+        compile_shader(add, TEST_CONFIG, cache)
+        cache_time = _check(cache)
+        no_cache_time = _check(None)
+
+        print(f'test_cached_shader_with_outer: no_cache: {no_cache_time}, cache: {cache_time}')
+        self.assertGreaterEqual(no_cache_time, cache_time)
+
     def test_cached_shaders(self):
 
         @gl.entry(ak.frag)
