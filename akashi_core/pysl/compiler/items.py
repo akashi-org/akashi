@@ -76,5 +76,6 @@ class GLSLFunc:
 
 @dataclass
 class CompileCache:
+    config: CompilerConfig.Config
     fn_map: dict[str, GLSLFunc] = field(default_factory=dict)
     fn_dirty_map: dict[str, bool] = field(default_factory=dict)

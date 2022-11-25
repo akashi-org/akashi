@@ -623,7 +623,7 @@ class TestCache(unittest.TestCase):
                 self.assertEqual(exec_compile_lib_shader(add, TEST_CONFIG, _cache), expected)
             return time.time() - st
 
-        cache = CompileCache()
+        cache = CompileCache(config=TEST_CONFIG)
         compile_lib_shader(add, TEST_CONFIG, cache)
         cache_time = _check(cache)
         no_cache_time = _check(None)
@@ -653,7 +653,7 @@ class TestCache(unittest.TestCase):
             f'int test_compiler_add(int a, int b){{return (a) + ({x});}}'
         ])
 
-        cache = CompileCache()
+        cache = CompileCache(config=TEST_CONFIG)
         self.assertEqual(exec_compile_lib_shader(add, TEST_CONFIG, cache), expected(1))
         # In this line, dyn_outer() returns `2` in practice. But we reuse the previous result.
         self.assertEqual(exec_compile_lib_shader(add, TEST_CONFIG, cache), expected(1))
@@ -679,7 +679,7 @@ class TestCache(unittest.TestCase):
                 self.assertEqual(exec_compile_lib_shader(add, TEST_CONFIG, _cache), expected)
             return time.time() - st
 
-        cache = CompileCache()
+        cache = CompileCache(config=TEST_CONFIG)
         compile_lib_shader(add, TEST_CONFIG, cache)
         cache_time = _check(cache)
         no_cache_time = _check(None)
@@ -705,7 +705,7 @@ class TestCache(unittest.TestCase):
                 self.assertEqual(exec_compile_entry_shaders((entry_add,), ak.frag, TEST_CONFIG, _cache), expected)
             return time.time() - st
 
-        cache = CompileCache()
+        cache = CompileCache(config=TEST_CONFIG)
         compile_entry_shaders((entry_add,), ak.frag, TEST_CONFIG, cache)
         cache_time = _check(cache)
         no_cache_time = _check(None)
@@ -731,7 +731,7 @@ class TestCache(unittest.TestCase):
                 self.assertEqual(exec_compile_entry_shaders((entry_add,), ak.frag, TEST_CONFIG, _cache), expected)
             return time.time() - st
 
-        cache = CompileCache()
+        cache = CompileCache(config=TEST_CONFIG)
         compile_entry_shaders((entry_add,), ak.frag, TEST_CONFIG, cache)
         cache_time = _check(cache)
         no_cache_time = _check(None)
