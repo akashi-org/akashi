@@ -60,10 +60,20 @@ class CompilerContext:
         self.buffers = []
 
 
-@dataclass
+@dataclass(frozen=True)
 class GLSLFunc:
     src: str
+    orig_src_hash: str
     mangled_func_name: str
     func_decl: str
+    shader_kind: 'ShaderKind'
     is_entry: bool = False
-    outer_expr_map: dict[GLSLOuterExprKey, GLSLOuterExprEvalResult] = field(default_factory=dict)
+    outer_expr_keys: tuple[GLSLOuterExprKey, ...] = field(default_factory=tuple)
+    outer_expr_values: tuple[GLSLOuterExprEvalResult, ...] = field(default_factory=tuple)
+    imported_mangled_func_names: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass
+class CompileCache:
+    fn_map: dict[str, GLSLFunc] = field(default_factory=dict)
+    fn_dirty_map: dict[str, bool] = field(default_factory=dict)

@@ -1,13 +1,14 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
 
-from .items import CompileError, CompilerContext
+from .items import CompileError, CompilerContext, CompilerConfig
 from akashi_core.pysl import _gl
 
 import typing as tp
 import inspect
 import ast
 import re
+import hashlib
 
 if tp.TYPE_CHECKING:
     from akashi_core.pysl.shader import ShaderCompiler, ShaderKind
@@ -118,7 +119,7 @@ def unwrap_shader_func(fn: tp.Callable) -> tp.Callable | None:
         return unwrapped
 
 
-def get_mangle_prefix(ctx: CompilerContext, deco_fn: tp.Callable):
+def get_mangle_prefix(config: CompilerConfig.Config, deco_fn: tp.Callable):
 
     full_mod_name = deco_fn.__module__
     simple_mod_name = str(full_mod_name).split('.')[-1]
@@ -127,7 +128,7 @@ def get_mangle_prefix(ctx: CompilerContext, deco_fn: tp.Callable):
     if deco_fn.__name__ != deco_fn.__qualname__:
         local_name = '_' + deco_fn.__qualname__.replace('.<locals>', '').replace('.', '_')
 
-    match ctx.config['mangle_mode']:
+    match config['mangle_mode']:
         case 'hard':
             return simple_mod_name + local_name
         case 'soft':
@@ -136,12 +137,12 @@ def get_mangle_prefix(ctx: CompilerContext, deco_fn: tp.Callable):
             return ''
 
 
-def mangled_func_name(ctx: CompilerContext, deco_fn: tp.Callable, unwrap: bool = True):
+def mangled_func_name(config: CompilerConfig.Config, deco_fn: tp.Callable, unwrap: bool = True):
 
     if unwrap and (_fn := unwrap_shader_func(deco_fn)):
         deco_fn = _fn
 
-    prefix = get_mangle_prefix(ctx, deco_fn)
+    prefix = get_mangle_prefix(config, deco_fn)
     if len(prefix) == 0:
         return deco_fn.__name__
     else:
@@ -169,3 +170,7 @@ def visit_all(node: ast.AST):
 
 def dump_ast(node: ast.AST) -> str:
     return ast.dump(node, indent=2)
+
+
+def get_hash(msg: str) -> str:
+    return hashlib.md5(msg.encode('utf-8')).hexdigest()

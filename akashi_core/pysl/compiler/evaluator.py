@@ -18,11 +18,18 @@ def eval_node(node: ast.expr, ctx: CompilerContext) -> str:
     return str(eval_res)
 
 
+def eval_expr_str(expr_str: str, ctx: CompilerContext) -> str:
+    eval_res = eval(expr_str, ctx.global_symbol, ctx.eval_local_symbol)
+    if isinstance(eval_res, bool):
+        return str(eval_res).lower()
+    return str(eval_res)
+
+
 def eval_glsl_fns(glsl_fns: list[GLSLFunc]) -> list[str]:
     res: list[str] = []
     for glsl_fn in glsl_fns:
         r: str = glsl_fn.src
-        for k, v in glsl_fn.outer_expr_map.items():
+        for k, v in zip(glsl_fn.outer_expr_keys, glsl_fn.outer_expr_values):
             r = r.replace(k, v)
         res.append(r)
 
@@ -32,12 +39,12 @@ def eval_glsl_fns(glsl_fns: list[GLSLFunc]) -> list[str]:
 def eval_entry_glsl_fns(glsl_fns: list[GLSLFunc]) -> list[str]:
     res: list[str] = []
     for glsl_fn in glsl_fns:
-        if len(glsl_fn.func_decl) > 0:
+        if len(glsl_fn.func_decl) > 0 and not glsl_fn.is_entry:
             res.append(glsl_fn.func_decl)
 
     for glsl_fn in glsl_fns:
         r: str = glsl_fn.src
-        for k, v in glsl_fn.outer_expr_map.items():
+        for k, v in zip(glsl_fn.outer_expr_keys, glsl_fn.outer_expr_values):
             r = r.replace(k, v)
         res.append(r)
 

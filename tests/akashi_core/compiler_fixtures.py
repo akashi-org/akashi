@@ -17,3 +17,8 @@ OUTER_VALUE = 12
 @gl.lib('any')
 def outer_func1(a: int, b: int) -> int:
     return a + gl.outer(OUTER_VALUE)
+
+
+@gl.lib('any')
+def outer_func1_no_outer(a: int, b: int) -> int:
+    return a + 12

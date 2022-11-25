@@ -33,6 +33,8 @@ def collect_local_symbols(ctx: CompilerContext, deco_fn: tp.Callable) -> list[tp
 
     imported_named_shader_fn = []
 
+    # [TODO] Perhaps we can optimize this func with the shader cache?
+
     for local_varname in deco_fn.__code__.co_names:
         if local_varname in ctx.global_symbol:
             value = ctx.global_symbol[local_varname]
@@ -40,14 +42,14 @@ def collect_local_symbols(ctx: CompilerContext, deco_fn: tp.Callable) -> list[tp
                 if is_named_func(get_function_def(ast.parse(get_source(_fn))), ctx.global_symbol):
                     # [TODO] really we need to insert a wrapped func?
                     imported_named_shader_fn.append(value)
-                    ctx.imported_func_symbol[local_varname] = mangled_func_name(ctx, _fn)
+                    ctx.imported_func_symbol[local_varname] = mangled_func_name(ctx.config, _fn)
             elif isinstance(value, ModuleType):
                 for attr_name in resolve_module(local_varname, deco_fn):
                     wrap_fn = getattr(value, attr_name)
                     if inspect.isfunction(wrap_fn) and (inner_fn := unwrap_shader_func(wrap_fn)):
                         if is_named_func(get_function_def(ast.parse(get_source(inner_fn))), ctx.global_symbol):
                             imported_named_shader_fn.append(wrap_fn)
-                            ctx.imported_func_symbol[attr_name] = mangled_func_name(ctx, inner_fn)
+                            ctx.imported_func_symbol[attr_name] = mangled_func_name(ctx.config, inner_fn)
 
     # variables which are referenced by deco_fn's closure
     for idx, freevar in enumerate(deco_fn.__code__.co_freevars):
@@ -60,7 +62,7 @@ def collect_local_symbols(ctx: CompilerContext, deco_fn: tp.Callable) -> list[tp
         if callable(value) and (_fn := unwrap_shader_func(value)):
             if is_named_func(get_function_def(ast.parse(get_source(_fn))), ctx.global_symbol):
                 imported_named_shader_fn.append(value)
-                ctx.imported_func_symbol[freevar] = mangled_func_name(ctx, _fn)
+                ctx.imported_func_symbol[freevar] = mangled_func_name(ctx.config, _fn)
                 continue
 
         ctx.eval_local_symbol[freevar] = value
