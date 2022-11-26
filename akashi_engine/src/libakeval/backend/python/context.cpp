@@ -161,10 +161,17 @@ namespace akashi {
                 conf_path = m_state->m_conf_path.to_str();
             }
 
+            // Timer timer;
+            // timer.start();
+
             py::object elem;
             if (py::hasattr(it->second->mod, "__akashi_export_elem_fn")) {
                 elem = it->second->mod.attr("__akashi_export_elem_fn")(conf_path);
             }
+
+            // timer.stop();
+            // AKLOG_DEBUG("render_prof:: get_kron, time: {} sec",
+            // timer.current_time().to_decimal()); timer.start();
 
             try {
                 m_gctx = global_eval(elem, m_state->m_prop.fps);
@@ -172,6 +179,10 @@ namespace akashi {
                 AKLOG_ERROR("{}", e.what());
                 return render_prof;
             }
+
+            // timer.stop();
+            // AKLOG_DEBUG("render_prof:: global_eval, time: {} sec",
+            //             timer.current_time().to_decimal());
 
             render_prof.uuid = m_gctx->uuid;
             render_prof.duration = m_gctx->duration;
@@ -211,6 +222,11 @@ namespace akashi {
             for (auto it = this->m_modules.begin(); it != this->m_modules.end(); it++) {
                 it->second->mod.reload();
             }
+
+            py::module_::import("akashi_core")
+                .attr("pysl")
+                .attr("shader")
+                .attr("_invalidate_compile_cache")();
         }
 
         const state::EvalConfig& PyEvalContext::config(void) {
