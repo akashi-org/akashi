@@ -26,23 +26,25 @@ namespace akashi {
                 plane_ctx.base = *unit_layer;
             }
 
-            std::vector<core::LayerContext> unit_layer_ctxs;
+            std::vector<unsigned long> unit_layer_indices;
             for (const auto& layer_idx : layer_indices) {
                 const auto& layer = ctx.layer_proxies[layer_idx];
 
-                auto layer_ctx = layer.layer_ctx();
-                plane_ctx.layers.push_back(layer_ctx);
+                // [TODO] In terms of performance, we should pass layer index rather than its ctx
+                plane_ctx.layers.push_back(layer.layer_ctx());
 
-                if (static_cast<core::LayerType>(layer_ctx.type) == core::LayerType::UNIT) {
-                    unit_layer_ctxs.push_back(layer_ctx);
+                if (static_cast<core::LayerType>(layer.layer_ctx().type) == core::LayerType::UNIT) {
+                    unit_layer_indices.push_back(layer_idx);
                 }
             }
 
             plane_proxies.push_back(PlaneProxy{plane_ctx});
 
-            for (const auto& layer_ctx : unit_layer_ctxs) {
+            for (const auto& unit_layer_idx : unit_layer_indices) {
+                const auto& unit_layer = ctx.layer_proxies[unit_layer_idx];
+                const auto& unit_layer_ctx = unit_layer.layer_ctx().unit_layer_ctx;
                 for (const auto& rest_plane_ctx : trace_plane_context(
-                         layer_ctx.unit_layer_ctx.layer_indices, ctx, level + 1, &layer_ctx)) {
+                         unit_layer_ctx.layer_indices, ctx, level + 1, &unit_layer.layer_ctx())) {
                     plane_proxies.push_back(rest_plane_ctx);
                 }
             }
