@@ -407,6 +407,9 @@ class CallOut(exprOut):
 def from_Call(node: ast.Call, ctx: CompilerContext) -> CallOut:
 
     if ast.unparse(node).startswith('gl.outer'):
+        if not ctx.is_entry:
+            raise CompileError('gl.outer() is forbidden in lib shader')
+
         eval_raw_body = ast.unparse(node.args[0])
         eval_mangled_body = evaluator.mangle_outer_expr(eval_raw_body)
         if eval_mangled_body not in ctx.outer_expr_map:
@@ -414,6 +417,10 @@ def from_Call(node: ast.Call, ctx: CompilerContext) -> CallOut:
             ctx.outer_expr_map[eval_mangled_body] = eval_res
 
         return CallOut(node, args=[], content=eval_mangled_body)
+
+    if ast.unparse(node).startswith('gl.ceval'):
+        content = evaluator.eval_node(node.args[0], ctx)
+        return CallOut(node, args=[], content=content)
 
     if ast.unparse(node).startswith('gl.inline_stmt'):
         content = compile_expr(node.args[0], ctx).content

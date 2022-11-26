@@ -207,7 +207,7 @@ class TestBasic(unittest.TestCase):
 
         @gl.lib('any')
         def is_positive(a: int) -> bool:
-            return gl.outer(out_true) if a >= 0 else False
+            return gl.ceval(out_true) if a >= 0 else False
 
         expected = '\n'.join([
             'bool test_compiler_is_positive(int a){return (a) >= (0) ? true : false;}',
@@ -439,7 +439,7 @@ class TestControl(unittest.TestCase):
         @gl.lib('any')
         def count4() -> int:
             res: int = 0
-            for i in range(1, gl.outer(to), 2):
+            for i in range(1, gl.ceval(to), 2):
                 res += 1
             return res
 
@@ -564,6 +564,17 @@ class TestClosure(unittest.TestCase):
 
 class TestExtension(unittest.TestCase):
 
+    def test_ceval(self):
+
+        outer_value = 12
+
+        @gl.lib('any')
+        def func() -> None:
+            gl.outer(outer_value)
+
+        with self.assertRaisesRegex(CompileError, r'gl.outer\(\) is forbidden in lib shader') as _:
+            exec_compile_lib_shader(func, TEST_CONFIG)
+
     def test_inline(self):
 
         @gl.lib('any')
@@ -610,62 +621,6 @@ class TestCache(unittest.TestCase):
 
         @gl.lib('frag')
         def add(a: int, b: int) -> int:
-            return compiler_fixtures.outer_func1_no_outer(a, b)
-
-        expected = ''.join([
-            'int compiler_fixtures_outer_func1_no_outer(int a, int b){return (a) + (12);}',
-            'int test_compiler_add(int a, int b){return compiler_fixtures_outer_func1_no_outer(a, b);}'
-        ])
-
-        def _check(_cache: CompileCache | None) -> float:
-            st = time.time()
-            for _ in range(50):
-                self.assertEqual(exec_compile_lib_shader(add, TEST_CONFIG, _cache), expected)
-            return time.time() - st
-
-        cache = CompileCache(config=TEST_CONFIG)
-        compile_lib_shader(add, TEST_CONFIG, cache)
-        cache_time = _check(cache)
-        no_cache_time = _check(None)
-
-        print(f'test_cached_lib_shader: no_cache: {no_cache_time}, cache: {cache_time}')
-        self.assertGreaterEqual(no_cache_time, cache_time)
-
-    def test_cached_lib_shader_has_dynamic_outer(self):
-        ''' 
-          For lib shader, we assume that the first argument of gl.outer() has no side effects.
-          So, we will reuse the result of gl.outer() in the same evalution round. 
-          It should be noted that this behavior is not applicable when hot reloading occurs.
-        '''
-
-        local_value = 0
-
-        def dyn_outer() -> int:
-            nonlocal local_value
-            local_value += 1
-            return local_value
-
-        @gl.lib('frag')
-        def add(a: int, b: int) -> int:
-            return a + gl.outer(dyn_outer())
-
-        expected = lambda x: ''.join([
-            f'int test_compiler_add(int a, int b){{return (a) + ({x});}}'
-        ])
-
-        cache = CompileCache(config=TEST_CONFIG)
-        self.assertEqual(exec_compile_lib_shader(add, TEST_CONFIG, cache), expected(1))
-        # In this line, dyn_outer() returns `2` in practice. But we reuse the previous result.
-        self.assertEqual(exec_compile_lib_shader(add, TEST_CONFIG, cache), expected(1))
-
-        local_value = 0  # reset
-        self.assertEqual(exec_compile_lib_shader(add, TEST_CONFIG), expected(1))
-        self.assertEqual(exec_compile_lib_shader(add, TEST_CONFIG), expected(2))
-
-    def test_cached_lib_shader_with_outer(self):
-
-        @gl.lib('frag')
-        def add(a: int, b: int) -> int:
             return compiler_fixtures.outer_func1(a, b)
 
         expected = ''.join([
@@ -684,19 +639,19 @@ class TestCache(unittest.TestCase):
         cache_time = _check(cache)
         no_cache_time = _check(None)
 
-        print(f'test_cached_lib_shader_with_outer: no_cache: {no_cache_time}, cache: {cache_time}')
+        print(f'test_cached_lib_shader: no_cache: {no_cache_time}, cache: {cache_time}')
         self.assertGreaterEqual(no_cache_time, cache_time)
 
     def test_cached_entry_shaders(self):
 
         @gl.entry(ak.frag)
         def entry_add(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
-            compiler_fixtures.outer_func1_no_outer(1, 12)
+            compiler_fixtures.outer_func1(1, 12)
 
         expected = ''.join([
-            'int compiler_fixtures_outer_func1_no_outer(int a, int b);',
-            'int compiler_fixtures_outer_func1_no_outer(int a, int b){return (a) + (12);}',
-            'void frag_main(inout vec4 color){compiler_fixtures_outer_func1_no_outer(1, 12);}'
+            'int compiler_fixtures_outer_func1(int a, int b);',
+            'int compiler_fixtures_outer_func1(int a, int b){return (a) + (12);}',
+            'void frag_main(inout vec4 color){compiler_fixtures_outer_func1(1, 12);}'
         ])
 
         def _check(_cache: CompileCache | None) -> float:
@@ -715,9 +670,11 @@ class TestCache(unittest.TestCase):
 
     def test_cached_entry_shaders_with_outer(self):
 
+        outer_value = 100
+
         @gl.entry(ak.frag)
         def entry_add(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
-            compiler_fixtures.outer_func1(1, 100)
+            compiler_fixtures.outer_func1(1, gl.outer(100))
 
         expected = ''.join([
             'int compiler_fixtures_outer_func1(int a, int b);',

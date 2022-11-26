@@ -51,6 +51,8 @@ class CompilerContext:
 
     buffers: list = field(default_factory=list[tuple])
 
+    is_entry: bool = False
+
     def clear_symbols(self):
         self.global_symbol = {}
         self.eval_local_symbol = {}

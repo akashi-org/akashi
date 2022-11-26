@@ -136,6 +136,7 @@ def _compile_shader_partial(
         cache: CompileCache | None = None) -> tuple[GLSLFunc, _ImportedShaderFns, _DepsShaders]:
 
     ctx = CompilerContext(config)
+    ctx.is_entry = is_entry
 
     deco_fn = unwrap_shader_func(fn)
     if not deco_fn:
@@ -268,13 +269,9 @@ def compile_entry_shaders(
     imported_named_shader_fns_dict = {}
     imported_glsl_fns: list[GLSLFunc] = []
 
-    ctx = CompilerContext(config)
-
     for idx, fn in enumerate(fns):
 
         entry_glsl_fn = None
-
-        ctx.clear_symbols()
 
         entry_glsl_fn, imported_named_shader_fns, deps_glsls = _compile_shader_partial(
             tp.cast(tp.Callable, fn), config, True, cache
@@ -283,7 +280,7 @@ def compile_entry_shaders(
             imported_glsl_fns += deps_glsls
         else:
             for imp_fn in imported_named_shader_fns:
-                imported_named_shader_fns_dict[mangled_func_name(ctx.config, imp_fn)] = imp_fn
+                imported_named_shader_fns_dict[mangled_func_name(config, imp_fn)] = imp_fn
 
         self_postfix = f'_{idx}' if idx > 0 else ''
         next_postfix = f'_{idx + 1}' if idx != len(fns) - 1 else ''
@@ -300,7 +297,7 @@ def compile_entry_shaders(
         imp_shader_kind = _to_shader_kind(tp.cast(tuple, inspect.getfullargspec(imp_fn).defaults)[0])
         if not can_import(kind, imp_shader_kind):
             raise CompileError(f'Forbidden import {imp_shader_kind} from {kind}')
-        imported_glsl_fns += compile_lib_shader(imp_fn, ctx.config, cache)
+        imported_glsl_fns += compile_lib_shader(imp_fn, config, cache)
 
     res_glsl_fns: list[GLSLFunc] = []
 

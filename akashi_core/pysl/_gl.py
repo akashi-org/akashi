@@ -151,6 +151,10 @@ def outer(__expr: _T) -> _T:
     return __expr
 
 
+def ceval(__expr: _T) -> _T:
+    return __expr
+
+
 def inline_stmt(glsl_src: str):
     ...
 
