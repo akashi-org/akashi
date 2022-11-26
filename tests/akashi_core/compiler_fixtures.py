@@ -9,3 +9,11 @@ def boost(v: int) -> int:
 @gl.lib('any')
 def boost_add(a: int, b: int) -> int:
     return a + boost(b)
+
+
+OUTER_VALUE = 12
+
+
+@gl.lib('any')
+def outer_func1(a: int, b: int) -> int:
+    return a + gl.ceval(OUTER_VALUE)

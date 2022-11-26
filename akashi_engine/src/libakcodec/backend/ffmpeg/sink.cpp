@@ -2,6 +2,7 @@
 
 #include "./error.h"
 #include "./utils.h"
+#include "./hwaccel.h"
 #include "../../encode_item.h"
 
 #include <libakcore/logger.h>
@@ -73,6 +74,52 @@ namespace akashi {
 
     }
 
+    namespace codec::priv {
+
+        class FFOption final {
+          public:
+            explicit FFOption() = default;
+
+            virtual ~FFOption() {
+                if (m_opts) {
+                    av_dict_free(&m_opts);
+                    m_opts = nullptr;
+                }
+            }
+
+            bool parse(const std::string& option_str) {
+                if (auto err = av_dict_parse_string(&m_opts, option_str.c_str(), "=", " ", 0);
+                    err < 0) {
+                    AKLOG_ERROR("av_dict_parse_string() failed, ret={}", av_err2str(err));
+                    return false;
+                }
+                return true;
+            }
+
+            void validate() {
+                if (m_opts && av_dict_count(m_opts) > 0) {
+                    char* format_bufstr = nullptr;
+                    if (av_dict_get_string(m_opts, &format_bufstr, '=', ',') >= 0) {
+                        AKLOG_WARN("Not handled format options found => {}\n", format_bufstr);
+                    }
+                    av_free(format_bufstr);
+                }
+            }
+
+            AVDictionary** addr() {
+                if (m_opts) {
+                    return &m_opts;
+                } else {
+                    return nullptr;
+                }
+            }
+
+          private:
+            AVDictionary* m_opts = nullptr;
+        };
+
+    }
+
     namespace codec {
 
         FFFrameSink::FFFrameSink(core::borrowed_ptr<state::AKState> state)
@@ -132,23 +179,11 @@ namespace akashi {
             }
 
             // init hwdevice ctx if necessary
-            if (m_encode_method == VideoEncodeMethod::VAAPI ||
-                m_encode_method == VideoEncodeMethod::VAAPI_COPY) {
-                if (auto ret = av_hwdevice_ctx_create(&m_hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI,
-                                                      NULL, NULL, 0);
-                    ret < 0) {
-                    AKLOG_ERROR("av_hwdevice_ctx_create() failed, code={}({})", AVERROR(ret),
-                                av_err2str(ret));
-                    return false;
-                }
-                {
-                    auto raw_hw_device_ctx = (AVHWDeviceContext*)m_hw_device_ctx->data;
-                    auto dpy =
-                        static_cast<AVVAAPIDeviceContext*>(raw_hw_device_ctx->hwctx)->display;
-                    AKLOG_INFO("VADisplay: {}", dpy ? "ok" : "null");
-                    AKLOG_INFO("VA Vendor String: {}", vaQueryVendorString(dpy));
-                }
+            if (create_hwdevice_ctx(m_hw_device_ctx, hwaccel::safe_map(m_encode_method),
+                                    m_state->m_video_conf.vaapi_device) < 0) {
+                return false;
             }
+            show_hwdevice_info(m_hw_device_ctx, hwaccel::safe_map(m_encode_method));
 
             // init streams
             if (m_state->m_encode_conf.video_codec != "" && !this->init_video_stream()) {
@@ -165,10 +200,19 @@ namespace akashi {
                 return false;
             }
 
-            if (auto err = avformat_write_header(m_ofmt_ctx, nullptr); err < 0) {
-                AKLOG_ERROR("avformat_write_header() failed, ret={}", av_err2str(err));
-                return false;
+            {
+                priv::FFOption format_opts;
+                if (!format_opts.parse(m_state->m_encode_conf.ffmpeg_format_opts)) {
+                    return false;
+                }
+
+                if (auto err = avformat_write_header(m_ofmt_ctx, format_opts.addr()); err < 0) {
+                    AKLOG_ERROR("avformat_write_header() failed, ret={}", av_err2str(err));
+                    return false;
+                }
+                format_opts.validate();
             }
+
             return true;
         }
 
@@ -566,11 +610,18 @@ namespace akashi {
                 av_buffer_unref(&hw_frames_ref);
             }
 
-            // open encoder
-            // codec_opts?
-            if (auto err = avcodec_open2(enc_ctx, codec, nullptr); err < 0) {
-                AKLOG_ERROR("avcodec_open2() failed, ret={}", av_err2str(err));
-                return false;
+            {
+                priv::FFOption codec_opts;
+                if (!codec_opts.parse(m_state->m_encode_conf.video_ffmpeg_codec_opts)) {
+                    return false;
+                }
+
+                // open encoder
+                if (auto err = avcodec_open2(enc_ctx, codec, codec_opts.addr()); err < 0) {
+                    AKLOG_ERROR("avcodec_open2() failed, ret={}", av_err2str(err));
+                    return false;
+                }
+                codec_opts.validate();
             }
 
             // init stream
@@ -657,11 +708,18 @@ namespace akashi {
                 enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
             }
 
-            // open encoder
-            // codec_opts?
-            if (auto err = avcodec_open2(enc_ctx, codec, nullptr); err < 0) {
-                AKLOG_ERROR("avcodec_open2() failed, ret={}", av_err2str(err));
-                return false;
+            {
+                priv::FFOption codec_opts;
+                if (!codec_opts.parse(m_state->m_encode_conf.audio_ffmpeg_codec_opts)) {
+                    return false;
+                }
+
+                // open encoder
+                if (auto err = avcodec_open2(enc_ctx, codec, codec_opts.addr()); err < 0) {
+                    AKLOG_ERROR("avcodec_open2() failed, ret={}", av_err2str(err));
+                    return false;
+                }
+                codec_opts.validate();
             }
 
             // init stream

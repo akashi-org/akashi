@@ -26,6 +26,8 @@ namespace akashi {
             std::pair<int, int> resolution;
             std::string default_font_path;
             int msaa;
+            VideoDecodeMethod preferred_decode_method;
+            std::string vaapi_device;
         };
 
         struct AudioConf : AKAudioSpec {};
@@ -33,7 +35,6 @@ namespace akashi {
         struct PlaybackConf {
             bool enable_loop;
             double gain;
-            VideoDecodeMethod preferred_decode_method;
             size_t video_max_queue_size;
             size_t video_max_queue_count;
             size_t audio_max_queue_size;
@@ -52,6 +53,9 @@ namespace akashi {
             std::string out_fname;
             std::string video_codec;
             std::string audio_codec;
+            std::string ffmpeg_format_opts;
+            std::string video_ffmpeg_codec_opts;
+            std::string audio_ffmpeg_codec_opts;
             size_t encode_max_queue_count;
             VideoEncodeMethod encode_method;
         };

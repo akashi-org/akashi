@@ -23,7 +23,7 @@ namespace akashi {
 
             m_prop.enable_loop = akconf.playback.enable_loop;
             m_atomic_state.volume = akconf.playback.gain;
-            m_atomic_state.preferred_decode_method = akconf.playback.preferred_decode_method;
+            m_atomic_state.preferred_decode_method = akconf.video.preferred_decode_method;
             m_prop.video_max_queue_size = akconf.playback.video_max_queue_size;
             m_prop.video_max_queue_count = akconf.playback.video_max_queue_count;
             m_prop.audio_max_queue_size = akconf.playback.audio_max_queue_size;

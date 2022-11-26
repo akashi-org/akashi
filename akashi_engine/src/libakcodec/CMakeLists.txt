@@ -18,7 +18,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   "./source.cpp"
   "./backend/ffmpeg/source.cpp"
   "./backend/ffmpeg/sink.cpp"
-  "./backend/ffmpeg/hwdec.cpp"
+  "./backend/ffmpeg/hwaccel.cpp"
   "./backend/ffmpeg/buffer.cpp"
   "./backend/ffmpeg/utils.cpp"
   "./backend/ffmpeg/pts.cpp"
@@ -54,6 +54,7 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE akcore
   PRIVATE akbuffer
   PRIVATE akstate # for akencoder
+  PUBLIC $<$<CONFIG:Debug>:akdebug>
   PRIVATE Threads::Threads
   PRIVATE ${AVDEVICE_LIBRARIES}
   PRIVATE ${AVFORMAT_LIBRARIES}

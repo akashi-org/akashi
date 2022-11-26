@@ -63,6 +63,7 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE akevent
   PRIVATE akgraphics # [TODO] RenderParams, GetProcAddress
   PRIVATE akserver # for asp
+  PRIVATE $<$<CONFIG:Debug>:akdebug>
   PRIVATE EGL
   PRIVATE X11
 )

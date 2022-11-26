@@ -117,6 +117,7 @@ namespace akashi {
                     decode_args.preferred_decode_method =
                         ctx.state->m_atomic_state.preferred_decode_method.load();
                     decode_args.video_max_queue_count = ctx.state->m_prop.video_max_queue_count;
+                    decode_args.vaapi_device = ctx.state->m_video_conf.vaapi_device;
                 }
                 auto decode_res = decoder->decode(decode_args);
 

@@ -1,26 +1,75 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
 
-from .items import CompileError, CompilerContext
+from .items import CompileError, CompilerContext, CompilerConfig, CompileCache
 from akashi_core.pysl import _gl
 
 import typing as tp
 import inspect
 import ast
 import re
+import hashlib
 
 if tp.TYPE_CHECKING:
     from akashi_core.pysl.shader import ShaderCompiler, ShaderKind
 
 
-def get_source(obj) -> str:
-    raw_src = inspect.getsource(obj)
+def _get_raw_source(obj) -> str:
+
+    fname = obj.__code__.co_filename
+    lnum_begin = obj.__code__.co_firstlineno - 1
+    lnum_end = [l for l in obj.__code__.co_lines()][-1][-1] - 1
+    lines: list[str] = []
+    with open(fname, 'r') as f:
+        lnum = 0
+        for line in f:
+            if lnum_begin <= lnum <= lnum_end:
+                lines.append(line)
+            if lnum > lnum_end:
+                break
+            lnum += 1
+
+    return ''.join(lines)
+
+
+def get_ast(deco_fn: tp.Callable, config: CompilerConfig.Config, cache: CompileCache | None = None) -> ast.Module:
+
+    raw_src, root = _get_source(deco_fn, config, cache)
+    if root:
+        return root
+    else:
+        return ast.parse(raw_src)
+
+
+def _strip_indents(raw_src: str) -> str:
 
     # raw_src can be indented already, and that will cause IndentationError in ast.parse().
     # So here we explicitly strip the indents.
     lines = raw_src.split('\n')
     top_indent = m.span()[0] if (m := re.search(r'[^\s]', lines[0])) else 0
     return '\n'.join([ln[top_indent:] for ln in lines])
+
+
+# [TODO] This function is one of the major bottlenecks for compiler
+# Expects `deco_fn` to be already unwrapped
+def _get_source(
+        deco_fn: tp.Callable,
+        config: CompilerConfig.Config,
+        cache: CompileCache | None = None) -> tuple[str, ast.Module | None]:
+
+    if cache:
+        fn_name = mangled_func_name(config, deco_fn, False)
+        if fn_name in cache.fn_map and not cache.fn_dirty_map[fn_name]:
+            raw_src = _strip_indents(cache.fn_map[fn_name].orig_src)
+            return (raw_src, ast.parse(raw_src))
+
+    raw_src = _strip_indents(_get_raw_source(deco_fn))
+    try:
+        # Cases when the last stmt is single line
+        return (raw_src, ast.parse(raw_src))
+    except:
+        # [TODO] inspect.getsource is really slow. Maybe we should replace it with another one
+        return (_strip_indents(inspect.getsource(deco_fn)), None)
 
 
 def get_function_def(root: ast.AST) -> ast.FunctionDef:
@@ -43,7 +92,11 @@ def get_function_def(root: ast.AST) -> ast.FunctionDef:
         return tp.cast(ast.FunctionDef, ctx['node'])
 
 
-def resolve_module(mod_name: str, deco_fn: tp.Callable) -> list[str]:
+def resolve_module(
+        mod_name: str,
+        deco_fn: tp.Callable,
+        config: CompilerConfig.Config,
+        cache: CompileCache | None = None) -> list[str]:
 
     attr_names = []
 
@@ -56,8 +109,7 @@ def resolve_module(mod_name: str, deco_fn: tp.Callable) -> list[str]:
 
             super().visit(node.value)
 
-    py_src = get_source(deco_fn)
-    root = ast.parse(py_src)
+    root = get_ast(deco_fn, config, cache)
 
     Visitor().visit(root)
 
@@ -118,7 +170,7 @@ def unwrap_shader_func(fn: tp.Callable) -> tp.Callable | None:
         return unwrapped
 
 
-def get_mangle_prefix(ctx: CompilerContext, deco_fn: tp.Callable):
+def get_mangle_prefix(config: CompilerConfig.Config, deco_fn: tp.Callable):
 
     full_mod_name = deco_fn.__module__
     simple_mod_name = str(full_mod_name).split('.')[-1]
@@ -127,7 +179,7 @@ def get_mangle_prefix(ctx: CompilerContext, deco_fn: tp.Callable):
     if deco_fn.__name__ != deco_fn.__qualname__:
         local_name = '_' + deco_fn.__qualname__.replace('.<locals>', '').replace('.', '_')
 
-    match ctx.config['mangle_mode']:
+    match config['mangle_mode']:
         case 'hard':
             return simple_mod_name + local_name
         case 'soft':
@@ -136,12 +188,12 @@ def get_mangle_prefix(ctx: CompilerContext, deco_fn: tp.Callable):
             return ''
 
 
-def mangled_func_name(ctx: CompilerContext, deco_fn: tp.Callable, unwrap: bool = True):
+def mangled_func_name(config: CompilerConfig.Config, deco_fn: tp.Callable, unwrap: bool = True):
 
     if unwrap and (_fn := unwrap_shader_func(deco_fn)):
         deco_fn = _fn
 
-    prefix = get_mangle_prefix(ctx, deco_fn)
+    prefix = get_mangle_prefix(config, deco_fn)
     if len(prefix) == 0:
         return deco_fn.__name__
     else:
@@ -169,3 +221,7 @@ def visit_all(node: ast.AST):
 
 def dump_ast(node: ast.AST) -> str:
     return ast.dump(node, indent=2)
+
+
+def get_hash(msg: str) -> str:
+    return hashlib.md5(msg.encode('utf-8')).hexdigest()

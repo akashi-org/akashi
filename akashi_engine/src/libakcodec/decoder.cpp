@@ -43,8 +43,7 @@ namespace akashi {
                 if (!cur_atom_source->done_init()) {
                     cur_atom_source->init(m_render_prof.duration,
                                           m_render_prof.atom_profiles[m_current_atom_idx],
-                                          m_decode_start, decode_arg.preferred_decode_method,
-                                          decode_arg.video_max_queue_count);
+                                          m_decode_start, decode_arg);
                 }
 
                 if (cur_atom_source->can_decode()) {

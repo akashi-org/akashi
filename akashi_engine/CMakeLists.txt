@@ -96,6 +96,10 @@ add_subdirectory("./src/libakserver")
 add_subdirectory("./src/libakstate")
 add_subdirectory("./src/libakevent")
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_subdirectory("./src/libakdebug")
+endif()
+
 add_subdirectory("./src/akkernel")
 set_target_properties(akashi_kernel PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}

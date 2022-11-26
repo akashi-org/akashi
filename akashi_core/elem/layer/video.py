@@ -23,8 +23,7 @@ from .base import peek_entry, register_entry, frag, poly, LayerRef
 
 from akashi_core.pysl import _gl as gl
 from akashi_core.pysl.shader import ShaderCompiler, _video_frag_shader_header, _video_poly_shader_header
-from akashi_core.pysl.shader import LEntryFragFn, LEntryPolyFn
-from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
+from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque, ShaderMemoType
 
 
 @dataclass
@@ -66,8 +65,8 @@ class VideoPolyBuffer(poly, VideoUniform, VideoPolyOutput):
     ...
 
 
-_VideoFragFn = LEntryFragFn[VideoFragBuffer] | _TEntryFnOpaque[_NamedEntryFragFn[VideoFragBuffer]]
-_VideoPolyFn = LEntryPolyFn[VideoPolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn[VideoPolyBuffer]]
+_VideoFragFn = _TEntryFnOpaque[_NamedEntryFragFn[VideoFragBuffer]]
+_VideoPolyFn = _TEntryFnOpaque[_NamedEntryPolyFn[VideoPolyBuffer]]
 
 
 @dataclass
@@ -122,16 +121,16 @@ class VideoTrait(LayerTrait):
         self.tex = TextureTrait(self._idx)
         self.transform = TransformTrait(self._idx)
 
-    def frag(self, *frag_fns: _VideoFragFn, preamble: tuple[str, ...] = tuple()) -> 'VideoTrait':
+    def frag(self, *frag_fns: _VideoFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'VideoTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.shader.frag_shader = ShaderCompiler(
-                frag_fns, VideoFragBuffer, _video_frag_shader_header, preamble)
+                frag_fns, VideoFragBuffer, _video_frag_shader_header, preamble, memo)
         return self
 
-    def poly(self, *poly_fns: _VideoPolyFn, preamble: tuple[str, ...] = tuple()) -> 'VideoTrait':
+    def poly(self, *poly_fns: _VideoPolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'VideoTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
             cur_layer.shader.poly_shader = ShaderCompiler(
-                poly_fns, VideoPolyBuffer, _video_poly_shader_header, preamble)
+                poly_fns, VideoPolyBuffer, _video_poly_shader_header, preamble, memo)
         return self
 
 

@@ -23,8 +23,7 @@ namespace akashi {
 
             virtual bool init(const core::LayerProfile& layer_profile,
                               const core::Rational& decode_start,
-                              const core::VideoDecodeMethod& preferred_decode_method,
-                              const size_t video_max_queue_count) = 0;
+                              const DecodeArg& init_decode_arg) = 0;
 
             virtual DecodeResult decode(const DecodeArg& decode_arg) = 0;
 
@@ -52,9 +51,7 @@ namespace akashi {
             virtual ~AtomSource();
 
             void init(const core::Rational& global_duration, const core::AtomProfile& atom_profile,
-                      const core::Rational& decode_start,
-                      const core::VideoDecodeMethod& preferred_decode_method,
-                      const size_t video_max_queue_count);
+                      const core::Rational& decode_start, const DecodeArg& init_decode_arg);
 
             DecodeResult decode(const DecodeArg& decode_arg);
 
@@ -75,8 +72,7 @@ namespace akashi {
             core::AtomProfile m_atom_profile;
             bool m_can_decode = true;
             bool m_done_init = false;
-            core::VideoDecodeMethod m_preferred_decode_method;
-            size_t m_video_max_queue_count = 0;
+            DecodeArg m_init_decode_arg;
             core::Rational m_dts_src = core::Rational(0, 1);
             core::Rational m_dts_dest = core::Rational(0, 1);
             core::Rational m_global_duration = core::Rational(0, 1);

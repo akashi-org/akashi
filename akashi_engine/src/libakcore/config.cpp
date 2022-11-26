@@ -15,16 +15,18 @@ namespace akashi {
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Fraction, num, den);
 
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GenerelConf, entry_file, include_dir);
-        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VideoConf, fps, resolution, default_font_path, msaa);
+        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VideoConf, fps, resolution, default_font_path, msaa,
+                                           preferred_decode_method, vaapi_device);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AudioConf, format, sample_rate, channels,
                                            channel_layout);
-        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PlaybackConf, enable_loop, gain, preferred_decode_method,
-                                           video_max_queue_size, video_max_queue_count,
-                                           audio_max_queue_size);
+        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PlaybackConf, enable_loop, gain, video_max_queue_size,
+                                           video_max_queue_count, audio_max_queue_size);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(UIConf, resolution, window_mode, smart_immersive,
                                            frameless_window);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(EncodeConf, out_fname, video_codec, audio_codec,
-                                           encode_max_queue_count, encode_method);
+                                           ffmpeg_format_opts, video_ffmpeg_codec_opts,
+                                           audio_ffmpeg_codec_opts, encode_max_queue_count,
+                                           encode_method);
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AKConf, general, video, audio, playback, ui, encode);
 
         // clang-format off

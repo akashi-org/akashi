@@ -32,6 +32,11 @@ class CompilerConfig:
         }
 
 
+GLSLOuterExprKey = str
+
+GLSLOuterExprEvalResult = str
+
+
 @dataclass
 class CompilerContext:
     config: CompilerConfig.Config
@@ -42,7 +47,11 @@ class CompilerContext:
     lambda_args: dict = field(default_factory=dict)
     imported_func_symbol: dict = field(default_factory=dict)
 
+    outer_expr_map: dict[GLSLOuterExprKey, GLSLOuterExprEvalResult] = field(default_factory=dict)
+
     buffers: list = field(default_factory=list[tuple])
+
+    is_entry: bool = False
 
     def clear_symbols(self):
         self.global_symbol = {}
@@ -56,5 +65,19 @@ class CompilerContext:
 @dataclass(frozen=True)
 class GLSLFunc:
     src: str
+    orig_src: str
+    orig_src_hash: str
     mangled_func_name: str
     func_decl: str
+    shader_kind: 'ShaderKind'
+    is_entry: bool = False
+    outer_expr_keys: tuple[GLSLOuterExprKey, ...] = field(default_factory=tuple)
+    outer_expr_values: tuple[GLSLOuterExprEvalResult, ...] = field(default_factory=tuple)
+    imported_mangled_func_names: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass
+class CompileCache:
+    config: CompilerConfig.Config
+    fn_map: dict[str, GLSLFunc] = field(default_factory=dict)
+    fn_dirty_map: dict[str, bool] = field(default_factory=dict)

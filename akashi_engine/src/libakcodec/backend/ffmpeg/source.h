@@ -81,8 +81,7 @@ namespace akashi {
 
             virtual bool init(const core::LayerProfile& layer_profile,
                               const core::Rational& decode_start,
-                              const core::VideoDecodeMethod& preferred_decode_method,
-                              const size_t video_max_queue_count) override;
+                              const DecodeArg& init_decode_arg) override;
 
             virtual DecodeResult decode(const DecodeArg& decode_arg) override;
 
@@ -101,12 +100,11 @@ namespace akashi {
           private:
             bool init_inputsrc(const core::LayerProfile& layer_profile,
                                const core::Rational& decode_start,
-                               const core::VideoDecodeMethod& preferred_decode_method,
-                               const size_t video_max_queue_count);
+                               const DecodeArg& init_decode_arg);
 
             int read_avformat();
 
-            int read_avstream();
+            int read_avstream(const DecodeArg& init_decode_arg);
 
             bool demux_priv(DecodeResult* decode_result);
 

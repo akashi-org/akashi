@@ -21,8 +21,7 @@ from .base import (
 from .base import peek_entry, register_entry, frag, poly, LayerRef
 from akashi_core.pysl import _gl as gl
 from akashi_core.pysl.shader import ShaderCompiler, _frag_shader_header, _poly_shader_header
-from akashi_core.pysl.shader import LEntryFragFn, LEntryPolyFn
-from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
+from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque, ShaderMemoType
 
 
 @dataclass
@@ -40,8 +39,8 @@ class TextPolyBuffer(poly, TextUniform, gl._LayerPolyOutput):
     ...
 
 
-_TextFragFn = LEntryFragFn[TextFragBuffer] | _TEntryFnOpaque[_NamedEntryFragFn[TextFragBuffer]]
-_TextPolyFn = LEntryPolyFn[TextPolyBuffer] | _TEntryFnOpaque[_NamedEntryPolyFn[TextPolyBuffer]]
+_TextFragFn = _TEntryFnOpaque[_NamedEntryFragFn[TextFragBuffer]]
+_TextPolyFn = _TEntryFnOpaque[_NamedEntryPolyFn[TextPolyBuffer]]
 
 
 TextAlign = tp.Literal['left', 'center', 'right']
@@ -168,14 +167,16 @@ class TextTrait(LayerTrait, LayerTimeTrait):
         self.tex = TextureTrait(self._idx)
         self.transform = TransformTrait(self._idx)
 
-    def frag(self, *frag_fns: _TextFragFn, preamble: tuple[str, ...] = tuple()) -> 'TextTrait':
+    def frag(self, *frag_fns: _TextFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'TextTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.shader.frag_shader = ShaderCompiler(frag_fns, TextFragBuffer, _frag_shader_header, preamble)
+            cur_layer.shader.frag_shader = ShaderCompiler(
+                frag_fns, TextFragBuffer, _frag_shader_header, preamble, memo)
         return self
 
-    def poly(self, *poly_fns: _TextPolyFn, preamble: tuple[str, ...] = tuple()) -> 'TextTrait':
+    def poly(self, *poly_fns: _TextPolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'TextTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.shader.poly_shader = ShaderCompiler(poly_fns, TextPolyBuffer, _poly_shader_header, preamble)
+            cur_layer.shader.poly_shader = ShaderCompiler(
+                poly_fns, TextPolyBuffer, _poly_shader_header, preamble, memo)
         return self
 
 

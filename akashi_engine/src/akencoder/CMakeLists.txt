@@ -32,6 +32,7 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE akcodec
   PRIVATE akbuffer
   PRIVATE akgraphics
+  PRIVATE $<$<CONFIG:Debug>:akdebug>
   PRIVATE Threads::Threads
   PRIVATE atomic
   PUBLIC ${AKASHI_PRIV_SHARED_DEPS}_glfw

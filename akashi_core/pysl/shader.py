@@ -1,7 +1,8 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
-from .compiler.items import CompilerConfig
-from .compiler.compiler import compile_shaders
+from .compiler.items import CompilerConfig, CompileCache
+from .compiler.compiler import compile_entry_shaders, _get_imported_mangled_func_names
+from .compiler.evaluator import eval_entry_glsl_fns
 from . import _gl
 
 import typing as tp
@@ -9,8 +10,7 @@ from dataclasses import dataclass, field
 
 ShaderKind = tp.Literal['AnyShader', 'FragShader', 'PolygonShader', 'GeomShader']
 
-LEntryFragFn = tp.Callable[[tp.Type[_gl._expr], _gl._TFragBuffer, _gl.frag_color], _gl._expr]
-LEntryPolyFn = tp.Callable[[tp.Type[_gl._expr], _gl._TPolyBuffer, _gl.poly_pos], _gl._expr]
+ShaderMemoType = list[tp.Hashable] | None
 
 
 _T_co = tp.TypeVar('_T_co', covariant=True)
@@ -23,40 +23,64 @@ class _TEntryFnOpaque(tp.Generic[_T_co]):
 _NamedEntryFragFn = tp.Callable[[_gl._TFragBuffer, _gl.frag_color], None]
 _NamedEntryPolyFn = tp.Callable[[_gl._TPolyBuffer, _gl.poly_pos], None]
 
+_COMPILE_CONFIG = CompilerConfig.default()
+_COMPILE_CACHE = CompileCache(config=_COMPILE_CONFIG)
+
+_ARTIFACT_CACHE = {}
+
+
+def _invalidate_compile_cache():
+    global _COMPILE_CACHE
+    _COMPILE_CACHE = CompileCache(config=_COMPILE_CONFIG)
+
+
+def _invalidate_artifact_cache():
+    global _ARTIFACT_CACHE
+    _ARTIFACT_CACHE = {}
+
 
 @dataclass
 class ShaderCompiler:
     __glsl_version__: tp.ClassVar[str] = '#version 420 core\n'
-    _assemble_cache: tp.Optional[str] = field(default=None, init=False)
 
     shaders: tuple
     buffer_type: tp.Type[_gl._buffer_type]
     header: list[str] = field(default_factory=list)
     preamble: tuple[str, ...] = field(default_factory=tuple)
+    memo: ShaderMemoType = None
 
-    def _header(self, config: CompilerConfig.Config) -> str:
+    def _header(self, config: CompilerConfig.Config) -> list[str]:
         if not config['pretty_compile']:
-            return ''.join(self.header)
+            return self.header
         else:
-            return '\n'.join(self.header) + '\n'
+            return [s + '\n' for s in self.header]
 
-    def _preamble(self, config: CompilerConfig.Config) -> str:
+    def _preamble(self, config: CompilerConfig.Config) -> list[str]:
         if len(self.preamble) == 0:
-            return self.__glsl_version__
+            return [self.__glsl_version__]
         else:
             if not config['pretty_compile']:
-                return self.__glsl_version__ + '\n'.join(self.preamble) + '\n'
+                return [self.__glsl_version__] + [p + '\n' for p in self.preamble]
             else:
-                return self.__glsl_version__ + '\n'.join(self.preamble) + '\n' + '\n'
+                return [self.__glsl_version__] + [p + '\n' for p in self.preamble] + ['\n']
 
-    def _invalidate_cache(self):
-        self._assemble_cache = None
+    def _compile(self, config: CompilerConfig.Config) -> str:
+        artifacts = self._preamble(config) + self._header(config)
+        artifacts += eval_entry_glsl_fns(compile_entry_shaders(self.shaders,
+                                                               self.buffer_type, config, _COMPILE_CACHE))
+        return ''.join(artifacts)
 
-    def _assemble(self, config: CompilerConfig.Config = CompilerConfig.default()) -> str:
-        if not self._assemble_cache:
-            self._assemble_cache = self._preamble(config) + self._header(config)
-            self._assemble_cache += compile_shaders(self.shaders, self.buffer_type, config)
-        return self._assemble_cache
+    def _assemble(self) -> str:
+        if self.memo is None:
+            return self._compile(_COMPILE_CONFIG)
+
+        fn_names = _get_imported_mangled_func_names(list(self.shaders), _COMPILE_CONFIG)
+        a_key = (tuple(fn_names), tuple(self.memo))
+        if a_key in _ARTIFACT_CACHE:
+            return _ARTIFACT_CACHE[a_key]
+        else:
+            _ARTIFACT_CACHE[a_key] = self._compile(_COMPILE_CONFIG)
+            return _ARTIFACT_CACHE[a_key]
 
 
 _frag_shader_header: list[str] = [
