@@ -12,7 +12,7 @@ def akconfig():
             fps=ak.sec(30),
             resolution=(1920, 1080),
             msaa=1,
-            preferred_decode_method='vaapi',  # if you prefer software decoding, set 'sw' instead
+            preferred_decode_method='vaapi',  # If you prefer software decoding, set 'sw' instead
         ),
         audio=ak.AudioConf(
             format='flt',
@@ -24,7 +24,7 @@ def akconfig():
             gain=0.5  # 0 ~ 1.0
         ),
         ui=ak.UIConf(
-            resolution=(800, 450)  # initial resolution of the monitor
+            resolution=(800, 450)  # Initial resolution (w, h) of the monitor. `w >= h` is required.
         ),
         encode=ak.EncodeConf(
             # ffmpeg_format_opts="movflags=+faststart",

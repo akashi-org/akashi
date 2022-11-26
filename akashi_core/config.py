@@ -71,11 +71,17 @@ class UIConf:
     smart_immersive: bool = False
     frameless_window: bool = True
 
+    def __post_init__(self):
+
+        w, h = self.resolution
+        if h > w:
+            raise Exception('`resolution[0]` in UIConf must not be lower than `resolution[1]`')
+
 
 VideoEncodeMethod = Literal['', 'sw', 'vaapi', 'vaapi_copy']
 
 
-@dataclass
+@dataclass(frozen=True)
 class EncodeConf:
     video_codec: str = ''
     audio_codec: str = ''
@@ -90,11 +96,11 @@ class EncodeConf:
 @dataclass(frozen=True)
 class AKConf:
     general: GenerelConf
-    video: VideoConf = VideoConf()
-    audio: AudioConf = AudioConf()
-    playback: PlaybackConf = PlaybackConf()
-    ui: UIConf = UIConf()
-    encode: EncodeConf = EncodeConf()
+    video: VideoConf
+    audio: AudioConf
+    playback: PlaybackConf
+    ui: UIConf
+    encode: EncodeConf
 
     def to_json(self) -> str:
 
