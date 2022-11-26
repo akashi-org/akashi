@@ -18,7 +18,7 @@ from .base import (
 from .base import peek_entry, register_entry, frag, poly, LayerRef
 from akashi_core.pysl import _gl as gl
 from akashi_core.pysl.shader import ShaderCompiler, _frag_shader_header, _poly_shader_header
-from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
+from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque, ShaderMemoType
 
 from akashi_core.elem.context import lcenter
 
@@ -81,14 +81,16 @@ class ImageTrait(LayerTrait, LayerTimeTrait):
         self.crop = CropTrait(self._idx)
         self.tex = TextureTrait(self._idx)
 
-    def frag(self, *frag_fns: _ImageFragFn, preamble: tuple[str, ...] = tuple()) -> 'ImageTrait':
+    def frag(self, *frag_fns: _ImageFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'ImageTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ImageEntry):
-            cur_layer.shader.frag_shader = ShaderCompiler(frag_fns, ImageFragBuffer, _frag_shader_header, preamble)
+            cur_layer.shader.frag_shader = ShaderCompiler(
+                frag_fns, ImageFragBuffer, _frag_shader_header, preamble, memo)
         return self
 
-    def poly(self, *poly_fns: _ImagePolyFn, preamble: tuple[str, ...] = tuple()) -> 'ImageTrait':
+    def poly(self, *poly_fns: _ImagePolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'ImageTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ImageEntry):
-            cur_layer.shader.poly_shader = ShaderCompiler(poly_fns, ImagePolyBuffer, _poly_shader_header, preamble)
+            cur_layer.shader.poly_shader = ShaderCompiler(
+                poly_fns, ImagePolyBuffer, _poly_shader_header, preamble, memo)
         return self
 
 

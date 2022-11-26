@@ -20,7 +20,7 @@ from .base import (
 from .base import peek_entry, register_entry, frag, poly, LayerRef
 from akashi_core.pysl import _gl as gl
 from akashi_core.pysl.shader import ShaderCompiler, _frag_shader_header, _poly_shader_header
-from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque
+from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque, ShaderMemoType
 
 import math
 
@@ -177,14 +177,16 @@ class ShapeTrait(LayerTrait, LayerTimeTrait):
         self.transform = TransformTrait(self._idx)
         self.tex = TextureTrait(self._idx)
 
-    def frag(self, *frag_fns: _ShapeFragFn, preamble: tuple[str, ...] = tuple()) -> 'ShapeTrait':
+    def frag(self, *frag_fns: _ShapeFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'ShapeTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
-            cur_layer.shader.frag_shader = ShaderCompiler(frag_fns, ShapeFragBuffer, _frag_shader_header, preamble)
+            cur_layer.shader.frag_shader = ShaderCompiler(
+                frag_fns, ShapeFragBuffer, _frag_shader_header, preamble, memo)
         return self
 
-    def poly(self, *poly_fns: _ShapePolyFn, preamble: tuple[str, ...] = tuple()) -> 'ShapeTrait':
+    def poly(self, *poly_fns: _ShapePolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'ShapeTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
-            cur_layer.shader.poly_shader = ShaderCompiler(poly_fns, ShapePolyBuffer, _poly_shader_header, preamble)
+            cur_layer.shader.poly_shader = ShaderCompiler(
+                poly_fns, ShapePolyBuffer, _poly_shader_header, preamble, memo)
         return self
 
 

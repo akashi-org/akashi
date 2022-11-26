@@ -24,7 +24,8 @@ from akashi_core.pysl.shader import (
     _poly_shader_header,
     _NamedEntryFragFn,
     _NamedEntryPolyFn,
-    _TEntryFnOpaque
+    _TEntryFnOpaque,
+    ShaderMemoType
 )
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.elem.context import lwidth as ak_lwidth
@@ -162,14 +163,14 @@ class UnitHandle(LayerTrait):
             cur_layer.unit._layout_fn = layout_fn
         return self
 
-    def frag(self, *frag_fns: _UnitFragFn, preamble: tuple[str, ...] = tuple()) -> 'UnitHandle':
+    def frag(self, *frag_fns: _UnitFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'UnitHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
-            cur_layer.shader.frag_shader = ShaderCompiler(frag_fns, UnitFragBuffer, _frag_shader_header, preamble)
+            cur_layer.shader.frag_shader = ShaderCompiler(frag_fns, UnitFragBuffer, _frag_shader_header, preamble, memo)
         return self
 
-    def poly(self, *poly_fns: _UnitPolyFn, preamble: tuple[str, ...] = tuple()) -> 'UnitHandle':
+    def poly(self, *poly_fns: _UnitPolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'UnitHandle':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
-            cur_layer.shader.poly_shader = ShaderCompiler(poly_fns, UnitPolyBuffer, _poly_shader_header, preamble)
+            cur_layer.shader.poly_shader = ShaderCompiler(poly_fns, UnitPolyBuffer, _poly_shader_header, preamble, memo)
         return self
 
     def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'UnitHandle':

@@ -223,10 +223,9 @@ namespace akashi {
                 it->second->mod.reload();
             }
 
-            py::module_::import("akashi_core")
-                .attr("pysl")
-                .attr("shader")
-                .attr("_invalidate_compile_cache")();
+            auto shader_mod = py::module_::import("akashi_core").attr("pysl").attr("shader");
+            shader_mod.attr("_invalidate_compile_cache")();
+            shader_mod.attr("_invalidate_artifact_cache")();
         }
 
         const state::EvalConfig& PyEvalContext::config(void) {
