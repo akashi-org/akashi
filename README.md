@@ -34,7 +34,7 @@ def main():
         color.b *= 2.0
 
     ak.video(ak.from_relpath(__file__, './dog.mp4'), lambda t: (
-        t.duration(10),
+        t.media.span_dur(10),
         t.transform.layer_size(ak.width(), -1),
         t.frag(blue_filter)
     ))
