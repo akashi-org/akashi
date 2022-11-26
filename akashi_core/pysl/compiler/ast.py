@@ -406,9 +406,9 @@ class CallOut(exprOut):
 
 def from_Call(node: ast.Call, ctx: CompilerContext) -> CallOut:
 
-    if ast.unparse(node).startswith('gl.outer'):
+    if ast.unparse(node).startswith('gl.eval'):
         if not ctx.is_entry:
-            raise CompileError('gl.outer() is forbidden in lib shader')
+            raise CompileError('gl.eval() is forbidden in lib shader')
 
         eval_raw_body = ast.unparse(node.args[0])
         eval_mangled_body = evaluator.mangle_outer_expr(eval_raw_body)

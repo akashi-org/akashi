@@ -477,7 +477,7 @@ class TestBuffer(unittest.TestCase):
 
         @gl.entry(ak.frag)
         def vec_attr(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
-            color.x = buffer.time * module_global_add(12, 1) * compiler_fixtures.boost_add(20, gl.outer(ddd))
+            color.x = buffer.time * module_global_add(12, 1) * compiler_fixtures.boost_add(20, gl.eval(ddd))
 
         expected = ''.join([
             'int test_compiler_module_global_add(int a, int b);',
@@ -552,7 +552,7 @@ class TestClosure(unittest.TestCase):
         def gen(arg_value: int):
             @gl.entry(ak.frag)
             def vec_attr(buffer: ak.frag, cl: gl.inout_p[gl.vec4]) -> None:
-                cl.x = buffer.time * 12 + gl.outer(arg_value)
+                cl.x = buffer.time * 12 + gl.eval(arg_value)
             return vec_attr
 
         expected = ''.join([
@@ -570,9 +570,9 @@ class TestExtension(unittest.TestCase):
 
         @gl.lib('any')
         def func() -> None:
-            gl.outer(outer_value)
+            gl.eval(outer_value)
 
-        with self.assertRaisesRegex(CompileError, r'gl.outer\(\) is forbidden in lib shader') as _:
+        with self.assertRaisesRegex(CompileError, r'gl.eval\(\) is forbidden in lib shader') as _:
             exec_compile_lib_shader(func, TEST_CONFIG)
 
     def test_inline(self):
@@ -674,7 +674,7 @@ class TestCache(unittest.TestCase):
 
         @gl.entry(ak.frag)
         def entry_add(buffer: ak.frag, color: gl.inout_p[gl.vec4]) -> None:
-            compiler_fixtures.outer_func1(1, gl.outer(100))
+            compiler_fixtures.outer_func1(1, gl.eval(100))
 
         expected = ''.join([
             'int compiler_fixtures_outer_func1(int a, int b);',

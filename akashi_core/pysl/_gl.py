@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 __all__ = [
-    "outer",
+    "eval",
+    "ceval",
+    "inline_stmt",
     "gl_FragCoord",
     "uint", "double",
     "vec2", "vec3", "vec4",
@@ -147,12 +149,12 @@ def _out_t_default() -> out_t[Any]:
 ''' PYSL extentions '''
 
 
-def outer(__expr: _T) -> _T:
-    return __expr
+def eval(__expr: _T) -> _T:
+    ...
 
 
 def ceval(__expr: _T) -> _T:
-    return __expr
+    ...
 
 
 def inline_stmt(glsl_src: str):
