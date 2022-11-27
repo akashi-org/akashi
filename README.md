@@ -50,11 +50,11 @@ TBD
 
 * Linux (tested on Debian 11) 
 * OpenGL core profile 4.2 or later
-* Python 3.10 or later
+* Python 3.11.x
 
 ### Runtime Dependencies
 
-* FFmpeg 4.x
+* FFmpeg 4.x or 5.x
 * SDL2, SDL_ttf, SDL_image
 * Qt5
 
