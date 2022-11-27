@@ -30,7 +30,7 @@ VideoDecodeMethod = Literal['', 'sw', 'vaapi', 'vaapi_copy']
 
 @dataclass(frozen=True)
 class VideoConf:
-    fps: sec = sec(24)
+    fps: sec = field(default_factory=lambda: sec(24))
     resolution: Tuple[int, int] = (1920, 1080)
     default_font_path: str = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
     msaa: int = 1  # msaa >= 1

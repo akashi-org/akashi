@@ -33,11 +33,14 @@ namespace akashi {
             }
         }
 
-        AKEval::~AKEval() {}
+        AKEval::~AKEval() { this->exit(); }
 
         void AKEval::exit(void) {
-            W_ASSERT();
-            m_eval_ctx->exit();
+            if (!m_exited) {
+                W_ASSERT();
+                m_eval_ctx->exit();
+                m_exited = true;
+            }
         }
 
         core::FrameContext AKEval::eval_kron(const char* module_path, const KronArg& kron_arg) {

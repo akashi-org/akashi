@@ -26,8 +26,23 @@ namespace akashi {
         EventLoop::EventLoop(){};
 
         EventLoop::~EventLoop() {
+            // m_is_alive.store(false);
+            // m_state_event_empty.cv.notify_all();
+            // {
+            //     std::lock_guard<std::mutex> lock(m_on_thread_exit.mtx);
+            //     if (m_on_thread_exit.func) {
+            //         m_on_thread_exit.func(m_on_thread_exit.ctx);
+            //     }
+            // }
+            // if (m_th) {
+            //     delete m_th;
+            // }
+        }
+
+        void EventLoop::close_and_wait() {
             m_is_alive.store(false);
-            m_state_event_empty.cv.notify_all();
+            // m_state_event_empty.cv.notify_all();
+            this->set_event_empty(false, true);
             {
                 std::lock_guard<std::mutex> lock(m_on_thread_exit.mtx);
                 if (m_on_thread_exit.func) {
@@ -35,7 +50,9 @@ namespace akashi {
                 }
             }
             if (m_th) {
+                m_th->join();
                 delete m_th;
+                m_th = nullptr;
             }
         }
 
@@ -60,16 +77,16 @@ namespace akashi {
 
         void EventLoop::event_thread(EventLoopContext ctx, EventLoop* loop) {
             auto [state, event, eval_buf, buffer] = ctx;
-            AKLOG_INFON("Event thread start");
+            AKLOG_INFON("EventLoop start");
 
             auto eval = make_owned<eval::AKEval>(borrowed_ptr(state));
 
-            loop->set_on_thread_exit(
-                [](void* ctx) {
-                    auto eval_ = reinterpret_cast<eval::AKEval*>(ctx);
-                    eval_->exit();
-                },
-                eval.get());
+            // loop->set_on_thread_exit(
+            //     [](void* ctx) {
+            //         auto eval_ = reinterpret_cast<eval::AKEval*>(ctx);
+            //         eval_->exit();
+            //     },
+            //     eval.get());
 
             EventLoop::pull_render_profile(ctx, borrowed_ptr(eval));
 
@@ -86,10 +103,11 @@ namespace akashi {
 
             HRManager hr_mgr{state, buffer, event, eval_buf, borrowed_ptr(eval)};
 
-            AKLOG_INFON("Event loop start");
-
-            while (loop->m_is_alive.load()) {
+            while (true) {
                 loop->wait_for_not_event_empty();
+                if (!loop->m_is_alive.load()) {
+                    break;
+                }
 
                 auto evt = loop->back();
                 switch (evt.name) {
@@ -136,6 +154,8 @@ namespace akashi {
                 }
                 loop->pop();
             }
+
+            AKLOG_INFON("EventLoop successfully exited");
         }
 
         void EventLoop::pull_render_profile(EventLoopContext& ctx,

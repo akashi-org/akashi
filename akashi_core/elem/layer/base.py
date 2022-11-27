@@ -1,6 +1,6 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import typing as tp
 from typing import runtime_checkable
 
@@ -34,9 +34,9 @@ class LayerField:
     atom_uuid: UUID = UUID('')
     kind: LayerKind = 'LAYER'
     key: str = ''
-    duration: sec = NOT_FIXED_SEC
-    _duration: sec | 'tp.Type[root]' | 'UnitHandle' = sec(5)
-    atom_offset: sec = sec(0)
+    duration: sec = field(default_factory=lambda: NOT_FIXED_SEC)
+    _duration: sec | 'tp.Type[root]' | 'UnitHandle' = field(default_factory=lambda: sec(5))
+    atom_offset: sec = field(default_factory=lambda: sec(0))
 
 
 @dataclass
@@ -75,7 +75,7 @@ class TransformField:
     pos: tuple[int, int] = (0, 0)
     z: float = 0.0
     layer_size: tuple[int, int] = (-1, -1)
-    rotation: sec = sec(0)
+    rotation: sec = field(default_factory=lambda: sec(0))
 
 
 @runtime_checkable
@@ -189,8 +189,8 @@ class TextureTrait:
 class MediaField:
     src: str
     gain: float = 1.0
-    start: sec = sec(0)
-    end: sec = sec(-1)
+    start: sec = field(default_factory=lambda: sec(0))
+    end: sec = field(default_factory=lambda: sec(-1))
     _span_cnt: int | None = None
     _span_dur: None | sec | 'tp.Type[root]' | 'UnitHandle' = None
 
@@ -249,7 +249,7 @@ def __is_atom_active(atom_uuid: UUID, raise_exp: bool = True) -> bool:
 
     cur_atom = gctx.get_ctx().atoms[-1]
     r = atom_uuid == cur_atom.uuid
-    if raise_exp and not(r):
+    if raise_exp and not (r):
         raise Exception('Update for an inactive atom is forbidden')
     else:
         return r

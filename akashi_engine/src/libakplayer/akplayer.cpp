@@ -25,7 +25,10 @@ namespace akashi {
 
         AKPlayer::AKPlayer(core::borrowed_ptr<state::AKState> state) : m_state(state) {}
 
-        AKPlayer::~AKPlayer() { m_audio->destroy(); }
+        AKPlayer::~AKPlayer() {
+            m_audio->destroy();
+            m_event->close_and_wait();
+        }
 
         void AKPlayer::init(event::EventCallback cb, void* evt_ctx,
                             graphics::GetProcAddress get_proc_address,

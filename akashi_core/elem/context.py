@@ -58,7 +58,7 @@ class AtomEntry:
     uuid: UUID
     layer_indices: list[int] = field(default_factory=list, init=False)
     bg_color: str = "#000000"  # "#rrggbb"
-    _duration: sec = field(default=sec(0), init=False)
+    _duration: sec = field(default_factory=lambda: sec(0), init=False)
 
 
 @dataclass

@@ -65,10 +65,12 @@ namespace akashi {
 
             virtual ~EventLoop();
 
-            void run(EventLoopContext ctx) {
+            // [TODO] Should be renamed later
+            void run2(EventLoopContext ctx) {
                 m_th = new std::thread(&EventLoop::event_thread, ctx, this);
-                m_th->detach();
             }
+
+            void close_and_wait();
 
             void set_on_thread_exit(std::function<void(void*)> on_thread_exit, void* ctx) {
                 {

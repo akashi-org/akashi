@@ -1,12 +1,12 @@
 project (akeval CXX)
 
-find_package(Python 3.10 COMPONENTS Interpreter Development REQUIRED)
+find_package(Python 3.11 COMPONENTS Interpreter Development REQUIRED)
 message("-- Python Found " ${Python_VERSION})
 message("-- Python INCLUDE_DIRS " ${Python_INCLUDE_DIRS})
 
 FetchContent_Declare(pybind11
   GIT_REPOSITORY https://github.com/pybind/pybind11
-  GIT_TAG v2.6.2 # use v2.6.2 for avoiding segv due to the change introduced by https://github.com/pybind/pybind11/pull/2919
+  GIT_TAG v2.10.1
   GIT_SHALLOW TRUE
   GIT_PROGRESS TRUE
 )
