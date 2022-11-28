@@ -68,11 +68,12 @@ namespace akashi {
         }
 
         void ListWidget::destroy() {
-            {
-                std::lock_guard<std::mutex> lock(m_thread_alive.mtx);
-                m_thread_alive.value = false;
-            }
             if (m_th) {
+                {
+                    std::lock_guard<std::mutex> lock(m_thread_alive.mtx);
+                    m_thread_alive.value = false;
+                }
+
                 m_th->join();
                 delete m_th;
                 m_th = nullptr;

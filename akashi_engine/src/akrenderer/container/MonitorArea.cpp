@@ -13,10 +13,11 @@ namespace akashi {
     namespace ui {
 
         MonitorArea::MonitorArea(akashi::core::borrowed_ptr<akashi::state::AKState> state,
+                                 akashi::core::borrowed_ptr<akashi::player::AKPlayer> player,
                                  QWidget* parent)
             : QWidget(parent) {
             this->setObjectName("monitor_area");
-            m_player = new PlayerWidget(state, this);
+            m_player = new PlayerWidget(state, player, this);
 
             // player -> parent
             QObject::connect(m_player, SIGNAL(time_changed(const akashi::core::Rational&)),

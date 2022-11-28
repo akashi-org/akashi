@@ -20,6 +20,9 @@ namespace akashi {
         class AKState;
         enum class PlayState;
     }
+    namespace player {
+        class AKPlayer;
+    }
 
     namespace ui {
         class MonitorArea;
@@ -45,6 +48,7 @@ namespace akashi {
             Q_OBJECT
           public:
             explicit Window(akashi::core::borrowed_ptr<akashi::state::AKState> state,
+                            akashi::core::borrowed_ptr<akashi::player::AKPlayer> player,
                             QWidget* parent = 0);
             virtual ~Window();
             void toggleFullScreen();

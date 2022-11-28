@@ -5,6 +5,7 @@
 #include "./utils/widget.h"
 #include "./utils/xutils.h"
 
+#include <libakplayer/akplayer.h>
 #include <libakserver/akserver.h>
 #include <libakstate/akstate.h>
 #include <libakcore/memory.h>
@@ -55,6 +56,8 @@ namespace akashi {
             auto akconf = core::parse_akconfig(ctx.argv[1]);
             akashi::state::AKState state(akconf, ctx.argv[2]);
 
+            akashi::player::AKPlayer player{borrowed_ptr(&state)};
+
             QSurfaceFormat format;
             format.setVersion(4, 2);
             format.setProfile(QSurfaceFormat::CoreProfile);
@@ -68,7 +71,7 @@ namespace akashi {
             }
             QSurfaceFormat::setDefaultFormat(format);
 
-            Window window{borrowed_ptr(&state)};
+            Window window{borrowed_ptr(&state), borrowed_ptr{&player}};
             // disable auto focus on startup
             if (state.m_ui_conf.window_mode != core::WindowMode::INDEPENDENT) {
                 window.setAttribute(Qt::WA_ShowWithoutActivating);
@@ -135,6 +138,7 @@ namespace akashi {
             walk_widgets(&window, ensure_widget_name);
 #endif
 
+            // [TODO] only akkernel needs this?
             ASPAPISet api_set;
             api_set.general = new ASPGeneralAPIImpl(&window);
             api_set.media = new ASPMediaAPIImpl(&window);
@@ -150,6 +154,8 @@ namespace akashi {
                 debug::ListWidget::get().destroy();
             }
 #endif
+
+            player.close_and_wait();
 
             AKLOG_INFON("UILoop::ui_thread(): Successfully exited");
         };

@@ -23,33 +23,20 @@ using namespace akashi::core;
 namespace akashi {
     namespace player {
 
-        EventLoop::EventLoop(){};
+        EventLoop::EventLoop() = default;
 
-        EventLoop::~EventLoop() {
-            // m_is_alive.store(false);
-            // m_state_event_empty.cv.notify_all();
-            // {
-            //     std::lock_guard<std::mutex> lock(m_on_thread_exit.mtx);
-            //     if (m_on_thread_exit.func) {
-            //         m_on_thread_exit.func(m_on_thread_exit.ctx);
-            //     }
-            // }
-            // if (m_th) {
-            //     delete m_th;
-            // }
-        }
+        EventLoop::~EventLoop() = default;
 
         void EventLoop::close_and_wait() {
-            m_is_alive.store(false);
-            // m_state_event_empty.cv.notify_all();
-            this->set_event_empty(false, true);
-            {
-                std::lock_guard<std::mutex> lock(m_on_thread_exit.mtx);
-                if (m_on_thread_exit.func) {
-                    m_on_thread_exit.func(m_on_thread_exit.ctx);
-                }
-            }
             if (m_th) {
+                m_is_alive.store(false);
+                this->set_event_empty(false, true);
+                {
+                    std::lock_guard<std::mutex> lock(m_on_thread_exit.mtx);
+                    if (m_on_thread_exit.func) {
+                        m_on_thread_exit.func(m_on_thread_exit.ctx);
+                    }
+                }
                 m_th->join();
                 delete m_th;
                 m_th = nullptr;
@@ -80,13 +67,6 @@ namespace akashi {
             AKLOG_INFON("EventLoop start");
 
             auto eval = make_owned<eval::AKEval>(borrowed_ptr(state));
-
-            // loop->set_on_thread_exit(
-            //     [](void* ctx) {
-            //         auto eval_ = reinterpret_cast<eval::AKEval*>(ctx);
-            //         eval_->exit();
-            //     },
-            //     eval.get());
 
             EventLoop::pull_render_profile(ctx, borrowed_ptr(eval));
 

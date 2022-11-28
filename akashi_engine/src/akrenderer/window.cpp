@@ -53,15 +53,16 @@ namespace akashi {
             return state->get_seek_completed() && state->m_atomic_state.ui_can_seek.load();
         }
 
-        Window::Window(akashi::core::borrowed_ptr<akashi::state::AKState> state, QWidget* parent)
+        Window::Window(akashi::core::borrowed_ptr<akashi::state::AKState> state,
+                       akashi::core::borrowed_ptr<akashi::player::AKPlayer> player, QWidget* parent)
             : QFrame(parent), m_state(state) {
             this->setObjectName("window");
             // this->setStyleSheet("#window {border: 1px solid #091F2B; }");
             // this->setFrameShadow(QFrame::Raised);
 
-            this->m_monitorArea = new MonitorArea(borrowed_ptr(m_state), this);
+            this->m_monitorArea = new MonitorArea(m_state, player, this);
 
-            this->m_oscArea = new OSCArea(borrowed_ptr(m_state), this);
+            this->m_oscArea = new OSCArea(m_state, this);
             this->m_oscArea->show();
 
             auto [init_w, init_h] = state->m_ui_conf.resolution;

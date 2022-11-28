@@ -11,6 +11,9 @@ namespace akashi {
     namespace state {
         class AKState;
     }
+    namespace player {
+        class AKPlayer;
+    }
 
     namespace ui {
 
@@ -19,6 +22,7 @@ namespace akashi {
             Q_OBJECT
           public:
             explicit MonitorArea(akashi::core::borrowed_ptr<akashi::state::AKState> state,
+                                 akashi::core::borrowed_ptr<akashi::player::AKPlayer> player,
                                  QWidget* parent = 0);
             void play(void);
             void pause(void);

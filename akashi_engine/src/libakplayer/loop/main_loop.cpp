@@ -18,7 +18,7 @@ namespace akashi {
 
         core::owned_ptr<core::PerfMonitor> MainLoop::p_perf(new core::PerfMonitor);
 
-        void MainLoop::mainloop_thread(MainLoopContext ctx) {
+        void MainLoop::mainloop_thread(MainLoopContext ctx, MainLoop* loop) {
             auto [player, state, event, eval_buf] = ctx;
 
             AKLOG_INFON("Player thread start");
@@ -30,6 +30,9 @@ namespace akashi {
             while (true) {
                 state->wait_for_play_ready();
                 // state->wait_for_audio_play_ready();
+                if (!loop->m_is_alive) {
+                    break;
+                }
 
                 if (eval_buf->is_hungry()) {
                     event->emit_pull_eval_buffer(25);
@@ -47,6 +50,8 @@ namespace akashi {
 
                 MainLoop::update_time(ctx, current_frame_ctx);
             }
+
+            AKLOG_INFON("Player loop successfully exited");
         }
 
         bool MainLoop::sync_render(const MainLoopContext& ctx,

@@ -65,8 +65,7 @@ namespace akashi {
 
             virtual ~EventLoop();
 
-            // [TODO] Should be renamed later
-            void run2(EventLoopContext ctx) {
+            void run(EventLoopContext ctx) {
                 m_th = new std::thread(&EventLoop::event_thread, ctx, this);
             }
 

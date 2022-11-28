@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
     ui_loop.run({argc, argv});
 
     do_sigwait(ss);
-    ui_loop.terminate();
+    ui_loop.close_and_wait();
 
     destroy_logger();
     return 0;

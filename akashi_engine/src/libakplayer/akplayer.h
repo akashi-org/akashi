@@ -37,6 +37,8 @@ namespace akashi {
             explicit AKPlayer(core::borrowed_ptr<state::AKState> state);
             virtual ~AKPlayer();
 
+            void close_and_wait();
+
             void init(event::EventCallback cb, void* evt_ctx,
                       graphics::GetProcAddress get_proc_address,
                       graphics::EGLGetProcAddress egl_get_proc_address);

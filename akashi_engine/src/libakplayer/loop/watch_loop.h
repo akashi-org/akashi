@@ -21,23 +21,26 @@ namespace akashi {
 
         class WatchLoop final {
           public:
-            explicit WatchLoop(){};
+            explicit WatchLoop() = default;
 
-            virtual ~WatchLoop() {
-                {
-                    std::lock_guard<std::mutex> lock(m_on_thread_exit.mtx);
-                    if (m_on_thread_exit.func) {
-                        m_on_thread_exit.func(m_on_thread_exit.ctx);
-                    }
-                }
+            virtual ~WatchLoop() = default;
+
+            void close_and_wait() {
                 if (m_th) {
+                    {
+                        std::lock_guard<std::mutex> lock(m_on_thread_exit.mtx);
+                        if (m_on_thread_exit.func) {
+                            m_on_thread_exit.func(m_on_thread_exit.ctx);
+                        }
+                    }
+                    m_th->join();
                     delete m_th;
+                    m_th = nullptr;
                 }
             }
 
             void run(WatchLoopContext ctx) {
                 m_th = new std::thread(&WatchLoop::watch_thread, ctx, this);
-                m_th->detach();
             };
 
             void set_on_thread_exit(std::function<void(void*)> on_thread_exit, void* ctx) {

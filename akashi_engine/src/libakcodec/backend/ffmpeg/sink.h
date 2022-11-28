@@ -72,6 +72,7 @@ namespace akashi {
             EncodeStream m_audio_stream;
 
             bool m_encoder_flushed = false;
+            bool m_can_flush = false;
 
             core::VideoEncodeMethod m_encode_method = core::VideoEncodeMethod::NONE;
         };

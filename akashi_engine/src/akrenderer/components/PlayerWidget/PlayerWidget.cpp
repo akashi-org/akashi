@@ -36,9 +36,9 @@ namespace akashi {
         }
 
         PlayerWidget::PlayerWidget(akashi::core::borrowed_ptr<akashi::state::AKState> state,
+                                   akashi::core::borrowed_ptr<akashi::player::AKPlayer> player,
                                    QWidget* parent, Qt::WindowFlags f)
-            : QOpenGLWidget(parent, f), m_state(state) {
-            m_player = make_owned<akashi::player::AKPlayer>(m_state);
+            : QOpenGLWidget(parent, f), m_state(state), m_player(player) {
             this->setObjectName("player_widget");
 
             this->setMouseTracking(true);

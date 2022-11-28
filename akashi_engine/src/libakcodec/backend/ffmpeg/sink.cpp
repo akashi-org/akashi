@@ -224,6 +224,7 @@ namespace akashi {
                 this->flush_encoder(buffer::AVBufferType::AUDIO);
             }
             m_encoder_flushed = true;
+            m_can_flush = false;
             if (m_ofmt_ctx) {
                 av_write_trailer(m_ofmt_ctx);
             }
@@ -334,6 +335,7 @@ namespace akashi {
                     return EncodeResultCode::ERROR;
                 }
             }
+            m_can_flush = true;
 
             if (proxy_frame) {
                 av_frame_free(&proxy_frame);
@@ -827,6 +829,11 @@ namespace akashi {
         }
 
         void FFFrameSink::flush_encoder(const buffer::AVBufferType& type) {
+            if (!m_can_flush) {
+                AKLOG_INFON("flush skipped");
+                return;
+            }
+
             AVCodecContext* enc_ctx;
             switch (type) {
                 case buffer::AVBufferType::VIDEO: {
@@ -847,7 +854,10 @@ namespace akashi {
                 return;
             }
 
-            avcodec_send_frame(enc_ctx, nullptr);
+            if (auto err = avcodec_send_frame(enc_ctx, nullptr); err < 0) {
+                AKLOG_ERROR("avcodec_send_frame() failed, ret={}", av_err2str(err));
+                return;
+            }
 
             while (true) {
                 auto write_result = this->write({type});

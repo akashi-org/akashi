@@ -62,6 +62,9 @@ namespace akashi {
         PulseAudioContext::~PulseAudioContext() { this->destroy(); };
 
         void PulseAudioContext::destroy(void) {
+            if (m_exited) {
+                return;
+            }
             // [TODO] looks buggy
             // see https://gist.github.com/toroidal-code/8798775
             if (m_stream) {
@@ -91,7 +94,7 @@ namespace akashi {
                 delete m_cb_ctx;
                 m_cb_ctx = nullptr;
             }
-
+            m_exited = true;
             AKLOG_INFON("PulseAudioContext::destroy(): Successfully exited");
         }
 

@@ -145,9 +145,12 @@ namespace akashi {
         }
 
         static void exec_encode(codec::AKEncoder& encoder,
-                                std::deque<codec::EncodeArg>& encode_args) {
+                                std::deque<codec::EncodeArg>& encode_args, EncodeLoop* loop) {
             // send until EAGAIN or ERROR
             while (!encode_args.empty()) {
+                if (loop && loop->should_close()) {
+                    break;
+                }
                 const auto& data = encode_args.front();
                 if (!is_valid_type(data.type) || (!data.buffer && !data.hwframe)) {
                     break;
@@ -197,21 +200,11 @@ namespace akashi {
                 return early_exit();
             }
 
-            auto eval = make_owned<eval::AKEval>(borrowed_ptr(ctx.state));
-
-            ExitContext exit_ctx{loop, eval.get()};
-
-            loop->set_on_thread_exit(
-                [](void* ctx_) {
-                    auto exit_ctx_ = reinterpret_cast<ExitContext*>(ctx_);
-                    EncodeLoop::exit_thread(*exit_ctx_);
-                    AKLOG_INFON("Encoder Successfully exited");
-                },
-                &exit_ctx);
+            eval::AKEval eval{ctx.state};
 
             // enqueue data until all frames processed
 
-            auto encode_ctx = create_encode_context(ctx, borrowed_ptr(eval));
+            auto encode_ctx = create_encode_context(ctx, borrowed_ptr(&eval));
             init_encode_context(ctx, *encode_ctx);
 
             auto nb_samples_per_frame = encoder->nb_samples_per_frame();
@@ -226,7 +219,10 @@ namespace akashi {
 
             for (; can_produce(*encode_ctx); update_encode_context(*encode_ctx)) {
                 // eval
-                auto frame_ctx = pull_frame_context(borrowed_ptr(eval), *encode_ctx);
+                if (loop->m_should_close) {
+                    break;
+                }
+                auto frame_ctx = pull_frame_context(borrowed_ptr(&eval), *encode_ctx);
                 if (frame_ctx.empty()) {
                     break;
                 }
@@ -238,6 +234,9 @@ namespace akashi {
                 encode_ctx->next_pts = frame_ctx[1].pts;
 
                 // decode
+                if (loop->m_should_close) {
+                    break;
+                }
                 if (!encode_ctx->decode_ended && ctx.state->get_decode_layers_not_empty()) {
                     auto decode_result = exec_decode(decode_params);
                     if (decode_result == DecodeResult::ERR) {
@@ -248,6 +247,9 @@ namespace akashi {
                 }
 
                 // video render
+                if (loop->m_should_close) {
+                    break;
+                }
                 if (ctx.state->m_encode_conf.video_codec != "") {
                     if (ctx.state->m_encode_conf.encode_method == core::VideoEncodeMethod::VAAPI) {
                         auto hwframe = encoder->create_hwframe();
@@ -294,33 +296,26 @@ namespace akashi {
                 }
 
                 // encode
-                exec_encode(*encoder, encode_args);
+                exec_encode(*encoder, encode_args, loop);
             }
 
             // draining
+            // [TODO] Should we skip draining when loop->m_should_close == true?
             while (!encode_args.empty()) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-                exec_encode(*encoder, encode_args);
+                exec_encode(*encoder, encode_args, nullptr);
             }
             encoder->close();
 
-            AKLOG_INFON("Encoder finished");
+            eval.exit();
 
             // release it early to avoid double free problems in shutdown
             encode_ctx.reset(nullptr);
 
             encoder.reset(nullptr);
-            EncodeLoop::exit_thread(exit_ctx);
-        }
 
-        void EncodeLoop::exit_thread(ExitContext& exit_ctx) {
-            if (exit_ctx.eval) {
-                exit_ctx.eval->exit();
-            }
-            if (exit_ctx.loop) {
-                exit_ctx.loop->m_thread_exited = true;
-            }
-            // send SIGTERM to the main thread
+            AKLOG_INFON("Encoder finished");
+
             kill(getpid(), SIGTERM);
         }
 

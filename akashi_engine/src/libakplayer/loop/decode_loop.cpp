@@ -74,6 +74,10 @@ namespace akashi {
                 ctx.state->wait_for_seek_completed();
                 ctx.state->wait_for_decode_layers_not_empty();
 
+                if (!loop->m_is_alive) {
+                    break;
+                }
+
                 if (DecodeLoop::seek_detected(ctx.state, decode_state)) {
                     AKLOG_INFON("Decode State updated by seek");
                     decode_state.seek_update();

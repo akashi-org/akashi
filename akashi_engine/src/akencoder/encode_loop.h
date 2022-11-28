@@ -4,6 +4,7 @@
 #include <thread>
 #include <functional>
 #include <mutex>
+#include <atomic>
 
 namespace akashi {
     namespace state {
@@ -20,20 +21,12 @@ namespace akashi {
           public:
             explicit EncodeLoop(){};
 
-            virtual ~EncodeLoop() { this->terminate(); }
+            virtual ~EncodeLoop() = default;
 
-            void terminate() {
-                if (!m_thread_exited) {
-                    {
-                        std::lock_guard<std::mutex> lock(m_on_thread_exit.mtx);
-                        if (m_on_thread_exit.func) {
-                            m_on_thread_exit.func(m_on_thread_exit.ctx);
-                        }
-                        m_on_thread_exit.func = nullptr;
-                        m_thread_exited = true;
-                    }
-                }
+            void close_and_wait() {
                 if (m_th) {
+                    m_should_close = true;
+                    m_th->join();
                     delete m_th;
                     m_th = nullptr;
                 }
@@ -41,31 +34,16 @@ namespace akashi {
 
             void run(EncodeLoopContext ctx) {
                 m_th = new std::thread(&EncodeLoop::encode_thread, ctx, this);
-                m_th->detach();
             };
 
-            void set_on_thread_exit(std::function<void(void*)> on_thread_exit, void* ctx) {
-                {
-                    std::lock_guard<std::mutex> lock(m_on_thread_exit.mtx);
-                    m_on_thread_exit.func = on_thread_exit;
-                    m_on_thread_exit.ctx = ctx;
-                }
-                return;
-            }
+            bool should_close() const { return m_should_close; }
 
           private:
             static void encode_thread(EncodeLoopContext ctx, EncodeLoop* loop);
 
-            static void exit_thread(ExitContext& exit_ctx);
-
           private:
             std::thread* m_th = nullptr;
-            struct {
-                std::function<void(void*)> func;
-                void* ctx;
-                std::mutex mtx;
-            } m_on_thread_exit;
-            bool m_thread_exited = false;
+            std::atomic<bool> m_should_close = false;
         };
 
     }

@@ -72,6 +72,8 @@ namespace akashi {
 
             pa_threaded_mainloop* m_mainloop = nullptr;
             pa_context* m_context = nullptr;
+
+            bool m_exited = false;
         };
 
     }

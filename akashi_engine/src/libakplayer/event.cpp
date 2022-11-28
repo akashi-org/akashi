@@ -29,7 +29,7 @@ namespace akashi {
         PlayerEvent::~PlayerEvent() = default;
 
         void PlayerEvent::run(PlayerEventContext ctx) {
-            m_evt_loop->run2({ctx.state, borrowed_ptr(this), ctx.eval_buf, ctx.buffer});
+            m_evt_loop->run({ctx.state, borrowed_ptr(this), ctx.eval_buf, ctx.buffer});
         }
 
         void PlayerEvent::close_and_wait(void) { m_evt_loop->close_and_wait(); }

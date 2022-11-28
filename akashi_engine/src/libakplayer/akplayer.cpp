@@ -25,8 +25,13 @@ namespace akashi {
 
         AKPlayer::AKPlayer(core::borrowed_ptr<state::AKState> state) : m_state(state) {}
 
-        AKPlayer::~AKPlayer() {
+        AKPlayer::~AKPlayer() {}
+
+        void AKPlayer::close_and_wait() {
+            m_mainloop->close_and_wait();
             m_audio->destroy();
+            m_decoder->close_and_wait();
+            m_watchloop->close_and_wait();
             m_event->close_and_wait();
         }
 
@@ -45,7 +50,7 @@ namespace akashi {
             WatchLoopContext wloop_ctx = {borrowed_ptr(m_event), borrowed_ptr(m_state)};
             m_watchloop->run(wloop_ctx);
 
-            m_decoder = make_owned<DecodeLoop>();
+            m_decoder = make_owned<DecodeLoop>(m_state);
             DecodeLoopContext dloop_ctx = {m_state, borrowed_ptr(m_event), borrowed_ptr(m_buffer)};
             m_decoder->run(dloop_ctx);
 
@@ -56,7 +61,7 @@ namespace akashi {
             m_gfx = make_owned<graphics::AKGraphics>(m_state, borrowed_ptr(m_buffer));
             m_gfx->load_api(get_proc_address, egl_get_proc_address);
 
-            m_mainloop = make_owned<MainLoop>();
+            m_mainloop = make_owned<MainLoop>(m_state);
             MainLoopContext mloop_ctx = {borrowed_ptr(this), m_state, borrowed_ptr(m_event),
                                          borrowed_ptr(m_eval_buf)};
             m_mainloop->run(mloop_ctx);

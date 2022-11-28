@@ -3,6 +3,7 @@
 #include <libakcore/memory.h>
 #include <libakcore/rational.h>
 #include <libakcore/element.h>
+#include <libakstate/akstate.h>
 
 #include <thread>
 #include <vector>
@@ -53,19 +54,27 @@ namespace akashi {
 
         class DecodeLoop final {
           public:
-            explicit DecodeLoop(){};
+            explicit DecodeLoop(core::borrowed_ptr<state::AKState> state) : m_state(state) {}
 
-            virtual ~DecodeLoop() {
+            virtual ~DecodeLoop() = default;
+
+            void close_and_wait(void) {
                 if (m_th) {
+                    m_is_alive.store(false);
+                    m_state->set_evalbuf_dequeue_ready(true, true);
+                    m_state->set_video_decode_ready(true, true);
+                    m_state->set_audio_decode_ready(true, true);
+                    m_state->set_seek_completed(true, true);
+                    m_state->set_decode_layers_not_empty(true, true);
+
+                    m_th->join();
                     delete m_th;
+                    m_th = nullptr;
                 }
             }
 
-            void destroy(void) { m_is_alive.store(false); }
-
             void run(DecodeLoopContext ctx) {
                 m_th = new std::thread(&DecodeLoop::decode_thread, ctx, this);
-                m_th->detach();
             };
 
           private:
@@ -80,6 +89,7 @@ namespace akashi {
           private:
             std::thread* m_th = nullptr;
             std::atomic<bool> m_is_alive = true;
+            core::borrowed_ptr<state::AKState> m_state;
         };
     }
 }
