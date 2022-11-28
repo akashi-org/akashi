@@ -20,7 +20,7 @@ def _get_raw_source(obj) -> str:
     lnum_begin = obj.__code__.co_firstlineno - 1
     lnum_end = [l for l in obj.__code__.co_lines()][-1][-1] - 1
     lines: list[str] = []
-    with open(fname, 'r') as f:
+    with open(fname, 'r', encoding='utf-8') as f:
         lnum = 0
         for line in f:
             if lnum_begin <= lnum <= lnum_end:
