@@ -90,7 +90,6 @@ namespace akashi {
             }
 
             if (m_cb_ctx) {
-                m_cb_ctx->destroy();
                 delete m_cb_ctx;
                 m_cb_ctx = nullptr;
             }

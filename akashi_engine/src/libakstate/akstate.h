@@ -78,6 +78,8 @@ namespace akashi {
 
             RenderProfile render_prof;
 
+            size_t total_frames = 0;
+
             int video_width = 1920;
 
             int video_height = 1080;
@@ -86,18 +88,11 @@ namespace akashi {
 
             std::string default_font_path;
 
-            bool enable_loop = true;
-
             size_t video_max_queue_size = 1024 * 1024 * 300; // 300mb
 
             size_t video_max_queue_count = 64;
 
             size_t audio_max_queue_size = 1024 * 1024 * 100; // 100mb
-
-            // [TODO] any other ways to handle this?
-            // set to true when play over is detected in akaudio
-            // set to false when handled properly in player loop
-            bool trigger_video_reset = false;
 
             /**
              * current time to be displayed to the user
@@ -144,9 +139,9 @@ namespace akashi {
             std::atomic<core::VideoDecodeMethod> preferred_decode_method =
                 core::VideoDecodeMethod::NONE;
 
-            std::atomic<size_t> play_loop_cnt = 0;
+            std::atomic<bool> video_play_over = false;
 
-            std::atomic<size_t> decode_loop_cnt = 0;
+            std::atomic<bool> audio_play_over = false;
         };
 
         class AKState final {

@@ -94,6 +94,21 @@ namespace akashi {
         }
 
         void AKPlayer::play() {
+            // [TODO] We should check m_atomic_state.video_play_over after refactoring seek/hr parts
+            bool video_play_over = false;
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+                size_t cur_frame_num =
+                    (m_state->m_prop.current_time * m_state->m_prop.fps).to_decimal();
+                auto total_frames = m_state->m_prop.total_frames;
+                video_play_over = cur_frame_num >= (total_frames - 1);
+            }
+            if (video_play_over) {
+                AKLOG_DEBUGN("video play over");
+                m_event->emit_change_play_state(state::PlayState::PAUSED);
+                return;
+            }
+
             AKLOG_INFON("Play play");
             m_state->set_play_ready(true);
             m_audio->play();
@@ -107,19 +122,19 @@ namespace akashi {
 
         void AKPlayer::seek(const core::Rational& seek_time) {
             bool on_seeking = false;
-            Rational real_seek_time;
+            // Rational real_seek_time;
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 on_seeking = !m_state->get_seek_completed();
-                Rational tpf = (Rational(1, 1) / m_state->m_prop.fps);
-                Rational seek_max = m_state->m_prop.render_prof.duration - tpf;
-                real_seek_time = Rational((int64_t)((seek_time / tpf).to_decimal()), 1) * tpf;
-                real_seek_time = real_seek_time < Rational(0, 1) ? Rational(0, 1)
-                                 : real_seek_time > seek_max     ? seek_max
-                                                                 : real_seek_time;
+                // Rational tpf = (Rational(1, 1) / m_state->m_prop.fps);
+                // Rational seek_max = m_state->m_prop.render_prof.duration - tpf;
+                // real_seek_time = Rational((int64_t)((seek_time / tpf).to_decimal()), 1) * tpf;
+                // real_seek_time = real_seek_time < Rational(0, 1) ? Rational(0, 1)
+                //                  : real_seek_time > seek_max     ? seek_max
+                //                                                 : real_seek_time;
             }
             if (!on_seeking) {
-                m_event->emit_seek(real_seek_time);
+                m_event->emit_seek(seek_time);
             }
         }
 

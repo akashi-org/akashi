@@ -319,7 +319,7 @@ namespace akashi {
                     m_input_src.dec_streams[i].dec_ctx = avcodec_alloc_context3(av_codec);
                     m_input_src.dec_streams[i].swr_ctx = nullptr;
                     m_input_src.dec_streams[i].swr_ctx_init_done = false;
-                    m_input_src.dec_streams[i].is_checked_first_pts = false;
+                    m_input_src.dec_streams[i].is_checked_first_rpts = false;
                     m_input_src.dec_streams[i].input_start_pts =
                         format_ctx->start_time == AV_NOPTS_VALUE ? 0 : format_ctx->start_time;
                     m_input_src.dec_streams[i].cur_decode_pts = akashi::core::Rational(0, 1);
@@ -441,11 +441,6 @@ namespace akashi {
                 av_frame_ref(m_input_src.frame, m_input_src.proxy_frame);
             }
 
-            if (!dec_stream->is_checked_first_pts) {
-                dec_stream->first_pts = m_input_src.frame->pts;
-                dec_stream->is_checked_first_pts = true;
-            }
-
             return true;
         }
 
@@ -467,10 +462,17 @@ namespace akashi {
                 return false;
             }
 
+            auto dec_stream = &m_input_src.dec_streams[m_input_src.pkt->stream_index];
+
             if (!pts_set.within_range()) {
-                m_input_src.dec_streams[m_input_src.pkt->stream_index].decode_ended = true;
+                dec_stream->decode_ended = true;
                 decode_result->result = DecodeResultCode::DECODE_STREAM_ENDED;
                 return false;
+            }
+
+            if (!dec_stream->is_checked_first_rpts) {
+                dec_stream->first_rpts = pts_set.frame_rpts();
+                dec_stream->is_checked_first_rpts = true;
             }
 
             return true;

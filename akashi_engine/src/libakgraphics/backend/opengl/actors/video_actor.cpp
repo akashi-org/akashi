@@ -211,7 +211,7 @@ namespace akashi {
                 return true;
             }
 
-            auto buf_data = ctx.dequeue(m_layer_ctx.uuid + std::to_string(ctx.loop_cnt()), pts);
+            auto buf_data = ctx.dequeue(m_layer_ctx.uuid, pts);
             if (!buf_data) {
                 AKLOG_INFON("Dequeue failed");
                 if (m_pass) {

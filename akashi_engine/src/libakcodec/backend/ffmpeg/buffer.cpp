@@ -252,7 +252,8 @@ namespace akashi {
 
             // [XXX] notice that the first arg here is not RPTS in its true sense
             m_prop.pts = rpts_to_pts(
-                pts_to_rational(dec_stream->conv_effective_pts, {1, out_spec.sample_rate}),
+                dec_stream->first_rpts +
+                    (pts_to_rational(dec_stream->conv_effective_pts, {1, out_spec.sample_rate})),
                 input.layer_prof.from, Rational(0l));
 
             m_prop.sample_rate = input.out_audio_spec.sample_rate;

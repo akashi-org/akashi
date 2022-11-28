@@ -142,10 +142,12 @@ namespace akashi {
                                             core::borrowed_ptr<eval::AKEval> eval) {
             core::Path entry_path{""};
             std::string elem_name{""};
+            core::Rational fps;
             {
                 std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
                 entry_path = ctx.state->m_prop.eval_state.config.entry_path;
                 elem_name = ctx.state->m_prop.eval_state.config.elem_name;
+                fps = ctx.state->m_prop.fps;
             }
             auto profile = eval->render_prof(entry_path.to_abspath().to_str(), elem_name);
 
@@ -154,6 +156,7 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
                 ctx.state->m_prop.render_prof = profile;
+                ctx.state->m_prop.total_frames = (profile.duration * fps).to_decimal();
             }
 
             ctx.event->emit_set_render_prof(profile); // be careful that the decode_ready is called

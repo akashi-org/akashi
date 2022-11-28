@@ -33,11 +33,13 @@ namespace akashi {
             m_queue_size.fetch_add(buf_data->prop().data_size);
 
             auto last_item_pts = buf_data->prop().pts;
+            auto last_item_rpts = buf_data->prop().rpts;
 
             m_qmap[layer_uuid].buf.push_back(std::move(buf_data));
 
-            AKLOG_INFO("Audio buffer enqueued {}, {}, id: {}", m_qmap.at(layer_uuid).buf.size(),
-                       last_item_pts.to_decimal(), layer_uuid.c_str());
+            AKLOG_INFO("Audio buffer enqueued {}, {}, id: {}, rpts: {}",
+                       m_qmap.at(layer_uuid).buf.size(), last_item_pts.to_decimal(),
+                       layer_uuid.c_str(), last_item_rpts.to_decimal());
 
             size_t queue_size = m_queue_size.load();
 
@@ -120,9 +122,8 @@ namespace akashi {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 auto atom_profiles = m_state->m_prop.render_prof.atom_profiles;
                 auto current_atom_index = m_state->m_atomic_state.current_atom_index.load();
-                auto loop_cnt = m_state->m_atomic_state.play_loop_cnt.load();
                 for (const auto& layer : atom_profiles[current_atom_index].av_layers) {
-                    layer_uuids.push_back(layer.uuid + std::to_string(loop_cnt));
+                    layer_uuids.push_back(layer.uuid);
                 }
             }
 
@@ -191,15 +192,24 @@ namespace akashi {
             m_state->set_audio_decode_ready(not_full);
         }
 
-        void AudioQueue::clear_by_loop_cnt(const std::string& loop_cnt) {
-            std::vector<uuid_t> ids;
-            for (const auto& [key, value] : m_qmap) {
-                if (core::ends_with(key, loop_cnt)) {
-                    ids.push_back(key);
+        size_t AudioQueue::total_queue_size(void) { return m_queue_size.load(); }
+
+        static void save_pcm(uint8_t* buf, size_t buf_size, const char* fname) {
+            auto f = fopen(fname, "ab");
+            fwrite(buf, 1, static_cast<size_t>(buf_size), f);
+            fclose(f);
+        };
+
+        void AudioQueue::dump_all(void) {
+            for (auto&& [k, v] : m_qmap) {
+                auto fname = std::string(k + ".buf");
+                remove(fname.c_str());
+                for (size_t i = 0; i < v.buf.size(); i++) {
+                    auto buf_size = v.buf[i]->prop().data_size;
+                    auto buf_ptr = v.buf[i]->prop().audio_data[0];
+                    save_pcm(buf_ptr, buf_size, fname.c_str());
                 }
-            }
-            for (const auto& layer_id : ids) {
-                this->clear_by_id(layer_id);
+                AKLOG_WARN("Dumped pcm file: {}", fname.c_str());
             }
         }
 

@@ -91,6 +91,7 @@ namespace akashi {
 
             if (!(this->can_seek(seek_time))) {
                 AKLOG_ERRORN("SeekManager::seek() failed: not ready for seeking");
+                m_event->emit_seek_completed(); // notify to ui for making the slider movable
                 return;
             }
 
@@ -108,10 +109,11 @@ namespace akashi {
                 m_state->m_prop.seek_id =
                     m_state->m_prop.seek_id == UINT64_MAX ? 0 : m_state->m_prop.seek_id + 1;
             }
-            update_current_atom_index(seek_time, is_forward_seek, m_state);
+            // update_current_atom_index(seek_time, is_forward_seek, m_state);
             m_event->emit_time_update(seek_time);
             // m_audio->seek(seek_time);
 
+            m_state->m_atomic_state.audio_play_over = false;
             m_state->m_atomic_state.start_time.store(Rational{seek_time.num(), seek_time.den()});
             m_state->m_atomic_state.bytes_played.store(0);
 
@@ -141,7 +143,7 @@ namespace akashi {
                 // m_state->wait_for_evalbuf_dequeue_ready();
                 auto ebufs = eval_krons(seek_time, 50, m_state, m_eval);
                 m_eval_buf->push(ebufs);
-                m_eval_buf->pop();
+                // m_eval_buf->pop();
                 m_eval_buf->set_render_buf(ebufs[0]);
                 // m_state->set_evalbuf_dequeue_ready(true);
             }
@@ -178,7 +180,7 @@ namespace akashi {
                 AKLOG_WARNN("already seeking");
                 return false;
             }
-            if (seek_time < Rational(0, 1) || seek_time > duration) {
+            if (seek_time < Rational(0, 1) || seek_time >= duration) {
                 AKLOG_ERRORN("seek time is out of range");
                 return false;
             }

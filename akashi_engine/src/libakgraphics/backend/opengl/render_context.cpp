@@ -61,8 +61,6 @@ namespace akashi {
             return core::borrowed_ptr(m_camera.get());
         }
 
-        size_t OGLRenderContext::loop_cnt() { return m_state->m_atomic_state.play_loop_cnt; }
-
         core::Rational OGLRenderContext::fps() {
             core::Rational fps;
             {

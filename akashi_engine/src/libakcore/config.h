@@ -33,7 +33,6 @@ namespace akashi {
         struct AudioConf : AKAudioSpec {};
 
         struct PlaybackConf {
-            bool enable_loop;
             double gain;
             size_t video_max_queue_size;
             size_t video_max_queue_count;

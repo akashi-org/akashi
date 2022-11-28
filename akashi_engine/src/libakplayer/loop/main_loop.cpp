@@ -29,7 +29,7 @@ namespace akashi {
 
             while (true) {
                 state->wait_for_play_ready();
-                // state->wait_for_audio_play_ready();
+                state->wait_for_audio_play_ready();
                 if (!loop->m_is_alive) {
                     break;
                 }
@@ -94,33 +94,23 @@ namespace akashi {
         void MainLoop::update_time(MainLoopContext& ctx, const core::FrameContext& frame_ctx) {
             auto [player, state, event, eval_buf] = ctx;
 
-            Rational current_time = Rational(0l);
-            bool is_play_over = false;
+            Rational current_time = frame_ctx.pts;
             {
                 std::lock_guard<std::mutex> lock(state->m_prop_mtx);
-                is_play_over = state->m_prop.trigger_video_reset;
+                size_t cur_frame_num = (frame_ctx.pts * state->m_prop.fps).to_decimal();
+                auto total_frames = state->m_prop.total_frames;
+                bool is_play_over = cur_frame_num >= (total_frames - 1);
+                // AKLOG_WARN("cur_frame: {}, total_frames: {}, is_play_over: {} ", cur_frame_num,
+                //            total_frames, is_play_over);
+                state->m_atomic_state.video_play_over = is_play_over;
+                if (is_play_over) {
+                    ctx.state->set_play_ready(false, true);
+                }
+
+                ctx.state->m_prop.current_time = current_time;
             }
 
-            if (is_play_over) {
-                current_time = Rational(0l);
-                {
-                    std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
-                    ctx.state->m_prop.current_time = current_time;
-                    ctx.state->m_prop.trigger_video_reset = false;
-                }
-                auto seek_success = eval_buf->seek(current_time);
-                if (!seek_success) {
-                    AKLOG_ERRORN("MainLoop::update_time(): seek failed!!!");
-                }
-                AKLOG_DEBUGN("loop detected");
-            } else {
-                current_time = frame_ctx.pts;
-                {
-                    std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
-                    ctx.state->m_prop.current_time = current_time;
-                }
-                eval_buf->pop();
-            }
+            eval_buf->pop();
 
             p_perf->log_fps(current_time, ctx.player->current_time());
             ctx.event->emit_time_update(current_time);

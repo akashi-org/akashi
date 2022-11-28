@@ -369,6 +369,7 @@ namespace akashi {
             switch (new_state) {
                 case akashi::state::PlayState::STOPPED:
                 case akashi::state::PlayState::PAUSED: {
+                    m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
                     this->m_monitorArea->pause();
                     break;
                 }
@@ -377,6 +378,9 @@ namespace akashi {
                         AKLOG_WARNN("Window::on_state_change(): kron not ready");
                         return;
                     }
+
+                    m_state->m_atomic_state.icon_play_state.store(
+                        akashi::state::PlayState::PLAYING);
                     this->m_monitorArea->play();
                     break;
                 }

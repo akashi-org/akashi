@@ -46,8 +46,6 @@ namespace akashi {
 
             void clear_by_id(uuid_t layer_uuid);
 
-            void clear_by_loop_cnt(const std::string& loop_cnt);
-
           private:
             bool is_not_full(void) const;
 

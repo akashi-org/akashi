@@ -27,7 +27,6 @@ namespace akashi {
                 decode_pts = m_state->m_prop.current_time;
                 seek_id = m_state->m_prop.seek_id;
             }
-            loop_cnt = m_state->m_atomic_state.decode_loop_cnt;
         }
 
         void DecodeState::seek_update(void) {
@@ -45,13 +44,6 @@ namespace akashi {
                 decode_pts = m_state->m_prop.current_time;
                 render_prof = m_state->m_prop.render_prof;
             }
-            m_state->m_atomic_state.decode_loop_cnt = 0;
-            loop_cnt = m_state->m_atomic_state.decode_loop_cnt;
-        }
-
-        void DecodeState::loop_incr(void) {
-            m_state->m_atomic_state.decode_loop_cnt += 1;
-            loop_cnt = m_state->m_atomic_state.decode_loop_cnt;
         }
 
         void DecodeLoop::decode_thread(DecodeLoopContext ctx, DecodeLoop* loop) {
@@ -81,18 +73,6 @@ namespace akashi {
                 if (DecodeLoop::seek_detected(ctx.state, decode_state)) {
                     AKLOG_INFON("Decode State updated by seek");
                     decode_state.seek_update();
-
-                    if (ctx.state->m_atomic_state.decode_loop_cnt !=
-                        ctx.state->m_atomic_state.play_loop_cnt) {
-                        auto str_loop_cnt =
-                            std::to_string(ctx.state->m_atomic_state.decode_loop_cnt);
-                        ctx.buffer->vq->clear_by_loop_cnt(str_loop_cnt);
-                        ctx.buffer->aq->clear_by_loop_cnt(str_loop_cnt);
-
-                        ctx.state->m_atomic_state.decode_loop_cnt =
-                            ctx.state->m_atomic_state.play_loop_cnt.load();
-                        decode_state.loop_cnt = ctx.state->m_atomic_state.play_loop_cnt.load();
-                    }
 
                     bool seek_success = true;
                     {
@@ -137,7 +117,6 @@ namespace akashi {
                                    decode_res.result);
                         if (enable_loop) {
                             delete decoder;
-                            decode_state.loop_incr();
                             decode_state.decode_pts = Rational(0, 1);
                             decoder = new codec::AKDecoder(decode_state.render_prof,
                                                            decode_state.decode_pts);
@@ -160,11 +139,8 @@ namespace akashi {
                     case codec::DecodeResultCode::OK: {
                         switch (decode_res.buffer->prop().media_type) {
                             case buffer::AVBufferType::VIDEO: {
-                                const auto comp_layer_uuid =
-                                    decode_res.layer_uuid + std::to_string(decode_state.loop_cnt);
-
                                 auto queue_size = ctx.buffer->vq->enqueue(
-                                    comp_layer_uuid, std::move(decode_res.buffer));
+                                    decode_res.layer_uuid, std::move(decode_res.buffer));
 
                                 bool need_first_render = false;
                                 {
@@ -179,9 +155,7 @@ namespace akashi {
                                 break;
                             }
                             case buffer::AVBufferType::AUDIO: {
-                                const auto comp_layer_uuid =
-                                    decode_res.layer_uuid + std::to_string(decode_state.loop_cnt);
-                                ctx.buffer->aq->enqueue(comp_layer_uuid,
+                                ctx.buffer->aq->enqueue(decode_res.layer_uuid,
                                                         std::move(decode_res.buffer));
                                 break;
                             }

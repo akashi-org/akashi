@@ -45,6 +45,7 @@ namespace akashi {
                 if (m_th) {
                     m_is_alive.store(false);
                     m_state->set_play_ready(true, true);
+                    m_state->set_audio_play_ready(true, true);
                     m_state->set_render_completed(true, true);
                     m_state->set_evalbuf_dequeue_ready(true, true);
 

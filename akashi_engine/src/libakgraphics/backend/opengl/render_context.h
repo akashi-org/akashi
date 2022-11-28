@@ -34,8 +34,6 @@ namespace akashi {
 
             const core::borrowed_ptr<Camera> camera() const;
 
-            size_t loop_cnt();
-
             core::Rational fps();
 
             std::array<int, 2> resolution();

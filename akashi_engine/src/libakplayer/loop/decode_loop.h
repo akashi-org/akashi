@@ -33,13 +33,10 @@ namespace akashi {
 
             void hr_update(void);
 
-            void loop_incr(void);
-
           public:
             core::Rational fps;
             core::Rational decode_pts;
             core::RenderProfile render_prof;
-            size_t loop_cnt = 0;
             size_t seek_id = 0;
 
           private:

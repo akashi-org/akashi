@@ -136,9 +136,8 @@ namespace akashi {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 auto atom_profiles = m_state->m_prop.render_prof.atom_profiles;
                 auto current_atom_index = m_state->m_atomic_state.current_atom_index.load();
-                auto loop_cnt = m_state->m_atomic_state.play_loop_cnt.load();
                 for (const auto& layer : atom_profiles[current_atom_index].av_layers) {
-                    layer_uuids.push_back(layer.uuid + std::to_string(loop_cnt));
+                    layer_uuids.push_back(layer.uuid);
                 }
             }
 
@@ -205,21 +204,6 @@ namespace akashi {
                 not_full = this->is_not_full();
             }
             m_state->set_video_decode_ready(not_full);
-        }
-
-        void VideoQueue::clear_by_loop_cnt(const std::string& loop_cnt) {
-            std::vector<uuid_t> ids;
-            {
-                std::lock_guard<std::mutex> lock(m_qmap_mtx);
-                for (const auto& [key, value] : m_qmap) {
-                    if (core::ends_with(key, loop_cnt)) {
-                        ids.push_back(key);
-                    }
-                }
-            }
-            for (const auto& layer_id : ids) {
-                this->clear_by_id(layer_id);
-            }
         }
 
         bool VideoQueue::is_not_full(void) const {

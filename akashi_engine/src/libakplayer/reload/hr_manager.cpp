@@ -108,11 +108,13 @@ namespace akashi {
             Rational current_time;
             core::Path entry_path{""};
             std::string elem_name{""};
+            Rational fps;
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 current_time = m_state->m_prop.current_time;
                 entry_path = m_state->m_prop.eval_state.config.entry_path;
                 elem_name = m_state->m_prop.eval_state.config.elem_name;
+                fps = m_state->m_prop.fps;
             }
 
             // start seek
@@ -121,7 +123,7 @@ namespace akashi {
             // m_state->set_play_ready(false);
             // m_audio->pause();
 
-            update_current_atom_index(current_time, m_state);
+            // update_current_atom_index(current_time, m_state);
 
             // avbuffer update
             m_buffer->vq->clear(true);
@@ -137,6 +139,7 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 m_state->m_prop.render_prof = profile;
+                m_state->m_prop.total_frames = (profile.duration * fps).to_decimal();
             }
 
             m_event->emit_set_render_prof(profile); // be careful that decode_ready is called
@@ -148,7 +151,7 @@ namespace akashi {
             // m_state->wait_for_evalbuf_dequeue_ready();
             auto ebufs = eval_krons(current_time, 50, m_state, m_eval);
             m_eval_buf->push(ebufs);
-            m_eval_buf->pop();
+            // m_eval_buf->pop();
             m_eval_buf->set_render_buf(ebufs[0]);
             // m_state->set_evalbuf_dequeue_ready(true);
             //
@@ -184,6 +187,7 @@ namespace akashi {
             m_state->wait_for_not_play_ready();
 
             Rational seek_time = core::Rational(0, 1);
+            Rational fps;
 
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
@@ -191,9 +195,7 @@ namespace akashi {
                 m_state->m_prop.elapsed_time = seek_time;
                 m_state->m_prop.eval_state.config.entry_path = Path(inline_eval_ctx.file_path);
                 m_state->m_prop.eval_state.config.elem_name = inline_eval_ctx.elem_name;
-                // [XXX] reset loop_cnt here
-                m_state->m_atomic_state.decode_loop_cnt = 0;
-                m_state->m_atomic_state.play_loop_cnt = 0;
+                fps = m_state->m_prop.fps;
             }
 
             // start seek
@@ -202,7 +204,7 @@ namespace akashi {
             // m_state->set_play_ready(false);
             // m_audio->pause();
 
-            update_current_atom_index(seek_time, m_state);
+            // update_current_atom_index(seek_time, m_state);
             m_event->emit_time_update(seek_time);
 
             m_state->m_atomic_state.start_time.store(Rational{seek_time.num(), seek_time.den()});
@@ -217,6 +219,7 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 m_state->m_prop.render_prof = profile;
+                m_state->m_prop.total_frames = (profile.duration * fps).to_decimal();
             }
 
             m_event->emit_set_render_prof(profile); // be careful that decode_ready is called
@@ -228,7 +231,7 @@ namespace akashi {
             // m_state->wait_for_evalbuf_dequeue_ready();
             auto ebufs = eval_krons(seek_time, 50, m_state, m_eval);
             m_eval_buf->push(ebufs);
-            m_eval_buf->pop();
+            // m_eval_buf->pop();
             m_eval_buf->set_render_buf(ebufs[0]);
             // m_state->set_evalbuf_dequeue_ready(true);
             //
