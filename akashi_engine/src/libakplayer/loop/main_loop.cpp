@@ -98,8 +98,8 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(state->m_prop_mtx);
                 size_t cur_frame_num = (frame_ctx.pts * state->m_prop.fps).to_decimal();
-                auto total_frames = state->m_prop.total_frames;
-                bool is_play_over = cur_frame_num >= (total_frames - 1);
+                auto max_frame_idx = state->m_prop.max_frame_idx;
+                bool is_play_over = cur_frame_num >= max_frame_idx;
                 // AKLOG_WARN("cur_frame: {}, total_frames: {}, is_play_over: {} ", cur_frame_num,
                 //            total_frames, is_play_over);
                 state->m_atomic_state.video_play_over = is_play_over;

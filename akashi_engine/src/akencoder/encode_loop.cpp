@@ -89,7 +89,8 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
                 ctx.state->m_prop.render_prof = profile;
-                ctx.state->m_prop.total_frames = (profile.duration * fps).to_decimal();
+                ctx.state->m_prop.max_frame_idx =
+                    ((profile.duration * fps) - Rational(1l)).to_decimal();
             }
 
             ctx.state->set_decode_layers_not_empty(core::has_layers(profile), true);

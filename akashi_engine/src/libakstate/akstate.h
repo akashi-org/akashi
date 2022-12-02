@@ -78,7 +78,7 @@ namespace akashi {
 
             RenderProfile render_prof;
 
-            size_t total_frames = 0;
+            size_t max_frame_idx = 0;
 
             int video_width = 1920;
 

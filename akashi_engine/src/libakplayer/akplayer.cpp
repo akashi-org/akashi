@@ -100,8 +100,8 @@ namespace akashi {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 size_t cur_frame_num =
                     (m_state->m_prop.current_time * m_state->m_prop.fps).to_decimal();
-                auto total_frames = m_state->m_prop.total_frames;
-                video_play_over = cur_frame_num >= (total_frames - 1);
+                auto max_frame_idx = m_state->m_prop.max_frame_idx;
+                video_play_over = cur_frame_num >= max_frame_idx;
             }
             if (video_play_over) {
                 AKLOG_DEBUGN("video play over");

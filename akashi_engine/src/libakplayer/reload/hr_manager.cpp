@@ -139,7 +139,8 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 m_state->m_prop.render_prof = profile;
-                m_state->m_prop.total_frames = (profile.duration * fps).to_decimal();
+                m_state->m_prop.max_frame_idx =
+                    ((profile.duration * fps) - Rational(1l)).to_decimal();
             }
 
             m_event->emit_set_render_prof(profile); // be careful that decode_ready is called
@@ -219,7 +220,8 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 m_state->m_prop.render_prof = profile;
-                m_state->m_prop.total_frames = (profile.duration * fps).to_decimal();
+                m_state->m_prop.max_frame_idx =
+                    ((profile.duration * fps) - Rational(1l)).to_decimal();
             }
 
             m_event->emit_set_render_prof(profile); // be careful that decode_ready is called
