@@ -115,6 +115,7 @@ namespace akashi {
             m_event->emit_set_render_prof(profile); // be careful that decode_ready is called
 
             m_state->set_decode_layers_not_empty(core::has_layers(profile), true);
+            m_state->set_decode_loop_can_continue(true, true);
 
             m_eval_buf->clear();
             // m_event->emit_pull_eval_buffer(50);
@@ -195,6 +196,7 @@ namespace akashi {
             m_event->emit_set_render_prof(profile); // be careful that decode_ready is called
 
             m_state->set_decode_layers_not_empty(core::has_layers(profile), true);
+            m_state->set_decode_loop_can_continue(true, true);
 
             m_eval_buf->clear();
             // m_event->emit_pull_eval_buffer(50);

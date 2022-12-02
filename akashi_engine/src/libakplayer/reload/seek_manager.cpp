@@ -111,6 +111,8 @@ namespace akashi {
             }
             m_state->set_evalbuf_dequeue_ready(true);
 
+            m_state->set_decode_loop_can_continue(true, true);
+
             // render
             if (avbuffer_seek_success && seek_point_found) {
                 m_event->emit_update();

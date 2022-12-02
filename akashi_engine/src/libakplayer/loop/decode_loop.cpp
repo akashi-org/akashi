@@ -58,13 +58,13 @@ namespace akashi {
 
             auto decoder = new codec::AKDecoder(decode_state.render_prof, decode_state.decode_pts);
             bool decode_finished = false;
-            bool enable_loop = true;
             while (loop->m_is_alive.load() && !decode_finished) {
                 ctx.state->wait_for_evalbuf_dequeue_ready();
                 ctx.state->wait_for_video_decode_ready();
                 ctx.state->wait_for_audio_decode_ready();
                 ctx.state->wait_for_seek_completed();
                 ctx.state->wait_for_decode_layers_not_empty();
+                ctx.state->wait_for_decode_loop_can_continue();
 
                 if (!loop->m_is_alive) {
                     break;
@@ -115,14 +115,7 @@ namespace akashi {
                     case codec::DecodeResultCode::DECODE_ENDED: {
                         AKLOG_INFO("DecodeLoop::decode_thread(): ended, code: {}",
                                    decode_res.result);
-                        if (enable_loop) {
-                            delete decoder;
-                            decode_state.decode_pts = Rational(0, 1);
-                            decoder = new codec::AKDecoder(decode_state.render_prof,
-                                                           decode_state.decode_pts);
-                        } else {
-                            decode_finished = true;
-                        }
+                        ctx.state->set_decode_loop_can_continue(false);
                         break;
                     }
                     case codec::DecodeResultCode::DECODE_LAYER_EOF:

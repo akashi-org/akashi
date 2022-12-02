@@ -63,6 +63,7 @@ namespace akashi {
                     m_state->set_audio_decode_ready(true, true);
                     m_state->set_seek_completed(true, true);
                     m_state->set_decode_layers_not_empty(true, true);
+                    m_state->set_decode_loop_can_continue(true, true);
 
                     m_th->join();
                     delete m_th;
