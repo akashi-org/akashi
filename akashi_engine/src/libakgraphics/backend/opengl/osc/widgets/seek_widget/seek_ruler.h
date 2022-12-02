@@ -40,6 +40,8 @@ namespace akashi {
 
                 const SeekRuler::Params& obj_params() const { return m_obj_params; }
 
+                void set_label_dirty(bool label_dirty);
+
                 virtual bool update(OSCRenderContext& render_ctx,
                                     const RenderParams& params) override;
 

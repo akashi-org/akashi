@@ -15,6 +15,8 @@
 #include <libakcore/error.h>
 #include <libakcore/rational.h>
 
+using namespace akashi::core;
+
 namespace akashi {
     namespace graphics::osc {
 
@@ -30,6 +32,7 @@ namespace akashi {
             core::Rational sec_per_unit{1, 24}; // 1/fps
 
             size_t zoom_level = 1;
+            bool m_is_second_mode = true;
 
             core::Rational seek_offset{0, 1};
 
@@ -111,7 +114,13 @@ namespace akashi {
         }
 
         bool SeekWidget::update(OSCRenderContext& render_ctx, const RenderParams& params) {
-            if (m_ctx->zoom_level != render_ctx.zoom_level()) {
+            bool mode_changed = render_ctx.is_second_mode() != m_ctx->m_is_second_mode;
+            if (mode_changed) {
+                m_ctx->m_is_second_mode = render_ctx.is_second_mode();
+            }
+
+            if (mode_changed || render_ctx.is_second_mode() != m_ctx->m_is_second_mode ||
+                m_ctx->zoom_level != render_ctx.zoom_level()) {
                 this->update_zoom_level(render_ctx);
             }
 
@@ -142,6 +151,9 @@ namespace akashi {
                     ruler_params.label_texts[i] = label_frame_num;
                 }
                 m_ctx->seek_ruler->update_obj_params(ruler_params);
+                if (mode_changed) {
+                    m_ctx->seek_ruler->set_label_dirty(true);
+                }
                 should_update += m_ctx->seek_ruler->update(render_ctx, params);
 
                 m_ctx->should_calculate_ruler_label_content = false;
