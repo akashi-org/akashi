@@ -53,35 +53,6 @@ namespace akashi {
                                     duration, length);
         }
 
-        static void update_current_atom_index(const core::Rational& current_time,
-                                              core::borrowed_ptr<state::AKState> state) {
-            auto current_atom_index = state->m_atomic_state.current_atom_index.load();
-            std::vector<core::AtomProfile> atom_profiles;
-            {
-                std::lock_guard<std::mutex> lock(state->m_prop_mtx);
-                atom_profiles = state->m_prop.render_prof.atom_profiles;
-            }
-
-            if (atom_profiles.size() == 0) {
-                return;
-            }
-
-            while (true) {
-                const auto atom_profile = atom_profiles[current_atom_index];
-                if (atom_profile.from <= current_time && current_time <= atom_profile.to) {
-                    break;
-                } else {
-                    if (current_atom_index >= atom_profiles.size() - 1) {
-                        current_atom_index = 0;
-                    } else {
-                        current_atom_index += 1;
-                    }
-                }
-            }
-
-            state->m_atomic_state.current_atom_index.store(current_atom_index);
-        }
-
         void HRManager::reload(const watch::WatchEventList& event_list) {
             std::vector<watch::WatchEvent> python_events;
             for (size_t i = 0; i < event_list.size; i++) {
@@ -122,8 +93,6 @@ namespace akashi {
             m_state->set_evalbuf_dequeue_ready(false);
             // m_state->set_play_ready(false);
             // m_audio->pause();
-
-            // update_current_atom_index(current_time, m_state);
 
             // avbuffer update
             m_buffer->vq->clear(true);
@@ -205,7 +174,6 @@ namespace akashi {
             // m_state->set_play_ready(false);
             // m_audio->pause();
 
-            // update_current_atom_index(seek_time, m_state);
             m_event->emit_time_update(seek_time);
 
             m_state->m_atomic_state.start_time.store(Rational{seek_time.num(), seek_time.den()});

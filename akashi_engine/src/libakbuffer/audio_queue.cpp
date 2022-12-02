@@ -121,8 +121,11 @@ namespace akashi {
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 auto atom_profiles = m_state->m_prop.render_prof.atom_profiles;
-                auto current_atom_index = m_state->m_atomic_state.current_atom_index.load();
-                for (const auto& layer : atom_profiles[current_atom_index].av_layers) {
+                if (atom_profiles.size() == 0) {
+                    AKLOG_ERRORN("AtomProfile not found");
+                    return res;
+                }
+                for (const auto& layer : atom_profiles[0].av_layers) {
                     layer_uuids.push_back(layer.uuid);
                 }
             }

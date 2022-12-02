@@ -120,8 +120,6 @@ namespace akashi {
 
             std::atomic<core::Rational> start_time{core::Rational{0, 1}};
 
-            std::atomic<size_t> current_atom_index = 0;
-
             std::atomic<core::AKAudioSpec> audio_spec;
 
             std::atomic<core::AKAudioSpec> encode_audio_spec;

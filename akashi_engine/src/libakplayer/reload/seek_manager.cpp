@@ -49,41 +49,6 @@ namespace akashi {
                                     duration, length);
         }
 
-        static void update_current_atom_index(const core::Rational& seek_time, bool is_forward_seek,
-                                              core::borrowed_ptr<state::AKState> state) {
-            auto current_atom_index = state->m_atomic_state.current_atom_index.load();
-            std::vector<core::AtomProfile> atom_profiles;
-            {
-                std::lock_guard<std::mutex> lock(state->m_prop_mtx);
-                atom_profiles = state->m_prop.render_prof.atom_profiles;
-            }
-
-            while (true) {
-                const auto atom_profile = atom_profiles[current_atom_index];
-                if (atom_profile.from <= seek_time && seek_time <= atom_profile.to) {
-                    break;
-                } else {
-                    if (is_forward_seek) {
-                        if (current_atom_index >= atom_profiles.size() - 1) {
-                            // [TODO] usually, unreachable case
-                            current_atom_index = 0;
-                        } else {
-                            current_atom_index += 1;
-                        }
-                    } else {
-                        if (current_atom_index == 0) {
-                            // [TODO] usually, unreachable case
-                            current_atom_index = atom_profiles.size() - 1;
-                        } else {
-                            current_atom_index -= 1;
-                        }
-                    }
-                }
-            }
-
-            state->m_atomic_state.current_atom_index.store(current_atom_index);
-        }
-
         void SeekManager::seek(const core::Rational& seek_time) {
             // [XXX] seek_time is assumed to be divisible by fps
             AKLOG_INFO("Play seek: {}({}/{})", seek_time.to_decimal(), seek_time.num(),
@@ -99,17 +64,14 @@ namespace akashi {
             m_state->set_seek_completed(false);
 
             // timeupdate
-            bool is_forward_seek = true;
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
-                is_forward_seek = seek_time >= m_state->m_prop.current_time;
                 m_state->m_prop.current_time = seek_time;
                 // [TODO] delta?
                 m_state->m_prop.elapsed_time = seek_time;
                 m_state->m_prop.seek_id =
                     m_state->m_prop.seek_id == UINT64_MAX ? 0 : m_state->m_prop.seek_id + 1;
             }
-            // update_current_atom_index(seek_time, is_forward_seek, m_state);
             m_event->emit_time_update(seek_time);
             // m_audio->seek(seek_time);
 
