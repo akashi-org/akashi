@@ -29,7 +29,7 @@ namespace akashi {
 
             while (true) {
                 state->wait_for_play_ready();
-                state->wait_for_audio_play_ready();
+                // state->wait_for_audio_play_ready();
                 if (!loop->m_is_alive) {
                     break;
                 }

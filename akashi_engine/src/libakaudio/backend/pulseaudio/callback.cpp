@@ -77,6 +77,11 @@ namespace akashi {
             return track.from <= segment.to_pts && track.to >= segment.from_pts;
         }
 
+        static bool layer_has_audio(core::borrowed_ptr<buffer::AudioQueue> aq,
+                                    const LayerProfile& layer) {
+            return !aq->empty(layer.uuid);
+        }
+
         void segment_fill(const WBSegmentSlice& slice, core::borrowed_ptr<buffer::AudioQueue> aq,
                           const LayerProfile& layer) {
             auto layer_uuid = layer.uuid;
@@ -158,7 +163,8 @@ namespace akashi {
             // 2. fill
             {
                 for (const auto& cur_layer : atom_prof.av_layers) {
-                    if (segment_has_overlap(segment, cur_layer)) {
+                    if (layer_has_audio(cb_ctx->aq(), cur_layer) &&
+                        segment_has_overlap(segment, cur_layer)) {
                         segment_fill({.buf = segment.buf, .buf_size = segment.buf_size},
                                      cb_ctx->aq(), cur_layer);
                         cb_ctx->check_audio_play_ready();
