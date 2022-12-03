@@ -29,9 +29,7 @@ namespace akashi {
             explicit DecodeState(core::borrowed_ptr<state::AKState> state);
             virtual ~DecodeState() = default;
 
-            void seek_update(void);
-
-            void hr_update(void);
+            void update(void);
 
           public:
             core::Rational fps;

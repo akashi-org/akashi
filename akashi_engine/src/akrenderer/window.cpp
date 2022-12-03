@@ -427,5 +427,7 @@ namespace akashi {
             m_state->m_atomic_state.volume = gain;
             Q_EMIT this->volume_changed(gain);
         }
+
+        void Window::on_update_osc(void) { m_oscArea->update_osc(); }
     }
 }

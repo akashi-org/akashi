@@ -102,6 +102,8 @@ namespace akashi {
             void on_render_prof_updated(const akashi::core::RenderProfile&);
             void on_seek_completed(void);
             void on_volume_changed(double);
+
+            void on_update_osc(void);
         };
 
     }

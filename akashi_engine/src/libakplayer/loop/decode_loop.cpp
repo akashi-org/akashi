@@ -29,21 +29,27 @@ namespace akashi {
             }
         }
 
-        void DecodeState::seek_update(void) {
-            {
-                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
-                decode_pts = m_state->m_prop.current_time;
-                seek_id = m_state->m_prop.seek_id;
-            }
-        }
-
-        void DecodeState::hr_update(void) {
+        void DecodeState::update(void) {
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 fps = m_state->m_prop.fps;
                 decode_pts = m_state->m_prop.current_time;
                 render_prof = m_state->m_prop.render_prof;
+                seek_id = m_state->m_prop.seek_id;
             }
+        }
+
+        static bool wait_for_all_decode_ready(core::borrowed_ptr<state::AKState> state) {
+            state->wait_for_evalbuf_dequeue_ready();
+            state->wait_for_video_decode_ready();
+            state->wait_for_audio_decode_ready();
+            state->wait_for_seek_completed();
+            state->wait_for_decode_layers_not_empty();
+            state->wait_for_decode_loop_can_continue();
+
+            return state->get_evalbuf_dequeue_ready() and state->get_video_decode_ready() and
+                   state->get_audio_decode_ready() and state->get_seek_completed() and
+                   state->get_decode_layers_not_empty() and state->get_decode_loop_can_continue();
         }
 
         void DecodeLoop::decode_thread(DecodeLoopContext ctx, DecodeLoop* loop) {
@@ -59,39 +65,37 @@ namespace akashi {
             auto decoder = new codec::AKDecoder(decode_state.render_prof, decode_state.decode_pts);
             bool decode_finished = false;
             while (loop->m_is_alive.load() && !decode_finished) {
-                ctx.state->wait_for_evalbuf_dequeue_ready();
-                ctx.state->wait_for_video_decode_ready();
-                ctx.state->wait_for_audio_decode_ready();
-                ctx.state->wait_for_seek_completed();
-                ctx.state->wait_for_decode_layers_not_empty();
-                ctx.state->wait_for_decode_loop_can_continue();
+                if (!wait_for_all_decode_ready(ctx.state)) {
+                    continue;
+                }
 
                 if (!loop->m_is_alive) {
                     break;
                 }
 
-                if (DecodeLoop::seek_detected(ctx.state, decode_state)) {
-                    AKLOG_INFON("Decode State updated by seek");
-                    decode_state.seek_update();
+                {
+                    auto seek_detected = DecodeLoop::seek_detected(ctx.state, decode_state);
+                    auto hr_detected = DecodeLoop::hr_detected(ctx.state, decode_state);
+                    if (seek_detected || hr_detected) {
+                        if (seek_detected) {
+                            AKLOG_INFON("Decode State updated by seek");
+                        }
+                        if (hr_detected) {
+                            AKLOG_INFON("Decode State updated by HR");
+                        }
+                        decode_state.update();
 
-                    bool seek_success = true;
-                    {
-                        std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
-                        seek_success = ctx.state->m_prop.seek_success;
+                        bool seek_success = true;
+                        {
+                            std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
+                            seek_success = ctx.state->m_prop.seek_success;
+                        }
+                        if (!seek_success || hr_detected) {
+                            delete decoder;
+                            decoder = new codec::AKDecoder(decode_state.render_prof,
+                                                           decode_state.decode_pts);
+                        }
                     }
-                    if (!seek_success) {
-                        delete decoder;
-                        decoder =
-                            new codec::AKDecoder(decode_state.render_prof, decode_state.decode_pts);
-                    }
-                }
-
-                if (DecodeLoop::hr_detected(ctx.state, decode_state)) {
-                    AKLOG_INFON("Decode State updated by hr");
-                    decode_state.hr_update();
-                    delete decoder;
-                    decoder =
-                        new codec::AKDecoder(decode_state.render_prof, decode_state.decode_pts);
                 }
 
                 codec::DecodeArg decode_args;

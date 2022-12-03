@@ -36,6 +36,12 @@ namespace akashi {
                                QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
             virtual ~OSCWidget(void);
 
+            bool should_update(void) const { return m_should_update; }
+
+            void set_should_update(bool should_update) { m_should_update = should_update; }
+
+            void osc_update(void);
+
           Q_SIGNALS:
             void closed(void);
             void playBtn_clicked(void);
@@ -44,6 +50,7 @@ namespace akashi {
             void seekbar_pressed(const akashi::core::Rational&);
             void seekbar_moved(const akashi::core::Rational&);
             void seekbar_released(const akashi::core::Rational&);
+            void request_update_osc(void);
 
           public Q_SLOTS:
             void update_current_time(const akashi::core::Rational& current_time);
@@ -72,6 +79,7 @@ namespace akashi {
             QTimer* m_cursor_timer;
             bool m_enable_smart_cursor = true; // if true, hide the cursor automatically
             QTimer* m_mouse_hold_timer;
+            bool m_should_update = false;
             Qt::MouseButton m_last_pressed_btn = Qt::NoButton;
         };
 

@@ -35,6 +35,7 @@ namespace akashi {
           public Q_SLOTS:
             void show_control(void);
             void hide_control(void);
+            void update_osc(void);
 
           private:
             QVBoxLayout* m_osc_area_layout;
