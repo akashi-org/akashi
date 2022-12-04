@@ -52,7 +52,7 @@ namespace akashi {
 
             core::owned_ptr<buffer::AudioBuffer> abuffer;
 
-            core::Rational audio_encode_pts = core::Rational(-1, 1);
+            core::Rational audio_encode_pts = core::Rational(0, 1);
 
             core::owned_ptr<graphics::AKGraphics> gfx;
             core::owned_ptr<Window> window;
