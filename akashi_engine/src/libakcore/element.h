@@ -108,8 +108,7 @@ namespace akashi {
             std::string border_color;
             BorderDirection border_direction;
             double edge_radius;
-            bool fill = true;
-            std::string color;
+            std::string fill_color;
             std::string frag;
             std::string poly;
             RectDetail rect;

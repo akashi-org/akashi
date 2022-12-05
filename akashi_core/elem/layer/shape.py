@@ -84,8 +84,7 @@ BorderDirection = tp.Literal['inner', 'outer', 'full']
 @dataclass
 class ShapeLocalField:
     shape_kind: ShapeKind
-    fill: bool = True
-    color: str = ""  # "#rrggbb" or "#rrggbbaa"
+    fill_color: str = ""  # "#rrggbb" or "#rrggbbaa"
     border_size: float = 0
     border_color: str = ""  # "#rrggbb" or "#rrggbbaa"
     border_direction: BorderDirection = 'inner'
@@ -118,14 +117,9 @@ class ShapeLocalTrait:
 
     _idx: int
 
-    def fill(self, enable_fill: bool) -> 'ShapeLocalTrait':
+    def fill_color(self, color: tp.Union[str, 'ColorEnum']) -> 'ShapeLocalTrait':
         if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasShapeLocalField, cur_layer).shape.fill = enable_fill
-        return self
-
-    def color(self, color: tp.Union[str, 'ColorEnum']) -> 'ShapeLocalTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasShapeLocalField, cur_layer).shape.color = color_value(color)
+            tp.cast(HasShapeLocalField, cur_layer).shape.fill_color = color_value(color)
         return self
 
     def border_size(self, size: float) -> 'ShapeLocalTrait':

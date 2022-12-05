@@ -6,5 +6,5 @@ def main():
 
     ak.rect(300, 300, lambda t: (
         t.transform.pos(*ak.center()),
-        t.shape.color(ak.Color.Red)
+        t.shape.fill_color(ak.Color.Red)
     ))

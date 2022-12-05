@@ -27,8 +27,8 @@ namespace akashi {
         }
 
         static void do_fill(cairo_t* handle, const core::ShapeLayerContext& shape_ctx) {
-            if (shape_ctx.fill) {
-                auto fill_color = core::to_rgba_float(shape_ctx.color);
+            if (!shape_ctx.fill_color.empty()) {
+                auto fill_color = core::to_rgba_float(shape_ctx.fill_color);
                 cairo_set_source_rgba(handle, fill_color[0], fill_color[1], fill_color[2],
                                       fill_color[3]);
                 cairo_fill_preserve(handle);
@@ -37,7 +37,12 @@ namespace akashi {
 
         static void do_draw_border(cairo_t* handle, const core::ShapeLayerContext& shape_ctx) {
             if (shape_ctx.border_size > 0) {
-                auto border_color = core::to_rgba_float(shape_ctx.border_color);
+                auto border_color_str =
+                    shape_ctx.border_color.empty() ? "#ffffff" : shape_ctx.border_color;
+                if (shape_ctx.border_color.empty()) {
+                    AKLOG_WARNN("`border_color` is not set");
+                }
+                auto border_color = core::to_rgba_float(border_color_str);
                 cairo_set_source_rgba(handle, border_color[0], border_color[1], border_color[2],
                                       border_color[3]);
                 cairo_set_line_width(handle, shape_ctx.border_size);
@@ -180,7 +185,11 @@ namespace akashi {
             auto handle = cairo_create(raw_surface);
             auto line = shape_ctx.line;
 
-            auto line_color = core::to_rgba_float(shape_ctx.color);
+            auto fill_color_str = shape_ctx.fill_color.empty() ? "#ffffff" : shape_ctx.fill_color;
+            if (shape_ctx.fill_color.empty()) {
+                AKLOG_WARNN("`fill_color` is not set");
+            }
+            auto line_color = core::to_rgba_float(fill_color_str);
             cairo_set_source_rgba(handle, line_color[0], line_color[1], line_color[2],
                                   line_color[3]);
             cairo_set_line_width(handle, line.size);

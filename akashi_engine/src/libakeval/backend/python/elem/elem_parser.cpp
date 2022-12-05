@@ -14,15 +14,15 @@ namespace py = pybind11;
 namespace akashi {
     namespace eval {
 
-        static bool has_field(const pybind11::object& entry, const std::string& field_name) {
-            const auto& klasses = entry.attr("__class__").attr("mro")().cast<pybind11::list>();
-            for (const auto& klass : klasses) {
-                if (klass.attr("__name__").cast<std::string>() == field_name) {
-                    return true;
-                }
-            }
-            return false;
-        }
+        // static bool has_field(const pybind11::object& entry, const std::string& field_name) {
+        //     const auto& klasses = entry.attr("__class__").attr("mro")().cast<pybind11::list>();
+        //     for (const auto& klass : klasses) {
+        //         if (klass.attr("__name__").cast<std::string>() == field_name) {
+        //             return true;
+        //         }
+        //     }
+        //     return false;
+        // }
 
         static core::Style parse_style(const pybind11::object& style_obj) {
             core::Style style;
@@ -290,10 +290,8 @@ namespace akashi {
 
                 layer_ctx.shape_layer_ctx.edge_radius =
                     layer_params.attr("shape").attr("edge_radius").cast<double>();
-                layer_ctx.shape_layer_ctx.fill =
-                    layer_params.attr("shape").attr("fill").cast<bool>();
-                layer_ctx.shape_layer_ctx.color =
-                    layer_params.attr("shape").attr("color").cast<std::string>();
+                layer_ctx.shape_layer_ctx.fill_color =
+                    layer_params.attr("shape").attr("fill_color").cast<std::string>();
 
                 parse_shape_detail(&layer_ctx, layer_params.attr("shape"));
             } else {
