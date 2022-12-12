@@ -2,7 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 import typing as tp
-from typing import runtime_checkable
+from typing import runtime_checkable, overload
 
 from .base import (
     ShaderField,
@@ -14,7 +14,7 @@ from .base import (
     TextureField,
     TextureTrait,
 )
-from .base import register_entry, peek_entry, frag, poly, HasMediaField
+from .base import register_entry, peek_entry, frag, poly, HasMediaField, LayerRef
 from akashi_core.pysl import _gl as gl
 from akashi_core.time import sec, NOT_FIXED_SEC
 from akashi_core.probe import get_duration, g_resource_map
@@ -35,6 +35,28 @@ from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
 
 from akashi_core.elem.layout import LayoutFn, LayoutInfo, LayoutLayerContext
+
+
+_FrameFnParams = tp.ParamSpec('_FrameFnParams')
+# FrameKind = tp.Literal['spatial', 'timeline', 'directive']
+FrameKind = tp.Literal['spatial', 'timeline']
+_FrameFnCtx = tuple[FrameKind, tp.Callable[[], None]]
+
+_T_FrameKind = tp.TypeVar('_T_FrameKind', bound=FrameKind)
+
+
+class _FrameFnCtxOpaque(tp.Generic[_T_FrameKind]):
+    ...
+
+
+def frame(kind: _T_FrameKind = 'spatial') -> tp.Callable[[tp.Callable[_FrameFnParams, None]], tp.Callable[_FrameFnParams, _FrameFnCtxOpaque[_T_FrameKind]]]:
+
+    def inner(f: tp.Callable[_FrameFnParams, None]) -> tp.Callable[_FrameFnParams, _FrameFnCtx]:
+        def wrapper(*args: _FrameFnParams.args, **kwargs: _FrameFnParams.kwargs) -> _FrameFnCtx:
+            return (kind, lambda: f(*args, **kwargs))
+        return wrapper
+
+    return tp.cast(tp.Callable[[tp.Callable[_FrameFnParams, None]], tp.Callable[_FrameFnParams, _FrameFnCtxOpaque[_T_FrameKind]]], inner)
 
 
 class UnitUniform:
@@ -84,7 +106,7 @@ _UnitPolyFn = _TEntryFnOpaque[_NamedEntryPolyFn[UnitPolyBuffer]]
 
 
 @dataclass
-class UnitHandle(LayerTrait):
+class SpatialFrameTrait(LayerTrait):
 
     transform: TransformTrait = field(init=False)
     tex: TextureTrait = field(init=False)
@@ -93,7 +115,7 @@ class UnitHandle(LayerTrait):
         self.tex = TextureTrait(self._idx)
         self.transform = TransformTrait(self._idx)
 
-    def __enter__(self) -> 'UnitHandle':
+    def __enter__(self) -> 'SpatialFrameTrait':
         gctx.get_ctx()._cur_unit_ids.append(self._idx)
         return self
 
@@ -101,7 +123,6 @@ class UnitHandle(LayerTrait):
         cur_ctx = gctx.get_ctx()
         cur_unit_layer = tp.cast(UnitEntry, cur_ctx.layers[cur_ctx._cur_unit_ids[-1]])
 
-        unit_fitted_layer_indices: list[tuple[int, int]] = []
         if isinstance(cur_unit_layer.duration, sec):
             max_to: sec = sec(0)
             for layout_idx, layer_idx in enumerate(cur_unit_layer.unit.layer_indices):
@@ -141,41 +162,39 @@ class UnitHandle(LayerTrait):
                     layer_to = cur_ctx.layers[layer_idx].atom_offset + tp.cast(sec, cur_ctx.layers[layer_idx].duration)
                     if layer_to > max_to:
                         max_to = layer_to
-                elif isinstance(cur_layer._duration, UnitHandle):
-                    unit_fitted_layer_indices.append((layer_idx, cur_layer._duration._idx))
                 else:  # assumes AtomHandle
                     raise Exception('Passing a layer handle to duration is prohibited for child layers of an unit layer')  # noqa: E501
 
             cur_unit_layer.duration = max_to
 
-            # resolve unit fitted layers
-            for from_layer_idx, unit_layer_idx in unit_fitted_layer_indices:
-                ref_duration = cur_ctx.layers[unit_layer_idx].duration
-                if ref_duration == NOT_FIXED_SEC:
-                    raise Exception('Invalid unit handle passed to the duration field')
-                cur_ctx.layers[from_layer_idx].duration = ref_duration
-
         cur_ctx._cur_unit_ids.pop()
         return False
 
-    def layout(self, layout_fn: LayoutFn) -> 'UnitHandle':
+    def layout(self, layout_fn: LayoutFn) -> 'SpatialFrameTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
             cur_layer.unit._layout_fn = layout_fn
         return self
 
-    def frag(self, *frag_fns: _UnitFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'UnitHandle':
+    def frag(self, *frag_fns: _UnitFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'SpatialFrameTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
             cur_layer.shader.frag_shader = ShaderCompiler(frag_fns, UnitFragBuffer, _frag_shader_header, preamble, memo)
         return self
 
-    def poly(self, *poly_fns: _UnitPolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'UnitHandle':
+    def poly(self, *poly_fns: _UnitPolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'SpatialFrameTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
             cur_layer.shader.poly_shader = ShaderCompiler(poly_fns, UnitPolyBuffer, _poly_shader_header, preamble, memo)
         return self
 
-    def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'UnitHandle':
+    def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'SpatialFrameTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
             cur_layer.unit.bg_color = color_value(color)
+        return self
+
+    def fb_size(self, width: int, height: int, copy_to_layer_size: bool = True) -> 'SpatialFrameTrait':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
+            cur_layer.unit.fb_size = (width, height)
+            if copy_to_layer_size:
+                self.transform.layer_size(*cur_layer.unit.fb_size)
         return self
 
 
@@ -184,22 +203,8 @@ unit_frag = UnitFragBuffer
 unit_poly = UnitPolyBuffer
 
 
-def unit(width: int | None = None, height: int | None = None) -> UnitHandle:
-    entry = UnitEntry()
-    entry.transform.layer_size = (
-        ak_lwidth() if not width else width,
-        ak_lheight() if not height else height,
-    )
-    entry.unit.fb_size = entry.transform.layer_size
-    idx = register_entry(entry, 'UNIT', '')
-
-    h = UnitHandle(idx)
-    h.transform.pos(*ak_lcenter())
-    return h
-
-
 @dataclass
-class SceneHandle(LayerTrait):
+class TimelineFrameTrait(LayerTrait):
 
     transform: TransformTrait = field(init=False)
 
@@ -214,11 +219,11 @@ class SceneHandle(LayerTrait):
         for layer_idx in unit_entry.unit.layer_indices:
             cur_layer = cur_ctx.layers[layer_idx]
             if cur_layer.kind == 'UNIT':
-                SceneHandle.__update_unit_layer_atom_offset(tp.cast('UnitEntry', cur_layer), new_offset)
+                TimelineFrameTrait.__update_unit_layer_atom_offset(tp.cast('UnitEntry', cur_layer), new_offset)
             else:
                 cur_layer.atom_offset += new_offset
 
-    def __enter__(self) -> 'SceneHandle':
+    def __enter__(self) -> 'TimelineFrameTrait':
         gctx.get_ctx()._cur_unit_ids.append(self._idx)
         return self
 
@@ -234,7 +239,7 @@ class SceneHandle(LayerTrait):
 
             cur_layer = cur_ctx.layers[layer_idx]
             if cur_layer.kind == 'UNIT':
-                SceneHandle.__update_unit_layer_atom_offset(tp.cast('UnitEntry', cur_layer), acc_duration)
+                TimelineFrameTrait.__update_unit_layer_atom_offset(tp.cast('UnitEntry', cur_layer), acc_duration)
             else:
                 cur_layer.atom_offset += acc_duration
 
@@ -251,19 +256,64 @@ class SceneHandle(LayerTrait):
         cur_ctx._cur_unit_ids.pop()
         return False
 
-    def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'SceneHandle':
+    def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'TimelineFrameTrait':
         if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
             cur_layer.unit.bg_color = color_value(color)
         return self
 
+    def fb_size(self, width: int, height: int, copy_to_layer_size: bool = True) -> 'TimelineFrameTrait':
+        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
+            cur_layer.unit.fb_size = (width, height)
+            if copy_to_layer_size:
+                self.transform.layer_size(*cur_layer.unit.fb_size)
+        return self
 
-def scene(width: int | None = None, height: int | None = None) -> SceneHandle:
-    entry = UnitEntry()
-    entry.transform.layer_size = (
-        ak_lwidth() if not width else width,
-        ak_lheight() if not height else height,
-    )
-    entry.unit.fb_size = entry.transform.layer_size
-    entry.transform.pos = ak_lcenter()
-    idx = register_entry(entry, 'UNIT', '')
-    return SceneHandle(idx)
+
+@overload
+def unit(frame_ctx: _FrameFnCtxOpaque[tp.Literal['spatial']], *trait_fns: tp.Callable[[SpatialFrameTrait], tp.Any]) -> LayerRef:
+    ...
+
+
+@overload
+def unit(frame_ctx: _FrameFnCtxOpaque[tp.Literal['timeline']], *trait_fns: tp.Callable[[TimelineFrameTrait], tp.Any]) -> LayerRef:
+    ...
+
+
+@overload
+def unit(frame_ctx: tp.Never, *trait_fns: tp.Never) -> tp.Never:
+    ...
+
+
+def unit(frame_ctx, *trait_fns) -> LayerRef:
+
+    kind, layer_fns = tp.cast(_FrameFnCtx, frame_ctx)
+    if kind == 'spatial':
+        entry = UnitEntry()
+        entry.transform.layer_size = (ak_lwidth(), ak_lheight())
+        entry.unit.fb_size = entry.transform.layer_size
+        idx = register_entry(entry, 'UNIT', '')
+
+        h = SpatialFrameTrait(idx)
+        h.transform.pos(*ak_lcenter())
+
+        with h:
+            [tfn(h) for tfn in trait_fns]
+            layer_fns()
+
+        return LayerRef(idx)
+    elif kind == 'timeline':
+        entry = UnitEntry()
+        entry.transform.layer_size = (ak_lwidth(), ak_lheight())
+        entry.unit.fb_size = entry.transform.layer_size
+        idx = register_entry(entry, 'UNIT', '')
+
+        h = TimelineFrameTrait(idx)
+        h.transform.pos(*ak_lcenter())
+
+        with h:
+            [tfn(h) for tfn in trait_fns]
+            layer_fns()
+
+        return LayerRef(idx)
+    else:
+        raise NotImplementedError()

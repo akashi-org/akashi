@@ -31,10 +31,10 @@ __all__ = [
     "LineTraitFn",
     "line_frag",
     "line_poly",
+    "frame",
     "unit",
     "unit_frag",
     "unit_poly",
-    "scene",
     "sec",
     "rgba",
     "rgb",
@@ -97,7 +97,7 @@ from .elem.layer.shape import rect, RectTraitFn, rect_frag, rect_poly
 from .elem.layer.shape import circle, CircleTraitFn, circle_frag, circle_poly
 from .elem.layer.shape import line, LineTraitFn, line_frag, line_poly
 from .elem.layer.shape import tri, TriangleTraitFn, tri_frag, tri_poly
-from .elem.layer.unit import unit, unit_frag, unit_poly, scene
+from .elem.layer.unit import frame, unit, unit_frag, unit_poly
 
 from .time import sec
 from .color import rgba, rgb, hsv, hsva, Color

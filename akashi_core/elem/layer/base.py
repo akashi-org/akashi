@@ -15,12 +15,16 @@ from akashi_core.probe import get_duration
 
 if tp.TYPE_CHECKING:
     from akashi_core.elem.context import root
-    from .unit import UnitEntry, UnitHandle
+    from .unit import UnitEntry
 
 
 LayerKind = tp.Literal['LAYER', 'VIDEO', 'AUDIO', 'TEXT', 'IMAGE', 'UNIT', 'SHAPE', 'FREE']
 
-LayerRef = tp.NewType('LayerRef', int)
+
+@dataclass(frozen=True)
+class LayerRef:
+    value: int
+
 
 ''' Layer Concept '''
 
@@ -35,7 +39,7 @@ class LayerField:
     kind: LayerKind = 'LAYER'
     key: str = ''
     duration: sec = field(default_factory=lambda: NOT_FIXED_SEC)
-    _duration: sec | 'tp.Type[root]' | 'UnitHandle' = field(default_factory=lambda: sec(5))
+    _duration: sec | 'tp.Type[root]' = field(default_factory=lambda: sec(5))
     atom_offset: sec = field(default_factory=lambda: sec(0))
 
 
@@ -55,9 +59,18 @@ class LayerTimeTrait:
 
     _idx: int
 
-    def duration(self: '_TLayerTimeTrait', duration: sec | float | 'UnitHandle' | 'tp.Type[root]') -> '_TLayerTimeTrait':
+    def duration(self: '_TLayerTimeTrait', duration: sec | float | 'LayerRef' | 'tp.Type[root]') -> '_TLayerTimeTrait':
         if (cur_layer := peek_entry(self._idx)):
-            _duration = sec(duration) if isinstance(duration, (int, float)) else duration
+            _duration: sec | 'tp.Type[root]'
+            if isinstance(duration, LayerRef):
+                _duration = gctx.get_ctx().layers[int(duration.value)].duration
+                if _duration == NOT_FIXED_SEC:
+                    raise Exception('Invalid LayerRef found')
+            elif isinstance(duration, (int, float)):
+                _duration = sec(duration)
+            else:
+                _duration = duration
+
             tp.cast(LayerField, cur_layer)._duration = _duration
         return self
 
@@ -192,7 +205,7 @@ class MediaField:
     start: sec = field(default_factory=lambda: sec(0))
     end: sec = field(default_factory=lambda: sec(-1))
     _span_cnt: int | None = None
-    _span_dur: None | sec | 'tp.Type[root]' | 'UnitHandle' = None
+    _span_dur: None | sec | 'tp.Type[root]' = None
 
 
 @runtime_checkable
@@ -224,9 +237,18 @@ class MediaTrait:
             tp.cast(HasMediaField, cur_layer).media._span_dur = None
         return self
 
-    def span_dur(self, duration: sec | float | 'UnitHandle' | 'tp.Type[root]') -> 'MediaTrait':
+    def span_dur(self, duration: sec | float | 'LayerRef' | 'tp.Type[root]') -> 'MediaTrait':
         if (cur_layer := peek_entry(self._idx)):
-            _duration = sec(duration) if isinstance(duration, (int, float)) else duration
+            _duration: sec | 'tp.Type[root]'
+            if isinstance(duration, LayerRef):
+                _duration = gctx.get_ctx().layers[int(duration.value)].duration
+                if _duration == NOT_FIXED_SEC:
+                    raise Exception('Invalid LayerRef found')
+            elif isinstance(duration, (int, float)):
+                _duration = sec(duration)
+            else:
+                _duration = duration
+
             tp.cast(HasMediaField, cur_layer).media._span_cnt = None
             tp.cast(HasMediaField, cur_layer).media._span_dur = _duration
         return self

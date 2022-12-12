@@ -142,19 +142,22 @@ class TestBasicLayers(unittest.TestCase):
         self.assertEqual(tp.cast(HasMediaField, kron.layers[0]).media._span_cnt, 10)
 
 
-class TestUnit(unittest.TestCase):
+class TestFrame(unittest.TestCase):
 
     def test_basic(self):
 
+        @ak.frame()
+        def base_frame(rect_w: int, rect_h: int):
+            ak.rect(rect_w, rect_h, lambda t: (
+                t.duration(3)
+            ))
+            ak.rect(rect_w, rect_h, lambda t: (
+                t.duration(10)
+            ))
+
         @ak.entry()
         def main():
-            with ak.unit():
-                ak.rect(200, 200, lambda t: (
-                    t.duration(3)
-                ))
-                ak.rect(200, 200, lambda t: (
-                    t.duration(10)
-                ))
+            ak.unit(base_frame(200, 200))
 
         kron = eval_kron(main, './test_elem_config1.py')
         # print_kron(kron)
@@ -177,16 +180,26 @@ class TestUnit(unittest.TestCase):
 
     def test_nested_units(self):
 
+        @ak.frame()
+        def inner_frame():
+            ak.rect(ak.lwidth() // 5, 200, lambda t: (
+                t.duration(3),
+                t.key('inner')
+            ))
+
+        @ak.frame()
+        def topmost_frame():
+            l = ak.unit(inner_frame(), lambda t: (
+                t.fb_size(ak.lwidth() // 2, ak.lheight()),
+            ))
+            ak.rect(ak.lwidth() // 5, 200, lambda t: (
+                t.duration(l),
+                t.key('topmost')
+            ))
+
         @ak.entry()
         def main():
-            with ak.unit():
-                with ak.unit() as u:
-                    ak.rect(200, 200, lambda t: (
-                        t.duration(3)
-                    ))
-                ak.rect(200, 200, lambda t: (
-                    t.duration(u)
-                ))
+            ak.unit(topmost_frame())
 
         kron = eval_kron(main, './test_elem_config1.py')
         # print_kron(kron)
@@ -205,11 +218,47 @@ class TestUnit(unittest.TestCase):
         self.assertEqual(kron.layers[1].kind, 'UNIT')
         self.assertEqual(kron.layers[1].duration, ak.sec(3))
         self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[1]).unit.layer_indices, [2])
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[1]).unit.fb_size, (1920, 1080))
-        self.assertEqual(tp.cast(HasTransformField, kron.layers[1]).transform.layer_size, (1920, 1080))
+        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[1]).unit.fb_size, (1920 // 2, 1080))
+        self.assertEqual(tp.cast(HasTransformField, kron.layers[1]).transform.layer_size, (1920 // 2, 1080))
         self.assertEqual(tp.cast(HasTransformField, kron.layers[1]).transform.pos, (960, 540))
 
         self.assertEqual(kron.layers[2].kind, 'SHAPE')
+        self.assertEqual(kron.layers[2].key, 'inner')
+        self.assertEqual(tp.cast(HasShapeLocalField, kron.layers[2]).shape.rect.width, (1920 // 2) // 5)
 
         self.assertEqual(kron.layers[3].kind, 'SHAPE')
+        self.assertEqual(kron.layers[3].key, 'topmost')
         self.assertEqual(kron.layers[3].duration, ak.sec(3))
+        self.assertEqual(tp.cast(HasShapeLocalField, kron.layers[3]).shape.rect.width, (1920 // 5))
+
+    def test_timeline_basic(self):
+
+        @ak.frame('timeline')
+        def base_frame(rect_w: int, rect_h: int):
+            ak.rect(rect_w, rect_h, lambda t: (
+                t.duration(3)
+            ))
+            ak.rect(rect_w, rect_h, lambda t: (
+                t.duration(10)
+            ))
+
+        @ak.entry()
+        def main():
+            ak.unit(base_frame(200, 200))
+
+        kron = eval_kron(main, './test_elem_config1.py')
+        # print_kron(kron)
+
+        self.assertEqual(len(kron.atoms), 1)
+        self.assertEqual(kron.atoms[0]._duration, ak.sec(13))
+
+        self.assertEqual(len(kron.layers), 3)
+        self.assertEqual(kron.layers[0].kind, 'UNIT')
+        self.assertEqual(kron.layers[0].duration, ak.sec(13))
+        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[0]).unit.layer_indices, [1, 2])
+        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[0]).unit.fb_size, (1920, 1080))
+        self.assertEqual(tp.cast(HasTransformField, kron.layers[0]).transform.layer_size, (1920, 1080))
+        self.assertEqual(tp.cast(HasTransformField, kron.layers[0]).transform.pos, (960, 540))
+
+        self.assertEqual(kron.layers[1].kind, 'SHAPE')
+        self.assertEqual(kron.layers[2].kind, 'SHAPE')
