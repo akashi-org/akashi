@@ -79,10 +79,10 @@ class AtomHandle:
             cur_layer = cur_layers[layer_idx]
             if isinstance(cur_layer._duration, sec):
 
-                if cur_layer.duration == NOT_FIXED_SEC:
-                    cur_layer.duration = cur_layer._duration
+                if cur_layer.slice_offset == NOT_FIXED_SEC:
+                    cur_layer.slice_offset = cur_layer.frame_offset
 
-                layer_to = cur_layer.atom_offset + cur_layer.duration
+                layer_to = cur_layer.slice_offset + cur_layer._duration
                 if layer_to > max_to:
                     max_to = layer_to
             else:
@@ -92,7 +92,7 @@ class AtomHandle:
 
         # resolve atom fitted layers
         for at_layer_idx in atom_fitted_layer_indices:
-            cur_layers[at_layer_idx].duration = cur_atom._duration
+            cur_layers[at_layer_idx]._duration = cur_atom._duration
 
         return False
 

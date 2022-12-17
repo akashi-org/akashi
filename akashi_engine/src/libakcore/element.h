@@ -123,6 +123,7 @@ namespace akashi {
             double z = 0.0;
             std::array<long, 2> layer_size = {-1, -1};
             Rational from = core::Rational(0, 1);
+            Rational layer_local_offset = core::Rational(0, 1);
             Rational to = core::Rational(0, 1);
             int type;
             std::string uuid;

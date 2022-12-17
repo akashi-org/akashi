@@ -38,9 +38,11 @@ class LayerField:
     atom_uuid: UUID = UUID('')
     kind: LayerKind = 'LAYER'
     key: str = ''
-    duration: sec = field(default_factory=lambda: NOT_FIXED_SEC)
     _duration: sec | 'tp.Type[root]' = field(default_factory=lambda: sec(5))
-    atom_offset: sec = field(default_factory=lambda: sec(0))
+    slice_offset: sec = field(default_factory=lambda: sec(NOT_FIXED_SEC))
+    layer_local_offset: sec = field(default_factory=lambda: sec(0))
+    frame_offset: sec = field(default_factory=lambda: sec(0))
+    defunct: bool = False
 
 
 @dataclass
@@ -63,8 +65,8 @@ class LayerTimeTrait:
         if (cur_layer := peek_entry(self._idx)):
             _duration: sec | 'tp.Type[root]'
             if isinstance(duration, LayerRef):
-                _duration = gctx.get_ctx().layers[int(duration.value)].duration
-                if _duration == NOT_FIXED_SEC:
+                _duration = gctx.get_ctx().layers[int(duration.value)]._duration
+                if not isinstance(_duration, sec):
                     raise Exception('Invalid LayerRef found')
             elif isinstance(duration, (int, float)):
                 _duration = sec(duration)
@@ -76,7 +78,7 @@ class LayerTimeTrait:
 
     def offset(self: '_TLayerTimeTrait', offset: sec | float) -> '_TLayerTimeTrait':
         if (cur_layer := peek_entry(self._idx)):
-            cur_layer.atom_offset = sec(offset)
+            cur_layer.frame_offset = sec(offset)
         return self
 
 
@@ -241,8 +243,8 @@ class MediaTrait:
         if (cur_layer := peek_entry(self._idx)):
             _duration: sec | 'tp.Type[root]'
             if isinstance(duration, LayerRef):
-                _duration = gctx.get_ctx().layers[int(duration.value)].duration
-                if _duration == NOT_FIXED_SEC:
+                _duration = gctx.get_ctx().layers[int(duration.value)]._duration
+                if not isinstance(_duration, sec):
                     raise Exception('Invalid LayerRef found')
             elif isinstance(duration, (int, float)):
                 _duration = sec(duration)

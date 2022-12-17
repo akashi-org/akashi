@@ -163,9 +163,10 @@ namespace akashi {
             // layer_ctx.display = layer_params.attr("_display").cast<bool>();
             layer_ctx.display = true;
 
-            layer_ctx.from = to_rational(layer_params.attr("atom_offset"));
-            layer_ctx.to = (to_rational(layer_params.attr("duration")) +
-                            to_rational(layer_params.attr("atom_offset")));
+            layer_ctx.from = to_rational(layer_params.attr("slice_offset"));
+            layer_ctx.layer_local_offset = to_rational(layer_params.attr("layer_local_offset"));
+            layer_ctx.to = (to_rational(layer_params.attr("_duration")) +
+                            to_rational(layer_params.attr("slice_offset")));
 
             try_parse_transform_field(&layer_ctx, layer_params);
             try_parse_texture_field(&layer_ctx, layer_params);

@@ -181,7 +181,7 @@ namespace akashi {
 
             glUniformMatrix4fv(pass.mvp_loc, 1, GL_FALSE, &new_mvp[0][0]);
 
-            auto local_pts = pts - m_layer_ctx.from;
+            auto local_pts = (pts - m_layer_ctx.from) + m_layer_ctx.layer_local_offset;
             glUniform1f(pass.time_loc, local_pts.to_decimal());
             glUniform1f(pass.global_time_loc, pts.to_decimal());
 
