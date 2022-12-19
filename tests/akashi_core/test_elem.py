@@ -341,3 +341,84 @@ class TestFrame(unittest.TestCase):
         self.assertEqual(kron.layers[6].slice_offset, ak.sec(0))
         self.assertEqual(kron.layers[6]._duration, ak.sec(1))
         self.assertEqual(kron.layers[6].layer_local_offset, ak.sec(1))
+
+    def test_spatial_with_span_cnt(self):
+
+        @ak.frame()
+        def base_frame():
+            ak.rect(200, 200, lambda t: (
+                t.duration(3).offset(2),
+                t.key('R1')
+            ))
+            vurl = ak.from_relpath(__file__, './resource_fixtures/countdown1/countdown1_720p.mp4')
+            ak.video(vurl, lambda t: (
+                t.media.range(5, -1)
+            ))
+            ak.audio(vurl)
+            ak.rect(400, 400, lambda t: (
+                t.duration(1).offset(3),
+                t.key('R2')
+            ))
+            ak.rect(200, 200, lambda t: (
+                t.duration(1),
+                t.key('R3')
+            ))
+            ak.rect(300, 300, lambda t: (
+                t.duration(2).offset(1),
+                t.key('R4')
+            ))
+
+        @ak.entry()
+        def main():
+            ak.unit(base_frame(), lambda t: (
+                t.range(2, 6).span_cnt(3)
+            ))
+
+        kron = eval_kron(main, './test_elem_config1.py')
+        # print_kron(kron)
+
+        self.assertEqual(kron.atoms[0]._duration, ak.sec(12))
+
+        # self.assertEqual(len(kron.layers), 7)
+        # self.assertEqual(kron.layers[0].kind, 'UNIT')
+        # self.assertEqual(kron.layers[0]._duration, ak.sec(12))
+        # self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[0]).unit.layer_indices, [1, 2, 3, 4, 6])
+
+        for layer_idx, layer in enumerate(kron.layers):
+            print(layer_idx, layer.kind, layer.key, layer.slice_offset, layer._duration)
+
+        # self.assertEqual(kron.layers[1].kind, 'SHAPE')
+        # self.assertEqual(kron.layers[1].key, 'R1')
+        # self.assertEqual(kron.layers[1].slice_offset, ak.sec(0))
+        # self.assertEqual(kron.layers[1]._duration, ak.sec(3))
+        # self.assertEqual(kron.layers[1].layer_local_offset, ak.sec(0))
+
+        # self.assertEqual(kron.layers[2].kind, 'VIDEO')
+        # self.assertEqual(kron.layers[2].slice_offset, ak.sec(0))
+        # self.assertEqual(kron.layers[2]._duration, ak.sec(3027, 1000))
+        # self.assertEqual(kron.layers[2].layer_local_offset, ak.sec(2))
+        # self.assertEqual(tp.cast(HasMediaField, kron.layers[2]).media.start, ak.sec(7))
+        # self.assertEqual(tp.cast(HasMediaField, kron.layers[2]).media.end, ak.sec(10027, 1000))
+
+        # self.assertEqual(kron.layers[3].kind, 'AUDIO')
+        # self.assertEqual(kron.layers[3].slice_offset, ak.sec(0))
+        # self.assertEqual(kron.layers[3]._duration, ak.sec(4))
+        # self.assertEqual(kron.layers[3].layer_local_offset, ak.sec(2))
+        # self.assertEqual(tp.cast(HasMediaField, kron.layers[3]).media.start, ak.sec(2))
+        # self.assertEqual(tp.cast(HasMediaField, kron.layers[3]).media.end, ak.sec(6))
+
+        # self.assertEqual(kron.layers[4].kind, 'SHAPE')
+        # self.assertEqual(kron.layers[4].key, 'R2')
+        # self.assertEqual(kron.layers[4].slice_offset, ak.sec(1))
+        # self.assertEqual(kron.layers[4]._duration, ak.sec(1))
+        # self.assertEqual(kron.layers[4].layer_local_offset, ak.sec(0))
+
+        # self.assertEqual(kron.layers[5].kind, 'SHAPE')
+        # self.assertEqual(kron.layers[5].key, 'R3')
+        # self.assertEqual(kron.layers[5].defunct, True)
+
+        # self.assertEqual(kron.layers[6].kind, 'SHAPE')
+        # self.assertEqual(kron.layers[6].key, 'R4')
+        # self.assertEqual(kron.layers[6].slice_offset, ak.sec(0))
+        # self.assertEqual(kron.layers[6]._duration, ak.sec(1))
+        # self.assertEqual(kron.layers[6].layer_local_offset, ak.sec(1))

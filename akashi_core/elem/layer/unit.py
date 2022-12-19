@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import typing as tp
 from typing import runtime_checkable, overload
+import copy
 
 from .base import (
     ShaderField,
@@ -10,6 +11,7 @@ from .base import (
     LayerTrait,
     HasTransformField,
     HasMediaField,
+    HasShaderField,
     TransformField,
     TransformTrait,
     TextureField,
@@ -85,6 +87,8 @@ class UnitLocalField:
     _start: sec = field(default_factory=lambda: sec(0))
     _end: sec = field(default_factory=lambda: sec(-1))
     _layout_fn: LayoutFn | None = None
+    _span_cnt: int | None = None
+    _span_dur: sec | None = None
 
 
 @runtime_checkable
@@ -122,36 +126,44 @@ class SpatialUnitTrait(LayerTrait):
         self.transform = TransformTrait(self._idx)
 
     def layout(self, layout_fn: LayoutFn) -> 'SpatialUnitTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
-            cur_layer.unit._layout_fn = layout_fn
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasUnitLocalField, cur_layer).unit._layout_fn = layout_fn
         return self
 
     def frag(self, *frag_fns: _UnitFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'SpatialUnitTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
-            cur_layer.shader.frag_shader = ShaderCompiler(frag_fns, UnitFragBuffer, _frag_shader_header, preamble, memo)
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasShaderField, cur_layer).shader.frag_shader = ShaderCompiler(
+                frag_fns, UnitFragBuffer, _frag_shader_header, preamble, memo)
         return self
 
     def poly(self, *poly_fns: _UnitPolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'SpatialUnitTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
-            cur_layer.shader.poly_shader = ShaderCompiler(poly_fns, UnitPolyBuffer, _poly_shader_header, preamble, memo)
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasShaderField, cur_layer).shader.poly_shader = ShaderCompiler(
+                poly_fns, UnitPolyBuffer, _poly_shader_header, preamble, memo)
         return self
 
     def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'SpatialUnitTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
-            cur_layer.unit.bg_color = color_value(color)
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasUnitLocalField, cur_layer).unit.bg_color = color_value(color)
         return self
 
     def fb_size(self, width: int, height: int, copy_to_layer_size: bool = True) -> 'SpatialUnitTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
-            cur_layer.unit.fb_size = (width, height)
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasUnitLocalField, cur_layer).unit.fb_size = (width, height)
             if copy_to_layer_size:
-                self.transform.layer_size(*cur_layer.unit.fb_size)
+                self.transform.layer_size(*tp.cast(HasUnitLocalField, cur_layer).unit.fb_size)
         return self
 
     def range(self, start: sec | float, end: sec | float = -1) -> 'SpatialUnitTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
+        if (cur_layer := peek_entry(self._idx)):
             tp.cast(HasUnitLocalField, cur_layer).unit._start = sec(start)
             tp.cast(HasUnitLocalField, cur_layer).unit._end = sec(end)
+        return self
+
+    def span_cnt(self, count: int) -> 'SpatialUnitTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasUnitLocalField, cur_layer).unit._span_cnt = count
+            tp.cast(HasUnitLocalField, cur_layer).unit._span_dur = None
         return self
 
 
@@ -169,15 +181,15 @@ class TimelineUnitTrait(LayerTrait):
         self.transform = TransformTrait(self._idx)
 
     def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'TimelineUnitTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
-            cur_layer.unit.bg_color = color_value(color)
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasUnitLocalField, cur_layer).unit.bg_color = color_value(color)
         return self
 
     def fb_size(self, width: int, height: int, copy_to_layer_size: bool = True) -> 'TimelineUnitTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, UnitEntry):
-            cur_layer.unit.fb_size = (width, height)
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasUnitLocalField, cur_layer).unit.fb_size = (width, height)
             if copy_to_layer_size:
-                self.transform.layer_size(*cur_layer.unit.fb_size)
+                self.transform.layer_size(*tp.cast(HasUnitLocalField, cur_layer).unit.fb_size)
         return self
 
 
@@ -207,6 +219,9 @@ class SpatialFrameGuard:
 
         # Apply slice to its children and fix the duration
         self._apply_slice(cur_ctx, cur_unit_layer, max_to)
+
+        # Span the slice and fix the duration
+        self._apply_span(cur_ctx, cur_unit_layer)
 
         # Pop this frame
         cur_ctx._cur_unit_ids.pop()
@@ -298,9 +313,14 @@ class SpatialFrameGuard:
                 cur_layer.layer_local_offset = new_layer_local_offset
                 cur_layer._duration = new_duration
 
-                if cur_layer.layer_local_offset > sec(0) and isinstance(cur_layer, HasMediaField):
-                    cur_layer.media.start += cur_layer.layer_local_offset
-                    cur_layer.media.end = cur_layer._duration + cur_layer.media.start
+                # if cur_layer.layer_local_offset > sec(0) and isinstance(cur_layer, HasMediaField):
+
+                #     media_slice_dur = cur_layer.media.end - cur_layer.media.start
+                #     media_slice_part = int(cur_layer.layer_local_offset / media_slice_dur)
+                #     cur_layer.media.start = cur_layer.layer_local_offset - (media_slice_part * media_slice_dur)
+                #     cur_layer.media.end += cur_layer.layer_local_offset
+                #     cur_layer.media._span_cnt = None
+                #     cur_layer.media._span_dur = cur_layer._duration
 
                 living_layer_indices.append(layer_idx)
             else:
@@ -308,6 +328,28 @@ class SpatialFrameGuard:
 
         unit_layer.unit.layer_indices = living_layer_indices
         unit_layer._duration = unit_dur
+
+    @staticmethod
+    def _apply_span(cur_ctx: 'KronContext', unit_layer: UnitEntry):
+
+        if unit_layer.unit._span_cnt and unit_layer.unit._span_cnt > 1:
+            org_duration: sec = tp.cast(sec, unit_layer._duration)
+            acc_duration: sec = org_duration
+            child_layer_indices = copy.deepcopy(unit_layer.unit.layer_indices)
+            for cnt in range(unit_layer.unit._span_cnt - 1):
+                for layer_idx in child_layer_indices:
+                    cur_layer = cur_ctx.layers[layer_idx]
+                    if cur_layer.defunct:
+                        continue
+                    dup_layer = copy.deepcopy(cur_layer)
+                    dup_layer.slice_offset += acc_duration
+                    register_entry(dup_layer, dup_layer.kind, dup_layer.key + f'__span_cnt_{cnt+1}')
+                acc_duration += org_duration
+
+            unit_layer._duration = tp.cast(sec, unit_layer._duration) * unit_layer.unit._span_cnt
+
+        elif unit_layer.unit._span_dur:
+            raise NotImplementedError()
 
 
 @dataclass

@@ -137,6 +137,11 @@ class ShaderField:
     poly_shader: tp.Optional[ShaderCompiler] = None
 
 
+@runtime_checkable
+class HasShaderField(tp.Protocol):
+    shader: ShaderField
+
+
 ''' Crop Concept '''
 
 
