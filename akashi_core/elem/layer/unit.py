@@ -313,14 +313,14 @@ class SpatialFrameGuard:
                 cur_layer.layer_local_offset = new_layer_local_offset
                 cur_layer._duration = new_duration
 
-                # if cur_layer.layer_local_offset > sec(0) and isinstance(cur_layer, HasMediaField):
+                if cur_layer.layer_local_offset > sec(0) and isinstance(cur_layer, HasMediaField):
 
-                #     media_slice_dur = cur_layer.media.end - cur_layer.media.start
-                #     media_slice_part = int(cur_layer.layer_local_offset / media_slice_dur)
-                #     cur_layer.media.start = cur_layer.layer_local_offset - (media_slice_part * media_slice_dur)
-                #     cur_layer.media.end += cur_layer.layer_local_offset
-                #     cur_layer.media._span_cnt = None
-                #     cur_layer.media._span_dur = cur_layer._duration
+                    media_slice_dur = cur_layer.media.end - cur_layer.media.start
+                    media_slice_part = int(cur_layer.layer_local_offset / media_slice_dur)
+                    cur_layer.layer_local_offset = cur_layer.layer_local_offset - (media_slice_part * media_slice_dur)
+                    # cur_layer.media.end += cur_layer.layer_local_offset
+                    # cur_layer.media._span_cnt = None
+                    # cur_layer.media._span_dur = cur_layer._duration
 
                 living_layer_indices.append(layer_idx)
             else:

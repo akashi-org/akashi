@@ -34,6 +34,7 @@ namespace akashi {
             core::LayerProfile computed{};
             computed.uuid = m_layer_ctx.uuid;
             computed.from = m_layer_ctx.from + base_time;
+            computed.layer_local_offset = m_layer_ctx.layer_local_offset;
             computed.to = m_layer_ctx.to + base_time;
             computed.type = static_cast<core::LayerType>(m_layer_ctx.type);
             switch (computed.type) {

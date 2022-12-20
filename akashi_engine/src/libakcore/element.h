@@ -151,6 +151,7 @@ namespace akashi {
         struct LayerProfile {
             LayerType type;
             Rational from = core::Rational(0, 1);
+            Rational layer_local_offset = core::Rational(0, 1);
             Rational to = core::Rational(0, 1);
             std::string uuid;
             std::string src;

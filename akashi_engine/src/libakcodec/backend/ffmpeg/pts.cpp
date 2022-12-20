@@ -37,9 +37,13 @@ namespace akashi {
 
             m_frame_rpts = pts_to_rational(adjusted_pts, frame_time_base);
 
+            auto media_offset = m_input_src->loop_cnt == 0
+                                    ? m_input_src->layer_prof.layer_local_offset
+                                    : core::Rational(0l);
+
             m_frame_pts = (m_input_src->act_dur * m_input_src->loop_cnt) +
                           rpts_to_pts(m_frame_rpts, m_input_src->layer_prof.from,
-                                      m_input_src->layer_prof.start);
+                                      m_input_src->layer_prof.start + media_offset);
         }
 
         bool PTSSet::is_valid(void) const {

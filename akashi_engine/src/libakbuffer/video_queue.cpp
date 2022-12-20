@@ -78,7 +78,7 @@ namespace akashi {
                     auto diff = m_qmap[layer_uuid].buf.front()->prop().pts - pts;
 
                     Rational drop_threshold = Rational(0, 1000);   // 0ms
-                    Rational skip_threshold = Rational(100, 1000); // 10ms
+                    Rational skip_threshold = Rational(100, 1000); // 100ms
 
                     // when the necessary pts is greater than that of the queue
                     if (diff < drop_threshold) {
@@ -158,9 +158,19 @@ namespace akashi {
                     while (contains && !m_qmap[layer_uuid].buf.empty()) {
                         auto diff = m_qmap[layer_uuid].buf.front()->prop().pts - seek_pts;
 
-                        Rational seek_threshold = Rational(0, 1);
+                        Rational drop_threshold = Rational(0, 1000);   // 0ms
+                        Rational skip_threshold = Rational(100, 1000); // 100ms
 
-                        if (diff >= seek_threshold) {
+                        if (diff < drop_threshold) {
+                            // logging?
+                        } else if (diff > skip_threshold) {
+                            AKLOG_INFO("Seeked Failed want: {} , front: {}, uuid: {}",
+                                       seek_pts.to_decimal(),
+                                       m_qmap[layer_uuid].buf.front()->prop().pts.to_decimal(),
+                                       layer_uuid);
+                            res = false;
+                            break;
+                        } else {
                             AKLOG_INFO("Seeked want: {} , front: {}, uuid: {}",
                                        seek_pts.to_decimal(),
                                        m_qmap[layer_uuid].buf.front()->prop().pts.to_decimal(),

@@ -39,7 +39,11 @@ namespace akashi {
 
             auto act_from = m_input_src.layer_prof.from +
                             (core::Rational(m_input_src.loop_cnt, 1) * m_input_src.act_dur);
-            auto seek_rpts = m_input_src.layer_prof.start + (decode_start - act_from);
+
+            auto media_offset = m_input_src.layer_prof.layer_local_offset;
+
+            auto seek_rpts =
+                (media_offset + m_input_src.layer_prof.start) + (decode_start - act_from);
 
             if (seek_rpts > Rational(0, 1)) {
                 if (!this->seek(seek_rpts)) {
@@ -215,6 +219,10 @@ namespace akashi {
                 m_input_src.loop_cnt = 0;
             } else {
                 m_input_src.loop_cnt = (r_dts / m_input_src.act_dur).to_decimal();
+                if (m_input_src.layer_prof.layer_local_offset > 0 and
+                    r_dts > (m_input_src.act_dur - m_input_src.layer_prof.layer_local_offset)) {
+                    m_input_src.loop_cnt += 1;
+                }
             }
 
             // input_src[i].io_ctx = new IOContext(input_paths[i]);
