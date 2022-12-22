@@ -343,7 +343,9 @@ class SpatialFrameGuard:
                         continue
                     dup_layer = copy.deepcopy(cur_layer)
                     dup_layer.slice_offset += acc_duration
-                    register_entry(dup_layer, dup_layer.kind, dup_layer.key + f'__span_cnt_{cnt+1}')
+                    # [TODO] Should we rename the key?
+                    # register_entry(dup_layer, dup_layer.kind, dup_layer.key + f'__span_cnt_{cnt+1}')
+                    register_entry(dup_layer, dup_layer.kind, dup_layer.key)
                 acc_duration += org_duration
 
             unit_layer._duration = tp.cast(sec, unit_layer._duration) * unit_layer.unit._span_cnt
