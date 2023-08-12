@@ -266,6 +266,19 @@ class TestFrame(unittest.TestCase):
     def test_spatial_with_range(self):
 
         @ak.frame()
+        def inner_frame():
+            ak.rect(ak.lwidth() // 5, 200, lambda t: (
+                t.duration(2).offset(1),
+                t.key('inner_R1')
+            ))
+
+            vurl = ak.from_relpath(__file__, './resource_fixtures/countdown1/countdown1_720p.mp4')
+            ak.audio(vurl, lambda t: (
+                t.media.range(0, 0.7).span_dur(4),
+                t.key('inner_A1')
+            ))
+
+        @ak.frame()
         def base_frame():
             ak.rect(200, 200, lambda t: (
                 t.duration(3).offset(2),
@@ -288,6 +301,10 @@ class TestFrame(unittest.TestCase):
                 t.duration(2).offset(1),
                 t.key('R4')
             ))
+            ak.unit(inner_frame(), lambda t: (
+                t.range(0, ak.sec(1.5)).span_cnt(2),
+                t.key('U1')
+            ))
 
         @ak.entry()
         def main():
@@ -297,6 +314,9 @@ class TestFrame(unittest.TestCase):
 
         kron = eval_kron(main, './test_elem_config1.py')
         # print_kron(kron)
+        for layer_idx, layer in enumerate(kron.layers):
+            print(layer_idx, layer.kind, layer.defunct, layer.key,
+                  layer.slice_offset, layer._duration, layer.layer_local_offset)
 
         self.assertEqual(len(kron.atoms), 1)
         self.assertEqual(kron.atoms[0]._duration, ak.sec(4))
