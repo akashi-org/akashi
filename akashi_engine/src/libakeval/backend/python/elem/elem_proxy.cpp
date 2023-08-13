@@ -78,8 +78,10 @@ namespace akashi {
             plane_ctx.base.display =
                 (plane_ctx.base.from <= arg.play_time) && (arg.play_time <= plane_ctx.base.to);
 
-            for (const auto& layer_proxy : m_layer_proxies) {
-                plane_ctx.layers.push_back(layer_proxy.eval(arg, base_time));
+            if (plane_ctx.base.display) {
+                for (const auto& layer_proxy : m_layer_proxies) {
+                    plane_ctx.layers.push_back(layer_proxy.eval(arg, base_time));
+                }
             }
 
             return plane_ctx;

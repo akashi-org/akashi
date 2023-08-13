@@ -6,6 +6,7 @@
 
 #include <libakcore/memory.h>
 #include <libakcore/logger.h>
+#include <libakcore/perf.h>
 
 #include <thread>
 #include <cassert>
@@ -59,7 +60,18 @@ namespace akashi {
                            const core::Rational& duration, const size_t length) {
             if (m_eval_ctx->loaded()) {
                 ASSERT();
-                return m_eval_ctx->eval_krons(module_path, start_time, fps, duration, length);
+
+                core::Timer timer;
+                timer.start();
+                AKLOG_DEBUGN("eval_krons() start");
+                const auto& d =
+                    m_eval_ctx->eval_krons(module_path, start_time, fps, duration, length);
+
+                timer.stop();
+                AKLOG_DEBUG("eval_krons() end, time: {} seconds",
+                            timer.current_time().to_decimal());
+
+                return d;
             }
 
             return {};
