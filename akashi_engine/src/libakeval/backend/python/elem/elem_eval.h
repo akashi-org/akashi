@@ -1,7 +1,5 @@
 #pragma once
 
-#include "./elem_proxy.h"
-
 #include <libakcore/memory.h>
 #include <libakcore/rational.h>
 #include <libakcore/element.h>
@@ -16,19 +14,12 @@ namespace akashi {
     namespace eval {
 
         struct KronArg;
-
-        struct GlobalContext {
-            std::vector<AtomProxy> atom_proxies;
-            std::vector<LayerProxy> layer_proxies;
-            core::Rational sec_per_frame;
-            core::Rational duration;
-            std::string uuid;
-        };
+        struct GlobalContext;
 
         core::owned_ptr<GlobalContext> global_eval(const pybind11::object& elem,
                                                    const core::Rational& fps);
 
-        core::FrameContext local_eval(const GlobalContext& ctx, const KronArg& arg);
+        core::FrameContext local_eval(core::borrowed_ptr<GlobalContext> gctx, const KronArg& arg);
 
     }
 }

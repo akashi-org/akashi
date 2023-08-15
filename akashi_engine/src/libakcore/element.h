@@ -6,8 +6,14 @@
 #include <vector>
 #include <array>
 #include <map>
+#include <functional>
+#include <libakcore/memory.h>
 
 namespace akashi {
+    namespace eval {
+        struct GlobalContext;
+
+    }
     namespace core {
 
         enum class LayerType { VIDEO = 0, AUDIO, TEXT, IMAGE, UNIT, SHAPE, LENGTH };
@@ -176,8 +182,15 @@ namespace akashi {
 
         struct PlaneContext {
             size_t level = 0;
-            LayerContext base; // unit layer
-            std::vector<LayerContext> layers;
+            size_t base_idx; // unit layer
+            std::vector<size_t> layer_indices;
+            bool display = false;
+            std::function<std::vector<core::LayerContext>(core::borrowed_ptr<eval::GlobalContext>,
+                                                          const core::PlaneContext&)>
+                eval;
+            std::function<core::LayerContext(core::borrowed_ptr<eval::GlobalContext>,
+                                             const core::PlaneContext&)>
+                base;
         };
 
         struct FrameContext {

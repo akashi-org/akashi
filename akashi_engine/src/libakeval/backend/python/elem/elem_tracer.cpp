@@ -1,9 +1,8 @@
 #include "./elem_tracer.h"
 
 #include "./elem.h"
-#include "./elem_proxy.h"
-#include "./elem_eval.h"
 #include "./elem_parser.h"
+#include "../../../item.h"
 
 #include <libakcore/logger.h>
 #include <libakcore/memory.h>
@@ -18,20 +17,19 @@ namespace akashi {
         static std::vector<PlaneProxy>
         trace_plane_context(const std::vector<unsigned long>& layer_indices,
                             const GlobalContext& ctx, const size_t level,
-                            const core::LayerContext* unit_layer = nullptr) {
+                            const size_t* unit_layer_idx = nullptr) {
             std::vector<PlaneProxy> plane_proxies;
 
             core::PlaneContext plane_ctx{.level = level};
-            if (unit_layer) {
-                plane_ctx.base = *unit_layer;
+            if (unit_layer_idx) {
+                plane_ctx.base_idx = *unit_layer_idx;
             }
 
             std::vector<unsigned long> unit_layer_indices;
             for (const auto& layer_idx : layer_indices) {
                 const auto& layer = ctx.layer_proxies[layer_idx];
 
-                // [TODO] In terms of performance, we should pass layer index rather than its ctx
-                plane_ctx.layers.push_back(layer.layer_ctx());
+                plane_ctx.layer_indices.push_back(layer_idx);
 
                 if (static_cast<core::LayerType>(layer.layer_ctx().type) == core::LayerType::UNIT) {
                     unit_layer_indices.push_back(layer_idx);
@@ -41,10 +39,10 @@ namespace akashi {
             plane_proxies.push_back(PlaneProxy{plane_ctx});
 
             for (const auto& unit_layer_idx : unit_layer_indices) {
-                const auto& unit_layer = ctx.layer_proxies[unit_layer_idx];
-                const auto& unit_layer_ctx = unit_layer.layer_ctx().unit_layer_ctx;
+                const auto& unit_layer_ctx =
+                    ctx.layer_proxies[unit_layer_idx].layer_ctx().unit_layer_ctx;
                 for (const auto& rest_plane_ctx : trace_plane_context(
-                         unit_layer_ctx.layer_indices, ctx, level + 1, &unit_layer.layer_ctx())) {
+                         unit_layer_ctx.layer_indices, ctx, level + 1, &unit_layer_idx)) {
                     plane_proxies.push_back(rest_plane_ctx);
                 }
             }

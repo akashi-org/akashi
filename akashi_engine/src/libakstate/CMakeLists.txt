@@ -9,8 +9,8 @@ file(GLOB INTERFACE_HEADERS
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES 
   PUBLIC_HEADER "${INTERFACE_HEADERS}" # [XXX] we need double quotes here!
+  POSITION_INDEPENDENT_CODE ON # force adding -fPIC
 )
-
 
 target_include_directories(${PROJECT_NAME}
   PRIVATE "../../src"

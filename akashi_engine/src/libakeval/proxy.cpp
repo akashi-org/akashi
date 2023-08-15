@@ -1,7 +1,4 @@
-#include "./elem_proxy.h"
-
-#include "./elem_eval.h"
-#include "../../../item.h"
+#include "./item.h"
 
 #include <libakcore/memory.h>
 #include <libakcore/element.h>
@@ -63,25 +60,47 @@ namespace akashi {
 
         PlaneProxy::~PlaneProxy(){};
 
-        core::PlaneContext PlaneProxy::eval(const GlobalContext& gctx, const KronArg& arg,
+        core::PlaneContext PlaneProxy::eval(core::borrowed_ptr<GlobalContext> gctx,
+                                            const KronArg& arg,
                                             const core::Rational& base_time) const {
             core::PlaneContext plane_ctx;
             plane_ctx.level = m_plane_ctx.level;
             plane_ctx.base_idx = m_plane_ctx.base_idx;
+            plane_ctx.layer_indices = m_plane_ctx.layer_indices;
 
             // [TODO] bugs might occur in a case where base is atom
-            const auto& layer_proxy = gctx.layer_proxies[plane_ctx.base_idx];
+            const auto& base_layer_proxy = gctx->layer_proxies[plane_ctx.base_idx];
 
-            plane_ctx.from = layer_proxy.layer_ctx().from + base_time;
-            plane_ctx.to = layer_proxy.layer_ctx().to + base_time;
-            plane_ctx.display =
-                (plane_ctx.from <= arg.play_time) && (arg.play_time <= plane_ctx.to);
+            auto unit_from = base_layer_proxy.layer_ctx().from + base_time;
+            auto unit_to = base_layer_proxy.layer_ctx().to + base_time;
+            plane_ctx.display = (unit_from <= arg.play_time) && (arg.play_time <= unit_to);
 
-            // if (plane_ctx.base_idx.display) {
-            //     for (const auto& layer_proxy : m_layer_proxies) {
-            //         plane_ctx.layer_indices.push_back(layer_proxy.eval(arg, base_time));
-            //     }
-            // }
+            plane_ctx.eval = [arg, base_time](core::borrowed_ptr<eval::GlobalContext> gctx,
+                                              const core::PlaneContext& inner_plane_ctx) {
+                std::vector<core::LayerContext> layer_ctxs;
+                if (!gctx) {
+                    AKLOG_ERRORN("gctx is null");
+                    return layer_ctxs;
+                }
+                if (inner_plane_ctx.display) {
+                    for (const auto& layer_idx : inner_plane_ctx.layer_indices) {
+                        const auto& layer_proxy = gctx->layer_proxies[layer_idx];
+                        layer_ctxs.push_back(layer_proxy.eval(arg, base_time));
+                    }
+                }
+                return layer_ctxs;
+            };
+
+            plane_ctx.base = [](core::borrowed_ptr<eval::GlobalContext> gctx,
+                                const core::PlaneContext& inner_plane_ctx) {
+                if (!gctx) {
+                    AKLOG_ERRORN("gctx is null");
+                    core::LayerContext base;
+                    base.type = -1;
+                    return base;
+                }
+                return gctx->layer_proxies[inner_plane_ctx.base_idx].layer_ctx();
+            };
 
             return plane_ctx;
         };
@@ -106,7 +125,7 @@ namespace akashi {
 
         AtomProxy::~AtomProxy(){};
 
-        std::vector<core::PlaneContext> AtomProxy::eval(const GlobalContext& gctx,
+        std::vector<core::PlaneContext> AtomProxy::eval(core::borrowed_ptr<GlobalContext> gctx,
                                                         const KronArg& arg) const {
             std::vector<core::PlaneContext> plane_ctxs;
             for (const auto& plane_proxy : m_plane_proxies) {

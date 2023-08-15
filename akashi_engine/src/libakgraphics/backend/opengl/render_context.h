@@ -13,6 +13,9 @@ namespace akashi {
     namespace state {
         class AKState;
     }
+    namespace eval {
+        struct GlobalContext;
+    }
     namespace graphics {
 
         class FBO;
@@ -46,6 +49,8 @@ namespace akashi {
                                                           const core::Rational& pts);
 
             void use_default_blend_func() const;
+
+            core::borrowed_ptr<eval::GlobalContext> eval_gctx();
 
           private:
             core::borrowed_ptr<state::AKState> m_state;

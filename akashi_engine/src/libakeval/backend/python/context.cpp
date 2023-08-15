@@ -105,7 +105,7 @@ namespace akashi {
             // timer.start();
             // aKLOG_DEBUGN("eval_kron() start");
 
-            frame_ctx = local_eval(*m_gctx, arg);
+            frame_ctx = local_eval(core::borrowed_ptr(m_gctx), arg);
 
             // timer.stop();
             // AKLOG_DEBUG("eval_kron() end, time: {} microseconds",
@@ -128,7 +128,8 @@ namespace akashi {
 
             for (size_t i = 0; i < length; i++) {
                 auto frame_ctx =
-                    local_eval(*m_gctx, {start_time + (Rational(i, 1) * Rational(1, fps)), fps});
+                    local_eval(core::borrowed_ptr(m_gctx),
+                               {start_time + (Rational(i, 1) * Rational(1, fps)), fps});
                 if (frame_ctx.pts <= duration) {
                     frame_ctxs.push_back(frame_ctx);
                 }
@@ -175,6 +176,7 @@ namespace akashi {
 
             try {
                 m_gctx = global_eval(elem, m_state->m_prop.fps);
+                m_state->set_eval_gctx(m_gctx.get());
             } catch (const std::exception& e) {
                 AKLOG_ERROR("{}", e.what());
                 return render_prof;
@@ -187,7 +189,7 @@ namespace akashi {
             render_prof.uuid = m_gctx->uuid;
             render_prof.duration = m_gctx->duration;
             for (const auto& atom_proxy : m_gctx->atom_proxies) {
-                render_prof.atom_profiles.push_back(atom_proxy.computed_profile());
+                render_prof.atom_profiles.push_back(atom_proxy.computed_profile(*m_gctx));
             }
 
             return render_prof;

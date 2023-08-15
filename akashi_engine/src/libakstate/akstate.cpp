@@ -45,5 +45,15 @@ namespace akashi {
             // m_state_consumer_finished.cv.notify_all();
         }
 
+        eval_GlobalContext AKState::eval_gctx() {
+            std::lock_guard<std::mutex> lock(m_eval_gctx_mtx);
+            return m_eval_gctx;
+        };
+
+        void AKState::set_eval_gctx(eval_GlobalContext eval_gctx) {
+            std::lock_guard<std::mutex> lock(m_eval_gctx_mtx);
+            m_eval_gctx = eval_gctx;
+        };
+
     }
 }

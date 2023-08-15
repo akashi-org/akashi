@@ -12,6 +12,7 @@
 #include <libakcore/element.h>
 #include <libakcore/error.h>
 #include <libakcore/color.h>
+#include <libakeval/item.h>
 
 namespace akashi {
     namespace graphics {
@@ -40,7 +41,8 @@ namespace akashi {
                                  const core::AtomStaticProfile& atom_static_profile)
             : m_plane_ctx(plane_ctx), m_atom_static_profile(atom_static_profile) {
             if (m_plane_ctx.level > 0) {
-                auto fb_size = m_plane_ctx.base.unit_layer_ctx.fb_size;
+                m_base_layer = m_plane_ctx.base(render_ctx.eval_gctx(), m_plane_ctx);
+                auto fb_size = m_base_layer.unit_layer_ctx.fb_size;
 
                 if (!(m_fbo.create(fb_size[0], fb_size[1], render_ctx.msaa()))) {
                     AKLOG_ERRORN("Failed to create FBO");
@@ -75,12 +77,14 @@ namespace akashi {
             auto& cur_fbo = m_plane_ctx.level == 0 ? render_ctx.mut_fbo() : m_fbo;
 
             auto bg_color = m_plane_ctx.level == 0 ? m_atom_static_profile.bg_color
-                                                   : m_plane_ctx.base.unit_layer_ctx.bg_color;
+                                                   : m_base_layer.unit_layer_ctx.bg_color;
             std::array<float, 4> fb_bg_color = core::to_rgba_float(bg_color);
             priv::init_renderer(cur_fbo.info(), fb_bg_color);
 
+            auto cur_layer_ctxs = cur_plane_ctx.eval(render_ctx.eval_gctx(), cur_plane_ctx);
+
             if (m_initial_render) {
-                for (const auto& layer_ctx : cur_plane_ctx.layers) {
+                for (const auto& layer_ctx : cur_layer_ctxs) {
                     auto layer_added = this->add_layer(render_ctx, layer_ctx);
                     if (!layer_added) {
                         continue;
@@ -97,7 +101,7 @@ namespace akashi {
                 }
                 m_initial_render = false;
             } else {
-                for (const auto& layer_ctx : cur_plane_ctx.layers) {
+                for (const auto& layer_ctx : cur_layer_ctxs) {
                     auto it = m_actor_map.find(layer_ctx.uuid);
                     if (it != m_actor_map.end()) {
                         it->second->update_layer(layer_ctx);
@@ -208,7 +212,7 @@ namespace akashi {
 
             // render
             for (int i = m_planes.size() - 1; i >= 0; i--) {
-                if (i > 0 && !frame_ctx.plane_ctxs[i].base.display) {
+                if (i > 0 && !frame_ctx.plane_ctxs[i].display) {
                     continue;
                 }
                 CHECK_AK_ERROR2(
@@ -221,7 +225,7 @@ namespace akashi {
                               const core::AtomStaticProfile& atom_static_profile) {
             auto plane = new RenderPlane(ctx, plane_ctx, atom_static_profile);
             m_planes.push_back(plane);
-            m_plane_map.insert({plane_ctx.base.uuid, plane});
+            m_plane_map.insert({plane->base_layer().uuid, plane});
 
             return true;
         }

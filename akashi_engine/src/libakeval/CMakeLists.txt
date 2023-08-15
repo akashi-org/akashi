@@ -23,12 +23,12 @@ endif()
 
 add_library(${PROJECT_NAME} SHARED
   "./akeval.cpp"
+  "./proxy.cpp"
 
   "./backend/python/context.cpp"
   "./backend/python/elem/elem.cpp"
   "./backend/python/elem/elem_eval.cpp"
   "./backend/python/elem/elem_tracer.cpp"
-  "./backend/python/elem/elem_proxy.cpp"
   "./backend/python/elem/elem_parser.cpp"
 )
 

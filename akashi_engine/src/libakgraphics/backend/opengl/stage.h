@@ -33,6 +33,8 @@ namespace akashi {
             bool render(OGLRenderContext& ctx, const core::Rational& pts,
                         const core::PlaneContext& cur_plane_ctx, const Stage& stage);
 
+            const core::LayerContext& base_layer() const { return m_base_layer; }
+
           private:
             bool add_layer(OGLRenderContext& ctx, const core::LayerContext& layer_ctx);
 
@@ -40,6 +42,7 @@ namespace akashi {
             FBO m_fbo;
             core::owned_ptr<Camera> m_camera;
             core::PlaneContext m_plane_ctx;
+            core::LayerContext m_base_layer;
             core::AtomStaticProfile m_atom_static_profile;
 
             bool m_initial_render = true;

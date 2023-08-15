@@ -2,6 +2,7 @@
 
 #include <libakcore/rational.h>
 #include <libakcore/element.h>
+#include <libakcore/memory.h>
 #include <libakcore/audio.h>
 #include <libakcore/path.h>
 #include <libakcore/hw_accel.h>
@@ -55,6 +56,8 @@ namespace akashi {
     namespace core {
         struct AKConf;
     }
+
+    using eval_GlobalContext = void*;
 
     namespace state {
 
@@ -176,6 +179,14 @@ namespace akashi {
             core::VideoConf m_video_conf;
 
             core::Path m_conf_path;
+
+          public:
+            eval_GlobalContext eval_gctx();
+            void set_eval_gctx(eval_GlobalContext eval_gctx);
+
+          private:
+            eval_GlobalContext m_eval_gctx;
+            std::mutex m_eval_gctx_mtx;
 
           public:
             explicit AKState(const core::AKConf& akconf, const std::string& conf_path);

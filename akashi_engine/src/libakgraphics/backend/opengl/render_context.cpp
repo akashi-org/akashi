@@ -111,5 +111,9 @@ namespace akashi {
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         }
 
+        core::borrowed_ptr<eval::GlobalContext> OGLRenderContext::eval_gctx() {
+            return core::borrowed_ptr(reinterpret_cast<eval::GlobalContext*>(m_state->eval_gctx()));
+        }
+
     }
 }
