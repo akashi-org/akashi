@@ -55,7 +55,7 @@ namespace akashi {
         PlayerWidget::~PlayerWidget() {}
 
         void PlayerWidget::play(void) {
-            if (m_player->evalbuf_dequeue_ready()) {
+            if (m_player->kron_ready()) {
                 m_player->play();
             } else {
                 AKLOG_WARNN("Not ready for playing");

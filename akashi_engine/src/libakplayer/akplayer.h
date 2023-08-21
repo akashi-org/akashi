@@ -61,6 +61,8 @@ namespace akashi {
 
             void set_render_prof(core::RenderProfile& render_prof);
 
+            bool kron_ready();
+
             void inline_eval(const std::string& fpath, const std::string& elem_name);
 
             void set_volume(const double volume);
@@ -69,8 +71,6 @@ namespace akashi {
 
             // audio current time
             core::Rational current_time() const;
-
-            bool evalbuf_dequeue_ready();
 
           private:
             core::borrowed_ptr<state::AKState> m_state;

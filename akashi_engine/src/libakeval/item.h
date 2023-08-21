@@ -75,6 +75,10 @@ namespace akashi {
             core::Rational sec_per_frame;
             core::Rational duration;
             std::string uuid;
+
+            std::function<core::FrameContext(core::borrowed_ptr<eval::GlobalContext>,
+                                             const KronArg&)>
+                local_eval;
         };
 
     }

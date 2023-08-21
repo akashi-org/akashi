@@ -146,7 +146,7 @@ namespace akashi {
         };
 
         class AKState final {
-            AK_DEF_SYNC_STATE(evalbuf_dequeue_ready, bool, false)
+            AK_DEF_SYNC_STATE(kron_ready, bool, false)
             AK_DEF_SYNC_STATE(play_ready, bool, false)
 
             AK_DEF_SYNC_STATE(render_completed, bool, false)

@@ -162,9 +162,6 @@ namespace akashi {
             static void pull_render_profile(EventLoopContext& ctx,
                                             core::borrowed_ptr<eval::AKEval> eval);
 
-            static void pull_eval_buffer(const EventLoopContext& ctx,
-                                         core::borrowed_ptr<eval::AKEval> eval, size_t length);
-
             static void seek(SeekManager& seek_mgr, const core::Rational& seek_time);
 
             static void hot_reload(HRManager& hr_mgr, const watch::WatchEventList& event_list);

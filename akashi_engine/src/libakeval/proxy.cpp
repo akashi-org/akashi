@@ -63,21 +63,26 @@ namespace akashi {
         core::PlaneContext PlaneProxy::eval(core::borrowed_ptr<GlobalContext> gctx,
                                             const KronArg& arg,
                                             const core::Rational& base_time) const {
-            core::PlaneContext plane_ctx = m_plane_ctx;
+            core::PlaneContext plane_ctx;
 
             core::Rational plane_from;
             core::Rational plane_to;
             if (m_plane_ctx.level == 0) {
-                const auto& atom_proxy = gctx->atom_proxies[plane_ctx.atom_idx];
+                const auto& atom_proxy = gctx->atom_proxies[m_plane_ctx.atom_idx];
                 plane_from = atom_proxy.static_profile().from + base_time;
                 plane_to = atom_proxy.static_profile().to + base_time;
             } else {
-                const auto& base_layer_proxy = gctx->layer_proxies[plane_ctx.base_idx];
+                const auto& base_layer_proxy = gctx->layer_proxies[m_plane_ctx.base_idx];
                 plane_from = base_layer_proxy.layer_ctx().from + base_time;
                 plane_to = base_layer_proxy.layer_ctx().to + base_time;
             }
 
             plane_ctx.display = (plane_from <= arg.play_time) && (arg.play_time <= plane_to);
+            if (!plane_ctx.display) {
+                return plane_ctx;
+            }
+            plane_ctx = m_plane_ctx;
+            plane_ctx.display = true;
 
             plane_ctx.eval = [arg, base_time](core::borrowed_ptr<eval::GlobalContext> gctx,
                                               const core::PlaneContext& inner_plane_ctx) {

@@ -68,6 +68,14 @@ namespace akashi {
         }
 
         void AKPlayer::render(const graphics::RenderParams& params) {
+            bool need_first_render = false;
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
+                need_first_render = m_state->m_prop.need_first_render;
+            }
+            if (need_first_render) {
+                m_eval_buf->fetch_render_buf();
+            }
             const auto current_frame_ctx = m_eval_buf->render_buf();
 
             if (current_frame_ctx.pts == EvalBuffer::BLANK_FRAME_CTX.pts) {
@@ -78,15 +86,11 @@ namespace akashi {
 
             m_gfx->render(params, current_frame_ctx);
 
-            bool need_first_render = false;
-            {
-                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
-                need_first_render = m_state->m_prop.need_first_render;
-                if (m_state->m_prop.need_first_render) {
+            if (need_first_render) {
+                {
+                    std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                     m_state->m_prop.need_first_render = false;
                 }
-            }
-            if (need_first_render) {
                 m_event->emit_seek_completed();
             }
 
@@ -197,6 +201,8 @@ namespace akashi {
             }
         }
 
+        bool AKPlayer::kron_ready() { return m_state->get_kron_ready(); }
+
         void AKPlayer::inline_eval(const std::string& fpath, const std::string& elem_name) {
             m_event->emit_inline_eval(fpath, elem_name);
         }
@@ -211,8 +217,6 @@ namespace akashi {
                 return m_state->m_prop.current_time;
             }
         }
-
-        bool AKPlayer::evalbuf_dequeue_ready() { return m_state->get_evalbuf_dequeue_ready(); }
 
     }
 }

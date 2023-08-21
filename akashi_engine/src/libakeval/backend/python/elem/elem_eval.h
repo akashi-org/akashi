@@ -19,7 +19,5 @@ namespace akashi {
         core::owned_ptr<GlobalContext> global_eval(const pybind11::object& elem,
                                                    const core::Rational& fps);
 
-        core::FrameContext local_eval(core::borrowed_ptr<GlobalContext> gctx, const KronArg& arg);
-
     }
 }

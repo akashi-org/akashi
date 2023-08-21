@@ -23,7 +23,7 @@ namespace akashi {
 
             AKLOG_INFON("Player thread start");
 
-            state->wait_for_evalbuf_dequeue_ready();
+            state->wait_for_kron_ready();
 
             AKLOG_INFON("Player loop start");
 
@@ -34,14 +34,10 @@ namespace akashi {
                     break;
                 }
 
-                if (eval_buf->is_hungry()) {
-                    event->emit_pull_eval_buffer(25);
-                }
-
-                const auto current_frame_ctx = eval_buf->back();
+                eval_buf->fetch_render_buf();
+                const auto& current_frame_ctx = eval_buf->render_buf();
                 if (MainLoop::sync_render(ctx, current_frame_ctx)) {
                     ctx.state->set_render_completed(false);
-                    eval_buf->set_render_buf(current_frame_ctx);
                     ctx.event->emit_update();
                     p_perf->log_render_start();
                     ctx.state->wait_for_render_completed();
@@ -99,18 +95,18 @@ namespace akashi {
                 std::lock_guard<std::mutex> lock(state->m_prop_mtx);
                 size_t cur_frame_num = (frame_ctx.pts * state->m_prop.fps).to_decimal();
                 auto max_frame_idx = state->m_prop.max_frame_idx;
+                auto fps = state->m_prop.fps;
                 bool is_play_over = cur_frame_num >= max_frame_idx;
                 // AKLOG_WARN("cur_frame: {}, total_frames: {}, is_play_over: {} ", cur_frame_num,
                 //            total_frames, is_play_over);
                 state->m_atomic_state.video_play_over = is_play_over;
                 if (is_play_over) {
                     ctx.state->set_play_ready(false, true);
+                    // ctx.state->m_prop.current_time = Rational(0, 0);
+                } else {
+                    ctx.state->m_prop.current_time = current_time + (Rational(1, 1) / fps);
                 }
-
-                ctx.state->m_prop.current_time = current_time;
             }
-
-            eval_buf->pop();
 
             p_perf->log_fps(current_time, ctx.player->current_time());
             ctx.event->emit_time_update(current_time);

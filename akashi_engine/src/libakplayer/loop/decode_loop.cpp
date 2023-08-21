@@ -40,22 +40,22 @@ namespace akashi {
         }
 
         static bool wait_for_all_decode_ready(core::borrowed_ptr<state::AKState> state) {
-            state->wait_for_evalbuf_dequeue_ready();
+            state->wait_for_kron_ready();
             state->wait_for_video_decode_ready();
             state->wait_for_audio_decode_ready();
             state->wait_for_seek_completed();
             state->wait_for_decode_layers_not_empty();
             state->wait_for_decode_loop_can_continue();
 
-            return state->get_evalbuf_dequeue_ready() and state->get_video_decode_ready() and
-                   state->get_audio_decode_ready() and state->get_seek_completed() and
-                   state->get_decode_layers_not_empty() and state->get_decode_loop_can_continue();
+            return state->get_kron_ready() && state->get_video_decode_ready() &&
+                   state->get_audio_decode_ready() && state->get_seek_completed() &&
+                   state->get_decode_layers_not_empty() && state->get_decode_loop_can_continue();
         }
 
         void DecodeLoop::decode_thread(DecodeLoopContext ctx, DecodeLoop* loop) {
             AKLOG_INFON("Decoder thread start");
 
-            ctx.state->wait_for_evalbuf_dequeue_ready();
+            ctx.state->wait_for_kron_ready();
             ctx.state->wait_for_decode_layers_not_empty();
 
             AKLOG_INFON("Decoder loop start");

@@ -47,7 +47,7 @@ namespace akashi {
                     m_state->set_play_ready(true, true);
                     m_state->set_audio_play_ready(true, true);
                     m_state->set_render_completed(true, true);
-                    m_state->set_evalbuf_dequeue_ready(true, true);
+                    m_state->set_kron_ready(true, true);
 
                     m_th->join();
                     delete m_th;

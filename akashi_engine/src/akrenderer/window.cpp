@@ -173,7 +173,7 @@ namespace akashi {
                     break;
                 }
                 case akashi::state::PlayState::PLAYING: {
-                    if (!m_state->get_evalbuf_dequeue_ready()) {
+                    if (!m_state->get_kron_ready()) {
                         AKLOG_WARNN("kron not ready");
                         return;
                     }
@@ -374,7 +374,7 @@ namespace akashi {
                     break;
                 }
                 case akashi::state::PlayState::PLAYING: {
-                    if (!m_state->get_evalbuf_dequeue_ready()) {
+                    if (!m_state->get_kron_ready()) {
                         AKLOG_WARNN("Window::on_state_change(): kron not ready");
                         return;
                     }

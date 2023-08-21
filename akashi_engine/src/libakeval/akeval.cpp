@@ -44,39 +44,6 @@ namespace akashi {
             }
         }
 
-        core::FrameContext AKEval::eval_kron(const char* module_path, const KronArg& kron_arg) {
-            if (m_eval_ctx->loaded()) {
-                ASSERT();
-                return m_eval_ctx->eval_kron(module_path, kron_arg);
-            }
-
-            FrameContext frame_ctx;
-            frame_ctx.pts = Rational{-1, 1};
-            return frame_ctx;
-        }
-
-        std::vector<core::FrameContext>
-        AKEval::eval_krons(const char* module_path, const core::Rational& start_time, const int fps,
-                           const core::Rational& duration, const size_t length) {
-            if (m_eval_ctx->loaded()) {
-                ASSERT();
-
-                core::Timer timer;
-                timer.start();
-                AKLOG_DEBUGN("eval_krons() start");
-                const auto& d =
-                    m_eval_ctx->eval_krons(module_path, start_time, fps, duration, length);
-
-                timer.stop();
-                AKLOG_DEBUG("eval_krons() end, time: {} seconds",
-                            timer.current_time().to_decimal());
-
-                return d;
-            }
-
-            return {};
-        }
-
         core::RenderProfile AKEval::render_prof(const std::string& module_path,
                                                 const std::string& elem_name) {
             if (m_eval_ctx->loaded()) {

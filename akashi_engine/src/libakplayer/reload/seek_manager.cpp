@@ -54,9 +54,6 @@ namespace akashi {
                 // avbuffer update
                 reload::reload_avbuffer(rctx, seek_time, false);
 
-                // evalbuffer update
-                reload::exec_local_eval(rctx, seek_time, false);
-
                 // restart decode loop
                 m_state->set_decode_loop_can_continue(true, true);
 

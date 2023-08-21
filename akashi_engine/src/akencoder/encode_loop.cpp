@@ -11,6 +11,7 @@
 #include <libakcore/path.h>
 #include <libakstate/akstate.h>
 #include <libakeval/akeval.h>
+#include <libakeval/item.h>
 #include <libakcodec/akcodec.h>
 #include <libakbuffer/avbuffer.h>
 #include <libakbuffer/video_queue.h>
@@ -137,9 +138,36 @@ namespace akashi {
         }
 
         static std::vector<core::FrameContext>
-        pull_frame_context(core::borrowed_ptr<eval::AKEval> eval, const EncodeContext& encode_ctx) {
-            return eval->eval_krons(encode_ctx.entry_path.to_abspath().to_str(), encode_ctx.cur_pts,
-                                    encode_ctx.fps.to_decimal(), encode_ctx.duration, 2);
+        pull_frame_context(core::borrowed_ptr<state::AKState> state,
+                           const EncodeContext& encode_ctx) {
+            Rational duration;
+            {
+                std::lock_guard<std::mutex> lock(state->m_prop_mtx);
+                duration = state->m_prop.render_prof.duration;
+            }
+
+            std::vector<core::FrameContext> frame_ctxs;
+            {
+                std::lock_guard<std::mutex> lock(state->m_eval_gctx_mtx);
+                auto gctx = reinterpret_cast<eval::GlobalContext*>(state->m_eval_gctx);
+                auto play_time = encode_ctx.cur_pts;
+
+                for (int i = 0; i < 2; i++) {
+                    const auto& frame_ctx =
+                        gctx->local_eval(core::borrowed_ptr(gctx),
+                                         {.play_time = play_time,
+                                          .fps = static_cast<long>(encode_ctx.fps.to_decimal())});
+
+                    if (frame_ctx.pts <= duration) {
+                        frame_ctxs.push_back(frame_ctx);
+                    } else {
+                        break;
+                    }
+                    play_time += (Rational(1, 1) / encode_ctx.fps);
+                }
+            }
+
+            return frame_ctxs;
         }
 
         static bool is_valid_type(const buffer::AVBufferType& type) {
@@ -224,7 +252,7 @@ namespace akashi {
                 if (loop->m_should_close) {
                     break;
                 }
-                auto frame_ctx = pull_frame_context(borrowed_ptr(&eval), *encode_ctx);
+                auto frame_ctx = pull_frame_context(ctx.state, *encode_ctx);
                 if (frame_ctx.empty()) {
                     break;
                 }

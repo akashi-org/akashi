@@ -70,8 +70,6 @@ namespace akashi {
 
             EventLoop::pull_render_profile(ctx, borrowed_ptr(eval));
 
-            EventLoop::pull_eval_buffer(ctx, borrowed_ptr(eval), 50);
-            eval_buf->set_render_buf(eval_buf->back());
             {
                 std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
                 ctx.state->m_prop.need_first_render = true;
@@ -97,14 +95,6 @@ namespace akashi {
                     case InnerEventName::PULL_RENDER_PROFILE: {
                         AKLOG_INFON("PULL_RENDER_PROFILE");
                         EventLoop::pull_render_profile(ctx, borrowed_ptr(eval));
-                        break;
-                    }
-                    case InnerEventName::PULL_EVAL_BUFFER: {
-                        AKLOG_INFON("PULL_EVAL_BUFFER");
-                        if (ctx.eval_buf->is_hungry()) {
-                            auto length = reinterpret_cast<size_t*>(evt.ctx);
-                            EventLoop::pull_eval_buffer(ctx, borrowed_ptr(eval), *length);
-                        }
                         break;
                     }
                     case InnerEventName::SEEK: {
@@ -163,43 +153,6 @@ namespace akashi {
             ctx.event->emit_set_render_prof(profile); // be careful that the decode_ready is called
 
             ctx.state->set_decode_layers_not_empty(core::has_layers(profile), true);
-        }
-
-        void EventLoop::pull_eval_buffer(const EventLoopContext& ctx,
-                                         core::borrowed_ptr<eval::AKEval> eval, size_t length) {
-            auto [state, event, eval_buf, buffer] = ctx;
-            Rational fps;
-            Rational duration;
-            core::Path entry_path{""};
-            {
-                std::lock_guard<std::mutex> lock(state->m_prop_mtx);
-                fps = state->m_prop.fps;
-                duration = state->m_prop.render_prof.duration;
-                entry_path = ctx.state->m_prop.eval_state.config.entry_path;
-            }
-
-            bool seek_completed = true;
-            Rational current_time;
-            {
-                std::lock_guard<std::mutex> lock(state->m_prop_mtx);
-                seek_completed = state->get_seek_completed();
-                current_time = state->m_prop.current_time;
-            }
-
-            Rational start_time;
-            if (!seek_completed) {
-                start_time = current_time;
-            } else {
-                start_time = eval_buf->empty() ? Rational(0l) : eval_buf->front().pts;
-            }
-
-            auto is_init_pts = start_time.num() == 0 ? true : false;
-            if (!is_init_pts) {
-                start_time += (Rational(1, 1) / fps);
-            }
-
-            eval_buf->push(eval->eval_krons(entry_path.to_abspath().to_str(), start_time,
-                                            fps.to_decimal(), duration, length));
         }
 
         void EventLoop::seek(SeekManager& seek_mgr, const core::Rational& seek_time) {

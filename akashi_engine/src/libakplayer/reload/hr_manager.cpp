@@ -64,8 +64,6 @@ namespace akashi {
             {
                 m_state->set_seek_completed(false);
 
-                m_state->set_evalbuf_dequeue_ready(false);
-
                 // avbuffer update
                 auto dummy_time = Rational(0l);
                 reload::reload_avbuffer(rctx, dummy_time, true);
@@ -87,8 +85,6 @@ namespace akashi {
                     current_time = Rational(0l);
                     reload::time_update(rctx, current_time);
                 }
-
-                reload::exec_local_eval(rctx, current_time, true);
 
                 // restart decode loop
                 m_state->set_decode_loop_can_continue(true, true);

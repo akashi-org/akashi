@@ -86,47 +86,6 @@ namespace akashi::player::reload {
         rctx.state->set_decode_layers_not_empty(core::has_layers(profile), true);
     }
 
-    static auto eval_krons(const core::Rational& seek_time, size_t length,
-                           core::borrowed_ptr<state::AKState> state,
-                           core::borrowed_ptr<eval::AKEval> eval) {
-        Rational fps;
-        Rational duration;
-        core::Path entry_path{""};
-        {
-            std::lock_guard<std::mutex> lock(state->m_prop_mtx);
-            fps = state->m_prop.fps;
-            duration = state->m_prop.render_prof.duration;
-            entry_path = state->m_prop.eval_state.config.entry_path;
-        }
-
-        Rational start_time = seek_time;
-        auto is_init_pts = start_time.num() == 0 ? true : false;
-        if (!is_init_pts) {
-            start_time += (Rational(1, 1) / fps);
-        }
-
-        return eval->eval_krons(entry_path.to_abspath().to_str(), start_time, fps.to_decimal(),
-                                duration, length);
-    }
-
-    bool exec_local_eval(ReloadContext& rctx, const core::Rational& seek_time, bool skip_seek) {
-        bool seek_point_found = false;
-        if (!skip_seek) {
-            seek_point_found = rctx.eval_buf->seek(seek_time);
-        }
-
-        if (!seek_point_found) {
-            rctx.eval_buf->clear();
-            auto ebufs = eval_krons(seek_time, 50, rctx.state, rctx.eval);
-            rctx.eval_buf->push(ebufs);
-            rctx.eval_buf->set_render_buf(ebufs[0]);
-        }
-
-        rctx.state->set_evalbuf_dequeue_ready(true);
-
-        return seek_point_found;
-    }
-
     void render_update(ReloadContext& rctx) {
         {
             std::lock_guard<std::mutex> lock(rctx.state->m_prop_mtx);

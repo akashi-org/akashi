@@ -92,59 +92,6 @@ namespace akashi {
             }
         };
 
-        core::FrameContext PyEvalContext::eval_kron(const char* module_path, const KronArg& arg) {
-            FrameContext frame_ctx;
-            frame_ctx.pts = Rational{-1, 1};
-
-            if (!m_gctx) {
-                AKLOG_ERRORN("GlobalContext is null");
-                return frame_ctx;
-            }
-
-            // timer timer;
-            // timer.start();
-            // aKLOG_DEBUGN("eval_kron() start");
-
-            frame_ctx = local_eval(core::borrowed_ptr(m_gctx), arg);
-
-            // timer.stop();
-            // AKLOG_DEBUG("eval_kron() end, time: {} microseconds",
-            //             timer.current_time_micro().to_decimal());
-
-            return frame_ctx;
-        };
-
-        std::vector<core::FrameContext> PyEvalContext::eval_krons(const char* module_path,
-                                                                  const core::Rational& start_time,
-                                                                  const int fps,
-                                                                  const core::Rational& duration,
-                                                                  const size_t length) {
-            std::vector<FrameContext> frame_ctxs = {};
-
-            if (!m_gctx) {
-                AKLOG_ERRORN("GlobalContext is null");
-                return frame_ctxs;
-            }
-
-            for (size_t i = 0; i < length; i++) {
-                auto frame_ctx =
-                    local_eval(core::borrowed_ptr(m_gctx),
-                               {start_time + (Rational(i, 1) * Rational(1, fps)), fps});
-                if (frame_ctx.pts <= duration) {
-                    frame_ctxs.push_back(frame_ctx);
-                }
-            }
-
-            auto diff = length - frame_ctxs.size();
-            if (diff <= 0) {
-                return frame_ctxs;
-            } else {
-                auto next_ctxs = this->eval_krons(module_path, Rational(0l), fps, duration, diff);
-                frame_ctxs.insert(frame_ctxs.end(), next_ctxs.begin(), next_ctxs.end());
-                return frame_ctxs;
-            }
-        }
-
         core::RenderProfile PyEvalContext::render_prof(const std::string& module_path,
                                                        const std::string& elem_name) {
             RenderProfile render_prof;
@@ -185,6 +132,8 @@ namespace akashi {
                 std::lock_guard<std::mutex> lock(m_state->m_eval_gctx_mtx);
                 m_state->m_eval_gctx = m_gctx.get();
             }
+
+            m_state->set_kron_ready(true, true);
 
             // timer.stop();
             // AKLOG_DEBUG("render_prof:: global_eval, time: {} sec",

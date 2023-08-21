@@ -39,9 +39,6 @@ namespace akashi {
 
             void exec_global_eval(ReloadContext& rctx);
 
-            bool exec_local_eval(ReloadContext& rctx, const core::Rational& seek_time,
-                                 bool skip_seek = false);
-
             void render_update(ReloadContext& rctx);
 
         }
