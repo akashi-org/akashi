@@ -41,7 +41,7 @@ namespace akashi {
                                  const core::AtomStaticProfile& atom_static_profile)
             : m_plane_ctx(plane_ctx), m_atom_static_profile(atom_static_profile) {
             if (m_plane_ctx.level > 0) {
-                m_base_layer = m_plane_ctx.base(render_ctx.eval_gctx(), m_plane_ctx);
+                m_base_layer = render_ctx.get_base_layer(m_plane_ctx);
                 auto fb_size = m_base_layer.unit_layer_ctx.fb_size;
 
                 if (!(m_fbo.create(fb_size[0], fb_size[1], render_ctx.msaa()))) {
@@ -83,7 +83,7 @@ namespace akashi {
             std::array<float, 4> fb_bg_color = core::to_rgba_float(bg_color);
             priv::init_renderer(cur_fbo.info(), fb_bg_color);
 
-            auto cur_layer_ctxs = m_plane_ctx.eval(render_ctx.eval_gctx(), m_plane_ctx);
+            auto cur_layer_ctxs = render_ctx.local_eval(m_plane_ctx);
             if (m_initial_render) {
                 for (const auto& layer_ctx : cur_layer_ctxs) {
                     this->add_layer(render_ctx, layer_ctx);

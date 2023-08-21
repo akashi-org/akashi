@@ -2,6 +2,7 @@
 
 #include <libakcore/memory.h>
 #include <libakcore/rational.h>
+#include <libakcore/element.h>
 
 #include <array>
 
@@ -50,7 +51,9 @@ namespace akashi {
 
             void use_default_blend_func() const;
 
-            core::borrowed_ptr<eval::GlobalContext> eval_gctx();
+            core::LayerContext get_base_layer(const core::PlaneContext& plane_ctx);
+
+            std::vector<core::LayerContext> local_eval(const core::PlaneContext& plane_ctx);
 
           private:
             core::borrowed_ptr<state::AKState> m_state;

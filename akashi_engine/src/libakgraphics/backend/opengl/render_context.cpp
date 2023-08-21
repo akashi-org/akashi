@@ -111,8 +111,21 @@ namespace akashi {
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         }
 
-        core::borrowed_ptr<eval::GlobalContext> OGLRenderContext::eval_gctx() {
-            return core::borrowed_ptr(reinterpret_cast<eval::GlobalContext*>(m_state->eval_gctx()));
+        core::LayerContext OGLRenderContext::get_base_layer(const core::PlaneContext& plane_ctx) {
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_eval_gctx_mtx);
+                auto gctx = reinterpret_cast<eval::GlobalContext*>(m_state->m_eval_gctx);
+                return plane_ctx.base(core::borrowed_ptr(gctx), plane_ctx);
+            }
+        }
+
+        std::vector<core::LayerContext>
+        OGLRenderContext::local_eval(const core::PlaneContext& plane_ctx) {
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_eval_gctx_mtx);
+                auto gctx = reinterpret_cast<eval::GlobalContext*>(m_state->m_eval_gctx);
+                return plane_ctx.eval(core::borrowed_ptr(gctx), plane_ctx);
+            }
         }
 
     }

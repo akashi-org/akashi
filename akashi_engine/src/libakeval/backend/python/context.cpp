@@ -176,10 +176,14 @@ namespace akashi {
 
             try {
                 m_gctx = global_eval(elem, m_state->m_prop.fps);
-                m_state->set_eval_gctx(m_gctx.get());
             } catch (const std::exception& e) {
                 AKLOG_ERROR("{}", e.what());
                 return render_prof;
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_eval_gctx_mtx);
+                m_state->m_eval_gctx = m_gctx.get();
             }
 
             // timer.stop();

@@ -180,11 +180,6 @@ namespace akashi {
 
             core::Path m_conf_path;
 
-          public:
-            eval_GlobalContext eval_gctx();
-            void set_eval_gctx(eval_GlobalContext eval_gctx);
-
-          private:
             eval_GlobalContext m_eval_gctx;
             std::mutex m_eval_gctx_mtx;
 
