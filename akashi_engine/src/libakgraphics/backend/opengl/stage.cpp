@@ -72,8 +72,10 @@ namespace akashi {
             m_actor_map.clear();
         }
 
+        void RenderPlane::update(const core::PlaneContext& plane_ctx) { m_plane_ctx = plane_ctx; }
+
         bool RenderPlane::render(OGLRenderContext& render_ctx, const core::Rational& pts,
-                                 const core::PlaneContext& cur_plane_ctx, const Stage& stage) {
+                                 const Stage& stage) {
             auto& cur_fbo = m_plane_ctx.level == 0 ? render_ctx.mut_fbo() : m_fbo;
 
             auto bg_color = m_plane_ctx.level == 0 ? m_atom_static_profile.bg_color
@@ -81,23 +83,10 @@ namespace akashi {
             std::array<float, 4> fb_bg_color = core::to_rgba_float(bg_color);
             priv::init_renderer(cur_fbo.info(), fb_bg_color);
 
-            auto cur_layer_ctxs = cur_plane_ctx.eval(render_ctx.eval_gctx(), cur_plane_ctx);
-
+            auto cur_layer_ctxs = m_plane_ctx.eval(render_ctx.eval_gctx(), m_plane_ctx);
             if (m_initial_render) {
                 for (const auto& layer_ctx : cur_layer_ctxs) {
-                    auto layer_added = this->add_layer(render_ctx, layer_ctx);
-                    if (!layer_added) {
-                        continue;
-                    }
-                    if (static_cast<core::LayerType>(layer_ctx.type) == core::LayerType::UNIT) {
-                        RenderPlane* render_plane = nullptr;
-                        if (stage.find_render_plane(&render_plane, layer_ctx.uuid)) {
-                            if (render_plane->m_fbo.initilized()) {
-                                // lifetime?
-                                m_actors.back()->set_fbo(core::borrowed_ptr{&render_plane->m_fbo});
-                            }
-                        }
-                    }
+                    this->add_layer(render_ctx, layer_ctx);
                 }
                 m_initial_render = false;
             } else {
@@ -111,7 +100,20 @@ namespace akashi {
 
             for (auto iter = m_actors.rbegin(), end = m_actors.rend(); iter != end; ++iter) {
                 const auto& actor = *iter;
-                if (actor && actor->get_layer_ctx().display) {
+                if (!actor) {
+                    continue;
+                }
+                const auto& layer_ctx = actor->get_layer_ctx();
+                if (layer_ctx.display) {
+                    if (static_cast<core::LayerType>(layer_ctx.type) == core::LayerType::UNIT) {
+                        RenderPlane* render_plane = nullptr;
+                        if (stage.find_render_plane(&render_plane, layer_ctx.uuid)) {
+                            if (render_plane->m_fbo.initilized()) {
+                                // lifetime?
+                                actor->set_fbo(core::borrowed_ptr{&render_plane->m_fbo});
+                            }
+                        }
+                    }
                     CHECK_AK_ERROR2(actor->render(render_ctx, pts,
                                                   m_camera ? *m_camera : *render_ctx.camera()));
                 }
@@ -199,25 +201,57 @@ namespace akashi {
         }
 
         bool Stage::render_planes(OGLRenderContext& ctx, const core::FrameContext& frame_ctx) {
-            // initialize the stage when new atom comes
-            if (m_current_atom_uuid != frame_ctx.atom_static_profile.atom_uuid) {
-                AKLOG_DEBUG("new atom: old: {}, new: {}", m_current_atom_uuid,
-                            frame_ctx.atom_static_profile.atom_uuid);
-                this->destroy_planes(ctx);
-                for (const auto& plane_ctx : frame_ctx.plane_ctxs) {
-                    this->add_plane(ctx, plane_ctx, frame_ctx.atom_static_profile);
+            // [TODO] Apparently we need refactoring here
+            // prepare planes
+            {
+                for (auto&& cur_plane : m_planes) {
+                    if (cur_plane->plane_ctx().level > 0) {
+                        cur_plane->set_defunct(true);
+                    }
                 }
-                m_current_atom_uuid = frame_ctx.atom_static_profile.atom_uuid;
+
+                for (auto&& new_plane_ctx : frame_ctx.plane_ctxs) {
+                    bool new_flg = true;
+                    for (auto&& cur_plane : m_planes) {
+                        if (new_plane_ctx.base_uuid == cur_plane->plane_ctx().base_uuid) {
+                            // to be updated
+                            cur_plane->set_defunct(false);
+                            cur_plane->update(new_plane_ctx);
+                            new_flg = false;
+                            break;
+                        }
+                    }
+                    if (new_flg) {
+                        // newly added
+                        this->add_plane(ctx, new_plane_ctx, frame_ctx.atom_static_profile);
+                    }
+                }
+
+                // remove defunct planes
+                decltype(m_planes) temp_planes;
+                for (auto&& cur_plane : m_planes) {
+                    if (cur_plane->is_defunct()) {
+                        m_plane_map.erase(cur_plane->base_layer().uuid);
+                        cur_plane->destroy(ctx);
+                        delete cur_plane;
+                    } else {
+                        temp_planes.push_back(cur_plane);
+                    }
+                }
+                m_planes.clear();
+                m_planes = temp_planes;
+
+                // sort planes
+                std::sort(m_planes.begin(), m_planes.end(), [](RenderPlane* a, RenderPlane* b) {
+                    return a->plane_ctx().level > b->plane_ctx().level;
+                });
             }
 
             // render
-            for (int i = m_planes.size() - 1; i >= 0; i--) {
-                if (i > 0 && !frame_ctx.plane_ctxs[i].display) {
-                    continue;
-                }
-                CHECK_AK_ERROR2(
-                    m_planes[i]->render(ctx, frame_ctx.pts, frame_ctx.plane_ctxs[i], *this));
+            for (const auto& m_plane : m_planes) {
+                CHECK_AK_ERROR2(m_plane->render(ctx, frame_ctx.pts, *this));
             }
+
             return true;
         }
 

@@ -159,6 +159,7 @@ namespace akashi {
 
             layer_ctx.uuid = layer_params.attr("uuid").cast<std::string>();
             layer_ctx.atom_uuid = layer_params.attr("atom_uuid").cast<std::string>();
+            layer_ctx.key = layer_params.attr("key").cast<std::string>();
 
             // layer_ctx.display = layer_params.attr("_display").cast<bool>();
             layer_ctx.display = true;

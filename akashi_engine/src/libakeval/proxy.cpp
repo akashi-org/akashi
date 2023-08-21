@@ -63,17 +63,21 @@ namespace akashi {
         core::PlaneContext PlaneProxy::eval(core::borrowed_ptr<GlobalContext> gctx,
                                             const KronArg& arg,
                                             const core::Rational& base_time) const {
-            core::PlaneContext plane_ctx;
-            plane_ctx.level = m_plane_ctx.level;
-            plane_ctx.base_idx = m_plane_ctx.base_idx;
-            plane_ctx.layer_indices = m_plane_ctx.layer_indices;
+            core::PlaneContext plane_ctx = m_plane_ctx;
 
-            // [TODO] bugs might occur in a case where base is atom
-            const auto& base_layer_proxy = gctx->layer_proxies[plane_ctx.base_idx];
+            core::Rational plane_from;
+            core::Rational plane_to;
+            if (m_plane_ctx.level == 0) {
+                const auto& atom_proxy = gctx->atom_proxies[plane_ctx.atom_idx];
+                plane_from = atom_proxy.static_profile().from + base_time;
+                plane_to = atom_proxy.static_profile().to + base_time;
+            } else {
+                const auto& base_layer_proxy = gctx->layer_proxies[plane_ctx.base_idx];
+                plane_from = base_layer_proxy.layer_ctx().from + base_time;
+                plane_to = base_layer_proxy.layer_ctx().to + base_time;
+            }
 
-            auto unit_from = base_layer_proxy.layer_ctx().from + base_time;
-            auto unit_to = base_layer_proxy.layer_ctx().to + base_time;
-            plane_ctx.display = (unit_from <= arg.play_time) && (arg.play_time <= unit_to);
+            plane_ctx.display = (plane_from <= arg.play_time) && (arg.play_time <= plane_to);
 
             plane_ctx.eval = [arg, base_time](core::borrowed_ptr<eval::GlobalContext> gctx,
                                               const core::PlaneContext& inner_plane_ctx) {
@@ -93,10 +97,14 @@ namespace akashi {
 
             plane_ctx.base = [](core::borrowed_ptr<eval::GlobalContext> gctx,
                                 const core::PlaneContext& inner_plane_ctx) {
+                core::LayerContext base;
+                base.type = -1;
                 if (!gctx) {
                     AKLOG_ERRORN("gctx is null");
-                    core::LayerContext base;
-                    base.type = -1;
+                    return base;
+                }
+                if (inner_plane_ctx.level == 0) {
+                    AKLOG_ERRORN("plane level is zero");
                     return base;
                 }
                 return gctx->layer_proxies[inner_plane_ctx.base_idx].layer_ctx();
@@ -119,7 +127,7 @@ namespace akashi {
             return avlayer_profiles;
         }
 
-        AtomProxy::AtomProxy(const core::AtomProfile& profile,
+        AtomProxy::AtomProxy(const core::AtomStaticProfile& profile,
                              const std::vector<PlaneProxy>& plane_proxies)
             : m_profile(profile), m_plane_proxies(plane_proxies){};
 
@@ -129,13 +137,21 @@ namespace akashi {
                                                         const KronArg& arg) const {
             std::vector<core::PlaneContext> plane_ctxs;
             for (const auto& plane_proxy : m_plane_proxies) {
-                plane_ctxs.push_back(plane_proxy.eval(gctx, arg, m_profile.from));
+                const auto& r_plane_ctx = plane_proxy.eval(gctx, arg, m_profile.from);
+                if (r_plane_ctx.display) {
+                    plane_ctxs.push_back(r_plane_ctx);
+                }
             }
             return plane_ctxs;
         };
 
         core::AtomProfile AtomProxy::computed_profile(const GlobalContext& gctx) const {
-            core::AtomProfile computed = m_profile;
+            core::AtomProfile computed;
+            computed.from = m_profile.from;
+            computed.to = m_profile.to;
+            computed.duration = m_profile.duration;
+            computed.uuid = m_profile.uuid;
+            computed.bg_color = m_profile.bg_color;
             computed.av_layers = {};
             for (const auto& plane_proxy : m_plane_proxies) {
                 for (const auto& layer_profile :
@@ -146,12 +162,7 @@ namespace akashi {
             return computed;
         }
 
-        core::AtomStaticProfile AtomProxy::static_profile() const {
-            core::AtomStaticProfile static_profile;
-            static_profile.bg_color = m_profile.bg_color;
-            static_profile.atom_uuid = m_profile.uuid;
-            return static_profile;
-        }
+        core::AtomStaticProfile AtomProxy::static_profile() const { return m_profile; }
 
     }
 }

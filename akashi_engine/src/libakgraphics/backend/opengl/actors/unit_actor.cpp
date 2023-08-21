@@ -38,7 +38,8 @@ namespace akashi {
         bool UnitActor::render(OGLRenderContext& ctx, const core::Rational& pts,
                                const Camera& camera) {
             if (!m_pass->fbo) {
-                AKLOG_ERRORN("FBO is null");
+                AKLOG_ERROR("FBO is null, {}, {}", m_layer_ctx.uuid.c_str(),
+                            m_layer_ctx.key.c_str());
                 return false;
             }
 

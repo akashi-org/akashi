@@ -16,13 +16,19 @@ namespace akashi {
 
         static std::vector<PlaneProxy>
         trace_plane_context(const std::vector<unsigned long>& layer_indices,
-                            const GlobalContext& ctx, const size_t level,
+                            const GlobalContext& ctx, const size_t level, const size_t atom_idx = 0,
+                            const core::AtomStaticProfile* atom_profile = nullptr,
                             const size_t* unit_layer_idx = nullptr) {
             std::vector<PlaneProxy> plane_proxies;
 
             core::PlaneContext plane_ctx{.level = level};
+
             if (unit_layer_idx) {
                 plane_ctx.base_idx = *unit_layer_idx;
+                plane_ctx.base_uuid = ctx.layer_proxies[*unit_layer_idx].layer_ctx().uuid;
+            } else {
+                plane_ctx.atom_idx = atom_idx;
+                plane_ctx.base_uuid = atom_profile->atom_uuid;
             }
 
             std::vector<unsigned long> unit_layer_indices;
@@ -41,8 +47,9 @@ namespace akashi {
             for (const auto& unit_layer_idx : unit_layer_indices) {
                 const auto& unit_layer_ctx =
                     ctx.layer_proxies[unit_layer_idx].layer_ctx().unit_layer_ctx;
-                for (const auto& rest_plane_ctx : trace_plane_context(
-                         unit_layer_ctx.layer_indices, ctx, level + 1, &unit_layer_idx)) {
+                for (const auto& rest_plane_ctx :
+                     trace_plane_context(unit_layer_ctx.layer_indices, ctx, level + 1, atom_idx,
+                                         nullptr, &unit_layer_idx)) {
                     plane_proxies.push_back(rest_plane_ctx);
                 }
             }
@@ -57,10 +64,11 @@ namespace akashi {
             }
 
             for (const auto& atom : elem.attr("atoms").cast<py::list>()) {
-                core::AtomProfile atom_profile = {};
+                core::AtomStaticProfile atom_profile = {};
                 auto atom_duration = to_rational(atom.attr("_duration"));
 
                 atom_profile.uuid = atom.attr("uuid").cast<std::string>();
+                atom_profile.atom_uuid = atom_profile.uuid;
                 atom_profile.bg_color = atom.attr("bg_color").cast<std::string>();
 
                 if (atom_duration < ctx.sec_per_frame) {
@@ -77,7 +85,8 @@ namespace akashi {
                 }
 
                 ctx.atom_proxies.push_back(
-                    AtomProxy{atom_profile, trace_plane_context(layer_indices, ctx, 0, nullptr)});
+                    AtomProxy{atom_profile, trace_plane_context(layer_indices, ctx, 0, 0,
+                                                                &atom_profile, nullptr)});
                 ctx.duration += atom_duration;
             }
         }

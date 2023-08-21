@@ -50,11 +50,9 @@ namespace akashi {
             core::PlaneContext m_plane_ctx;
         };
 
-        constexpr auto d = sizeof(core::LayerContext);
-
         class AtomProxy final {
           public:
-            explicit AtomProxy(const core::AtomProfile& profile,
+            explicit AtomProxy(const core::AtomStaticProfile& profile,
                                const std::vector<PlaneProxy>& plane_proxies);
 
             virtual ~AtomProxy();
@@ -67,7 +65,7 @@ namespace akashi {
             core::AtomStaticProfile static_profile() const;
 
           private:
-            core::AtomProfile m_profile;
+            core::AtomStaticProfile m_profile;
             std::vector<PlaneProxy> m_plane_proxies;
         };
 

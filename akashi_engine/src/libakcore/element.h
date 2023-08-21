@@ -134,6 +134,7 @@ namespace akashi {
             int type;
             std::string uuid;
             std::string atom_uuid;
+            std::string key;
             bool display = false;
 
             Rational rotation = Rational(0, 1);
@@ -176,13 +177,19 @@ namespace akashi {
         };
 
         struct AtomStaticProfile {
+            Rational from = core::Rational(0, 1);
+            Rational to = core::Rational(0, 1);
+            Rational duration = core::Rational(0, 1);
+            std::string uuid;
             std::string bg_color;
             std::string atom_uuid;
         };
 
         struct PlaneContext {
             size_t level = 0;
-            size_t base_idx; // unit layer
+            size_t base_idx; // valid only when level >= 1
+            size_t atom_idx; // valid only when level == 0
+            std::string base_uuid;
             std::vector<size_t> layer_indices;
             bool display = false;
             std::function<std::vector<core::LayerContext>(core::borrowed_ptr<eval::GlobalContext>,
