@@ -201,6 +201,13 @@ namespace akashi {
         }
 
         bool Stage::render_planes(OGLRenderContext& ctx, const core::FrameContext& frame_ctx) {
+            if (m_current_atom_uuid != frame_ctx.atom_static_profile.atom_uuid) {
+                AKLOG_DEBUG("new atom: old: {}, new: {}", m_current_atom_uuid,
+                            frame_ctx.atom_static_profile.atom_uuid);
+                this->destroy_planes(ctx);
+                m_current_atom_uuid = frame_ctx.atom_static_profile.atom_uuid;
+            }
+
             // [TODO] Apparently we need refactoring here
             // prepare planes
             {
