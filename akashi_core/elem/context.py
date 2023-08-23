@@ -77,11 +77,10 @@ class AtomHandle:
         atom_fitted_layer_indices: list[int] = []
         for layer_idx in cur_atom.layer_indices:
             cur_layer = cur_layers[layer_idx]
+            if cur_layer.slice_offset == NOT_FIXED_SEC:
+                cur_layer.slice_offset = cur_layer.frame_offset
+
             if isinstance(cur_layer._duration, sec):
-
-                if cur_layer.slice_offset == NOT_FIXED_SEC:
-                    cur_layer.slice_offset = cur_layer.frame_offset
-
                 layer_to = cur_layer.slice_offset + cur_layer._duration
                 if layer_to > max_to:
                     max_to = layer_to
