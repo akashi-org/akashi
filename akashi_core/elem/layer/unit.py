@@ -318,6 +318,12 @@ class SpatialFrameGuard:
                     media_slice_part = int(cur_layer.layer_local_offset / media_slice_dur)
                     cur_layer.layer_local_offset = cur_layer.layer_local_offset - (media_slice_part * media_slice_dur)
 
+                if cur_layer.kind == "UNIT":
+                    _cur_layer = tp.cast(UnitEntry, cur_layer)
+                    _cur_layer.unit._start = _cur_layer.layer_local_offset
+                    _cur_layer.unit._end = _cur_layer.layer_local_offset + tp.cast(sec, _cur_layer._duration)
+                    SpatialFrameGuard._apply_slice(cur_ctx, _cur_layer, sec(0))
+
                 living_layer_indices.append(layer_idx)
             else:
                 cur_layer.defunct = True
@@ -339,9 +345,8 @@ class SpatialFrameGuard:
                         continue
                     dup_layer = copy.deepcopy(cur_layer)
                     dup_layer.slice_offset += acc_duration
-                    # [TODO] Should we rename the key?
-                    # register_entry(dup_layer, dup_layer.kind, dup_layer.key + f'__span_cnt_{cnt+1}')
-                    register_entry(dup_layer, dup_layer.kind, dup_layer.key)
+                    dup_layer.frame_offset += acc_duration
+                    register_entry(dup_layer, dup_layer.kind, dup_layer.key + f'__span_cnt_{cnt+1}')
                 acc_duration += org_duration
 
             unit_layer._duration = tp.cast(sec, unit_layer._duration) * unit_layer.unit._span_cnt
