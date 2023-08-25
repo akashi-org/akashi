@@ -334,19 +334,34 @@ class SpatialFrameGuard:
     @staticmethod
     def _apply_span(cur_ctx: 'KronContext', unit_layer: UnitEntry):
 
+        def _duplicate_children(
+                child_layer_indices: list[int], incr_dur: sec, append_layer_indices: bool) -> list[int]:
+
+            new_child_layer_indices = []
+
+            for layer_idx in child_layer_indices:
+                cur_layer = cur_ctx.layers[layer_idx]
+                if cur_layer.defunct:
+                    continue
+                dup_layer = copy.deepcopy(cur_layer)
+                dup_layer.slice_offset += acc_duration
+                dup_layer.frame_offset += acc_duration
+
+                new_child_layer_indices.append(register_entry(dup_layer, dup_layer.kind,
+                                               dup_layer.key + f'__span_cnt_{cnt+1}', append_layer_indices))
+
+                if dup_layer.kind == "UNIT":
+                    _dup_layer = tp.cast(UnitEntry, dup_layer)
+                    _dup_layer.unit.layer_indices = _duplicate_children(_dup_layer.unit.layer_indices, incr_dur, False)
+
+            return new_child_layer_indices
+
         if unit_layer.unit._span_cnt and unit_layer.unit._span_cnt > 1:
             org_duration: sec = tp.cast(sec, unit_layer._duration)
             acc_duration: sec = org_duration
             child_layer_indices = copy.deepcopy(unit_layer.unit.layer_indices)
             for cnt in range(unit_layer.unit._span_cnt - 1):
-                for layer_idx in child_layer_indices:
-                    cur_layer = cur_ctx.layers[layer_idx]
-                    if cur_layer.defunct:
-                        continue
-                    dup_layer = copy.deepcopy(cur_layer)
-                    dup_layer.slice_offset += acc_duration
-                    dup_layer.frame_offset += acc_duration
-                    register_entry(dup_layer, dup_layer.kind, dup_layer.key + f'__span_cnt_{cnt+1}')
+                _duplicate_children(child_layer_indices, acc_duration, True)
                 acc_duration += org_duration
 
             unit_layer._duration = tp.cast(sec, unit_layer._duration) * unit_layer.unit._span_cnt

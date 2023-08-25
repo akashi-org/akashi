@@ -294,7 +294,7 @@ def peek_entry(layer_idx: int) -> tp.Optional[LayerField]:
         return cur_layer
 
 
-def register_entry(entry: LayerField, kind: LayerKind, key: str) -> int:
+def register_entry(entry: LayerField, kind: LayerKind, key: str, append_layer_indices: bool = True) -> int:
 
     cur_ctx = gctx.get_ctx()
     cur_atom = cur_ctx.atoms[-1]
@@ -308,10 +308,11 @@ def register_entry(entry: LayerField, kind: LayerKind, key: str) -> int:
     cur_ctx.layers.append(entry)
     cur_layer_idx = len(cur_ctx.layers) - 1
 
-    if len(gctx.get_ctx()._cur_unit_ids) == 0:
-        cur_atom.layer_indices.append(cur_layer_idx)
-    else:
-        cur_unit_layer = tp.cast('UnitEntry', cur_ctx.layers[gctx.get_ctx()._cur_unit_ids[-1]])
-        cur_unit_layer.unit.layer_indices.append(cur_layer_idx)
+    if append_layer_indices:
+        if len(gctx.get_ctx()._cur_unit_ids) == 0:
+            cur_atom.layer_indices.append(cur_layer_idx)
+        else:
+            cur_unit_layer = tp.cast('UnitEntry', cur_ctx.layers[gctx.get_ctx()._cur_unit_ids[-1]])
+            cur_unit_layer.unit.layer_indices.append(cur_layer_idx)
 
     return cur_layer_idx
