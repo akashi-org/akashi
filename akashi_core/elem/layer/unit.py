@@ -274,23 +274,26 @@ class SpatialFrameGuard:
         return child_layer.slice_offset + tp.cast(sec, child_layer._duration)
 
     @staticmethod
-    def _apply_slice(cur_ctx: 'KronContext', unit_layer: UnitEntry, max_to: sec):
+    def _apply_slice(cur_ctx: 'KronContext', unit_layer: UnitEntry, max_to: sec) -> sec:
 
         if unit_layer.unit._start == sec(0) and unit_layer.unit._end == sec(-1):
             unit_layer._duration = max_to
-            return
+            return max_to
 
         unit_start = unit_layer.unit._start
         unit_end = max_to if unit_layer.unit._end == -1 else unit_layer.unit._end
         unit_dur = unit_end - unit_start
         living_layer_indices: list[int] = []
+        new_max_to: sec = sec(0)
 
         for layer_idx in unit_layer.unit.layer_indices:
             cur_layer = cur_ctx.layers[layer_idx]
-            layer_from = cur_layer.frame_offset
+
+            layer_from = cur_layer.frame_offset if cur_layer.slice_offset == NOT_FIXED_SEC else cur_layer.slice_offset
             layer_to = layer_from + tp.cast(sec, cur_layer._duration)
             if layer_from <= unit_end and layer_to >= unit_start:
 
+                old_slice_offset: sec = cur_layer.slice_offset
                 new_layer_local_offset: sec
                 new_slice_offset: sec
                 if unit_start < layer_from:
@@ -313,16 +316,22 @@ class SpatialFrameGuard:
                 cur_layer.layer_local_offset = new_layer_local_offset
                 cur_layer._duration = new_duration
 
+                new_layer_to = cur_layer.slice_offset + tp.cast(sec, cur_layer._duration)
+                if new_layer_to > new_max_to:
+                    new_max_to = new_layer_to
+
                 if cur_layer.layer_local_offset > sec(0) and isinstance(cur_layer, HasMediaField):
                     media_slice_dur = cur_layer.media.end - cur_layer.media.start
                     media_slice_part = int(cur_layer.layer_local_offset / media_slice_dur)
                     cur_layer.layer_local_offset = cur_layer.layer_local_offset - (media_slice_part * media_slice_dur)
 
                 if cur_layer.kind == "UNIT":
+
                     _cur_layer = tp.cast(UnitEntry, cur_layer)
-                    _cur_layer.unit._start = _cur_layer.layer_local_offset
-                    _cur_layer.unit._end = _cur_layer.layer_local_offset + tp.cast(sec, _cur_layer._duration)
-                    SpatialFrameGuard._apply_slice(cur_ctx, _cur_layer, sec(0))
+                    _cur_layer.unit._start = unit_start
+                    _cur_layer.unit._end = unit_end
+                    _cur_layer_new_to = SpatialFrameGuard._apply_slice(cur_ctx, _cur_layer, sec(0))
+                    _cur_layer._duration = _cur_layer_new_to - _cur_layer.slice_offset
 
                 living_layer_indices.append(layer_idx)
             else:
@@ -330,6 +339,8 @@ class SpatialFrameGuard:
 
         unit_layer.unit.layer_indices = living_layer_indices
         unit_layer._duration = unit_dur
+
+        return new_max_to
 
     @staticmethod
     def _apply_span(cur_ctx: 'KronContext', unit_layer: UnitEntry):

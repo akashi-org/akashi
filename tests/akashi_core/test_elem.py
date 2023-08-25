@@ -402,6 +402,8 @@ class TestFrame(unittest.TestCase):
             test_lines.append(
                 f'{layer_idx} {layer.kind} {layer.defunct} {layer.key} {layer.slice_offset} {layer._duration} {layer.layer_local_offset}')
 
+        # print('\n'.join(test_lines))
+
         expected_lines = [e.strip() for e in '''
         0 UNIT False MainUnit 0 8 0
         1 SHAPE False R1 0 3 0
@@ -438,5 +440,75 @@ class TestFrame(unittest.TestCase):
             10, 11])
         self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[17]).unit.layer_indices, [
             18, 19])
+
+        self.assertEqual(test_lines, expected_lines)
+
+    def test_spatial_with_span_cnt_and_timeline(self):
+
+        @ak.frame()
+        def inner2_frame():
+            ak.rect(ak.lwidth() // 5, 200, lambda t: (
+                t.duration(10),
+                t.key('inner2_R1')
+            ))
+
+        @ak.frame('timeline')
+        def inner_frame(rect_w: int, rect_h: int):
+            ak.rect(rect_w, rect_h, lambda t: (
+                t.key('timeline_R1'),
+                t.duration(3)
+            ))
+            ak.unit(inner2_frame(), lambda t: (
+                t.key('timeline_U1'),
+            ))
+
+        @ak.frame()
+        def base_frame():
+
+            ak.unit(inner_frame(500, 500), lambda t: (
+                t.key('U1'),
+            ))
+
+            ak.rect(ak.lwidth() // 5, 200, lambda t: (
+                t.duration(2).offset(1),
+                t.key('R1')
+            ))
+
+            vurl = ak.from_relpath(__file__, './resource_fixtures/countdown1/countdown1_720p.mp4')
+            ak.audio(vurl, lambda t: (
+                t.media.range(0, 0.7).span_dur(4),
+                t.key('A1')
+            ))
+
+        @ak.entry()
+        def main():
+            ak.unit(base_frame(), lambda t: (
+                t.range(2, 5).span_cnt(2),
+                t.key('MainUnit')
+            ))
+
+        kron = eval_kron(main, './test_elem_config1.py')
+        test_lines = []
+        for layer_idx, layer in enumerate(kron.layers):
+            test_lines.append(
+                f'{layer_idx} {layer.kind} {layer.defunct} {layer.key} {layer.slice_offset} {layer._duration} {layer.layer_local_offset}')
+
+        # print('\n'.join(test_lines))
+
+        expected_lines = [e.strip() for e in '''
+        0 UNIT False MainUnit 0 6 0
+        1 UNIT False U1 0 3 2
+        2 SHAPE False timeline_R1 0 1 2
+        3 UNIT False timeline_U1 1 2 0
+        4 SHAPE False inner2_R1 1 2 0
+        5 SHAPE False R1 0 1 1
+        6 AUDIO False A1 0 2 3/5
+        7 UNIT False U1__span_cnt_1 3 3 2
+        8 SHAPE False timeline_R1__span_cnt_1 3 1 2
+        9 UNIT False timeline_U1__span_cnt_1 4 2 0
+        10 SHAPE False inner2_R1__span_cnt_1 4 2 0
+        11 SHAPE False R1__span_cnt_1 3 1 1
+        12 AUDIO False A1__span_cnt_1 3 2 3/5
+         '''.split('\n') if len(e.strip()) > 0]
 
         self.assertEqual(test_lines, expected_lines)
