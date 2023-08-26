@@ -180,6 +180,18 @@ class TimelineUnitTrait(LayerTrait):
     def __post_init__(self):
         self.transform = TransformTrait(self._idx)
 
+    def frag(self, *frag_fns: _UnitFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'TimelineUnitTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasShaderField, cur_layer).shader.frag_shader = ShaderCompiler(
+                frag_fns, UnitFragBuffer, _frag_shader_header, preamble, memo)
+        return self
+
+    def poly(self, *poly_fns: _UnitPolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'TimelineUnitTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasShaderField, cur_layer).shader.poly_shader = ShaderCompiler(
+                poly_fns, UnitPolyBuffer, _poly_shader_header, preamble, memo)
+        return self
+
     def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'TimelineUnitTrait':
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(HasUnitLocalField, cur_layer).unit.bg_color = color_value(color)
