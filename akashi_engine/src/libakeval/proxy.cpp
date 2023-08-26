@@ -18,8 +18,7 @@ namespace akashi {
             layer_ctx.from = m_layer_ctx.from + base_time;
             layer_ctx.to = m_layer_ctx.to + base_time;
 
-            layer_ctx.display =
-                (layer_ctx.from <= arg.play_time) && (arg.play_time <= layer_ctx.to);
+            layer_ctx.display = (layer_ctx.from <= arg.play_time) && (arg.play_time < layer_ctx.to);
             return layer_ctx;
         };
 
@@ -77,7 +76,7 @@ namespace akashi {
                 plane_to = base_layer_proxy.layer_ctx().to + base_time;
             }
 
-            plane_ctx.display = (plane_from <= arg.play_time) && (arg.play_time <= plane_to);
+            plane_ctx.display = (plane_from <= arg.play_time) && (arg.play_time < plane_to);
             if (!plane_ctx.display) {
                 return plane_ctx;
             }
