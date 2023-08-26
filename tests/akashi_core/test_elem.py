@@ -509,6 +509,47 @@ class TestFrame(unittest.TestCase):
         10 SHAPE False inner2_R1__span_cnt_1 4 2 0
         11 SHAPE False R1__span_cnt_1 3 1 1
         12 AUDIO False A1__span_cnt_1 3 2 3/5
-         '''.split('\n') if len(e.strip()) > 0]
+        '''.split('\n') if len(e.strip()) > 0]
 
         self.assertEqual(test_lines, expected_lines)
+
+    def test_timeline_with_span_cnt(self):
+
+        @ak.frame('timeline')
+        def base_frame(rect_w: int, rect_h: int):
+            ak.rect(rect_w, rect_h, lambda t: (
+                t.key('timeline_R1'),
+                t.duration(3)
+            ))
+            ak.rect(rect_w, rect_h, lambda t: (
+                t.key('timeline_R2'),
+                t.duration(10)
+            ))
+
+        @ak.entry()
+        def main():
+            ak.unit(base_frame(200, 200), lambda t: (
+                t.key('MainUnit'),
+                t.range(2, 5).span_cnt(2)
+            ))
+
+        kron = eval_kron(main, './test_elem_config1.py')
+        test_lines = []
+        for layer_idx, layer in enumerate(kron.layers):
+            test_lines.append(
+                f'{layer_idx} {layer.kind} {layer.defunct} {layer.key} {layer.slice_offset} {layer._duration} {layer.layer_local_offset}')
+
+        # print('\n'.join(test_lines))
+
+        expected_lines = [e.strip() for e in '''
+        0 UNIT False MainUnit 0 6 0
+        1 SHAPE False timeline_R1 0 1 2
+        2 SHAPE False timeline_R2 1 2 0
+        3 SHAPE False timeline_R1__span_cnt_1 3 1 2
+        4 SHAPE False timeline_R2__span_cnt_1 4 2 0
+        '''.split('\n') if len(e.strip()) > 0]
+
+        self.assertEqual(test_lines, expected_lines)
+
+        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[0]).unit.layer_indices, [
+            1, 2, 3, 4])
