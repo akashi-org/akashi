@@ -20,8 +20,8 @@ class _TEntryFnOpaque(tp.Generic[_T_co]):
     ...
 
 
-_NamedEntryFragFn = tp.Callable[[_gl._TFragBuffer, _gl.frag_color], None]
-_NamedEntryPolyFn = tp.Callable[[_gl._TPolyBuffer, _gl.poly_pos], None]
+_NamedEntryFragFn = tp.Callable[[_gl._frag, _gl.frag_color], None]
+_NamedEntryPolyFn = tp.Callable[[_gl._poly, _gl.poly_pos], None]
 
 _COMPILE_CONFIG = CompilerConfig.default()
 _COMPILE_CACHE = CompileCache(config=_COMPILE_CONFIG)
@@ -39,7 +39,7 @@ def _invalidate_artifact_cache():
     _ARTIFACT_CACHE = {}
 
 
-@dataclass
+@ dataclass
 class ShaderCompiler:
     __glsl_version__: tp.ClassVar[str] = '#version 420 core\n'
 
@@ -83,58 +83,39 @@ class ShaderCompiler:
             return _ARTIFACT_CACHE[a_key]
 
 
-_frag_shader_header: list[str] = [
+_uniform_shader_header: list[str] = [
     'uniform float time;',
     'uniform float global_time;',
     'uniform float local_duration;',
     'uniform float fps;',
     'uniform vec2 resolution;',
     'uniform vec2 mesh_size;',
-    'uniform sampler2D texture0;',
-    'uniform sampler2DArray texture_arr;',
-    'in GS_OUT { vec2 vUvs; float sprite_idx; } fs_in;'
-]
-
-
-_video_frag_shader_header: list[str] = [
-    'uniform float time;',
-    'uniform float global_time;',
-    'uniform float local_duration;',
-    'uniform float fps;',
-    'uniform vec2 resolution;',
-    'uniform vec2 mesh_size;',
+    'uniform sampler2D unit_texture0;',
+    'uniform sampler2D text_texture0;',
+    'uniform sampler2D shape_texture0;',
+    'uniform sampler2DArray image_textures;',
     'uniform sampler2D textureY;',
     'uniform sampler2D textureCb;',
     'uniform sampler2D textureCr;',
+]
+
+_frag_shader_header: list[str] = [
+    *_uniform_shader_header,
     'in GS_OUT {',
-    '    vec2 vLumaUvs;',
-    '    vec2 vChromaUvs;',
+    '    vec2 video_luma_uv;',
+    '    vec2 video_chroma_uv;',
+    '    vec2 uv;',
+    '    float sprite_idx;',
     '} fs_in;'
 ]
 
 
 _poly_shader_header: list[str] = [
-    'uniform float time;',
-    'uniform float global_time;',
-    'uniform float local_duration;',
-    'uniform float fps;',
-    'uniform vec2 resolution;',
-    'uniform vec2 mesh_size;',
+    *_uniform_shader_header,
     'out VS_OUT {',
-    '    vec2 vUvs;',
+    '    vec2 video_luma_uv;',
+    '    vec2 video_chroma_uv;',
+    '    vec2 uv;',
     '    float sprite_idx;',
-    '} vs_out;'
-]
-
-_video_poly_shader_header: list[str] = [
-    'uniform float time;',
-    'uniform float global_time;',
-    'uniform float local_duration;',
-    'uniform float fps;',
-    'uniform vec2 resolution;',
-    'uniform vec2 mesh_size;',
-    'out VS_OUT {',
-    '    vec2 vLumaUvs;',
-    '    vec2 vChromaUvs;',
     '} vs_out;'
 ]

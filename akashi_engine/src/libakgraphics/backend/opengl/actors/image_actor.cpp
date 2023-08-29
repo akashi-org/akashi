@@ -87,22 +87,19 @@ namespace akashi {
             CHECK_AK_ERROR2(layer_commons::load_shaders(m_pass->prog, m_layer_type,
                                                         m_layer_ctx.image_layer_ctx.poly,
                                                         m_layer_ctx.image_layer_ctx.frag));
+            glUseProgram(m_pass->prog);
 
-            m_pass->mvp_loc = glGetUniformLocation(m_pass->prog, "mvpMatrix");
-            if (m_layer_type == core::LayerType::IMAGE) {
-                m_pass->tex_loc = glGetUniformLocation(m_pass->prog, "texture_arr");
-            } else {
-                m_pass->tex_loc = glGetUniformLocation(m_pass->prog, "texture0");
-            }
-            m_pass->time_loc = glGetUniformLocation(m_pass->prog, "time");
-            m_pass->global_time_loc = glGetUniformLocation(m_pass->prog, "global_time");
-            m_pass->local_duration_loc = glGetUniformLocation(m_pass->prog, "local_duration");
-            m_pass->fps_loc = glGetUniformLocation(m_pass->prog, "fps");
-            m_pass->resolution_loc = glGetUniformLocation(m_pass->prog, "resolution");
-            m_pass->mesh_size_loc = glGetUniformLocation(m_pass->prog, "mesh_size");
+            m_pass->mvp_loc = layer_commons::UniformLocation::mvpMatrix;
+            m_pass->tex_loc = layer_commons::UniformLocation::image_textures;
+            m_pass->time_loc = layer_commons::UniformLocation::time;
+            m_pass->global_time_loc = layer_commons::UniformLocation::global_time;
+            m_pass->local_duration_loc = layer_commons::UniformLocation::location_duration;
+            m_pass->fps_loc = layer_commons::UniformLocation::fps;
+            m_pass->resolution_loc = layer_commons::UniformLocation::resolution;
+            m_pass->mesh_size_loc = layer_commons::UniformLocation::mesh_size;
 
-            auto vertices_loc = glGetAttribLocation(m_pass->prog, "vertices");
-            auto uvs_loc = glGetAttribLocation(m_pass->prog, "uvs");
+            auto vertices_loc = layer_commons::InputLocation::vertices;
+            auto uvs_loc = layer_commons::InputLocation::uvs;
 
             CHECK_AK_ERROR2(this->load_texture(ctx));
 
@@ -140,8 +137,21 @@ namespace akashi {
 
             {
                 glUseProgram(m_pass->prog);
-                auto uv_flip_hv_loc = glGetUniformLocation(m_pass->prog, "uv_flip_hv");
-                glUniform2i(uv_flip_hv_loc, m_layer_ctx.uv_flip_h, m_layer_ctx.uv_flip_v);
+
+                // [XXX]
+                // These are unused textures in this layer.
+                // But if we don't set the arbitrary value for those,
+                // GL_INVALID_OPERATION will occur in glDrawElements.
+                glUniform1i(layer_commons::UniformLocation::text_texture0, 2);
+                glUniform1i(layer_commons::UniformLocation::unit_texture0, 3);
+                glUniform1i(layer_commons::UniformLocation::shape_texture0, 4);
+
+                glUniform2i(layer_commons::UniformLocation::uv_flip_hv, m_layer_ctx.uv_flip_h,
+                            m_layer_ctx.uv_flip_v);
+
+                glUniform1f(layer_commons::UniformLocation::main_tex_kind,
+                            static_cast<float>(m_layer_type));
+
                 glUniform2fv(m_pass->mesh_size_loc, 1, m_pass->mesh.mesh_size().data());
                 glUseProgram(0);
             }

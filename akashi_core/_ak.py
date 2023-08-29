@@ -4,37 +4,21 @@ __all__ = [
     "root",
     "video",
     "VideoTraitFn",
-    "video_frag",
-    "video_poly",
     "audio",
     "AudioTraitFn",
     "image",
     "ImageTraitFn",
-    "image_frag",
-    "image_poly",
     "text",
     "TextTraitFn",
-    "text_frag",
-    "text_poly",
-    "shape_frag",
-    "shape_poly",
     "rect",
     "RectTraitFn",
-    "rect_frag",
-    "rect_poly",
     "circle",
     "CircleTraitFn",
-    "circle_frag",
-    "circle_poly",
     "tri",
     "line",
     "LineTraitFn",
-    "line_frag",
-    "line_poly",
     "frame",
     "unit",
-    "unit_frag",
-    "unit_poly",
     "sec",
     "rgba",
     "rgb",
@@ -88,16 +72,15 @@ from .elem.context import (
 )
 from .elem.layout import LayoutInfo, vstack, hstack, LayoutLayerContext
 from .elem.layer.base import frag, poly
-from .elem.layer.video import video, VideoTraitFn, video_frag, video_poly
+from .elem.layer.video import video, VideoTraitFn
 from .elem.layer.audio import audio, AudioTraitFn
-from .elem.layer.image import image, ImageTraitFn, image_frag, image_poly
-from .elem.layer.text import text, TextTraitFn, text_frag, text_poly
-from .elem.layer.shape import shape_frag, shape_poly
-from .elem.layer.shape import rect, RectTraitFn, rect_frag, rect_poly
-from .elem.layer.shape import circle, CircleTraitFn, circle_frag, circle_poly
-from .elem.layer.shape import line, LineTraitFn, line_frag, line_poly
-from .elem.layer.shape import tri, TriangleTraitFn, tri_frag, tri_poly
-from .elem.layer.unit import frame, unit, unit_frag, unit_poly
+from .elem.layer.image import image, ImageTraitFn
+from .elem.layer.text import text, TextTraitFn
+from .elem.layer.shape import rect, RectTraitFn
+from .elem.layer.shape import circle, CircleTraitFn
+from .elem.layer.shape import line, LineTraitFn
+from .elem.layer.shape import tri, TriangleTraitFn
+from .elem.layer.unit import frame, unit
 
 from .time import sec
 from .color import rgba, rgb, hsv, hsva, Color

@@ -16,20 +16,13 @@ from .base import (
     TransformTrait,
     TextureField,
     TextureTrait,
+    ShaderField,
+    ShaderTrait,
 )
-from .base import register_entry, peek_entry, frag, poly, HasMediaField, LayerRef
+from .base import register_entry, peek_entry, HasMediaField, LayerRef
 from akashi_core.pysl import _gl as gl
 from akashi_core.time import sec, NOT_FIXED_SEC
 from akashi_core.probe import get_duration, g_resource_map
-from akashi_core.pysl.shader import (
-    ShaderCompiler,
-    _frag_shader_header,
-    _poly_shader_header,
-    _NamedEntryFragFn,
-    _NamedEntryPolyFn,
-    _TEntryFnOpaque,
-    ShaderMemoType
-)
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.elem.context import lwidth as ak_lwidth
 from akashi_core.elem.context import lheight as ak_lheight
@@ -65,20 +58,6 @@ def frame(kind: _T_FrameKind = 'spatial') -> tp.Callable[[tp.Callable[_FrameFnPa
     return tp.cast(tp.Callable[[tp.Callable[_FrameFnParams, None]], tp.Callable[_FrameFnParams, _FrameFnCtxOpaque[_T_FrameKind]]], inner)
 
 
-class UnitUniform:
-    texture0: tp.Final[gl.uniform[gl.sampler2D]] = gl._uniform_default()
-
-
-@dataclass
-class UnitFragBuffer(frag, UnitUniform, gl._LayerFragInput):
-    ...
-
-
-@dataclass
-class UnitPolyBuffer(poly, UnitUniform, gl._LayerPolyOutput):
-    ...
-
-
 @dataclass
 class UnitLocalField:
     layer_indices: list[int] = field(default_factory=list, init=False)
@@ -111,35 +90,21 @@ class UnitEntry(LayerField):
         self.shader = ShaderField()
 
 
-_UnitFragFn = _TEntryFnOpaque[_NamedEntryFragFn[UnitFragBuffer]]
-_UnitPolyFn = _TEntryFnOpaque[_NamedEntryPolyFn[UnitPolyBuffer]]
-
-
 @dataclass
 class SpatialUnitTrait(LayerTrait):
 
     transform: TransformTrait = field(init=False)
     tex: TextureTrait = field(init=False)
+    shader: ShaderTrait = field(init=False)
 
     def __post_init__(self):
         self.tex = TextureTrait(self._idx)
         self.transform = TransformTrait(self._idx)
+        self.shader = ShaderTrait(self._idx)
 
     def layout(self, layout_fn: LayoutFn) -> 'SpatialUnitTrait':
         if (cur_layer := peek_entry(self._idx)):
             tp.cast(HasUnitLocalField, cur_layer).unit._layout_fn = layout_fn
-        return self
-
-    def frag(self, *frag_fns: _UnitFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'SpatialUnitTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasShaderField, cur_layer).shader.frag_shader = ShaderCompiler(
-                frag_fns, UnitFragBuffer, _frag_shader_header, preamble, memo)
-        return self
-
-    def poly(self, *poly_fns: _UnitPolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'SpatialUnitTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasShaderField, cur_layer).shader.poly_shader = ShaderCompiler(
-                poly_fns, UnitPolyBuffer, _poly_shader_header, preamble, memo)
         return self
 
     def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'SpatialUnitTrait':
@@ -167,30 +132,15 @@ class SpatialUnitTrait(LayerTrait):
         return self
 
 
-unit_frag = UnitFragBuffer
-
-unit_poly = UnitPolyBuffer
-
-
 @dataclass
 class TimelineUnitTrait(LayerTrait):
 
     transform: TransformTrait = field(init=False)
+    shader: ShaderTrait = field(init=False)
 
     def __post_init__(self):
         self.transform = TransformTrait(self._idx)
-
-    def frag(self, *frag_fns: _UnitFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'TimelineUnitTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasShaderField, cur_layer).shader.frag_shader = ShaderCompiler(
-                frag_fns, UnitFragBuffer, _frag_shader_header, preamble, memo)
-        return self
-
-    def poly(self, *poly_fns: _UnitPolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'TimelineUnitTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasShaderField, cur_layer).shader.poly_shader = ShaderCompiler(
-                poly_fns, UnitPolyBuffer, _poly_shader_header, preamble, memo)
-        return self
+        self.shader = ShaderTrait(self._idx)
 
     def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'TimelineUnitTrait':
         if (cur_layer := peek_entry(self._idx)):

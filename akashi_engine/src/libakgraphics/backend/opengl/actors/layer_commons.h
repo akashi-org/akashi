@@ -43,15 +43,64 @@ namespace akashi {
 
         namespace layer_commons {
 
-            static constexpr const char* vshader_src = u8R"(
+            enum UniformLocation {
+                // public
+                time = 100,
+                global_time,
+                location_duration,
+                fps,
+                resolution,
+                mesh_size,
+                unit_texture0,
+                text_texture0,
+                shape_texture0,
+                image_textures,
+                video_textureY,
+                video_textureCb,
+                video_textureCr,
+
+                // private
+                mvpMatrix = 200,
+                uv_flip_hv,
+                main_tex_kind
+            };
+
+            enum InputLocation { vertices = 0, uvs };
+
+            static const std::string shader_header_ = u8R"(
     #version 420 core
-    uniform mat4 mvpMatrix;
-    uniform ivec2 uv_flip_hv; // [uv_flip_h, uv_flip_v]
-    in vec3 vertices;
-    in vec2 uvs;
+    #extension GL_ARB_explicit_uniform_location : require
+            )";
+
+            static const std::string uniform_decls_ = u8R"(
+    layout (location = 100) uniform float time;
+    layout (location = 101) uniform float global_time;
+    layout (location = 102) uniform float local_duration;
+    layout (location = 103) uniform float fps;
+    layout (location = 104) uniform vec2 resolution;
+    layout (location = 105) uniform vec2 mesh_size;
+    layout (location = 106) uniform sampler2D unit_texture0;
+    layout (location = 107) uniform sampler2D text_texture0;
+    layout (location = 108) uniform sampler2D shape_texture0;
+    layout (location = 109) uniform sampler2DArray image_textures;
+    layout (location = 110) uniform sampler2D video_textureY;
+    layout (location = 111) uniform sampler2D video_textureCb;
+    layout (location = 112) uniform sampler2D video_textureCr;
+
+    layout (location = 200) uniform mat4 mvpMatrix;
+    layout (location = 201) uniform ivec2 uv_flip_hv; // [uv_flip_h, uv_flip_v]
+    layout (location = 202) uniform float main_tex_kind;
+    )";
+
+            static const std::string vshader_src = shader_header_ + uniform_decls_ + u8R"(
+    layout (location = 0) in vec3 vertices;
+    layout (location = 1) in vec2 uvs;
+
 
     out VS_OUT {
-        vec2 vUvs;
+        vec2 video_luma_uv;
+        vec2 video_chroma_uv;
+        vec2 uv;
         float sprite_idx;
     } vs_out;
 
@@ -65,7 +114,7 @@ namespace akashi {
     }
     
     void main(void){
-        vs_out.vUvs = get_uvs();
+        vs_out.uv = get_uvs();
         vs_out.sprite_idx = 0;
         vec4 t_vertices = vec4(vertices, 1.0);
         poly_main(t_vertices);
@@ -73,12 +122,12 @@ namespace akashi {
     }
 )";
 
-            static constexpr const char* fshader_src = u8R"(
-    #version 420 core
-    uniform sampler2D texture0;
+            static const std::string fshader_src = shader_header_ + uniform_decls_ + u8R"(
 
     in GS_OUT {
-        vec2 vUvs;
+        vec2 video_luma_uv;
+        vec2 video_chroma_uv;
+        vec2 uv;
         float sprite_idx;
     } fs_in;
 
@@ -86,94 +135,70 @@ namespace akashi {
 
     void frag_main(inout vec4 rv);
 
+    vec4 get_color() {
+        switch(int(main_tex_kind)){
+            // // video
+            // case 0: {
+            //     return texture(text_texture0, fs_in.uv);
+            // }
+            case 2: {
+                return texture(text_texture0, fs_in.uv);
+            }
+            case 3: {
+                return texture(image_textures, vec3(fs_in.uv, fs_in.sprite_idx));
+            }
+            case 4: {
+                return texture(unit_texture0, fs_in.uv);
+            }
+            case 5: {
+                return texture(shape_texture0, fs_in.uv);
+            }
+            default:
+                return vec4(0.0);
+        }
+    }
+
     void main(void){
-        vec4 smpColor = texture(texture0, fs_in.vUvs);
+        vec4 smpColor = get_color();
         fragColor = smpColor;
         frag_main(fragColor);
     }
 )";
 
-            static constexpr const char* image_fshader_src = u8R"(
-    #version 420 core
-    uniform sampler2DArray texture_arr;
-    uniform float time;
-
-    in GS_OUT {
-        vec2 vUvs;
-        float sprite_idx;
-    } fs_in;
-
-    out vec4 fragColor;
-
-    void frag_main(inout vec4 rv);
-
-    void main(void){
-        vec4 smpColor = texture(texture_arr, vec3(fs_in.vUvs, fs_in.sprite_idx));
-        fragColor = smpColor;
-        frag_main(fragColor);
-    }
-)";
-
-            static constexpr const char* shape_fshader_src = u8R"(
-    #version 420 core
-
-    in GS_OUT {
-        vec2 vUvs;
-        float sprite_idx;
-    } fs_in;
-
-    out vec4 fragColor;
-
-    void frag_main(inout vec4 rv);
-
-    void main(void){
-        fragColor = vec4(0,0,0,1);
-        frag_main(fragColor);
-    }
-)";
-
-            static constexpr const char* default_user_pshader_src = u8R"(
-    #version 420 core
-    uniform float time;
-    uniform float global_time;
-    uniform float local_duration;
-    uniform float fps;
-    uniform vec2 resolution;
-    uniform vec2 mesh_size;
+            static const std::string default_user_pshader_src =
+                shader_header_ + uniform_decls_ + u8R"(
     void poly_main(inout vec4 position){
     }
 )";
 
-            static constexpr const char* default_user_fshader_src = u8R"(
-    #version 420 core
-    uniform float time;
-    uniform float global_time;
-    uniform float local_duration;
-    uniform float fps;
-    uniform vec2 resolution;
-    uniform vec2 mesh_size;
+            static const std::string default_user_fshader_src =
+                shader_header_ + uniform_decls_ + u8R"(
     void frag_main(inout vec4 _fragColor){
     }
 )";
 
-            static constexpr const char* default_user_gshader_src = u8R"(
+            static const std::string default_user_gshader_src = u8R"(
     #version 420 core
     layout (triangles) in;
     layout (triangle_strip, max_vertices = 3) out;
 
     in VS_OUT {
-        vec2 vUvs;
+        vec2 video_luma_uv;
+        vec2 video_chroma_uv;
+        vec2 uv;
         float sprite_idx;
     } gs_in[];
 
     out GS_OUT {
-        vec2 vUvs;
+        vec2 video_luma_uv;
+        vec2 video_chroma_uv;
+        vec2 uv;
         float sprite_idx;
     } gs_out;
 
     void main() {
         for(int i = 0; i < 3; i++){
-            gs_out.vUvs = gs_in[i].vUvs;
+            gs_out.uv = gs_in[i].uv;
             gs_out.sprite_idx = gs_in[i].sprite_idx;
             gl_Position = gl_in[i].gl_Position;
             EmitVertex();
@@ -208,13 +233,12 @@ namespace akashi {
                 glm::mat4 model_mat = glm::mat4(1.0f);
             };
 
-            inline bool load_shaders(const GLuint prog, const core::LayerType& type,
+            inline bool load_shaders(const GLuint prog, const core::LayerType& /*type*/,
                                      const std::string& u_poly_shader,
                                      const std::string& u_frag_shader) {
-                CHECK_AK_ERROR2(compile_attach_shader(prog, GL_VERTEX_SHADER, vshader_src));
-                CHECK_AK_ERROR2(compile_attach_shader(
-                    prog, GL_FRAGMENT_SHADER,
-                    type == core::LayerType::IMAGE ? image_fshader_src : fshader_src));
+                CHECK_AK_ERROR2(compile_attach_shader(prog, GL_VERTEX_SHADER, vshader_src.c_str()));
+                CHECK_AK_ERROR2(
+                    compile_attach_shader(prog, GL_FRAGMENT_SHADER, fshader_src.c_str()));
 
                 std::string frag_shader =
                     u_frag_shader.empty() ? default_user_fshader_src : u_frag_shader;
@@ -225,8 +249,8 @@ namespace akashi {
                     u_poly_shader.empty() ? default_user_pshader_src : u_poly_shader;
                 CHECK_AK_ERROR2(compile_attach_shader(prog, GL_VERTEX_SHADER, poly_shader.c_str()));
 
-                CHECK_AK_ERROR2(
-                    compile_attach_shader(prog, GL_GEOMETRY_SHADER, default_user_gshader_src));
+                CHECK_AK_ERROR2(compile_attach_shader(prog, GL_GEOMETRY_SHADER,
+                                                      default_user_gshader_src.c_str()));
 
                 CHECK_AK_ERROR2(link_shader(prog));
                 return true;

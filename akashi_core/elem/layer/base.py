@@ -7,7 +7,9 @@ from typing import runtime_checkable
 from akashi_core.elem.context import _GlobalKronContext as gctx
 from akashi_core.elem.uuid import UUID, gen_uuid
 from akashi_core.time import sec, NOT_FIXED_SEC
-from akashi_core.pysl.shader import ShaderCompiler
+from akashi_core.pysl.shader import ShaderCompiler, _frag_shader_header, _poly_shader_header
+from akashi_core.pysl.shader import _TEntryFnOpaque, ShaderMemoType
+
 
 from akashi_core.pysl import _gl
 
@@ -140,6 +142,29 @@ class ShaderField:
 @runtime_checkable
 class HasShaderField(tp.Protocol):
     shader: ShaderField
+
+
+_FragFn = _TEntryFnOpaque[tp.Callable[[frag, _gl.frag_color], None]]
+_PolyFn = _TEntryFnOpaque[tp.Callable[[poly, _gl.poly_pos], None]]
+
+
+@dataclass
+class ShaderTrait:
+
+    _idx: int
+
+    def frag(self, *frag_fns: _FragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'ShaderTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasShaderField, cur_layer).shader.frag_shader = ShaderCompiler(
+                frag_fns, frag, _frag_shader_header, preamble, memo)
+        return self
+
+    def poly(self, *poly_fns: _PolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'ShaderTrait':
+        if (cur_layer := peek_entry(self._idx)):
+            tp.cast(HasShaderField, cur_layer).shader.poly_shader = ShaderCompiler(
+                poly_fns, poly, _poly_shader_header, preamble, memo)
+
+        return self
 
 
 ''' Crop Concept '''

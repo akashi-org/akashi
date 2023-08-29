@@ -13,35 +13,15 @@ from .base import (
     TextureField,
     TextureTrait,
     ShaderField,
+    ShaderTrait,
     LayerField,
     LayerTrait,
     LayerTimeTrait,
 )
-from .base import peek_entry, register_entry, frag, poly, LayerRef
+from .base import peek_entry, register_entry, LayerRef
 from akashi_core.pysl import _gl as gl
-from akashi_core.pysl.shader import ShaderCompiler, _frag_shader_header, _poly_shader_header
-from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque, ShaderMemoType
 
 import math
-
-
-@dataclass
-class ShapeUniform:
-    texture0: tp.Final[gl.uniform[gl.sampler2D]] = gl._uniform_default()
-
-
-@dataclass
-class ShapeFragBuffer(frag, ShapeUniform, gl._LayerFragInput):
-    ...
-
-
-@dataclass
-class ShapePolyBuffer(poly, ShapeUniform, gl._LayerPolyOutput):
-    ...
-
-
-_ShapeFragFn = _TEntryFnOpaque[_NamedEntryFragFn[ShapeFragBuffer]]
-_ShapePolyFn = _TEntryFnOpaque[_NamedEntryPolyFn[ShapePolyBuffer]]
 
 
 @dataclass
@@ -165,23 +145,13 @@ class ShapeTrait(LayerTrait, LayerTimeTrait):
     shape: ShapeLocalTrait = field(init=False)
     transform: TransformTrait = field(init=False)
     tex: TextureTrait = field(init=False)
+    shader: ShaderTrait = field(init=False)
 
     def __post_init__(self):
         self.shape = ShapeLocalTrait(self._idx)
         self.transform = TransformTrait(self._idx)
         self.tex = TextureTrait(self._idx)
-
-    def frag(self, *frag_fns: _ShapeFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'ShapeTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
-            cur_layer.shader.frag_shader = ShaderCompiler(
-                frag_fns, ShapeFragBuffer, _frag_shader_header, preamble, memo)
-        return self
-
-    def poly(self, *poly_fns: _ShapePolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'ShapeTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ShapeEntry):
-            cur_layer.shader.poly_shader = ShaderCompiler(
-                poly_fns, ShapePolyBuffer, _poly_shader_header, preamble, memo)
-        return self
+        self.shader = ShaderTrait(self._idx)
 
 
 @dataclass
@@ -227,14 +197,6 @@ class LineTrait(ShapeTrait):
     line: LineLocalTrait
 
 
-shape_frag = ShapeFragBuffer
-
-shape_poly = ShapePolyBuffer
-
-rect_frag = ShapeFragBuffer
-
-rect_poly = ShapePolyBuffer
-
 RectTraitFn = tp.Callable[[RectTrait], tp.Any]
 
 
@@ -249,10 +211,6 @@ def rect(width: int, height: int, *trait_fns: RectTraitFn) -> LayerRef:
     [tfn(t) for tfn in trait_fns]
     return LayerRef(idx)
 
-
-circle_frag = ShapeFragBuffer
-
-circle_poly = ShapePolyBuffer
 
 CircleTraitFn = tp.Callable[[CircleTrait], tp.Any]
 
@@ -282,10 +240,6 @@ def circle(size: int | tuple[int, int], *trait_fns: CircleTraitFn) -> LayerRef:
     [tfn(t) for tfn in trait_fns]
     return LayerRef(idx)
 
-
-tri_frag = ShapeFragBuffer
-
-tri_poly = ShapePolyBuffer
 
 TriangleTraitFn = tp.Callable[[TriangleTrait], tp.Any]
 
@@ -327,10 +281,6 @@ def tri(size: int | tuple[int, int, float] | tuple[int, int, float, float], *tra
     [tfn(t) for tfn in trait_fns]
     return LayerRef(idx)
 
-
-line_frag = ShapeFragBuffer
-
-line_poly = ShapePolyBuffer
 
 LineTraitFn = tp.Callable[[LineTrait], tp.Any]
 

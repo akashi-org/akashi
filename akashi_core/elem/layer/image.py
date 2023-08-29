@@ -9,37 +9,17 @@ from .base import (
     TextureField,
     TextureTrait,
     ShaderField,
+    ShaderTrait,
     LayerField,
     LayerTrait,
     LayerTimeTrait,
     CropField,
     CropTrait
 )
-from .base import peek_entry, register_entry, frag, poly, LayerRef
+from .base import peek_entry, register_entry, LayerRef
 from akashi_core.pysl import _gl as gl
-from akashi_core.pysl.shader import ShaderCompiler, _frag_shader_header, _poly_shader_header
-from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque, ShaderMemoType
 
 from akashi_core.elem.context import lcenter
-
-
-@dataclass
-class ImageUniform:
-    texture_arr: tp.Final[gl.uniform[gl.sampler2DArray]] = gl._uniform_default()
-
-
-@dataclass
-class ImageFragBuffer(frag, ImageUniform, gl._LayerFragInput):
-    ...
-
-
-@dataclass
-class ImagePolyBuffer(poly, ImageUniform, gl._LayerPolyOutput):
-    ...
-
-
-_ImageFragFn = _TEntryFnOpaque[_NamedEntryFragFn[ImageFragBuffer]]
-_ImagePolyFn = _TEntryFnOpaque[_NamedEntryPolyFn[ImagePolyBuffer]]
 
 
 @dataclass
@@ -75,28 +55,14 @@ class ImageTrait(LayerTrait, LayerTimeTrait):
     transform: TransformTrait = field(init=False)
     crop: CropTrait = field(init=False)
     tex: TextureTrait = field(init=False)
+    shader: ShaderTrait = field(init=False)
 
     def __post_init__(self):
         self.transform = TransformTrait(self._idx)
         self.crop = CropTrait(self._idx)
         self.tex = TextureTrait(self._idx)
+        self.shader = ShaderTrait(self._idx)
 
-    def frag(self, *frag_fns: _ImageFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'ImageTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ImageEntry):
-            cur_layer.shader.frag_shader = ShaderCompiler(
-                frag_fns, ImageFragBuffer, _frag_shader_header, preamble, memo)
-        return self
-
-    def poly(self, *poly_fns: _ImagePolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'ImageTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, ImageEntry):
-            cur_layer.shader.poly_shader = ShaderCompiler(
-                poly_fns, ImagePolyBuffer, _poly_shader_header, preamble, memo)
-        return self
-
-
-image_frag = ImageFragBuffer
-
-image_poly = ImagePolyBuffer
 
 ImageTraitFn = tp.Callable[[ImageTrait], tp.Any]
 

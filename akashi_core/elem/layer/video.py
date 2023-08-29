@@ -17,56 +17,10 @@ from .base import (
     LayerField,
     LayerTrait,
     ShaderField,
+    ShaderTrait,
     _calc_media_duration
 )
-from .base import peek_entry, register_entry, frag, poly, LayerRef
-
-from akashi_core.pysl import _gl as gl
-from akashi_core.pysl.shader import ShaderCompiler, _video_frag_shader_header, _video_poly_shader_header
-from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque, ShaderMemoType
-
-
-@dataclass
-class GS_OUT_V:
-    vLumaUvs: gl.vec2 = gl._default()
-    vChromaUvs: gl.vec2 = gl._default()
-
-
-@dataclass
-class VideoFragInput:
-    fs_in: tp.Final['gl.in_t'[GS_OUT_V]] = gl._in_t_default()
-
-
-@dataclass
-class VS_OUT_V:
-    vLumaUvs: gl.vec2 = gl._default()
-    vChromaUvs: gl.vec2 = gl._default()
-
-
-@dataclass
-class VideoPolyOutput:
-    vs_out: 'gl.out_t'[VS_OUT_V] = gl._out_t_default()
-
-
-@dataclass
-class VideoUniform:
-    textureY: tp.Final[gl.uniform[gl.sampler2D]] = gl._uniform_default()
-    textureCb: tp.Final[gl.uniform[gl.sampler2D]] = gl._uniform_default()
-    textureCr: tp.Final[gl.uniform[gl.sampler2D]] = gl._uniform_default()
-
-
-@dataclass
-class VideoFragBuffer(frag, VideoUniform, VideoFragInput):
-    ...
-
-
-@dataclass
-class VideoPolyBuffer(poly, VideoUniform, VideoPolyOutput):
-    ...
-
-
-_VideoFragFn = _TEntryFnOpaque[_NamedEntryFragFn[VideoFragBuffer]]
-_VideoPolyFn = _TEntryFnOpaque[_NamedEntryPolyFn[VideoPolyBuffer]]
+from .base import peek_entry, register_entry, LayerRef
 
 
 @dataclass
@@ -114,29 +68,15 @@ class VideoTrait(LayerTrait):
     media: MediaTrait = field(init=False)
     transform: TransformTrait = field(init=False)
     tex: TextureTrait = field(init=False)
+    shader: ShaderTrait = field(init=False)
 
     def __post_init__(self):
         self.video = VideoLocalTrait(self._idx)
         self.media = MediaTrait(self._idx)
-        self.tex = TextureTrait(self._idx)
         self.transform = TransformTrait(self._idx)
+        self.tex = TextureTrait(self._idx)
+        self.shader = ShaderTrait(self._idx)
 
-    def frag(self, *frag_fns: _VideoFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'VideoTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.shader.frag_shader = ShaderCompiler(
-                frag_fns, VideoFragBuffer, _video_frag_shader_header, preamble, memo)
-        return self
-
-    def poly(self, *poly_fns: _VideoPolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'VideoTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, VideoEntry):
-            cur_layer.shader.poly_shader = ShaderCompiler(
-                poly_fns, VideoPolyBuffer, _video_poly_shader_header, preamble, memo)
-        return self
-
-
-video_frag = VideoFragBuffer
-
-video_poly = VideoPolyBuffer
 
 VideoTraitFn = tp.Callable[[VideoTrait], tp.Any]
 

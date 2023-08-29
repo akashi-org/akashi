@@ -14,33 +14,13 @@ from .base import (
     TextureField,
     TextureTrait,
     ShaderField,
+    ShaderTrait,
     LayerField,
     LayerTrait,
-    LayerTimeTrait
+    LayerTimeTrait,
 )
-from .base import peek_entry, register_entry, frag, poly, LayerRef
+from .base import peek_entry, register_entry, LayerRef
 from akashi_core.pysl import _gl as gl
-from akashi_core.pysl.shader import ShaderCompiler, _frag_shader_header, _poly_shader_header
-from akashi_core.pysl.shader import _NamedEntryFragFn, _NamedEntryPolyFn, _TEntryFnOpaque, ShaderMemoType
-
-
-@dataclass
-class TextUniform:
-    texture0: tp.Final[gl.uniform[gl.sampler2D]] = gl._uniform_default()
-
-
-@dataclass
-class TextFragBuffer(frag, TextUniform, gl._LayerFragInput):
-    ...
-
-
-@dataclass
-class TextPolyBuffer(poly, TextUniform, gl._LayerPolyOutput):
-    ...
-
-
-_TextFragFn = _TEntryFnOpaque[_NamedEntryFragFn[TextFragBuffer]]
-_TextPolyFn = _TEntryFnOpaque[_NamedEntryPolyFn[TextPolyBuffer]]
 
 
 TextAlign = tp.Literal['left', 'center', 'right']
@@ -161,28 +141,14 @@ class TextTrait(LayerTrait, LayerTimeTrait):
     text: TextLocalTrait = field(init=False)
     transform: TransformTrait = field(init=False)
     tex: TextureTrait = field(init=False)
+    shader: ShaderTrait = field(init=False)
 
     def __post_init__(self):
         self.text = TextLocalTrait(self._idx)
-        self.tex = TextureTrait(self._idx)
         self.transform = TransformTrait(self._idx)
+        self.tex = TextureTrait(self._idx)
+        self.shader = ShaderTrait(self._idx)
 
-    def frag(self, *frag_fns: _TextFragFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'TextTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.shader.frag_shader = ShaderCompiler(
-                frag_fns, TextFragBuffer, _frag_shader_header, preamble, memo)
-        return self
-
-    def poly(self, *poly_fns: _TextPolyFn, preamble: tuple[str, ...] = tuple(), memo: ShaderMemoType = None) -> 'TextTrait':
-        if (cur_layer := peek_entry(self._idx)) and isinstance(cur_layer, TextEntry):
-            cur_layer.shader.poly_shader = ShaderCompiler(
-                poly_fns, TextPolyBuffer, _poly_shader_header, preamble, memo)
-        return self
-
-
-text_frag = TextFragBuffer
-
-text_poly = TextPolyBuffer
 
 TextTraitFn = tp.Callable[[TextTrait], tp.Any]
 

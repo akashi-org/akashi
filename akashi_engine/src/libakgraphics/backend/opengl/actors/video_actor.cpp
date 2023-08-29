@@ -25,8 +25,10 @@ static constexpr const char* vshader_src = u8R"(
     layout (location = 2) in vec2 chromaUvs;
 
     out VS_OUT {
-        vec2 vLumaUvs;
-        vec2 vChromaUvs;
+        vec2 video_luma_uv;
+        vec2 video_chroma_uv;
+        vec2 uv;
+        float sprite_idx;
     } vs_out;
 
     void poly_main(inout vec4 pos);
@@ -39,8 +41,8 @@ static constexpr const char* vshader_src = u8R"(
     }
     
     void main(void){
-        vs_out.vLumaUvs = get_uvs(lumaUvs);
-        vs_out.vChromaUvs = get_uvs(chromaUvs);
+        vs_out.video_luma_uv = get_uvs(lumaUvs);
+        vs_out.video_chroma_uv = get_uvs(chromaUvs);
         vec4 t_vertices = vec4(vertices, 1.0);
         poly_main(t_vertices);
         gl_Position = mvpMatrix * t_vertices;
@@ -95,20 +97,22 @@ static constexpr const char* fshader_src = u8R"(
 
 static constexpr const char* color_conv_fshader_sw = u8R"(
     #version 420 core
-    uniform sampler2D textureY;
-    uniform sampler2D textureCb;
-    uniform sampler2D textureCr;
+    uniform sampler2D video_textureY;
+    uniform sampler2D video_textureCb;
+    uniform sampler2D video_textureCr;
 
     in GS_OUT {
-        vec2 vLumaUvs;
-        vec2 vChromaUvs;
+        vec2 video_luma_uv;
+        vec2 video_chroma_uv;
+        vec2 uv;
+        float sprite_idx;
     } fs_in;
 
     vec3 get_yuv(){
         return vec3(
-            texture(textureY, fs_in.vLumaUvs).r,
-            texture(textureCb, fs_in.vChromaUvs).r,
-            texture(textureCr, fs_in.vChromaUvs).r
+            texture(video_textureY, fs_in.video_luma_uv).r,
+            texture(video_textureCb, fs_in.video_chroma_uv).r,
+            texture(video_textureCr, fs_in.video_chroma_uv).r
         );
     }
 
@@ -116,19 +120,21 @@ static constexpr const char* color_conv_fshader_sw = u8R"(
 
 static constexpr const char* color_conv_fshader_vaapi = u8R"(
     #version 420 core
-    uniform sampler2D textureY;
-    uniform sampler2D textureCb;
+    uniform sampler2D video_textureY;
+    uniform sampler2D video_textureCb;
 
     in GS_OUT {
-        vec2 vLumaUvs;
-        vec2 vChromaUvs;
+        vec2 video_luma_uv;
+        vec2 video_chroma_uv;
+        vec2 uv;
+        float sprite_idx;
     } fs_in;
 
     vec3 get_yuv(){
         return vec3(
-            texture(textureY, fs_in.vLumaUvs).r,
-            texture(textureCb, fs_in.vLumaUvs).r,
-            texture(textureCb, fs_in.vLumaUvs).g
+            texture(video_textureY, fs_in.video_luma_uv).r,
+            texture(video_textureCb, fs_in.video_luma_uv).r,
+            texture(video_textureCb, fs_in.video_luma_uv).g
         );
     }
 )";
@@ -160,19 +166,23 @@ static constexpr const char* default_user_gshader_src = u8R"(
     layout (triangle_strip, max_vertices = 3) out;
 
     in VS_OUT {
-        vec2 vLumaUvs;
-        vec2 vChromaUvs;
+        vec2 video_luma_uv;
+        vec2 video_chroma_uv;
+        vec2 uv;
+        float sprite_idx;
     } gs_in[];
 
     out GS_OUT {
-        vec2 vLumaUvs;
-        vec2 vChromaUvs;
+        vec2 video_luma_uv;
+        vec2 video_chroma_uv;
+        vec2 uv;
+        float sprite_idx;
     } gs_out;
     
     void main() { 
         for(int i = 0; i < 3; i++){
-            gs_out.vLumaUvs = gs_in[i].vLumaUvs; 
-            gs_out.vChromaUvs = gs_in[i].vChromaUvs;
+            gs_out.video_luma_uv = gs_in[i].video_luma_uv; 
+            gs_out.video_chroma_uv = gs_in[i].video_chroma_uv;
             gl_Position = gl_in[i].gl_Position;
             EmitVertex();
         }
@@ -285,9 +295,9 @@ namespace akashi {
             CHECK_AK_ERROR2(this->load_shaders());
 
             m_pass->mvp_loc = glGetUniformLocation(m_pass->prog, "mvpMatrix");
-            m_pass->texY_loc = glGetUniformLocation(m_pass->prog, "textureY");
-            m_pass->texCb_loc = glGetUniformLocation(m_pass->prog, "textureCb");
-            m_pass->texCr_loc = glGetUniformLocation(m_pass->prog, "textureCr");
+            m_pass->texY_loc = glGetUniformLocation(m_pass->prog, "video_textureY");
+            m_pass->texCb_loc = glGetUniformLocation(m_pass->prog, "video_textureCb");
+            m_pass->texCr_loc = glGetUniformLocation(m_pass->prog, "video_textureCr");
             m_pass->time_loc = glGetUniformLocation(m_pass->prog, "time");
             m_pass->global_time_loc = glGetUniformLocation(m_pass->prog, "global_time");
             m_pass->local_duration_loc = glGetUniformLocation(m_pass->prog, "local_duration");
