@@ -11,6 +11,18 @@
 #include <pybind11/stl.h>
 namespace py = pybind11;
 
+#define TRACE_TRAIT_FIELD(trait_name)                                                              \
+    do {                                                                                           \
+        const std::string attr_name = std::string("t_") + std::string(#trait_name) + "s";          \
+        const auto& fields_obj = elem.attr(attr_name.c_str()).cast<py::list>();                    \
+        ctx.t_##trait_name##s.resize(fields_obj.size());                                           \
+        ctx.t_##trait_name##s.shrink_to_fit();                                                     \
+        for (size_t i = 0; i < fields_obj.size(); i++) {                                           \
+            ctx.t_##trait_name##s[i] =                                                             \
+                parse_##trait_name##_tfield(fields_obj[i].cast<py::object>());                     \
+        }                                                                                          \
+    } while (0);
+
 namespace akashi {
     namespace eval {
 
@@ -34,10 +46,8 @@ namespace akashi {
             std::vector<unsigned long> unit_layer_indices;
             for (const auto& layer_idx : layer_indices) {
                 const auto& layer = ctx.layer_proxies[layer_idx];
-
                 plane_ctx.layer_indices.push_back(layer_idx);
-
-                if (static_cast<core::LayerType>(layer.layer_ctx().type) == core::LayerType::UNIT) {
+                if (layer.layer_ctx().t_unit) {
                     unit_layer_indices.push_back(layer_idx);
                 }
             }
@@ -45,11 +55,11 @@ namespace akashi {
             plane_proxies.push_back(PlaneProxy{plane_ctx});
 
             for (const auto& unit_layer_idx : unit_layer_indices) {
-                const auto& unit_layer_ctx =
-                    ctx.layer_proxies[unit_layer_idx].layer_ctx().unit_layer_ctx;
-                for (const auto& rest_plane_ctx :
-                     trace_plane_context(unit_layer_ctx.layer_indices, ctx, level + 1, atom_idx,
-                                         nullptr, &unit_layer_idx)) {
+                const auto& unit_layer = ctx.layer_proxies[unit_layer_idx].layer_ctx();
+                assert(unit_layer.t_unit);
+                const auto& next_layer_indices = unit_layer.t_unit->layer_indices;
+                for (const auto& rest_plane_ctx : trace_plane_context(
+                         next_layer_indices, ctx, level + 1, atom_idx, nullptr, &unit_layer_idx)) {
                     plane_proxies.push_back(rest_plane_ctx);
                 }
             }
@@ -58,10 +68,35 @@ namespace akashi {
         }
 
         void trace_kron_context(const pybind11::object& elem, GlobalContext& ctx) {
-            for (const auto& layer_obj : elem.attr("layers").cast<py::list>()) {
-                auto layer_ctx = parse_layer_context(layer_obj.cast<py::object>());
-                ctx.layer_proxies.push_back(LayerProxy{layer_ctx});
+            TRACE_TRAIT_FIELD(transform);
+            TRACE_TRAIT_FIELD(texture);
+            TRACE_TRAIT_FIELD(shader);
+            TRACE_TRAIT_FIELD(video);
+            TRACE_TRAIT_FIELD(audio);
+            TRACE_TRAIT_FIELD(image);
+            TRACE_TRAIT_FIELD(text);
+            TRACE_TRAIT_FIELD(text_style);
+            TRACE_TRAIT_FIELD(rect);
+            TRACE_TRAIT_FIELD(circle);
+            TRACE_TRAIT_FIELD(tri);
+            TRACE_TRAIT_FIELD(line);
+            TRACE_TRAIT_FIELD(unit);
+
+            // Layer parsing needs to be done after trait parsing is completely finished
+            {
+                const auto& layers_obj = elem.attr("layers").cast<py::list>();
+                ctx.layer_proxies.resize(layers_obj.size());
+                ctx.layer_proxies.shrink_to_fit();
+                for (size_t i = 0; i < layers_obj.size(); i++) {
+                    const auto& layer_ctx =
+                        parse_layer_context(ctx, layers_obj[i].cast<py::object>());
+                    ctx.layer_proxies[i] = LayerProxy{layer_ctx};
+                }
             }
+
+            // [XXX] After this, the following conditions must be satisfied.
+            // 1. The size of ctx.layer_proxies must not be changed
+            // 2. The element of ctx.layer_proxies must not be deleted
 
             for (const auto& atom : elem.attr("atoms").cast<py::list>()) {
                 core::AtomStaticProfile atom_profile = {};

@@ -1,4 +1,4 @@
-#include "./video_actor_texture.h"
+#include "./layer_video_texture.h"
 
 #include "../render_context.h"
 #include "../fbo.h"
@@ -39,7 +39,6 @@ namespace akashi {
         }
 
         bool VideoTexture::create(const OGLRenderContext& ctx,
-                                  const core::VideoLayerContext& vlayer_ctx,
                                   core::owned_ptr<buffer::AVBufferData>&& buf_data) {
             m_buf_data = std::move(buf_data);
             this->update_texture_info(*m_buf_data);
@@ -50,7 +49,7 @@ namespace akashi {
             }
 
             m_decode_method = m_buf_data->prop().decode_method;
-            return this->create_inner(m_decode_method, ctx, vlayer_ctx, *m_buf_data);
+            return this->create_inner(m_decode_method, ctx, *m_buf_data);
         }
 
         bool VideoTexture::destroy() {
@@ -67,7 +66,6 @@ namespace akashi {
         }
 
         bool VideoTexture::update(const OGLRenderContext& ctx,
-                                  const core::VideoLayerContext& vlayer_ctx,
                                   core::owned_ptr<buffer::AVBufferData>&& buf_data) {
             if (m_decode_method == VideoDecodeMethod::VAAPI) {
                 // [XXX] must be called before updating m_buf_data
@@ -76,7 +74,7 @@ namespace akashi {
             m_buf_data = std::move(buf_data);
             this->update_texture_info(*m_buf_data);
 
-            return this->create_inner(m_decode_method, ctx, vlayer_ctx, *m_buf_data);
+            return this->create_inner(m_decode_method, ctx, *m_buf_data);
         }
 
         void VideoTexture::use_textures(const std::array<GLuint, 3>& tex_locs) {
@@ -89,17 +87,16 @@ namespace akashi {
 
         bool VideoTexture::create_inner(const core::VideoDecodeMethod& decode_method,
                                         const OGLRenderContext& ctx,
-                                        const core::VideoLayerContext& vlayer_ctx,
                                         const buffer::AVBufferData& buf_data) {
             switch (decode_method) {
                 case VideoDecodeMethod::SW: {
-                    return this->create_inner_sw(ctx, vlayer_ctx, buf_data);
+                    return this->create_inner_sw(ctx, buf_data);
                 }
                 case VideoDecodeMethod::VAAPI: {
-                    return this->create_inner_vaapi(ctx, vlayer_ctx, buf_data);
+                    return this->create_inner_vaapi(ctx, buf_data);
                 }
                 case VideoDecodeMethod::VAAPI_COPY: {
-                    return this->create_inner_vaapi_copy(ctx, vlayer_ctx, buf_data);
+                    return this->create_inner_vaapi_copy(ctx, buf_data);
                 }
                 default: {
                     return false;
@@ -108,7 +105,6 @@ namespace akashi {
         }
 
         bool VideoTexture::create_inner_sw(const OGLRenderContext& ctx,
-                                           const core::VideoLayerContext& vlayer_ctx,
                                            const buffer::AVBufferData& buf_data) {
             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
             for (size_t i = 0; i < m_textures.size(); i++) {
@@ -149,7 +145,6 @@ namespace akashi {
         }
 
         bool VideoTexture::create_inner_vaapi(const OGLRenderContext& ctx,
-                                              const core::VideoLayerContext& vlayer_ctx,
                                               const buffer::AVBufferData& buf_data) {
             if (auto status = vaExportSurfaceHandle(
                     buf_data.prop().va_display, buf_data.prop().va_surface_id,
@@ -263,7 +258,6 @@ namespace akashi {
         }
 
         bool VideoTexture::create_inner_vaapi_copy(const OGLRenderContext& ctx,
-                                                   const core::VideoLayerContext& vlayer_ctx,
                                                    const buffer::AVBufferData& buf_data) {
             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
             for (size_t i = 0; i < 2; i++) {

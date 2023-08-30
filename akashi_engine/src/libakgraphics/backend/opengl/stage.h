@@ -17,7 +17,7 @@ namespace akashi {
 
         class OGLRenderContext;
         struct RenderParams;
-        class Actor;
+        class LayerObject;
         class Camera;
 
         class Stage;
@@ -43,7 +43,8 @@ namespace akashi {
             void set_defunct(bool defunct) { m_is_defunct = defunct; }
 
           private:
-            bool add_layer(OGLRenderContext& ctx, const core::LayerContext& layer_ctx);
+            bool add_layer(OGLRenderContext& ctx, const core::LayerContext& layer_ctx,
+                           const core::Rational& pts);
 
           private:
             FBO m_fbo;
@@ -55,8 +56,8 @@ namespace akashi {
             bool m_initial_render = true;
             bool m_is_defunct = false;
 
-            std::vector<Actor*> m_actors;
-            std::unordered_map<std::string, Actor*> m_actor_map;
+            std::vector<LayerObject*> m_layer_objects;
+            std::unordered_map<std::string, LayerObject*> m_layer_object_map;
         };
 
         struct StageAux;

@@ -40,7 +40,7 @@ namespace akashi {
 
             core::Rational fps();
 
-            std::array<int, 2> resolution();
+            std::array<long, 2> resolution();
 
             std::string default_font_path();
 

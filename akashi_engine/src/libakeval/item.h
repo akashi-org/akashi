@@ -18,6 +18,8 @@ namespace akashi {
 
         class LayerProxy final {
           public:
+            explicit LayerProxy() = default;
+
             explicit LayerProxy(const core::LayerContext& layer_ctx);
 
             virtual ~LayerProxy();
@@ -72,6 +74,21 @@ namespace akashi {
         struct GlobalContext {
             std::vector<AtomProxy> atom_proxies;
             std::vector<LayerProxy> layer_proxies;
+
+            std::vector<core::TransformTField> t_transforms;
+            std::vector<core::TextureTField> t_textures;
+            std::vector<core::ShaderTField> t_shaders;
+            std::vector<core::VideoTField> t_videos;
+            std::vector<core::AudioTField> t_audios;
+            std::vector<core::ImageTField> t_images;
+            std::vector<core::TextTField> t_texts;
+            std::vector<core::TextStyleTField> t_text_styles;
+            std::vector<core::RectTField> t_rects;
+            std::vector<core::CircleTField> t_circles;
+            std::vector<core::TriTField> t_tris;
+            std::vector<core::LineTField> t_lines;
+            std::vector<core::UnitTField> t_units;
+
             core::Rational sec_per_frame;
             core::Rational duration;
             std::string uuid;

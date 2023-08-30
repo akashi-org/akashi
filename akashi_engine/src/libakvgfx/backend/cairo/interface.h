@@ -25,8 +25,8 @@ namespace akashi {
             uint8_t* m_buffer = nullptr;
         };
 
-        core::owned_ptr<vgfx::Surface>
-        cairo_create_surface(const SurfaceEntry& entry, const core::ShapeLayerContext& shape_ctx);
+        core::owned_ptr<vgfx::Surface> cairo_create_surface(const SurfaceEntry& entry,
+                                                            const core::LayerContext& layer_ctx);
 
     }
 }

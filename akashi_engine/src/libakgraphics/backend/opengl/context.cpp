@@ -8,7 +8,6 @@
 #include "./core/texture.h"
 #include "./render_context.h"
 #include "./stage.h"
-#include "./actors/actor.h"
 #include "./fbo.h"
 
 #include "./hwaccel/hwaccel.h"

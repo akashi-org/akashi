@@ -299,7 +299,7 @@ namespace akashi {
                     media_type == AVMediaType::AVMEDIA_TYPE_AUDIO) {
                     // skip a video stream if audio only
                     if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO) {
-                        if (m_input_src.layer_prof.type == core::LayerType::AUDIO) {
+                        if (m_input_src.layer_prof.type & core::MediaFlagAudio) {
                             m_input_src.dec_streams[i].is_active = false;
                             continue;
                         }

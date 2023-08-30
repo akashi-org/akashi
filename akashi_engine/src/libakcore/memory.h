@@ -1,5 +1,8 @@
 #pragma once
 
+#include "./utils.h"
+#include "./logger.h"
+
 #include <memory>
 #include <stdexcept>
 
@@ -43,6 +46,8 @@ namespace akashi {
           private:
             void validate() const noexcept(false) {
                 if (!m_ptr) {
+                    AKLOG_ERRORN("ptr is null");
+                    AKLOG_ERROR("{}", core::collect_stacktrace(10).c_str());
                     throw std::runtime_error("borrowed_ptr::validate(): ptr is null");
                 }
             }

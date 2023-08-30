@@ -11,10 +11,25 @@ from akashi_core.color import color_value
 import sys
 
 if TYPE_CHECKING:
-    from .layer.base import LayerField, HasMediaField
-    from .layer.unit import UnitEntry
     ElemFn = Callable[[], None]
     # ConfFn = Callable[[], AKConf]
+
+    from .layer import (
+        LayerField,
+        TransformField,
+        TextureField,
+        ShaderField,
+        VideoField,
+        AudioField,
+        ImageField,
+        TextField,
+        TextStyleField,
+        RectField,
+        CircleField,
+        TriField,
+        LineField
+    )
+    from .layer.unit import UnitField
 
 
 @dataclass
@@ -24,7 +39,24 @@ class KronContext:
     atoms: list['AtomEntry'] = field(default_factory=list, init=False)
     layers: list['LayerField'] = field(default_factory=list, init=False)
 
+    t_transforms: list['TransformField'] = field(default_factory=list, init=False)
+    t_textures: list['TextureField'] = field(default_factory=list, init=False)
+    t_shaders: list['ShaderField'] = field(default_factory=list, init=False)
+    t_videos: list['VideoField'] = field(default_factory=list, init=False)
+    t_audios: list['AudioField'] = field(default_factory=list, init=False)
+    t_images: list['ImageField'] = field(default_factory=list, init=False)
+    t_texts: list['TextField'] = field(default_factory=list, init=False)
+    t_text_styles: list['TextStyleField'] = field(default_factory=list, init=False)
+
+    t_rects: list['RectField'] = field(default_factory=list, init=False)
+    t_circles: list['CircleField'] = field(default_factory=list, init=False)
+    t_tris: list['TriField'] = field(default_factory=list, init=False)
+    t_lines: list['LineField'] = field(default_factory=list, init=False)
+
+    t_units: list['UnitField'] = field(default_factory=list, init=False)
+
     _cur_unit_ids: list[int] = field(default_factory=list, init=False)
+    _cur_layer_id: int = -1
 
     @staticmethod
     def init(config: AKConf) -> KronContext:
@@ -158,7 +190,9 @@ def _cur_local_size() -> tuple[int, int]:
     if len(unit_ids) == 0:
         return cur_ctx.config.video.resolution
     else:
-        return cast('UnitEntry', cur_ctx.layers[unit_ids[-1]]).unit.fb_size
+        cur_unit_layer = cur_ctx.layers[unit_ids[-1]]
+        assert cur_unit_layer.t_unit != -1
+        return cur_ctx.t_units[cur_unit_layer.t_unit].fb_size
 
 
 def width() -> int:

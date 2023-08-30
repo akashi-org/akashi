@@ -4,12 +4,28 @@
 #include <libakcore/element.h>
 #include <libakcore/logger.h>
 
+using namespace akashi::core;
+
 namespace akashi {
     namespace eval {
 
         LayerProxy::LayerProxy(const core::LayerContext& layer_ctx) : m_layer_ctx(layer_ctx){};
 
-        LayerProxy::~LayerProxy(){};
+        LayerProxy::~LayerProxy() {
+            m_layer_ctx.t_transform = borrowed_ptr<const TransformTField>(nullptr);
+            m_layer_ctx.t_texture = borrowed_ptr<const TextureTField>(nullptr);
+            m_layer_ctx.t_shader = borrowed_ptr<const ShaderTField>(nullptr);
+            m_layer_ctx.t_video = borrowed_ptr<const VideoTField>(nullptr);
+            m_layer_ctx.t_audio = borrowed_ptr<const AudioTField>(nullptr);
+            m_layer_ctx.t_image = borrowed_ptr<const ImageTField>(nullptr);
+            m_layer_ctx.t_text = borrowed_ptr<const TextTField>(nullptr);
+            m_layer_ctx.t_text_style = borrowed_ptr<const TextStyleTField>(nullptr);
+            m_layer_ctx.t_rect = borrowed_ptr<const RectTField>(nullptr);
+            m_layer_ctx.t_circle = borrowed_ptr<const CircleTField>(nullptr);
+            m_layer_ctx.t_tri = borrowed_ptr<const TriTField>(nullptr);
+            m_layer_ctx.t_line = borrowed_ptr<const LineTField>(nullptr);
+            m_layer_ctx.t_unit = borrowed_ptr<const UnitTField>(nullptr);
+        };
 
         core::LayerContext LayerProxy::eval(const KronArg& arg,
                                             const core::Rational& base_time) const {
@@ -32,25 +48,19 @@ namespace akashi {
             computed.from = m_layer_ctx.from + base_time;
             computed.layer_local_offset = m_layer_ctx.layer_local_offset;
             computed.to = m_layer_ctx.to + base_time;
-            computed.type = static_cast<core::LayerType>(m_layer_ctx.type);
-            switch (computed.type) {
-                case core::LayerType::VIDEO: {
-                    computed.src = m_layer_ctx.video_layer_ctx.src;
-                    computed.start = m_layer_ctx.video_layer_ctx.start;
-                    computed.end = m_layer_ctx.video_layer_ctx.end;
-                    computed.gain = m_layer_ctx.video_layer_ctx.gain;
-                    break;
-                }
-                case core::LayerType::AUDIO: {
-                    computed.src = m_layer_ctx.audio_layer_ctx.src;
-                    computed.start = m_layer_ctx.audio_layer_ctx.start;
-                    computed.end = m_layer_ctx.audio_layer_ctx.end;
-                    computed.gain = m_layer_ctx.audio_layer_ctx.gain;
-                    break;
-                }
-                default: {
-                    break;
-                }
+            computed.type = core::get_media_type(m_layer_ctx);
+
+            core::BaseMediaTField media_field;
+            if (computed.type & core::MediaFlagVideo) {
+                media_field = *m_layer_ctx.t_video;
+            } else if (computed.type & core::MediaFlagAudio) {
+                media_field = *m_layer_ctx.t_audio;
+            }
+            if (computed.type > 0) {
+                computed.src = media_field.src;
+                computed.start = media_field.start;
+                computed.end = media_field.end;
+                computed.gain = media_field.gain;
             }
             return computed;
         }
@@ -102,7 +112,6 @@ namespace akashi {
             plane_ctx.base = [](core::borrowed_ptr<eval::GlobalContext> gctx,
                                 const core::PlaneContext& inner_plane_ctx) {
                 core::LayerContext base;
-                base.type = -1;
                 if (!gctx) {
                     AKLOG_ERRORN("gctx is null");
                     return base;
@@ -123,8 +132,8 @@ namespace akashi {
             std::vector<core::LayerProfile> avlayer_profiles;
             for (const auto& layer_idx : m_plane_ctx.layer_indices) {
                 const auto& layer_proxy = gctx.layer_proxies[layer_idx];
-                auto layer_type = static_cast<core::LayerType>(layer_proxy.layer_ctx().type);
-                if (layer_type == core::LayerType::VIDEO || layer_type == core::LayerType::AUDIO) {
+                auto layer_type = core::get_media_type(layer_proxy.layer_ctx());
+                if (layer_type > 0) {
                     avlayer_profiles.push_back(layer_proxy.computed_profile(base_time));
                 }
             }

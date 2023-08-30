@@ -5,7 +5,7 @@
 
 namespace akashi {
     namespace core {
-        struct ShapeLayerContext;
+        struct LayerContext;
     }
     namespace vgfx {
 
@@ -22,7 +22,7 @@ namespace akashi {
         };
 
         core::owned_ptr<vgfx::Surface> create_surface(const SurfaceEntry& entry,
-                                                      const core::ShapeLayerContext& shape_ctx);
+                                                      const core::LayerContext& layer_ctx);
 
     }
 }

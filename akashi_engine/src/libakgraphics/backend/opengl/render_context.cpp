@@ -70,8 +70,8 @@ namespace akashi {
             return fps;
         }
 
-        std::array<int, 2> OGLRenderContext::resolution() {
-            std::array<int, 2> res{0, 0};
+        std::array<long, 2> OGLRenderContext::resolution() {
+            std::array<long, 2> res{0, 0};
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 res[0] = m_state->m_prop.video_width;

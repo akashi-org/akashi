@@ -6,20 +6,13 @@ from typing import runtime_checkable, overload
 import copy
 
 from .base import (
-    ShaderField,
+    _BaseTrait,
+    _BaseTraitField,
+    LayerRef,
     LayerField,
-    LayerTrait,
-    HasTransformField,
-    HasMediaField,
-    HasShaderField,
-    TransformField,
-    TransformTrait,
-    TextureField,
-    TextureTrait,
-    ShaderField,
-    ShaderTrait,
+    register_layer_field,
 )
-from .base import register_entry, peek_entry, HasMediaField, LayerRef
+
 from akashi_core.pysl import _gl as gl
 from akashi_core.time import sec, NOT_FIXED_SEC
 from akashi_core.probe import get_duration, g_resource_map
@@ -30,10 +23,9 @@ from akashi_core.elem.context import lcenter as ak_lcenter
 from akashi_core.color import Color as ColorEnum
 from akashi_core.color import color_value
 
-from akashi_core.elem.layout import LayoutFn, LayoutInfo, LayoutLayerContext
-
 if tp.TYPE_CHECKING:
     from akashi_core.elem.context import KronContext
+    from .media import _BaseMediaField
 
 
 _FrameFnParams = tp.ParamSpec('_FrameFnParams')
@@ -59,146 +51,43 @@ def frame(kind: _T_FrameKind = 'spatial') -> tp.Callable[[tp.Callable[_FrameFnPa
 
 
 @dataclass
-class UnitLocalField:
+class UnitField(_BaseTraitField):
     layer_indices: list[int] = field(default_factory=list, init=False)
     fb_size: tuple[int, int] = field(default=(0, 0), init=False)
     bg_color: str = "#00000000"  # transparent
     _start: sec = field(default_factory=lambda: sec(0))
     _end: sec = field(default_factory=lambda: sec(-1))
-    _layout_fn: LayoutFn | None = None
     _span_cnt: int | None = None
     _span_dur: sec | None = None
 
 
-@runtime_checkable
-class HasUnitLocalField(tp.Protocol):
-    unit: UnitLocalField
-
-
 @dataclass
-class UnitEntry(LayerField):
+class UnitTrait(_BaseTrait):
 
-    unit: UnitLocalField = field(init=False)
-    transform: TransformField = field(init=False)
-    tex: TextureField = field(init=False)
-    shader: ShaderField = field(init=False)
+    _name: str = "unit"
 
-    def __post_init__(self):
-        self.unit = UnitLocalField()
-        self.transform = TransformField()
-        self.tex = TextureField()
-        self.shader = ShaderField()
-
-
-@dataclass
-class SpatialUnitTrait(LayerTrait):
-
-    transform: TransformTrait = field(init=False)
-    tex: TextureTrait = field(init=False)
-    shader: ShaderTrait = field(init=False)
-
-    def __post_init__(self):
-        self.tex = TextureTrait(self._idx)
-        self.transform = TransformTrait(self._idx)
-        self.shader = ShaderTrait(self._idx)
-
-    def layout(self, layout_fn: LayoutFn) -> 'SpatialUnitTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasUnitLocalField, cur_layer).unit._layout_fn = layout_fn
+    def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> tp.Self:
+        self._priv.get_trait_field(self).bg_color = color_value(color)
         return self
 
-    def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'SpatialUnitTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasUnitLocalField, cur_layer).unit.bg_color = color_value(color)
+    def fb_size(self, width: int, height: int, copy_to_layer_size: bool = True) -> tp.Self:
+        new_fb_size = (width, height)
+        self._priv.get_trait_field(self).fb_size = new_fb_size
+        if copy_to_layer_size:
+            # [XXX] Any ways to avoid directly accessing the other trait's field?
+            transform_field = self._priv._get_transform_field("DO NOT CALL THIS! THIS IS FOR PRIVATE USAGE ONLY!")
+            transform_field.layer_size = new_fb_size
         return self
 
-    def fb_size(self, width: int, height: int, copy_to_layer_size: bool = True) -> 'SpatialUnitTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasUnitLocalField, cur_layer).unit.fb_size = (width, height)
-            if copy_to_layer_size:
-                self.transform.layer_size(*tp.cast(HasUnitLocalField, cur_layer).unit.fb_size)
+    def range(self, start: sec | float, end: sec | float = -1) -> tp.Self:
+        self._priv.get_trait_field(self)._start = sec(start)
+        self._priv.get_trait_field(self)._end = sec(end)
         return self
 
-    def range(self, start: sec | float, end: sec | float = -1) -> 'SpatialUnitTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasUnitLocalField, cur_layer).unit._start = sec(start)
-            tp.cast(HasUnitLocalField, cur_layer).unit._end = sec(end)
+    def span_cnt(self, count: int) -> tp.Self:
+        self._priv.get_trait_field(self)._span_cnt = count
+        self._priv.get_trait_field(self)._span_dur = None
         return self
-
-    def span_cnt(self, count: int) -> 'SpatialUnitTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasUnitLocalField, cur_layer).unit._span_cnt = count
-            tp.cast(HasUnitLocalField, cur_layer).unit._span_dur = None
-        return self
-
-
-@dataclass
-class TimelineUnitTrait(LayerTrait):
-
-    transform: TransformTrait = field(init=False)
-    shader: ShaderTrait = field(init=False)
-
-    def __post_init__(self):
-        self.transform = TransformTrait(self._idx)
-        self.shader = ShaderTrait(self._idx)
-
-    def bg_color(self, color: tp.Union[str, 'ColorEnum']) -> 'TimelineUnitTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasUnitLocalField, cur_layer).unit.bg_color = color_value(color)
-        return self
-
-    def fb_size(self, width: int, height: int, copy_to_layer_size: bool = True) -> 'TimelineUnitTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasUnitLocalField, cur_layer).unit.fb_size = (width, height)
-            if copy_to_layer_size:
-                self.transform.layer_size(*tp.cast(HasUnitLocalField, cur_layer).unit.fb_size)
-        return self
-
-    def range(self, start: sec | float, end: sec | float = -1) -> 'TimelineUnitTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasUnitLocalField, cur_layer).unit._start = sec(start)
-            tp.cast(HasUnitLocalField, cur_layer).unit._end = sec(end)
-        return self
-
-    def span_cnt(self, count: int) -> 'TimelineUnitTrait':
-        if (cur_layer := peek_entry(self._idx)):
-            tp.cast(HasUnitLocalField, cur_layer).unit._span_cnt = count
-            tp.cast(HasUnitLocalField, cur_layer).unit._span_dur = None
-        return self
-
-
-def _apply_space_layout(unit_layer: UnitEntry, child_layer: 'LayerField', layout_idx: int):
-
-    if not isinstance(child_layer, HasTransformField):
-        return
-
-    if not unit_layer.unit._layout_fn:
-        return
-
-    layout_info = unit_layer.unit._layout_fn(LayoutLayerContext(
-        child_layer.key,
-        layout_idx,
-        len(unit_layer.unit.layer_indices)
-    ))
-
-    if not layout_info:
-        return
-
-    if layout_info.pos:
-        child_layer.transform.pos = layout_info.pos
-
-    if layout_info.z:
-        child_layer.transform.z = layout_info.z
-
-    if layout_info.layer_size and (temp_layer_size := list(layout_info.layer_size)):
-        if child_layer.kind == 'UNIT':
-            aspect_ratio = sec(tp.cast(UnitEntry, child_layer).unit.fb_size[0], tp.cast(
-                UnitEntry, child_layer).unit.fb_size[1])
-            if temp_layer_size[0] == -1:
-                temp_layer_size[0] = (sec(temp_layer_size[1]) * aspect_ratio).trunc()
-            if temp_layer_size[1] == -1:
-                temp_layer_size[1] = (sec(temp_layer_size[0]) / aspect_ratio).trunc()
-        child_layer.transform.layer_size = (temp_layer_size[0], temp_layer_size[1])
 
 
 def _apply_time_layout(child_layer: 'LayerField') -> sec:
@@ -213,19 +102,27 @@ def _apply_time_layout(child_layer: 'LayerField') -> sec:
     return child_layer.slice_offset + tp.cast(sec, child_layer._duration)
 
 
-def _apply_slice(cur_ctx: 'KronContext', unit_layer: UnitEntry, max_to: sec) -> sec:
+def _get_media_field(cur_ctx: 'KronContext', unit_layer: LayerField) -> '_BaseMediaField' | None:
+    if unit_layer.t_video != -1:
+        return cur_ctx.t_videos[unit_layer.t_video]
+    elif unit_layer.t_audio != -1:
+        return cur_ctx.t_audios[unit_layer.t_audio]
+    return None
 
-    if unit_layer.unit._start == sec(0) and unit_layer.unit._end == sec(-1):
+
+def _apply_slice(cur_ctx: 'KronContext', unit_layer: LayerField, unit_field: UnitField, max_to: sec) -> sec:
+
+    if unit_field._start == sec(0) and unit_field._end == sec(-1):
         unit_layer._duration = max_to
         return max_to
 
-    unit_start = unit_layer.unit._start
-    unit_end = max_to if unit_layer.unit._end == -1 else unit_layer.unit._end
+    unit_start = unit_field._start
+    unit_end = max_to if unit_field._end == -1 else unit_field._end
     unit_dur = unit_end - unit_start
     living_layer_indices: list[int] = []
     new_max_to: sec = sec(0)
 
-    for layer_idx in unit_layer.unit.layer_indices:
+    for layer_idx in unit_field.layer_indices:
         cur_layer = cur_ctx.layers[layer_idx]
 
         layer_from = cur_layer.frame_offset if cur_layer.slice_offset == NOT_FIXED_SEC else cur_layer.slice_offset
@@ -259,30 +156,30 @@ def _apply_slice(cur_ctx: 'KronContext', unit_layer: UnitEntry, max_to: sec) -> 
             if new_layer_to > new_max_to:
                 new_max_to = new_layer_to
 
-            if cur_layer.layer_local_offset > sec(0) and isinstance(cur_layer, HasMediaField):
-                media_slice_dur = cur_layer.media.end - cur_layer.media.start
+            media_field = _get_media_field(cur_ctx, cur_layer)
+            if cur_layer.layer_local_offset > sec(0) and media_field:
+                media_slice_dur = media_field.end - media_field.start
                 media_slice_part = int(cur_layer.layer_local_offset / media_slice_dur)
                 cur_layer.layer_local_offset = cur_layer.layer_local_offset - (media_slice_part * media_slice_dur)
 
-            if cur_layer.kind == "UNIT":
-
-                _cur_layer = tp.cast(UnitEntry, cur_layer)
-                _cur_layer.unit._start = unit_start
-                _cur_layer.unit._end = unit_end
-                _cur_layer_new_to = _apply_slice(cur_ctx, _cur_layer, sec(0))
-                _cur_layer._duration = _cur_layer_new_to - _cur_layer.slice_offset
+            if cur_layer.t_unit != -1:
+                cur_layer_unit_field = cur_ctx.t_units[cur_layer.t_unit]
+                cur_layer_unit_field._start = unit_start
+                cur_layer_unit_field._end = unit_end
+                cur_layer_new_to = _apply_slice(cur_ctx, cur_layer, cur_layer_unit_field, sec(0))
+                cur_layer._duration = cur_layer_new_to - cur_layer.slice_offset
 
             living_layer_indices.append(layer_idx)
         else:
             cur_layer.defunct = True
 
-    unit_layer.unit.layer_indices = living_layer_indices
+    unit_field.layer_indices = living_layer_indices
     unit_layer._duration = unit_dur
 
     return new_max_to
 
 
-def _apply_span(cur_ctx: 'KronContext', unit_layer: UnitEntry):
+def _apply_span(cur_ctx: 'KronContext', unit_layer: LayerField, unit_field: UnitField):
 
     def _duplicate_children(
             child_layer_indices: list[int], incr_dur: sec, append_layer_indices: bool) -> list[int]:
@@ -293,30 +190,39 @@ def _apply_span(cur_ctx: 'KronContext', unit_layer: UnitEntry):
             cur_layer = cur_ctx.layers[layer_idx]
             if cur_layer.defunct:
                 continue
+
             dup_layer = copy.deepcopy(cur_layer)
             dup_layer.slice_offset += acc_duration
             dup_layer.frame_offset += acc_duration
 
-            new_child_layer_indices.append(register_entry(dup_layer, dup_layer.kind,
-                                           dup_layer.key + f'__span_cnt_{cnt+1}', append_layer_indices))
+            if cur_layer.t_unit != -1:
+                unit_field = copy.deepcopy(cur_ctx.t_units[cur_layer.t_unit])
+                gctx.get_ctx().t_units.append(unit_field)
+                new_unit_trait_idx = len(gctx.get_ctx().t_units) - 1
+                dup_layer.t_unit = new_unit_trait_idx
 
-            if dup_layer.kind == "UNIT":
-                _dup_layer = tp.cast(UnitEntry, dup_layer)
-                _dup_layer.unit.layer_indices = _duplicate_children(_dup_layer.unit.layer_indices, incr_dur, False)
+            new_child_layer_indices.append(
+                register_layer_field(dup_layer, dup_layer.key + f'__span_cnt_{cnt+1}', append_layer_indices)
+            )
+
+            if dup_layer.t_unit != -1:
+                _dup_layer_unit_field = cur_ctx.t_units[dup_layer.t_unit]
+                _dup_layer_unit_field.layer_indices = _duplicate_children(
+                    _dup_layer_unit_field.layer_indices, incr_dur, False)
 
         return new_child_layer_indices
 
-    if unit_layer.unit._span_cnt and unit_layer.unit._span_cnt > 1:
+    if unit_field._span_cnt and unit_field._span_cnt > 1:
         org_duration: sec = tp.cast(sec, unit_layer._duration)
         acc_duration: sec = org_duration
-        child_layer_indices = copy.deepcopy(unit_layer.unit.layer_indices)
-        for cnt in range(unit_layer.unit._span_cnt - 1):
+        child_layer_indices = copy.deepcopy(unit_field.layer_indices)
+        for cnt in range(unit_field._span_cnt - 1):
             _duplicate_children(child_layer_indices, acc_duration, True)
             acc_duration += org_duration
 
-        unit_layer._duration = tp.cast(sec, unit_layer._duration) * unit_layer.unit._span_cnt
+        unit_layer._duration = tp.cast(sec, unit_layer._duration) * unit_field._span_cnt
 
-    elif unit_layer.unit._span_dur:
+    elif unit_field._span_dur:
         raise NotImplementedError()
 
 
@@ -325,34 +231,34 @@ class SpatialFrameGuard:
 
     _layer_idx: int
 
-    def __enter__(self):
+    def enter(self):
         gctx.get_ctx()._cur_unit_ids.append(self._layer_idx)
-        return self
 
-    def __exit__(self, *ext: tp.Any):
+    def exit(self):
         cur_ctx = gctx.get_ctx()
-        cur_unit_layer = tp.cast(UnitEntry, cur_ctx.layers[cur_ctx._cur_unit_ids[-1]])
+        cur_unit_layer = cur_ctx.layers[cur_ctx._cur_unit_ids[-1]]
+        assert cur_unit_layer.t_unit != -1
+        cur_unit_field = cur_ctx.t_units[cur_unit_layer.t_unit]
 
         if not isinstance(cur_unit_layer._duration, sec):
             raise Exception('Invalid duration found')
 
         # Apply time/space layouts to its children
         max_to: sec = sec(0)
-        for layout_idx, layer_idx in enumerate(cur_unit_layer.unit.layer_indices):
+        for layout_idx, layer_idx in enumerate(cur_unit_field.layer_indices):
             cur_layer = cur_ctx.layers[layer_idx]
-            _apply_space_layout(cur_unit_layer, cur_layer, layout_idx)
+            # _apply_space_layout(cur_unit_layer, cur_layer, layout_idx)
             if (layer_to := _apply_time_layout(cur_layer)) and layer_to > max_to:
                 max_to = layer_to
 
         # Apply slice to its children and fix the duration
-        _apply_slice(cur_ctx, cur_unit_layer, max_to)
+        _apply_slice(cur_ctx, cur_unit_layer, cur_unit_field, max_to)
 
         # Span the slice and fix the duration
-        _apply_span(cur_ctx, cur_unit_layer)
+        _apply_span(cur_ctx, cur_unit_layer, cur_unit_field)
 
         # Pop this frame
         cur_ctx._cur_unit_ids.pop()
-        return False
 
 
 @dataclass
@@ -360,26 +266,29 @@ class TimelineFrameGuard:
 
     _layer_idx: int
 
-    def __enter__(self):
+    def enter(self):
         gctx.get_ctx()._cur_unit_ids.append(self._layer_idx)
         return self
 
-    def __exit__(self, *ext: tp.Any):
+    def exit(self):
 
         cur_ctx = gctx.get_ctx()
-        cur_unit_layer = tp.cast(UnitEntry, cur_ctx.layers[cur_ctx._cur_unit_ids[-1]])
+        cur_unit_layer = cur_ctx.layers[cur_ctx._cur_unit_ids[-1]]
+        assert cur_unit_layer.t_unit != -1
+        cur_unit_field = cur_ctx.t_units[cur_unit_layer.t_unit]
 
         if not isinstance(cur_unit_layer._duration, sec):
             raise Exception('Invalid duration found')
 
         acc_duration: sec = sec(0)
-        for layer_idx in cur_unit_layer.unit.layer_indices:
+        for layer_idx in cur_unit_field.layer_indices:
 
             cur_layer = cur_ctx.layers[layer_idx]
             if cur_layer.slice_offset == NOT_FIXED_SEC:
                 cur_layer.slice_offset = cur_layer.frame_offset
-            if cur_layer.kind == 'UNIT':
-                self._update_unit_layer_slice_offset(tp.cast('UnitEntry', cur_layer), acc_duration)
+            if cur_layer.t_unit != -1:
+                cur_layer_unit_field = cur_ctx.t_units[cur_layer.t_unit]
+                self._update_unit_layer_slice_offset(cur_layer, cur_layer_unit_field, acc_duration)
             else:
                 cur_layer.slice_offset += acc_duration
 
@@ -393,67 +302,22 @@ class TimelineFrameGuard:
         max_to = (cur_unit_layer.frame_offset if cur_unit_layer.slice_offset ==
                   NOT_FIXED_SEC else cur_unit_layer.slice_offset) + cur_unit_layer._duration
         # Apply slice to its children and fix the duration
-        _apply_slice(cur_ctx, cur_unit_layer, max_to)
+        _apply_slice(cur_ctx, cur_unit_layer, cur_unit_field, max_to)
 
         # Span the slice and fix the duration
-        _apply_span(cur_ctx, cur_unit_layer)
+        _apply_span(cur_ctx, cur_unit_layer, cur_unit_field)
 
         cur_ctx._cur_unit_ids.pop()
-        return False
 
     @staticmethod
-    def _update_unit_layer_slice_offset(unit_entry: 'UnitEntry', new_offset: sec):
+    def _update_unit_layer_slice_offset(unit_entry: LayerField, unit_field: UnitField, new_offset: sec):
 
         cur_ctx = gctx.get_ctx()
         unit_entry.slice_offset += new_offset
-        for layer_idx in unit_entry.unit.layer_indices:
+        for layer_idx in unit_field.layer_indices:
             cur_layer = cur_ctx.layers[layer_idx]
-            if cur_layer.kind == 'UNIT':
-                TimelineFrameGuard._update_unit_layer_slice_offset(tp.cast('UnitEntry', cur_layer), new_offset)
+            if cur_layer.t_unit != -1:
+                cur_layer_unit_field = cur_ctx.t_units[cur_layer.t_unit]
+                TimelineFrameGuard._update_unit_layer_slice_offset(cur_layer, cur_layer_unit_field, new_offset)
             else:
                 cur_layer.slice_offset += new_offset
-
-
-@overload
-def unit(frame_ctx: _FrameFnCtxOpaque[tp.Literal['spatial']], *trait_fns: tp.Callable[[SpatialUnitTrait], tp.Any]) -> LayerRef:
-    ...
-
-
-@overload
-def unit(frame_ctx: _FrameFnCtxOpaque[tp.Literal['timeline']], *trait_fns: tp.Callable[[TimelineUnitTrait], tp.Any]) -> LayerRef:
-    ...
-
-
-@overload
-def unit(frame_ctx: tp.Never, *trait_fns: tp.Never) -> tp.Never:
-    ...
-
-
-def unit(frame_ctx, *trait_fns) -> LayerRef:
-
-    kind, layer_fns = tp.cast(_FrameFnCtx, frame_ctx)
-
-    if kind not in ['spatial', 'timeline']:
-        raise NotImplementedError()
-
-    entry = UnitEntry()
-    entry.transform.layer_size = (ak_lwidth(), ak_lheight())
-    entry.unit.fb_size = entry.transform.layer_size
-    idx = register_entry(entry, 'UNIT', '')
-
-    h: SpatialUnitTrait | TimelineUnitTrait
-    guard: SpatialFrameGuard | TimelineFrameGuard
-    if kind == 'spatial':
-        h = SpatialUnitTrait(idx)
-        guard = SpatialFrameGuard(idx)
-    else:
-        h = TimelineUnitTrait(idx)
-        guard = TimelineFrameGuard(idx)
-
-    h.transform.pos(*ak_lcenter())
-
-    with guard:
-        [tfn(h) for tfn in trait_fns]
-        layer_fns()
-
-    return LayerRef(idx)

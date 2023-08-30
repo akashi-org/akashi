@@ -1,9 +1,6 @@
 # pyright: reportPrivateUsage=false
 import unittest
 from akashi_core import gl, ak
-from akashi_core.elem.layer.base import HasTransformField, HasMediaField
-from akashi_core.elem.layer.shape import HasShapeLocalField
-from akashi_core.elem.layer.unit import HasUnitLocalField
 import typing as tp
 import random
 from dataclasses import asdict
@@ -11,12 +8,30 @@ import json
 
 if tp.TYPE_CHECKING:
     from akashi_core.elem.context import _ElemFnOpaque, KronContext
+    from akashi_core.elem.layer import LayerField
 
 
 def eval_kron(elem_fn: tp.Callable[['_ElemFnOpaque'], 'KronContext'], config_lpath: str, seed: int = 128) -> 'KronContext':
     config_path = tp.cast('_ElemFnOpaque', ak.from_relpath(__file__, config_lpath))
     random.seed(seed)
     return elem_fn(config_path)
+
+
+def get_layer_kind(layer: 'LayerField') -> str:
+    if layer.t_video != -1:
+        return 'VIDEO'
+    elif layer.t_audio != -1:
+        return 'AUDIO'
+    elif layer.t_image != -1:
+        return 'IMAGE'
+    elif layer.t_text != -1:
+        return 'TEXT'
+    elif layer.t_rect != -1 or layer.t_circle != -1 or layer.t_tri != -1 or layer.t_line != -1:
+        return 'SHAPE'
+    elif layer.t_unit != -1:
+        return 'UNIT'
+    else:
+        return 'UNKNOWN'
 
 
 def to_json(obj: tp.Any) -> str:
@@ -41,9 +56,8 @@ class TestBasicLayers(unittest.TestCase):
 
         @ak.entry()
         def main():
-            ak.rect(200, 200, lambda t: (
-                t.duration(3)
-            ))
+            with ak.rect(200, 200) as t:
+                t.t_time.duration(3)
 
         kron = eval_kron(main, './test_elem_config1.py')
 
@@ -51,16 +65,19 @@ class TestBasicLayers(unittest.TestCase):
         self.assertEqual(kron.atoms[0]._duration, ak.sec(3))
 
         self.assertEqual(len(kron.layers), 1)
-        self.assertEqual(kron.layers[0].kind, 'SHAPE')
-        self.assertEqual(tp.cast(HasShapeLocalField, kron.layers[0]).shape.shape_kind, 'RECT')
-        self.assertEqual(tp.cast(HasTransformField, kron.layers[0]).transform.pos, (960, 540))
+        self.assertNotEqual(kron.layers[0].t_rect, -1)
+        self.assertEqual(kron.t_rects[kron.layers[0].t_rect].req_size, (200, 200))
+
+        self.assertNotEqual(kron.layers[0].t_transform, -1)
+        self.assertEqual(kron.t_transforms[kron.layers[0].t_transform].pos, (960, 540))
 
     def test_video_basic(self):
 
         @ak.entry()
         def main():
             vurl = ak.from_relpath(__file__, './resource_fixtures/countdown1/countdown1_720p.mp4')
-            ak.video(vurl, lambda t: ())
+            with ak.video(vurl):
+                ...
 
         kron = eval_kron(main, './test_elem_config1.py')
 
@@ -68,18 +85,17 @@ class TestBasicLayers(unittest.TestCase):
         self.assertEqual(kron.atoms[0]._duration, ak.sec(10027, 1000))
 
         self.assertEqual(len(kron.layers), 1)
-        self.assertEqual(kron.layers[0].kind, 'VIDEO')
-        self.assertEqual(tp.cast(HasMediaField, kron.layers[0]).media.start, ak.sec(0))
-        self.assertEqual(tp.cast(HasMediaField, kron.layers[0]).media.end, ak.sec(10027, 1000))
+        self.assertNotEqual(kron.layers[0].t_video, -1)
+        self.assertEqual(kron.t_videos[kron.layers[0].t_video].start, ak.sec(0))
+        self.assertEqual(kron.t_videos[kron.layers[0].t_video].end, ak.sec(10027, 1000))
 
     def test_video_with_range(self):
 
         @ak.entry()
         def main():
             vurl = ak.from_relpath(__file__, './resource_fixtures/countdown1/countdown1_720p.mp4')
-            ak.video(vurl, lambda t: (
-                t.media.range(5, -1)
-            ))
+            with ak.video(vurl) as t:
+                t.t_video.range(5, -1)
 
         kron = eval_kron(main, './test_elem_config1.py')
 
@@ -87,21 +103,19 @@ class TestBasicLayers(unittest.TestCase):
         self.assertEqual(kron.atoms[0]._duration, ak.sec(5027, 1000))
 
         self.assertEqual(len(kron.layers), 1)
-        self.assertEqual(kron.layers[0].kind, 'VIDEO')
-        self.assertEqual(tp.cast(HasMediaField, kron.layers[0]).media.start, ak.sec(5))
-        self.assertEqual(tp.cast(HasMediaField, kron.layers[0]).media.end, ak.sec(10027, 1000))
+        self.assertNotEqual(kron.layers[0].t_video, -1)
+        self.assertEqual(kron.t_videos[kron.layers[0].t_video].start, ak.sec(5))
+        self.assertEqual(kron.t_videos[kron.layers[0].t_video].end, ak.sec(10027, 1000))
 
     def test_video_with_span_dur(self):
 
         @ak.entry()
         def main():
             vurl = ak.from_relpath(__file__, './resource_fixtures/countdown1/countdown1_720p.mp4')
-            ak.video(vurl, lambda t: (
-                t.media.range(5, -1).span_dur(3)  # short span
-            ))
-            ak.video(vurl, lambda t: (
-                t.media.range(5, -1).span_dur(10)  # long span
-            ))
+            with ak.video(vurl) as t:
+                t.t_video.range(5, -1).span_dur(3)  # short span
+            with ak.video(vurl) as t:
+                t.t_video.range(5, -1).span_dur(10)  # long span
 
         kron = eval_kron(main, './test_elem_config1.py')
         # print_kron(kron)
@@ -110,24 +124,24 @@ class TestBasicLayers(unittest.TestCase):
         self.assertEqual(kron.atoms[0]._duration, ak.sec(10))
 
         self.assertEqual(len(kron.layers), 2)
-        self.assertEqual(kron.layers[0].kind, 'VIDEO')
-        self.assertEqual(tp.cast(HasMediaField, kron.layers[0]).media.start, ak.sec(5))
-        self.assertEqual(tp.cast(HasMediaField, kron.layers[0]).media.end, ak.sec(10027, 1000))  # !!!
-        self.assertEqual(tp.cast(HasMediaField, kron.layers[0]).media._span_dur, ak.sec(3))
 
-        self.assertEqual(kron.layers[1].kind, 'VIDEO')
-        self.assertEqual(tp.cast(HasMediaField, kron.layers[1]).media.start, ak.sec(5))
-        self.assertEqual(tp.cast(HasMediaField, kron.layers[1]).media.end, ak.sec(10027, 1000))  # !!!
-        self.assertEqual(tp.cast(HasMediaField, kron.layers[1]).media._span_dur, ak.sec(10))
+        self.assertNotEqual(kron.layers[0].t_video, -1)
+        self.assertEqual(kron.t_videos[kron.layers[0].t_video].start, ak.sec(5))
+        self.assertEqual(kron.t_videos[kron.layers[0].t_video].end, ak.sec(10027, 1000))
+        self.assertEqual(kron.t_videos[kron.layers[0].t_video]._span_dur, ak.sec(3))
+
+        self.assertNotEqual(kron.layers[1].t_video, -1)
+        self.assertEqual(kron.t_videos[kron.layers[1].t_video].start, ak.sec(5))
+        self.assertEqual(kron.t_videos[kron.layers[1].t_video].end, ak.sec(10027, 1000))
+        self.assertEqual(kron.t_videos[kron.layers[1].t_video]._span_dur, ak.sec(10))
 
     def test_video_with_span_cnt(self):
 
         @ak.entry()
         def main():
             vurl = ak.from_relpath(__file__, './resource_fixtures/countdown1/countdown1_720p.mp4')
-            ak.video(vurl, lambda t: (
-                t.media.range(5, 10).span_cnt(10)
-            ))
+            with ak.video(vurl) as t:
+                t.t_video.range(5, 10).span_cnt(10)
 
         kron = eval_kron(main, './test_elem_config1.py')
         # print_kron(kron)
@@ -136,10 +150,10 @@ class TestBasicLayers(unittest.TestCase):
         self.assertEqual(kron.atoms[0]._duration, ak.sec(50))
 
         self.assertEqual(len(kron.layers), 1)
-        self.assertEqual(kron.layers[0].kind, 'VIDEO')
-        self.assertEqual(tp.cast(HasMediaField, kron.layers[0]).media.start, ak.sec(5))
-        self.assertEqual(tp.cast(HasMediaField, kron.layers[0]).media.end, ak.sec(10))
-        self.assertEqual(tp.cast(HasMediaField, kron.layers[0]).media._span_cnt, 10)
+        self.assertNotEqual(kron.layers[0].t_video, -1)
+        self.assertEqual(kron.t_videos[kron.layers[0].t_video].start, ak.sec(5))
+        self.assertEqual(kron.t_videos[kron.layers[0].t_video].end, ak.sec(10))
+        self.assertEqual(kron.t_videos[kron.layers[0].t_video]._span_cnt, ak.sec(10))
 
 
 class TestFrame(unittest.TestCase):
@@ -148,58 +162,55 @@ class TestFrame(unittest.TestCase):
 
         @ak.frame()
         def base_frame(rect_w: int, rect_h: int):
-            ak.rect(rect_w, rect_h, lambda t: (
-                t.duration(3)
-            ))
-            ak.rect(rect_w, rect_h, lambda t: (
-                t.duration(10)
-            ))
+            with ak.rect(rect_w, rect_h) as t:
+                t.t_time.duration(3)
+            with ak.rect(rect_w, rect_h) as t:
+                t.t_time.duration(10)
 
         @ak.entry()
         def main():
-            ak.unit(base_frame(200, 200))
+            with ak.unit(base_frame(200, 200)):
+                ...
 
         kron = eval_kron(main, './test_elem_config1.py')
-        # print_kron(kron)
 
         self.assertEqual(len(kron.atoms), 1)
         self.assertEqual(kron.atoms[0]._duration, ak.sec(10))
 
         self.assertEqual(len(kron.layers), 3)
-        self.assertEqual(kron.layers[0].kind, 'UNIT')
+
+        self.assertNotEqual(kron.layers[0].t_unit, -1)
         # [XXX] The duration of Unit Layer should be equal to the max duration of its children
         self.assertEqual(kron.layers[0]._duration, ak.sec(10))
         # [XXX] Unit Layer should have the layer indices of its children
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[0]).unit.layer_indices, [1, 2])
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[0]).unit.fb_size, (1920, 1080))
-        self.assertEqual(tp.cast(HasTransformField, kron.layers[0]).transform.layer_size, (1920, 1080))
-        self.assertEqual(tp.cast(HasTransformField, kron.layers[0]).transform.pos, (960, 540))
+        self.assertEqual(kron.t_units[kron.layers[0].t_unit].layer_indices, [1, 2])
+        self.assertEqual(kron.t_units[kron.layers[0].t_unit].fb_size, (1920, 1080))
 
-        self.assertEqual(kron.layers[1].kind, 'SHAPE')
-        self.assertEqual(kron.layers[2].kind, 'SHAPE')
+        self.assertNotEqual(kron.layers[0].t_transform, -1)
+        self.assertEqual(kron.t_transforms[kron.layers[0].t_transform].layer_size, (1920, 1080))
+        self.assertEqual(kron.t_transforms[kron.layers[0].t_transform].pos, (960, 540))
 
     def test_nested_units(self):
 
         @ak.frame()
         def inner_frame():
-            ak.rect(ak.lwidth() // 5, 200, lambda t: (
-                t.duration(3),
-                t.key('inner')
-            ))
+            with ak.rect(ak.lwidth() // 5, 200) as t:
+                t.t_time.duration(3)
+                t.t_layer.key('inner')
 
         @ak.frame()
         def topmost_frame():
-            l = ak.unit(inner_frame(), lambda t: (
-                t.fb_size(ak.lwidth() // 2, ak.lheight()),
-            ))
-            ak.rect(ak.lwidth() // 5, 200, lambda t: (
-                t.duration(l),
-                t.key('topmost'),
-            ))
+            with ak.unit(inner_frame()) as u1:
+                u1.t_unit.fb_size(ak.lwidth() // 2, ak.lheight())
+
+            with ak.rect(ak.lwidth() // 5, 200) as t:
+                t.t_time.duration(u1.ref())
+                t.t_layer.key('topmost')
 
         @ak.entry()
         def main():
-            ak.unit(topmost_frame())
+            with ak.unit(topmost_frame()):
+                ...
 
         kron = eval_kron(main, './test_elem_config1.py')
         # print_kron(kron)
@@ -208,43 +219,74 @@ class TestFrame(unittest.TestCase):
         self.assertEqual(kron.atoms[0]._duration, ak.sec(3))
 
         self.assertEqual(len(kron.layers), 4)
-        self.assertEqual(kron.layers[0].kind, 'UNIT')
+        self.assertNotEqual(kron.layers[0].t_unit, -1)
         self.assertEqual(kron.layers[0]._duration, ak.sec(3))
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[0]).unit.layer_indices, [1, 3])
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[0]).unit.fb_size, (1920, 1080))
-        self.assertEqual(tp.cast(HasTransformField, kron.layers[0]).transform.layer_size, (1920, 1080))
-        self.assertEqual(tp.cast(HasTransformField, kron.layers[0]).transform.pos, (960, 540))
+        self.assertEqual(kron.t_units[kron.layers[0].t_unit].layer_indices, [1, 3])
+        self.assertEqual(kron.t_units[kron.layers[0].t_unit].fb_size, (1920, 1080))
+        self.assertNotEqual(kron.layers[0].t_transform, -1)
+        self.assertEqual(kron.t_transforms[kron.layers[0].t_transform].layer_size, (1920, 1080))
+        self.assertEqual(kron.t_transforms[kron.layers[0].t_transform].pos, (960, 540))
 
-        self.assertEqual(kron.layers[1].kind, 'UNIT')
+        self.assertNotEqual(kron.layers[1].t_unit, -1)
         self.assertEqual(kron.layers[1]._duration, ak.sec(3))
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[1]).unit.layer_indices, [2])
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[1]).unit.fb_size, (1920 // 2, 1080))
-        self.assertEqual(tp.cast(HasTransformField, kron.layers[1]).transform.layer_size, (1920 // 2, 1080))
-        self.assertEqual(tp.cast(HasTransformField, kron.layers[1]).transform.pos, (960, 540))
+        self.assertEqual(kron.t_units[kron.layers[1].t_unit].layer_indices, [2])
+        self.assertEqual(kron.t_units[kron.layers[1].t_unit].fb_size, (1920 // 2, 1080))
+        self.assertNotEqual(kron.layers[1].t_transform, -1)
+        self.assertEqual(kron.t_transforms[kron.layers[1].t_transform].layer_size, (1920 // 2, 1080))
+        self.assertEqual(kron.t_transforms[kron.layers[1].t_transform].pos, (960, 540))
 
-        self.assertEqual(kron.layers[2].kind, 'SHAPE')
+        self.assertNotEqual(kron.layers[2].t_rect, -1)
         self.assertEqual(kron.layers[2].key, 'inner')
-        self.assertEqual(tp.cast(HasShapeLocalField, kron.layers[2]).shape.rect.width, (1920 // 2) // 5)
+        self.assertEqual(kron.t_rects[kron.layers[2].t_rect].req_size[0], (1920 // 2) // 5)
 
-        self.assertEqual(kron.layers[3].kind, 'SHAPE')
+        self.assertNotEqual(kron.layers[3].t_rect, -1)
         self.assertEqual(kron.layers[3].key, 'topmost')
         self.assertEqual(kron.layers[3]._duration, ak.sec(3))
-        self.assertEqual(tp.cast(HasShapeLocalField, kron.layers[3]).shape.rect.width, (1920 // 5))
+        self.assertEqual(kron.t_rects[kron.layers[3].t_rect].req_size[0], (1920 // 5))
+
+    def test_nested_layers1(self):
+
+        @ak.entry()
+        def main1():
+            with ak.text(""):
+                # NG
+                with ak.text(""):
+                    ...
+
+        with self.assertRaisesRegex(Exception, 'Nested layer is forbidden') as _:
+            eval_kron(main1, './test_elem_config1.py')
+
+        @ak.frame()
+        def topmost_frame():
+            with ak.rect(ak.lwidth() // 5, 200) as t:
+                t.t_time.duration(3)
+                t.t_layer.key('topmost')
+
+                # NG
+                with ak.text(""):
+                    ...
+
+        @ak.entry()
+        def main2():
+            with ak.unit(topmost_frame()):
+                ...
+
+        with self.assertRaisesRegex(Exception, 'Nested layer is forbidden') as _:
+            eval_kron(main2, './test_elem_config1.py')
 
     def test_timeline_basic(self):
 
         @ak.frame('timeline')
         def base_frame(rect_w: int, rect_h: int):
-            ak.rect(rect_w, rect_h, lambda t: (
-                t.duration(3)
-            ))
-            ak.rect(rect_w, rect_h, lambda t: (
-                t.duration(10)
-            ))
+            with ak.rect(rect_w, rect_h) as t:
+                t.t_time.duration(3)
+            with ak.rect(rect_w, rect_h) as t:
+                t.t_time.duration(10)
 
         @ak.entry()
         def main():
-            ak.unit(base_frame(200, 200))
+            with ak.unit(base_frame(200, 200)):
+                ...
 
         kron = eval_kron(main, './test_elem_config1.py')
         # print_kron(kron)
@@ -253,70 +295,69 @@ class TestFrame(unittest.TestCase):
         self.assertEqual(kron.atoms[0]._duration, ak.sec(13))
 
         self.assertEqual(len(kron.layers), 3)
-        self.assertEqual(kron.layers[0].kind, 'UNIT')
-        self.assertEqual(kron.layers[0]._duration, ak.sec(13))
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[0]).unit.layer_indices, [1, 2])
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[0]).unit.fb_size, (1920, 1080))
-        self.assertEqual(tp.cast(HasTransformField, kron.layers[0]).transform.layer_size, (1920, 1080))
-        self.assertEqual(tp.cast(HasTransformField, kron.layers[0]).transform.pos, (960, 540))
 
-        self.assertEqual(kron.layers[1].kind, 'SHAPE')
-        self.assertEqual(kron.layers[2].kind, 'SHAPE')
+        self.assertNotEqual(kron.layers[0].t_unit, -1)
+        self.assertEqual(kron.layers[0]._duration, ak.sec(13))
+        self.assertEqual(kron.t_units[kron.layers[0].t_unit].layer_indices, [1, 2])
+        self.assertEqual(kron.t_units[kron.layers[0].t_unit].fb_size, (1920, 1080))
+        self.assertNotEqual(kron.layers[0].t_transform, -1)
+        self.assertEqual(kron.t_transforms[kron.layers[0].t_transform].layer_size, (1920, 1080))
+        self.assertEqual(kron.t_transforms[kron.layers[0].t_transform].pos, (960, 540))
 
     def test_spatial_with_range(self):
 
         @ak.frame()
         def inner_frame():
-            ak.rect(ak.lwidth() // 5, 200, lambda t: (
-                t.duration(2).offset(1),
-                t.key('inner_R1')
-            ))
+
+            with ak.rect(ak.lwidth() // 5, 200) as t:
+                t.t_time.duration(2).offset(1)
+                t.t_layer.key('inner_R1')
 
             vurl = ak.from_relpath(__file__, './resource_fixtures/countdown1/countdown1_720p.mp4')
-            ak.audio(vurl, lambda t: (
-                t.media.range(0, 0.7).span_dur(4),
-                t.key('inner_A1')
-            ))
+            with ak.audio(vurl) as t:
+                t.t_audio.range(0, 0.7).span_dur(4)
+                t.t_layer.key('inner_A1')
 
         @ak.frame()
         def base_frame():
-            ak.rect(200, 200, lambda t: (
-                t.duration(3).offset(2),
-                t.key('R1')
-            ))
+            with ak.rect(200, 200) as t:
+                t.t_time.duration(3).offset(2)
+                t.t_layer.key('R1')
+
             vurl = ak.from_relpath(__file__, './resource_fixtures/countdown1/countdown1_720p.mp4')
-            ak.video(vurl, lambda t: (
-                t.media.range(5, -1)
-            ))
-            ak.audio(vurl)
-            ak.rect(400, 400, lambda t: (
-                t.duration(1).offset(3),
-                t.key('R2')
-            ))
-            ak.rect(200, 200, lambda t: (
-                t.duration(1),
-                t.key('R3')
-            ))
-            ak.rect(300, 300, lambda t: (
-                t.duration(2).offset(1),
-                t.key('R4')
-            ))
-            ak.unit(inner_frame(), lambda t: (
-                t.range(0, ak.sec(1.5)).span_cnt(2),
-                t.key('U1')
-            ))
+            with ak.video(vurl) as t:
+                t.t_video.range(5, -1)
+
+            with ak.audio(vurl):
+                ...
+
+            with ak.rect(400, 400) as t:
+                t.t_time.duration(1).offset(3)
+                t.t_layer.key('R2')
+
+            with ak.rect(200, 200) as t:
+                t.t_time.duration(1)
+                t.t_layer.key('R3')
+
+            with ak.rect(300, 300) as t:
+                t.t_time.duration(2).offset(1)
+                t.t_layer.key('R4')
+
+            with ak.unit(inner_frame()) as t:
+                t.t_unit.range(0, ak.sec(1.5)).span_cnt(2)
+                t.t_layer.key('U1')
 
         @ak.entry()
         def main():
-            ak.unit(base_frame(), lambda t: (
-                t.range(2, 6)
-            ))
+            with ak.unit(base_frame()) as t:
+                t.t_unit.range(2, 6)
 
         kron = eval_kron(main, './test_elem_config1.py')
         test_lines = []
         for layer_idx, layer in enumerate(kron.layers):
+            layer_kind = get_layer_kind(layer)
             test_lines.append(
-                f'{layer_idx} {layer.kind} {layer.defunct} {layer.key} {layer.slice_offset} {layer._duration} {layer.layer_local_offset}')
+                f'{layer_idx} {layer_kind} {layer.defunct} {layer.key} {layer.slice_offset} {layer._duration} {layer.layer_local_offset}')
 
         expected_lines = [e.strip() for e in '''
         0 UNIT False  0 4 0
@@ -338,69 +379,69 @@ class TestFrame(unittest.TestCase):
         self.assertEqual(len(kron.layers), 12)
 
         # layer 5 is defunct layer
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[0]).unit.layer_indices, [1, 2, 3, 4, 6, 7])
+        self.assertNotEqual(kron.layers[0].t_unit, -1)
+        self.assertEqual(kron.t_units[kron.layers[0].t_unit].layer_indices, [1, 2, 3, 4, 6, 7])
         # layer 8, 9 are defunct layers
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[7]).unit.layer_indices, [10, 11])
+        self.assertNotEqual(kron.layers[7].t_unit, -1)
+        self.assertEqual(kron.t_units[kron.layers[7].t_unit].layer_indices, [10, 11])
 
     def test_spatial_with_span_cnt(self):
 
         @ak.frame()
         def inner_frame():
-            ak.rect(ak.lwidth() // 5, 200, lambda t: (
-                t.duration(2).offset(1),
-                t.key('inner_R1')
-            ))
+            with ak.rect(ak.lwidth() // 5, 200) as t:
+                t.t_time.duration(2).offset(1)
+                t.t_layer.key('inner_R1')
 
             vurl = ak.from_relpath(__file__, './resource_fixtures/countdown1/countdown1_720p.mp4')
-            ak.audio(vurl, lambda t: (
-                t.media.range(0, 0.7).span_dur(4),
-                t.key('inner_A1')
-            ))
+            with ak.audio(vurl) as t:
+                t.t_audio.range(0, 0.7).span_dur(4)
+                t.t_layer.key('inner_A1')
 
         @ak.frame()
         def base_frame():
-            ak.rect(200, 200, lambda t: (
-                t.duration(3).offset(2),
-                t.key('R1')
-            ))
+
+            with ak.rect(200, 200) as t:
+                t.t_time.duration(3).offset(2)
+                t.t_layer.key('R1')
+
             vurl = ak.from_relpath(__file__, './resource_fixtures/countdown1/countdown1_720p.mp4')
-            ak.video(vurl, lambda t: (
-                t.media.range(5, -1),
-                t.key('V1')
-            ))
-            ak.audio(vurl, lambda t: (
-                t.media.range(0, 1.5).span_dur(6),
-                t.key('A1')
-            ))
-            ak.rect(400, 400, lambda t: (
-                t.duration(1).offset(3),
-                t.key('R2')
-            ))
-            ak.rect(200, 200, lambda t: (
-                t.duration(1),
-                t.key('R3')
-            ))
-            ak.rect(300, 300, lambda t: (
-                t.duration(2).offset(1),
-                t.key('R4')
-            ))
-            ak.unit(inner_frame(), lambda t: (
-                t.range(0, ak.sec(1.5)).span_cnt(2),
-                t.key('U1')
-            ))
+            with ak.video(vurl) as t:
+                t.t_video.range(5, -1)
+                t.t_layer.key('V1')
+
+            with ak.audio(vurl) as t:
+                t.t_audio.range(0, 1.5).span_dur(6)
+                t.t_layer.key('A1')
+
+            with ak.rect(400, 400) as t:
+                t.t_time.duration(1).offset(3)
+                t.t_layer.key('R2')
+
+            with ak.rect(200, 200) as t:
+                t.t_time.duration(1)
+                t.t_layer.key('R3')
+
+            with ak.rect(300, 300) as t:
+                t.t_time.duration(2).offset(1)
+                t.t_layer.key('R4')
+
+            with ak.unit(inner_frame()) as t:
+                t.t_unit.range(0, ak.sec(1.5)).span_cnt(2)
+                t.t_layer.key('U1')
 
         @ak.entry()
         def main():
-            ak.unit(base_frame(), lambda t: (
-                t.range(2, 6).span_cnt(2),
-                t.key('MainUnit')
-            ))
+            with ak.unit(base_frame()) as t:
+                t.t_unit.range(2, 6).span_cnt(2)
+                t.t_layer.key('MainUnit')
 
         kron = eval_kron(main, './test_elem_config1.py')
         test_lines = []
         for layer_idx, layer in enumerate(kron.layers):
+            layer_kind = get_layer_kind(layer)
             test_lines.append(
-                f'{layer_idx} {layer.kind} {layer.defunct} {layer.key} {layer.slice_offset} {layer._duration} {layer.layer_local_offset}')
+                f'{layer_idx} {layer_kind} {layer.defunct} {layer.key} {layer.slice_offset} {layer._duration} {layer.layer_local_offset}')
 
         # print('\n'.join(test_lines))
 
@@ -433,12 +474,15 @@ class TestFrame(unittest.TestCase):
         # Every unit layers should have only its immediate children as reference elements.
 
         # layer 5 is defunct layers
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[0]).unit.layer_indices, [
+        self.assertNotEqual(kron.layers[0].t_unit, -1)
+        self.assertEqual(kron.t_units[kron.layers[0].t_unit].layer_indices, [
             1, 2, 3, 4, 6, 7, 12, 13, 14, 15, 16, 17])
         # layer 8, 9 are defunct layers
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[7]).unit.layer_indices, [
+        self.assertNotEqual(kron.layers[7].t_unit, -1)
+        self.assertEqual(kron.t_units[kron.layers[7].t_unit].layer_indices, [
             10, 11])
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[17]).unit.layer_indices, [
+        self.assertNotEqual(kron.layers[17].t_unit, -1)
+        self.assertEqual(kron.t_units[kron.layers[17].t_unit].layer_indices, [
             18, 19])
 
         self.assertEqual(test_lines, expected_lines)
@@ -447,51 +491,46 @@ class TestFrame(unittest.TestCase):
 
         @ak.frame()
         def inner2_frame():
-            ak.rect(ak.lwidth() // 5, 200, lambda t: (
-                t.duration(10),
-                t.key('inner2_R1')
-            ))
+            with ak.rect(ak.lwidth() // 5, 200) as t:
+                t.t_time.duration(10)
+                t.t_layer.key('inner2_R1')
 
         @ak.frame('timeline')
         def inner_frame(rect_w: int, rect_h: int):
-            ak.rect(rect_w, rect_h, lambda t: (
-                t.key('timeline_R1'),
-                t.duration(3)
-            ))
-            ak.unit(inner2_frame(), lambda t: (
-                t.key('timeline_U1'),
-            ))
+            with ak.rect(rect_w, rect_h) as t:
+                t.t_time.duration(3)
+                t.t_layer.key('timeline_R1')
+
+            with ak.unit(inner2_frame()) as t:
+                t.t_layer.key('timeline_U1')
 
         @ak.frame()
         def base_frame():
 
-            ak.unit(inner_frame(500, 500), lambda t: (
-                t.key('U1'),
-            ))
+            with ak.unit(inner_frame(500, 500)) as t:
+                t.t_layer.key('U1')
 
-            ak.rect(ak.lwidth() // 5, 200, lambda t: (
-                t.duration(2).offset(1),
-                t.key('R1')
-            ))
+            with ak.rect(ak.lwidth() // 5, 200) as t:
+                t.t_time.duration(2).offset(1)
+                t.t_layer.key('R1')
 
             vurl = ak.from_relpath(__file__, './resource_fixtures/countdown1/countdown1_720p.mp4')
-            ak.audio(vurl, lambda t: (
-                t.media.range(0, 0.7).span_dur(4),
-                t.key('A1')
-            ))
+            with ak.audio(vurl) as t:
+                t.t_audio.range(0, 0.7).span_dur(4)
+                t.t_layer.key('A1')
 
         @ak.entry()
         def main():
-            ak.unit(base_frame(), lambda t: (
-                t.range(2, 5).span_cnt(2),
-                t.key('MainUnit')
-            ))
+            with ak.unit(base_frame()) as t:
+                t.t_unit.range(2, 5).span_cnt(2)
+                t.t_layer.key('MainUnit')
 
         kron = eval_kron(main, './test_elem_config1.py')
         test_lines = []
         for layer_idx, layer in enumerate(kron.layers):
+            layer_kind = get_layer_kind(layer)
             test_lines.append(
-                f'{layer_idx} {layer.kind} {layer.defunct} {layer.key} {layer.slice_offset} {layer._duration} {layer.layer_local_offset}')
+                f'{layer_idx} {layer_kind} {layer.defunct} {layer.key} {layer.slice_offset} {layer._duration} {layer.layer_local_offset}')
 
         # print('\n'.join(test_lines))
 
@@ -517,27 +556,25 @@ class TestFrame(unittest.TestCase):
 
         @ak.frame('timeline')
         def base_frame(rect_w: int, rect_h: int):
-            ak.rect(rect_w, rect_h, lambda t: (
-                t.key('timeline_R1'),
-                t.duration(3)
-            ))
-            ak.rect(rect_w, rect_h, lambda t: (
-                t.key('timeline_R2'),
-                t.duration(10)
-            ))
+            with ak.rect(rect_w, rect_h) as t:
+                t.t_layer.key('timeline_R1')
+                t.t_time.duration(3)
+            with ak.rect(rect_w, rect_h) as t:
+                t.t_layer.key('timeline_R2')
+                t.t_time.duration(10)
 
         @ak.entry()
         def main():
-            ak.unit(base_frame(200, 200), lambda t: (
-                t.key('MainUnit'),
-                t.range(2, 5).span_cnt(2)
-            ))
+            with ak.unit(base_frame(200, 200)) as t:
+                t.t_layer.key('MainUnit')
+                t.t_unit.range(2, 5).span_cnt(2)
 
         kron = eval_kron(main, './test_elem_config1.py')
         test_lines = []
         for layer_idx, layer in enumerate(kron.layers):
+            layer_kind = get_layer_kind(layer)
             test_lines.append(
-                f'{layer_idx} {layer.kind} {layer.defunct} {layer.key} {layer.slice_offset} {layer._duration} {layer.layer_local_offset}')
+                f'{layer_idx} {layer_kind} {layer.defunct} {layer.key} {layer.slice_offset} {layer._duration} {layer.layer_local_offset}')
 
         # print('\n'.join(test_lines))
 
@@ -550,6 +587,5 @@ class TestFrame(unittest.TestCase):
         '''.split('\n') if len(e.strip()) > 0]
 
         self.assertEqual(test_lines, expected_lines)
-
-        self.assertEqual(tp.cast(HasUnitLocalField, kron.layers[0]).unit.layer_indices, [
-            1, 2, 3, 4])
+        self.assertNotEqual(kron.layers[0].t_unit, -1)
+        self.assertEqual(kron.t_units[kron.layers[0].t_unit].layer_indices, [1, 2, 3, 4])

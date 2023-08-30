@@ -39,7 +39,7 @@ def _invalidate_artifact_cache():
     _ARTIFACT_CACHE = {}
 
 
-@ dataclass
+@dataclass
 class ShaderCompiler:
     __glsl_version__: tp.ClassVar[str] = '#version 420 core\n'
 

@@ -4,7 +4,7 @@
 #include "./render_context.h"
 #include "./fbo.h"
 #include "./camera.h"
-#include "./actors/actor.h"
+#include "./objects/layer_object.h"
 
 #include "../../item.h"
 
@@ -42,7 +42,7 @@ namespace akashi {
             : m_plane_ctx(plane_ctx), m_atom_static_profile(atom_static_profile) {
             if (m_plane_ctx.level > 0) {
                 m_base_layer = render_ctx.get_base_layer(m_plane_ctx);
-                auto fb_size = m_base_layer.unit_layer_ctx.fb_size;
+                auto fb_size = m_base_layer.t_unit->fb_size;
 
                 if (!(m_fbo.create(fb_size[0], fb_size[1], render_ctx.msaa()))) {
                     AKLOG_ERRORN("Failed to create FBO");
@@ -62,14 +62,12 @@ namespace akashi {
         void RenderPlane::destroy(const OGLRenderContext& ctx) {
             m_fbo.destroy();
 
-            for (auto&& actor : m_actors) {
-                if (actor) {
-                    actor->destroy(ctx);
-                    delete actor;
-                }
+            for (auto&& layer_object : m_layer_objects) {
+                layer_object->destroy(ctx);
+                delete layer_object;
             }
-            m_actors.clear();
-            m_actor_map.clear();
+            m_layer_objects.clear();
+            m_layer_object_map.clear();
         }
 
         void RenderPlane::update(const core::PlaneContext& plane_ctx) { m_plane_ctx = plane_ctx; }
@@ -79,43 +77,45 @@ namespace akashi {
             auto& cur_fbo = m_plane_ctx.level == 0 ? render_ctx.mut_fbo() : m_fbo;
 
             auto bg_color = m_plane_ctx.level == 0 ? m_atom_static_profile.bg_color
-                                                   : m_base_layer.unit_layer_ctx.bg_color;
+                                                   : m_base_layer.t_unit->bg_color;
             std::array<float, 4> fb_bg_color = core::to_rgba_float(bg_color);
             priv::init_renderer(cur_fbo.info(), fb_bg_color);
 
             auto cur_layer_ctxs = render_ctx.local_eval(m_plane_ctx);
             if (m_initial_render) {
                 for (const auto& layer_ctx : cur_layer_ctxs) {
-                    this->add_layer(render_ctx, layer_ctx);
+                    this->add_layer(render_ctx, layer_ctx, pts);
                 }
                 m_initial_render = false;
             } else {
                 for (const auto& layer_ctx : cur_layer_ctxs) {
-                    auto it = m_actor_map.find(layer_ctx.uuid);
-                    if (it != m_actor_map.end()) {
-                        it->second->update_layer(layer_ctx);
+                    auto it = m_layer_object_map.find(layer_ctx.uuid);
+                    if (it != m_layer_object_map.end()) {
+                        it->second->update(render_ctx, layer_ctx, pts);
                     }
                 }
             }
 
-            for (auto iter = m_actors.rbegin(), end = m_actors.rend(); iter != end; ++iter) {
-                const auto& actor = *iter;
-                if (!actor) {
+            for (auto iter = m_layer_objects.rbegin(), end = m_layer_objects.rend(); iter != end;
+                 ++iter) {
+                auto& layer_object = *iter;
+                if (!layer_object) {
                     continue;
                 }
-                const auto& layer_ctx = actor->get_layer_ctx();
-                if (layer_ctx.display) {
-                    if (static_cast<core::LayerType>(layer_ctx.type) == core::LayerType::UNIT) {
+
+                if (layer_object->can_display()) {
+                    if (layer_object->is_unit()) {
                         RenderPlane* render_plane = nullptr;
-                        if (stage.find_render_plane(&render_plane, layer_ctx.uuid)) {
+                        if (stage.find_render_plane(&render_plane, layer_object->layer_uuid())) {
                             if (render_plane->m_fbo.initilized()) {
-                                // lifetime?
-                                actor->set_fbo(core::borrowed_ptr{&render_plane->m_fbo});
+                                // // lifetime?
+                                layer_object->set_fbo(core::borrowed_ptr{&render_plane->m_fbo});
                             }
                         }
                     }
-                    CHECK_AK_ERROR2(actor->render(render_ctx, pts,
-                                                  m_camera ? *m_camera : *render_ctx.camera()));
+
+                    CHECK_AK_ERROR2(layer_object->render(
+                        render_ctx, pts, m_camera ? *m_camera : *render_ctx.camera()));
                 }
             }
 
@@ -124,16 +124,17 @@ namespace akashi {
             return true;
         }
 
-        bool RenderPlane::add_layer(OGLRenderContext& ctx, const core::LayerContext& layer_ctx) {
-            if (layer_ctx.type == static_cast<int>(core::LayerType::AUDIO)) {
+        bool RenderPlane::add_layer(OGLRenderContext& ctx, const core::LayerContext& layer_ctx,
+                                    const core::Rational& pts) {
+            if (layer_ctx.t_audio) {
                 AKLOG_DEBUG("skip adding the audio layer: {}", layer_ctx.uuid);
                 return false;
             }
 
-            auto actor = create_actor(ctx, layer_ctx);
-            if (actor) {
-                m_actors.push_back(actor);
-                m_actor_map.insert({layer_ctx.uuid, actor});
+            const auto& layer_object = new LayerObject;
+            if (layer_object->create(ctx, layer_ctx, pts)) {
+                m_layer_objects.push_back(layer_object);
+                m_layer_object_map.insert({layer_ctx.uuid, layer_object});
                 return true;
             } else {
                 AKLOG_WARN("skip adding the layer: {}", layer_ctx.uuid);
