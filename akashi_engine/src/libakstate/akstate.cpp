@@ -21,7 +21,6 @@ namespace akashi {
                                          akconf.audio.channels, akconf.audio.channel_layout};
             m_atomic_state.encode_audio_spec.store(m_atomic_state.audio_spec);
 
-            m_prop.enable_loop = akconf.playback.enable_loop;
             m_atomic_state.volume = akconf.playback.gain;
             m_atomic_state.preferred_decode_method = akconf.video.preferred_decode_method;
             m_prop.video_max_queue_size = akconf.playback.video_max_queue_size;

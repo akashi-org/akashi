@@ -2,7 +2,6 @@
 
 #include "./elem.h"
 #include "./elem_tracer.h"
-#include "./elem_proxy.h"
 #include "../../../item.h"
 
 #include <libakcore/memory.h>
@@ -25,31 +24,31 @@ namespace akashi {
 
             trace_kron_context(elem, *ctx);
 
-            return ctx;
-        }
+            ctx->local_eval = [](core::borrowed_ptr<GlobalContext> gctx, const KronArg& arg) {
+                core::FrameContext frame_ctx;
+                frame_ctx.pts = arg.play_time;
 
-        static int64_t find_proxy_index(const GlobalContext& ctx, const KronArg& arg) {
-            // [TODO] impl faster way (binary search?)
-            for (size_t i = 0; i < ctx.atom_proxies.size(); i++) {
-                auto profile = ctx.atom_proxies[i].computed_profile();
-                if (profile.from <= arg.play_time && arg.play_time <= profile.to) {
-                    return i;
-                }
-            }
-            return -1;
-        }
+                // [XXX] for multiple atoms
+                // int64_t atom_idx = -1;
+                // for (size_t i = 0; i < gctx->atom_proxies.size(); i++) {
+                //     auto profile = gctx->atom_proxies[i].computed_profile(*gctx);
+                //     if (profile.from <= arg.play_time && arg.play_time <= profile.to) {
+                //         atom_idx = i;
+                //     }
+                // }
+                // if (atom_idx < 0) {
+                //     AKLOG_DEBUG("Could not find the suitable pts for: {}",
+                //                 arg.play_time.to_decimal());
+                //     return frame_ctx;
+                // }
+                int64_t atom_idx = 0;
 
-        core::FrameContext local_eval(const GlobalContext& ctx, const KronArg& arg) {
-            core::FrameContext frame_ctx;
-            frame_ctx.pts = arg.play_time;
-            auto proxy_idx = find_proxy_index(ctx, arg);
-            if (proxy_idx < 0) {
-                AKLOG_DEBUG("Could not find the suitable pts for: {}", arg.play_time.to_decimal());
+                frame_ctx.plane_ctxs = gctx->atom_proxies[atom_idx].eval(gctx, arg);
+                frame_ctx.atom_static_profile = gctx->atom_proxies[atom_idx].static_profile();
                 return frame_ctx;
-            }
-            frame_ctx.plane_ctxs = ctx.atom_proxies[proxy_idx].eval(arg);
-            frame_ctx.atom_static_profile = ctx.atom_proxies[proxy_idx].static_profile();
-            return frame_ctx;
+            };
+
+            return ctx;
         }
 
     }

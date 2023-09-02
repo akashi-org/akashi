@@ -28,12 +28,6 @@ namespace akashi {
 
             void exit(void);
 
-            core::FrameContext eval_kron(const char* module_path, const KronArg& kron_arg);
-
-            std::vector<core::FrameContext>
-            eval_krons(const char* module_path, const core::Rational& start_time, const int fps,
-                       const core::Rational& duration, const size_t length);
-
             core::RenderProfile render_prof(const std::string& module_path,
                                             const std::string& elem_name);
 
@@ -43,6 +37,7 @@ namespace akashi {
             core::owned_ptr<EvalContext> m_eval_ctx;
             core::borrowed_ptr<state::AKState> m_state;
             std::thread::id m_tid;
+            bool m_exited = false;
         };
 
     }

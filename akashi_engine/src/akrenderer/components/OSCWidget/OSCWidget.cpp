@@ -96,7 +96,7 @@ namespace akashi {
             auto should_update = m_osc->emit_time_event(
                 {.kind = OSCTimeEventKind::CURRENT_TIME, .current_time = current_time});
             if (should_update) {
-                this->update();
+                Q_EMIT this->request_update_osc();
             }
         }
 
@@ -105,7 +105,7 @@ namespace akashi {
             auto should_update = m_osc->emit_time_event(
                 {.kind = OSCTimeEventKind::DURATION, .duration = render_prof.duration});
             if (should_update) {
-                this->update();
+                Q_EMIT this->request_update_osc();
             }
         }
 
@@ -212,7 +212,7 @@ namespace akashi {
                     break;
                 }
                 case OSCInnerEventName::UPDATE: {
-                    this->update();
+                    Q_EMIT this->request_update_osc();
                     break;
                 }
                 case OSCInnerEventName::FRAME_SEEK: {

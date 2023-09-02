@@ -15,9 +15,6 @@ namespace akashi {
     namespace buffer {
         class AVBufferData;
     }
-    namespace core {
-        struct VideoLayerContext;
-    }
     namespace graphics {
 
         class OGLRenderContext;
@@ -50,12 +47,12 @@ namespace akashi {
             explicit VideoTexture(void);
             virtual ~VideoTexture(void);
 
-            bool create(const OGLRenderContext& ctx, const core::VideoLayerContext& vlayer_ctx,
+            bool create(const OGLRenderContext& ctx,
                         core::owned_ptr<buffer::AVBufferData>&& buf_data);
 
             bool destroy();
 
-            bool update(const OGLRenderContext& ctx, const core::VideoLayerContext& vlayer_ctx,
+            bool update(const OGLRenderContext& ctx,
                         core::owned_ptr<buffer::AVBufferData>&& buf_data);
 
             void use_textures(const std::array<GLuint, 3>& tex_locs);
@@ -68,16 +65,13 @@ namespace akashi {
 
           private:
             bool create_inner(const core::VideoDecodeMethod& decode_method, const OGLRenderContext&,
-                              const core::VideoLayerContext&, const buffer::AVBufferData&);
+                              const buffer::AVBufferData&);
 
-            bool create_inner_sw(const OGLRenderContext&, const core::VideoLayerContext&,
-                                 const buffer::AVBufferData&);
+            bool create_inner_sw(const OGLRenderContext&, const buffer::AVBufferData&);
 
-            bool create_inner_vaapi(const OGLRenderContext&, const core::VideoLayerContext&,
-                                    const buffer::AVBufferData&);
+            bool create_inner_vaapi(const OGLRenderContext&, const buffer::AVBufferData&);
 
-            bool create_inner_vaapi_copy(const OGLRenderContext&, const core::VideoLayerContext&,
-                                         const buffer::AVBufferData&);
+            bool create_inner_vaapi_copy(const OGLRenderContext&, const buffer::AVBufferData&);
 
             void free_vaapi_context();
 

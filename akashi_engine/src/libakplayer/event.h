@@ -42,6 +42,8 @@ namespace akashi {
 
             void run(PlayerEventContext ctx);
 
+            void close_and_wait();
+
             // [XXX] DO NOT name this 'emit'
             // a compile error will occur when used by Qt
             void emit_event(event::Event& evt) {

@@ -30,7 +30,7 @@ VideoDecodeMethod = Literal['', 'sw', 'vaapi', 'vaapi_copy']
 
 @dataclass(frozen=True)
 class VideoConf:
-    fps: sec = sec(24)
+    fps: sec = field(default_factory=lambda: sec(24))
     resolution: Tuple[int, int] = (1920, 1080)
     default_font_path: str = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
     msaa: int = 1  # msaa >= 1
@@ -54,7 +54,6 @@ class AudioConf:
 
 @dataclass(frozen=True)
 class PlaybackConf:
-    enable_loop: bool = True
     gain: float = 0.5  # 0 ~ 1.0
     video_max_queue_size: int = 1024 * 1024 * 300  # 300mb
     video_max_queue_count: int = 64  # max frame counts (applicable for hwdec)

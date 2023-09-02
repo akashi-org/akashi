@@ -17,7 +17,7 @@ namespace akashi {
 
         class OGLRenderContext;
         struct RenderParams;
-        class Actor;
+        class LayerObject;
         class Camera;
 
         class Stage;
@@ -30,22 +30,34 @@ namespace akashi {
 
             void destroy(const OGLRenderContext& ctx);
 
-            bool render(OGLRenderContext& ctx, const core::Rational& pts,
-                        const core::PlaneContext& cur_plane_ctx, const Stage& stage);
+            bool render(OGLRenderContext& ctx, const core::Rational& pts, const Stage& stage);
+
+            const core::LayerContext& base_layer() const { return m_base_layer; }
+
+            const core::PlaneContext& plane_ctx() const { return m_plane_ctx; }
+
+            void update(const core::PlaneContext& plane_ctx);
+
+            bool is_defunct() const { return m_is_defunct; }
+
+            void set_defunct(bool defunct) { m_is_defunct = defunct; }
 
           private:
-            bool add_layer(OGLRenderContext& ctx, const core::LayerContext& layer_ctx);
+            bool add_layer(OGLRenderContext& ctx, const core::LayerContext& layer_ctx,
+                           const core::Rational& pts);
 
           private:
             FBO m_fbo;
             core::owned_ptr<Camera> m_camera;
             core::PlaneContext m_plane_ctx;
+            core::LayerContext m_base_layer;
             core::AtomStaticProfile m_atom_static_profile;
 
             bool m_initial_render = true;
+            bool m_is_defunct = false;
 
-            std::vector<Actor*> m_actors;
-            std::unordered_map<std::string, Actor*> m_actor_map;
+            std::vector<LayerObject*> m_layer_objects;
+            std::unordered_map<std::string, LayerObject*> m_layer_object_map;
         };
 
         struct StageAux;

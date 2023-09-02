@@ -14,28 +14,27 @@ namespace akashi {
 
         class UILoop final {
           public:
-            explicit UILoop(){};
+            explicit UILoop() = default;
 
-            virtual ~UILoop() { this->terminate(); }
+            virtual ~UILoop() = default;
 
-            void terminate() {
-                {
-                    std::lock_guard<std::mutex> lock(m_on_thread_exit.mtx);
-                    if (m_on_thread_exit.func) {
-                        m_on_thread_exit.func(m_on_thread_exit.ctx);
-                    }
-                    m_on_thread_exit.func = nullptr;
-                }
+            void close_and_wait() {
                 if (m_th) {
+                    {
+                        std::lock_guard<std::mutex> lock(m_on_thread_exit.mtx);
+                        if (m_on_thread_exit.func) {
+                            m_on_thread_exit.func(m_on_thread_exit.ctx);
+                        }
+                        m_on_thread_exit.func = nullptr;
+                    }
+
+                    m_th->join();
                     delete m_th;
                     m_th = nullptr;
                 }
             };
 
-            void run(UILoopContext ctx) {
-                m_th = new std::thread(&UILoop::ui_thread, ctx, this);
-                m_th->detach();
-            };
+            void run(UILoopContext ctx) { m_th = new std::thread(&UILoop::ui_thread, ctx, this); };
 
             void set_on_thread_exit(std::function<void(void*)> on_thread_exit, void* ctx) {
                 {

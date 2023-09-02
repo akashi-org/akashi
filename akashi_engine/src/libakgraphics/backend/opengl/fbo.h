@@ -22,7 +22,7 @@ namespace akashi {
             struct Pass;
 
           public:
-            const static GLuint FBO_TEX_UNIT = 0;
+            const static GLint FBO_TEX_UNIT = 0;
 
           public:
             explicit FBO() = default;

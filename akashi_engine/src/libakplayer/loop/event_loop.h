@@ -67,8 +67,9 @@ namespace akashi {
 
             void run(EventLoopContext ctx) {
                 m_th = new std::thread(&EventLoop::event_thread, ctx, this);
-                m_th->detach();
             }
+
+            void close_and_wait();
 
             void set_on_thread_exit(std::function<void(void*)> on_thread_exit, void* ctx) {
                 {
@@ -160,9 +161,6 @@ namespace akashi {
 
             static void pull_render_profile(EventLoopContext& ctx,
                                             core::borrowed_ptr<eval::AKEval> eval);
-
-            static void pull_eval_buffer(const EventLoopContext& ctx,
-                                         core::borrowed_ptr<eval::AKEval> eval, size_t length);
 
             static void seek(SeekManager& seek_mgr, const core::Rational& seek_time);
 

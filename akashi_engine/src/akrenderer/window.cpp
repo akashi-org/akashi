@@ -53,15 +53,16 @@ namespace akashi {
             return state->get_seek_completed() && state->m_atomic_state.ui_can_seek.load();
         }
 
-        Window::Window(akashi::core::borrowed_ptr<akashi::state::AKState> state, QWidget* parent)
+        Window::Window(akashi::core::borrowed_ptr<akashi::state::AKState> state,
+                       akashi::core::borrowed_ptr<akashi::player::AKPlayer> player, QWidget* parent)
             : QFrame(parent), m_state(state) {
             this->setObjectName("window");
             // this->setStyleSheet("#window {border: 1px solid #091F2B; }");
             // this->setFrameShadow(QFrame::Raised);
 
-            this->m_monitorArea = new MonitorArea(borrowed_ptr(m_state), this);
+            this->m_monitorArea = new MonitorArea(m_state, player, this);
 
-            this->m_oscArea = new OSCArea(borrowed_ptr(m_state), this);
+            this->m_oscArea = new OSCArea(m_state, this);
             this->m_oscArea->show();
 
             auto [init_w, init_h] = state->m_ui_conf.resolution;
@@ -172,7 +173,7 @@ namespace akashi {
                     break;
                 }
                 case akashi::state::PlayState::PLAYING: {
-                    if (!m_state->get_evalbuf_dequeue_ready()) {
+                    if (!m_state->get_kron_ready()) {
                         AKLOG_WARNN("kron not ready");
                         return;
                     }
@@ -368,14 +369,18 @@ namespace akashi {
             switch (new_state) {
                 case akashi::state::PlayState::STOPPED:
                 case akashi::state::PlayState::PAUSED: {
+                    m_state->m_atomic_state.icon_play_state.store(akashi::state::PlayState::PAUSED);
                     this->m_monitorArea->pause();
                     break;
                 }
                 case akashi::state::PlayState::PLAYING: {
-                    if (!m_state->get_evalbuf_dequeue_ready()) {
+                    if (!m_state->get_kron_ready()) {
                         AKLOG_WARNN("Window::on_state_change(): kron not ready");
                         return;
                     }
+
+                    m_state->m_atomic_state.icon_play_state.store(
+                        akashi::state::PlayState::PLAYING);
                     this->m_monitorArea->play();
                     break;
                 }
@@ -422,5 +427,7 @@ namespace akashi {
             m_state->m_atomic_state.volume = gain;
             Q_EMIT this->volume_changed(gain);
         }
+
+        void Window::on_update_osc(void) { m_oscArea->update_osc(); }
     }
 }

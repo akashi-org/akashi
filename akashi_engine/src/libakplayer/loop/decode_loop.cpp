@@ -27,37 +27,35 @@ namespace akashi {
                 decode_pts = m_state->m_prop.current_time;
                 seek_id = m_state->m_prop.seek_id;
             }
-            loop_cnt = m_state->m_atomic_state.decode_loop_cnt;
         }
 
-        void DecodeState::seek_update(void) {
-            {
-                std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
-                decode_pts = m_state->m_prop.current_time;
-                seek_id = m_state->m_prop.seek_id;
-            }
-        }
-
-        void DecodeState::hr_update(void) {
+        void DecodeState::update(void) {
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 fps = m_state->m_prop.fps;
                 decode_pts = m_state->m_prop.current_time;
                 render_prof = m_state->m_prop.render_prof;
+                seek_id = m_state->m_prop.seek_id;
             }
-            m_state->m_atomic_state.decode_loop_cnt = 0;
-            loop_cnt = m_state->m_atomic_state.decode_loop_cnt;
         }
 
-        void DecodeState::loop_incr(void) {
-            m_state->m_atomic_state.decode_loop_cnt += 1;
-            loop_cnt = m_state->m_atomic_state.decode_loop_cnt;
+        static bool wait_for_all_decode_ready(core::borrowed_ptr<state::AKState> state) {
+            state->wait_for_kron_ready();
+            state->wait_for_video_decode_ready();
+            state->wait_for_audio_decode_ready();
+            state->wait_for_seek_completed();
+            state->wait_for_decode_layers_not_empty();
+            state->wait_for_decode_loop_can_continue();
+
+            return state->get_kron_ready() && state->get_video_decode_ready() &&
+                   state->get_audio_decode_ready() && state->get_seek_completed() &&
+                   state->get_decode_layers_not_empty() && state->get_decode_loop_can_continue();
         }
 
         void DecodeLoop::decode_thread(DecodeLoopContext ctx, DecodeLoop* loop) {
             AKLOG_INFON("Decoder thread start");
 
-            ctx.state->wait_for_evalbuf_dequeue_ready();
+            ctx.state->wait_for_kron_ready();
             ctx.state->wait_for_decode_layers_not_empty();
 
             AKLOG_INFON("Decoder loop start");
@@ -66,48 +64,38 @@ namespace akashi {
 
             auto decoder = new codec::AKDecoder(decode_state.render_prof, decode_state.decode_pts);
             bool decode_finished = false;
-            bool enable_loop = true;
             while (loop->m_is_alive.load() && !decode_finished) {
-                ctx.state->wait_for_evalbuf_dequeue_ready();
-                ctx.state->wait_for_video_decode_ready();
-                ctx.state->wait_for_audio_decode_ready();
-                ctx.state->wait_for_seek_completed();
-                ctx.state->wait_for_decode_layers_not_empty();
-
-                if (DecodeLoop::seek_detected(ctx.state, decode_state)) {
-                    AKLOG_INFON("Decode State updated by seek");
-                    decode_state.seek_update();
-
-                    if (ctx.state->m_atomic_state.decode_loop_cnt !=
-                        ctx.state->m_atomic_state.play_loop_cnt) {
-                        auto str_loop_cnt =
-                            std::to_string(ctx.state->m_atomic_state.decode_loop_cnt);
-                        ctx.buffer->vq->clear_by_loop_cnt(str_loop_cnt);
-                        ctx.buffer->aq->clear_by_loop_cnt(str_loop_cnt);
-
-                        ctx.state->m_atomic_state.decode_loop_cnt =
-                            ctx.state->m_atomic_state.play_loop_cnt.load();
-                        decode_state.loop_cnt = ctx.state->m_atomic_state.play_loop_cnt.load();
-                    }
-
-                    bool seek_success = true;
-                    {
-                        std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
-                        seek_success = ctx.state->m_prop.seek_success;
-                    }
-                    if (!seek_success) {
-                        delete decoder;
-                        decoder =
-                            new codec::AKDecoder(decode_state.render_prof, decode_state.decode_pts);
-                    }
+                if (!wait_for_all_decode_ready(ctx.state)) {
+                    continue;
                 }
 
-                if (DecodeLoop::hr_detected(ctx.state, decode_state)) {
-                    AKLOG_INFON("Decode State updated by hr");
-                    decode_state.hr_update();
-                    delete decoder;
-                    decoder =
-                        new codec::AKDecoder(decode_state.render_prof, decode_state.decode_pts);
+                if (!loop->m_is_alive) {
+                    break;
+                }
+
+                {
+                    auto seek_detected = DecodeLoop::seek_detected(ctx.state, decode_state);
+                    auto hr_detected = DecodeLoop::hr_detected(ctx.state, decode_state);
+                    if (seek_detected || hr_detected) {
+                        if (seek_detected) {
+                            AKLOG_INFON("Decode State updated by seek");
+                        }
+                        if (hr_detected) {
+                            AKLOG_INFON("Decode State updated by HR");
+                        }
+                        decode_state.update();
+
+                        bool seek_success = true;
+                        {
+                            std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
+                            seek_success = ctx.state->m_prop.seek_success;
+                        }
+                        if (!seek_success || hr_detected) {
+                            delete decoder;
+                            decoder = new codec::AKDecoder(decode_state.render_prof,
+                                                           decode_state.decode_pts);
+                        }
+                    }
                 }
 
                 codec::DecodeArg decode_args;
@@ -131,15 +119,7 @@ namespace akashi {
                     case codec::DecodeResultCode::DECODE_ENDED: {
                         AKLOG_INFO("DecodeLoop::decode_thread(): ended, code: {}",
                                    decode_res.result);
-                        if (enable_loop) {
-                            delete decoder;
-                            decode_state.loop_incr();
-                            decode_state.decode_pts = Rational(0, 1);
-                            decoder = new codec::AKDecoder(decode_state.render_prof,
-                                                           decode_state.decode_pts);
-                        } else {
-                            decode_finished = true;
-                        }
+                        ctx.state->set_decode_loop_can_continue(false);
                         break;
                     }
                     case codec::DecodeResultCode::DECODE_LAYER_EOF:
@@ -156,11 +136,8 @@ namespace akashi {
                     case codec::DecodeResultCode::OK: {
                         switch (decode_res.buffer->prop().media_type) {
                             case buffer::AVBufferType::VIDEO: {
-                                const auto comp_layer_uuid =
-                                    decode_res.layer_uuid + std::to_string(decode_state.loop_cnt);
-
                                 auto queue_size = ctx.buffer->vq->enqueue(
-                                    comp_layer_uuid, std::move(decode_res.buffer));
+                                    decode_res.layer_uuid, std::move(decode_res.buffer));
 
                                 bool need_first_render = false;
                                 {
@@ -175,9 +152,7 @@ namespace akashi {
                                 break;
                             }
                             case buffer::AVBufferType::AUDIO: {
-                                const auto comp_layer_uuid =
-                                    decode_res.layer_uuid + std::to_string(decode_state.loop_cnt);
-                                ctx.buffer->aq->enqueue(comp_layer_uuid,
+                                ctx.buffer->aq->enqueue(decode_res.layer_uuid,
                                                         std::move(decode_res.buffer));
                                 break;
                             }

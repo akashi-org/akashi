@@ -36,9 +36,9 @@ namespace akashi {
         }
 
         PlayerWidget::PlayerWidget(akashi::core::borrowed_ptr<akashi::state::AKState> state,
+                                   akashi::core::borrowed_ptr<akashi::player::AKPlayer> player,
                                    QWidget* parent, Qt::WindowFlags f)
-            : QOpenGLWidget(parent, f), m_state(state) {
-            m_player = make_owned<akashi::player::AKPlayer>(m_state);
+            : QOpenGLWidget(parent, f), m_state(state), m_player(player) {
             this->setObjectName("player_widget");
 
             this->setMouseTracking(true);
@@ -55,7 +55,7 @@ namespace akashi {
         PlayerWidget::~PlayerWidget() {}
 
         void PlayerWidget::play(void) {
-            if (m_player->evalbuf_dequeue_ready()) {
+            if (m_player->kron_ready()) {
                 m_player->play();
             } else {
                 AKLOG_WARNN("Not ready for playing");

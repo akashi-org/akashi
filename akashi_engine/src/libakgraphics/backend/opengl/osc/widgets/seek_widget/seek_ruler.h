@@ -19,9 +19,10 @@ namespace akashi {
             class SeekRuler final : public BaseWidget {
               public:
                 struct Context;
-                struct LabelParams : core::TextLayerContext {
+                struct LabelParams : core::TextTField {
                     std::array<int32_t, 4> pad = {0, 0, 0, 0};
                     int32_t line_span = 0;
+                    core::TextStyleTField style;
                 };
 
                 struct Params {
@@ -39,6 +40,8 @@ namespace akashi {
                 void update_obj_params(const SeekRuler::Params& obj_params);
 
                 const SeekRuler::Params& obj_params() const { return m_obj_params; }
+
+                void set_label_dirty(bool label_dirty);
 
                 virtual bool update(OSCRenderContext& render_ctx,
                                     const RenderParams& params) override;

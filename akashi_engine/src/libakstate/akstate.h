@@ -2,6 +2,7 @@
 
 #include <libakcore/rational.h>
 #include <libakcore/element.h>
+#include <libakcore/memory.h>
 #include <libakcore/audio.h>
 #include <libakcore/path.h>
 #include <libakcore/hw_accel.h>
@@ -56,6 +57,8 @@ namespace akashi {
         struct AKConf;
     }
 
+    using eval_GlobalContext = void*;
+
     namespace state {
 
         enum class PlayState { NONE = -2, STOPPED = -1, PAUSED, PLAYING };
@@ -78,6 +81,8 @@ namespace akashi {
 
             RenderProfile render_prof;
 
+            size_t max_frame_idx = 0;
+
             int video_width = 1920;
 
             int video_height = 1080;
@@ -86,18 +91,11 @@ namespace akashi {
 
             std::string default_font_path;
 
-            bool enable_loop = true;
-
             size_t video_max_queue_size = 1024 * 1024 * 300; // 300mb
 
             size_t video_max_queue_count = 64;
 
             size_t audio_max_queue_size = 1024 * 1024 * 100; // 100mb
-
-            // [TODO] any other ways to handle this?
-            // set to true when play over is detected in akaudio
-            // set to false when handled properly in player loop
-            bool trigger_video_reset = false;
 
             /**
              * current time to be displayed to the user
@@ -125,8 +123,6 @@ namespace akashi {
 
             std::atomic<core::Rational> start_time{core::Rational{0, 1}};
 
-            std::atomic<size_t> current_atom_index = 0;
-
             std::atomic<core::AKAudioSpec> audio_spec;
 
             std::atomic<core::AKAudioSpec> encode_audio_spec;
@@ -144,13 +140,13 @@ namespace akashi {
             std::atomic<core::VideoDecodeMethod> preferred_decode_method =
                 core::VideoDecodeMethod::NONE;
 
-            std::atomic<size_t> play_loop_cnt = 0;
+            std::atomic<bool> video_play_over = false;
 
-            std::atomic<size_t> decode_loop_cnt = 0;
+            std::atomic<bool> audio_play_over = false;
         };
 
         class AKState final {
-            AK_DEF_SYNC_STATE(evalbuf_dequeue_ready, bool, false)
+            AK_DEF_SYNC_STATE(kron_ready, bool, false)
             AK_DEF_SYNC_STATE(play_ready, bool, false)
 
             AK_DEF_SYNC_STATE(render_completed, bool, false)
@@ -163,6 +159,7 @@ namespace akashi {
             AK_DEF_SYNC_STATE(decode_layers_not_empty, bool, false)
             AK_DEF_SYNC_STATE(video_decode_ready, bool, true)
             AK_DEF_SYNC_STATE(audio_decode_ready, bool, true)
+            AK_DEF_SYNC_STATE(decode_loop_can_continue, bool, true)
 
             AK_DEF_SYNC_STATE(producer_finished, bool, false);
             AK_DEF_SYNC_STATE(consumer_finished, bool, false);
@@ -182,6 +179,9 @@ namespace akashi {
             core::VideoConf m_video_conf;
 
             core::Path m_conf_path;
+
+            eval_GlobalContext m_eval_gctx;
+            std::mutex m_eval_gctx_mtx;
 
           public:
             explicit AKState(const core::AKConf& akconf, const std::string& conf_path);

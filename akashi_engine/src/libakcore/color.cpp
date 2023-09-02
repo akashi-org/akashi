@@ -12,7 +12,7 @@ namespace akashi {
             std::array<int, 4> color = {0, 0, 0, 255};
 
             if (color_str[0] != '#') {
-                AKLOG_WARNN("Invalid format found");
+                AKLOG_WARN("Invalid format found: {}", color_str.c_str());
                 return {0, 0, 0, 0};
             }
 

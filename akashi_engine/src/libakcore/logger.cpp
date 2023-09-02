@@ -52,10 +52,9 @@ namespace akashi {
         }
 
         void destroy_logger() {
-            // [FIXME] not sure how to release loggers safely
-            // spdlog::drop_all();
-            // spdlog::drop(AK_LOGGER_NAME);
-            // spdlog::shutdown();
+            spdlog::drop_all();
+            spdlog::drop(AK_LOGGER_NAME);
+            spdlog::shutdown();
         }
 
     }

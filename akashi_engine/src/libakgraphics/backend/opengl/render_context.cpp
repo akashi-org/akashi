@@ -61,8 +61,6 @@ namespace akashi {
             return core::borrowed_ptr(m_camera.get());
         }
 
-        size_t OGLRenderContext::loop_cnt() { return m_state->m_atomic_state.play_loop_cnt; }
-
         core::Rational OGLRenderContext::fps() {
             core::Rational fps;
             {
@@ -72,8 +70,8 @@ namespace akashi {
             return fps;
         }
 
-        std::array<int, 2> OGLRenderContext::resolution() {
-            std::array<int, 2> res{0, 0};
+        std::array<long, 2> OGLRenderContext::resolution() {
+            std::array<long, 2> res{0, 0};
             {
                 std::lock_guard<std::mutex> lock(m_state->m_prop_mtx);
                 res[0] = m_state->m_prop.video_width;
@@ -111,6 +109,23 @@ namespace akashi {
 
         void OGLRenderContext::use_default_blend_func() const {
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        }
+
+        core::LayerContext OGLRenderContext::get_base_layer(const core::PlaneContext& plane_ctx) {
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_eval_gctx_mtx);
+                auto gctx = reinterpret_cast<eval::GlobalContext*>(m_state->m_eval_gctx);
+                return plane_ctx.base(core::borrowed_ptr(gctx), plane_ctx);
+            }
+        }
+
+        std::vector<core::LayerContext>
+        OGLRenderContext::local_eval(const core::PlaneContext& plane_ctx) {
+            {
+                std::lock_guard<std::mutex> lock(m_state->m_eval_gctx_mtx);
+                auto gctx = reinterpret_cast<eval::GlobalContext*>(m_state->m_eval_gctx);
+                return plane_ctx.eval(core::borrowed_ptr(gctx), plane_ctx);
+            }
         }
 
     }

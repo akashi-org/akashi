@@ -14,6 +14,7 @@ import signal
 import threading
 from subprocess import Popen
 import os
+import sys
 
 
 class ServerThread(threading.Thread):
@@ -55,9 +56,12 @@ class ServerThread(threading.Thread):
         )
         self.proc.communicate()
 
-    def terminate(self):
+    def close_and_wait(self):
         if self.proc:
             self.proc.terminate()
+        self.join(timeout=3)
+        if self.is_alive():
+            print('ServerThread::close_and_wait(): Join timeout!', file=sys.stderr)
 
 
 def akashi_cli() -> None:
@@ -98,5 +102,4 @@ def akashi_cli() -> None:
 
     signal.sigwait(sigset)
 
-    th_server.terminate()
-    print('')
+    th_server.close_and_wait()

@@ -18,27 +18,26 @@ namespace akashi {
 
         core::owned_ptr<core::PerfMonitor> MainLoop::p_perf(new core::PerfMonitor);
 
-        void MainLoop::mainloop_thread(MainLoopContext ctx) {
+        void MainLoop::mainloop_thread(MainLoopContext ctx, MainLoop* loop) {
             auto [player, state, event, eval_buf] = ctx;
 
             AKLOG_INFON("Player thread start");
 
-            state->wait_for_evalbuf_dequeue_ready();
+            state->wait_for_kron_ready();
 
             AKLOG_INFON("Player loop start");
 
             while (true) {
                 state->wait_for_play_ready();
                 // state->wait_for_audio_play_ready();
-
-                if (eval_buf->is_hungry()) {
-                    event->emit_pull_eval_buffer(25);
+                if (!loop->m_is_alive) {
+                    break;
                 }
 
-                const auto current_frame_ctx = eval_buf->back();
+                eval_buf->fetch_render_buf();
+                const auto& current_frame_ctx = eval_buf->render_buf();
                 if (MainLoop::sync_render(ctx, current_frame_ctx)) {
                     ctx.state->set_render_completed(false);
-                    eval_buf->set_render_buf(current_frame_ctx);
                     ctx.event->emit_update();
                     p_perf->log_render_start();
                     ctx.state->wait_for_render_completed();
@@ -47,6 +46,8 @@ namespace akashi {
 
                 MainLoop::update_time(ctx, current_frame_ctx);
             }
+
+            AKLOG_INFON("Player loop successfully exited");
         }
 
         bool MainLoop::sync_render(const MainLoopContext& ctx,
@@ -89,32 +90,22 @@ namespace akashi {
         void MainLoop::update_time(MainLoopContext& ctx, const core::FrameContext& frame_ctx) {
             auto [player, state, event, eval_buf] = ctx;
 
-            Rational current_time = Rational(0l);
-            bool is_play_over = false;
+            Rational current_time = frame_ctx.pts;
             {
                 std::lock_guard<std::mutex> lock(state->m_prop_mtx);
-                is_play_over = state->m_prop.trigger_video_reset;
-            }
-
-            if (is_play_over) {
-                current_time = Rational(0l);
-                {
-                    std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
-                    ctx.state->m_prop.current_time = current_time;
-                    ctx.state->m_prop.trigger_video_reset = false;
+                size_t cur_frame_num = (frame_ctx.pts * state->m_prop.fps).to_decimal();
+                auto max_frame_idx = state->m_prop.max_frame_idx;
+                auto fps = state->m_prop.fps;
+                bool is_play_over = cur_frame_num >= max_frame_idx;
+                // AKLOG_WARN("cur_frame: {}, total_frames: {}, is_play_over: {} ", cur_frame_num,
+                //            total_frames, is_play_over);
+                state->m_atomic_state.video_play_over = is_play_over;
+                if (is_play_over) {
+                    ctx.state->set_play_ready(false, true);
+                    // ctx.state->m_prop.current_time = Rational(0, 0);
+                } else {
+                    ctx.state->m_prop.current_time = current_time + (Rational(1, 1) / fps);
                 }
-                auto seek_success = eval_buf->seek(current_time);
-                if (!seek_success) {
-                    AKLOG_ERRORN("MainLoop::update_time(): seek failed!!!");
-                }
-                AKLOG_DEBUGN("loop detected");
-            } else {
-                current_time = frame_ctx.pts;
-                {
-                    std::lock_guard<std::mutex> lock(ctx.state->m_prop_mtx);
-                    ctx.state->m_prop.current_time = current_time;
-                }
-                eval_buf->pop();
             }
 
             p_perf->log_fps(current_time, ctx.player->current_time());

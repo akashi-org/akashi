@@ -10,6 +10,9 @@
 #include <QLabel>
 #include <QMouseEvent>
 
+#include <libakcore/logger.h>
+using namespace akashi::core;
+
 namespace akashi {
     namespace ui {
 
@@ -33,6 +36,9 @@ namespace akashi {
                              static_cast<Window*>(this->window()), &Window::on_seekbar_moved);
             QObject::connect(this->m_osc_widget, &OSCWidget::seekbar_released,
                              static_cast<Window*>(this->window()), &Window::on_seekbar_released);
+
+            QObject::connect(this->m_osc_widget, &OSCWidget::request_update_osc,
+                             static_cast<Window*>(this->window()), &Window::on_update_osc);
 
             // parent -> m_osc_widget
             QObject::connect(
@@ -69,6 +75,14 @@ namespace akashi {
             this->m_main_layout->addLayout(this->m_osc_area_layout, 0, 0, -1, -1);
 
             this->setLayout(this->m_main_layout);
+        }
+
+        void OSCArea::update_osc() {
+            if (this->m_osc_widget->isHidden()) {
+                m_osc_widget->set_should_update(true);
+            } else {
+                m_osc_widget->update();
+            }
         }
 
         void OSCArea::resize_osc(int w, int h) {
@@ -110,6 +124,10 @@ namespace akashi {
         void OSCArea::show_control(void) {
             if (this->m_osc_widget->isHidden()) {
                 this->m_osc_widget->show();
+                if (m_osc_widget->should_update()) {
+                    this->m_osc_widget->update();
+                    m_osc_widget->set_should_update(false);
+                }
             }
         }
 

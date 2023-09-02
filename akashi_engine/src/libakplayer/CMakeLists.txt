@@ -13,6 +13,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
   ./loop/watch_loop.cpp
   ./reload/seek_manager.cpp
   ./reload/hr_manager.cpp
+  ./reload/utils.cpp
 )
 
 file(GLOB INTERFACE_HEADERS

@@ -6,6 +6,7 @@
 
 #include <libakcore/memory.h>
 #include <libakcore/logger.h>
+#include <libakcore/perf.h>
 
 #include <thread>
 #include <cassert>
@@ -33,33 +34,14 @@ namespace akashi {
             }
         }
 
-        AKEval::~AKEval() {}
+        AKEval::~AKEval() { this->exit(); }
 
         void AKEval::exit(void) {
-            W_ASSERT();
-            m_eval_ctx->exit();
-        }
-
-        core::FrameContext AKEval::eval_kron(const char* module_path, const KronArg& kron_arg) {
-            if (m_eval_ctx->loaded()) {
-                ASSERT();
-                return m_eval_ctx->eval_kron(module_path, kron_arg);
+            if (!m_exited) {
+                W_ASSERT();
+                m_eval_ctx->exit();
+                m_exited = true;
             }
-
-            FrameContext frame_ctx;
-            frame_ctx.pts = Rational{-1, 1};
-            return frame_ctx;
-        }
-
-        std::vector<core::FrameContext>
-        AKEval::eval_krons(const char* module_path, const core::Rational& start_time, const int fps,
-                           const core::Rational& duration, const size_t length) {
-            if (m_eval_ctx->loaded()) {
-                ASSERT();
-                return m_eval_ctx->eval_krons(module_path, start_time, fps, duration, length);
-            }
-
-            return {};
         }
 
         core::RenderProfile AKEval::render_prof(const std::string& module_path,

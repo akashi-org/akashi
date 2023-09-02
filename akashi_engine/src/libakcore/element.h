@@ -6,18 +6,62 @@
 #include <vector>
 #include <array>
 #include <map>
+#include <functional>
+#include <libakcore/memory.h>
 
 namespace akashi {
+    namespace eval {
+        struct GlobalContext;
+
+    }
     namespace core {
 
-        enum class LayerType { VIDEO = 0, AUDIO, TEXT, IMAGE, UNIT, SHAPE, LENGTH };
-
-        struct CropInfo {
-            std::array<long, 2> begin;
-            std::array<long, 2> end;
+        struct TransformTField {
+            double x;
+            double y;
+            double z = 0.0;
+            std::array<long, 2> layer_size = {-1, -1};
+            Rational rotation = Rational(0, 1);
+            std::array<double, 3> scale = {1.0, 1.0, 1.0}; // (x,y,z)
         };
 
-        struct Style {
+        struct TextureTField {
+            bool uv_flip_v = false;
+            bool uv_flip_h = false;
+            std::array<long, 2> crop_begin;
+            std::array<long, 2> crop_end;
+        };
+
+        struct ShaderTField {
+            std::string frag;
+            std::string poly;
+        };
+
+        struct BaseMediaTField {
+            std::string src;
+            Rational start = core::Rational(0, 1);
+            Rational end = core::Rational(0, 1);
+            double gain;
+        };
+
+        struct VideoTField : public BaseMediaTField {};
+
+        struct AudioTField : public BaseMediaTField {};
+
+        struct ImageTField {
+            std::vector<std::string> srcs;
+        };
+
+        enum class TextAlign { LEFT = 0, CENTER, RIGHT, LENGTH };
+
+        struct TextTField {
+            std::string text;
+            TextAlign text_align;
+            std::array<int32_t, 4> pad; // left, right, top, bottom
+            int32_t line_span;
+        };
+
+        struct TextStyleTField {
             std::string font_path;
             uint32_t fg_size;
             std::string fg_color;
@@ -29,62 +73,26 @@ namespace akashi {
             std::string shadow_color;
         };
 
-        enum class TextAlign { LEFT = 0, CENTER, RIGHT, LENGTH };
+        // enum class ShapeKind { RECT = 0, CIRCLE, TRIANGLE, LINE, LENGTH };
+        enum class BorderDirection { INNER = 0, OUTER, FULL, LENGTH };
 
-        struct VideoLayerContext {
-            std::string src;
-            Rational start = core::Rational(0, 1);
-            Rational end = core::Rational(0, 1);
-            double scale;
-            double gain;
-            std::string frag;
-            std::string poly;
+        struct BaseShapeTField {
+            std::string fill_color;
+            double border_size;
+            std::string border_color;
+            BorderDirection border_direction = BorderDirection::INNER;
+            double edge_radius;
         };
 
-        struct AudioLayerContext {
-            std::string src;
-            Rational start = core::Rational(0, 1);
-            Rational end = core::Rational(0, 1);
-            double gain;
-        };
-
-        struct TextLayerContext {
-            std::string text;
-            TextAlign text_align;
-            std::array<int32_t, 4> pad; // left, right, top, bottom
-            int32_t line_span;
-            double scale;
-            Style style;
-            std::string frag;
-            std::string poly;
-        };
-
-        struct ImageLayerContext {
-            std::vector<std::string> srcs;
-            double scale;
-            std::string frag;
-            std::string poly;
-            CropInfo crop;
-        };
-
-        struct UnitLayerContext {
-            std::vector<unsigned long> layer_indices;
-            std::string bg_color;
-            std::array<long, 2> fb_size = {0, 0};
-            std::string frag;
-            std::string poly;
-        };
-
-        enum class ShapeKind { RECT = 0, CIRCLE, TRIANGLE, LINE, LENGTH };
-
-        struct RectDetail {
+        struct RectTField : public BaseShapeTField {
             int width = 0;
             int height = 0;
         };
 
-        struct CircleDetail {};
+        // As the value of the circle size, we are now using TransformTField::layer_size instead.
+        struct CircleTField : public BaseShapeTField {};
 
-        struct TriangleDetail {
+        struct TriTField : public BaseShapeTField {
             int width = 0;
             int height = 0;
             double wr = 0;
@@ -93,64 +101,76 @@ namespace akashi {
 
         enum class LineStyle { DEFAULT = 0, ROUND_DOT, SQUARE_DOT, CAP, LENGTH };
 
-        struct LineDetail {
+        struct LineTField : public BaseShapeTField {
             double size;
             std::array<long, 2> begin;
             std::array<long, 2> end;
             LineStyle style;
         };
 
-        enum class BorderDirection { INNER = 0, OUTER, FULL, LENGTH };
-
-        struct ShapeLayerContext {
-            ShapeKind shape_kind;
-            double border_size;
-            std::string border_color;
-            BorderDirection border_direction;
-            double edge_radius;
-            bool fill = true;
-            std::string color;
-            std::string frag;
-            std::string poly;
-            RectDetail rect;
-            CircleDetail circle;
-            TriangleDetail tri;
-            LineDetail line;
+        struct UnitTField {
+            std::vector<unsigned long> layer_indices;
+            std::string bg_color;
+            std::array<long, 2> fb_size = {0, 0};
         };
 
         struct LayerContext {
-            double x;
-            double y;
-            double z = 0.0;
-            std::array<long, 2> layer_size = {-1, -1};
-            Rational from = core::Rational(0, 1);
-            Rational to = core::Rational(0, 1);
-            int type;
             std::string uuid;
             std::string atom_uuid;
+            std::string key;
+
             bool display = false;
 
-            Rational rotation = Rational(0, 1);
+            Rational from = core::Rational(0, 1);
+            Rational layer_local_offset = core::Rational(0, 1);
+            Rational to = core::Rational(0, 1);
 
-            bool uv_flip_v = false;
-            bool uv_flip_h = false;
+            core::borrowed_ptr<const TransformTField> t_transform =
+                borrowed_ptr<const TransformTField>(nullptr);
+            core::borrowed_ptr<const TextureTField> t_texture =
+                borrowed_ptr<const TextureTField>(nullptr);
+            core::borrowed_ptr<const ShaderTField> t_shader =
+                borrowed_ptr<const ShaderTField>(nullptr);
 
-            VideoLayerContext video_layer_ctx;
+            core::borrowed_ptr<const VideoTField> t_video =
+                borrowed_ptr<const VideoTField>(nullptr);
+            core::borrowed_ptr<const AudioTField> t_audio =
+                borrowed_ptr<const AudioTField>(nullptr);
+            core::borrowed_ptr<const ImageTField> t_image =
+                borrowed_ptr<const ImageTField>(nullptr);
+            core::borrowed_ptr<const TextTField> t_text = borrowed_ptr<const TextTField>(nullptr);
+            core::borrowed_ptr<const TextStyleTField> t_text_style =
+                borrowed_ptr<const TextStyleTField>(nullptr);
 
-            AudioLayerContext audio_layer_ctx;
+            core::borrowed_ptr<const RectTField> t_rect = borrowed_ptr<const RectTField>(nullptr);
+            core::borrowed_ptr<const CircleTField> t_circle =
+                borrowed_ptr<const CircleTField>(nullptr);
+            core::borrowed_ptr<const TriTField> t_tri = borrowed_ptr<const TriTField>(nullptr);
+            core::borrowed_ptr<const LineTField> t_line = borrowed_ptr<const LineTField>(nullptr);
 
-            TextLayerContext text_layer_ctx;
+            core::borrowed_ptr<const UnitTField> t_unit = borrowed_ptr<const UnitTField>(nullptr);
+        };
 
-            ImageLayerContext image_layer_ctx;
+        constexpr const int MediaFlagNA = 0;
+        constexpr const int MediaFlagVideo = 1 << 0;
+        constexpr const int MediaFlagAudio = 1 << 1;
+        using MediaType = int;
 
-            UnitLayerContext unit_layer_ctx;
-
-            ShapeLayerContext shape_layer_ctx;
+        inline MediaType get_media_type(const LayerContext& layer_ctx) {
+            MediaType type = MediaFlagNA;
+            if (layer_ctx.t_video) {
+                type |= MediaFlagVideo;
+            }
+            if (layer_ctx.t_audio) {
+                type |= MediaFlagAudio;
+            }
+            return type;
         };
 
         struct LayerProfile {
-            LayerType type;
+            MediaType type = MediaFlagNA;
             Rational from = core::Rational(0, 1);
+            Rational layer_local_offset = core::Rational(0, 1);
             Rational to = core::Rational(0, 1);
             std::string uuid;
             std::string src;
@@ -169,14 +189,27 @@ namespace akashi {
         };
 
         struct AtomStaticProfile {
+            Rational from = core::Rational(0, 1);
+            Rational to = core::Rational(0, 1);
+            Rational duration = core::Rational(0, 1);
+            std::string uuid;
             std::string bg_color;
             std::string atom_uuid;
         };
 
         struct PlaneContext {
             size_t level = 0;
-            LayerContext base; // unit layer
-            std::vector<LayerContext> layers;
+            size_t base_idx; // valid only when level >= 1
+            size_t atom_idx; // valid only when level == 0
+            std::string base_uuid;
+            std::vector<size_t> layer_indices;
+            bool display = false;
+            std::function<std::vector<core::LayerContext>(core::borrowed_ptr<eval::GlobalContext>,
+                                                          const core::PlaneContext&)>
+                eval;
+            std::function<core::LayerContext(core::borrowed_ptr<eval::GlobalContext>,
+                                             const core::PlaneContext&)>
+                base;
         };
 
         struct FrameContext {

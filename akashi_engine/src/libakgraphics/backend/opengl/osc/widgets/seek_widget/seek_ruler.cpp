@@ -104,6 +104,8 @@ namespace akashi {
             m_obj_params = obj_params;
         }
 
+        void SeekRuler::set_label_dirty(bool label_dirty) { m_label_dirty = label_dirty; }
+
         bool SeekRuler::update(OSCRenderContext& render_ctx, const RenderParams& params) {
             if (m_label_dirty) {
                 m_ctx->label_pass.mesh.destroy();

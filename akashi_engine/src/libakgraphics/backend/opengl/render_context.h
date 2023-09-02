@@ -2,6 +2,7 @@
 
 #include <libakcore/memory.h>
 #include <libakcore/rational.h>
+#include <libakcore/element.h>
 
 #include <array>
 
@@ -12,6 +13,9 @@ namespace akashi {
     }
     namespace state {
         class AKState;
+    }
+    namespace eval {
+        struct GlobalContext;
     }
     namespace graphics {
 
@@ -34,11 +38,9 @@ namespace akashi {
 
             const core::borrowed_ptr<Camera> camera() const;
 
-            size_t loop_cnt();
-
             core::Rational fps();
 
-            std::array<int, 2> resolution();
+            std::array<long, 2> resolution();
 
             std::string default_font_path();
 
@@ -48,6 +50,10 @@ namespace akashi {
                                                           const core::Rational& pts);
 
             void use_default_blend_func() const;
+
+            core::LayerContext get_base_layer(const core::PlaneContext& plane_ctx);
+
+            std::vector<core::LayerContext> local_eval(const core::PlaneContext& plane_ctx);
 
           private:
             core::borrowed_ptr<state::AKState> m_state;

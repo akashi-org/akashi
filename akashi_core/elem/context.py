@@ -11,10 +11,25 @@ from akashi_core.color import color_value
 import sys
 
 if TYPE_CHECKING:
-    from .layer.base import LayerField, HasMediaField
-    from .layer.unit import UnitEntry
     ElemFn = Callable[[], None]
     # ConfFn = Callable[[], AKConf]
+
+    from .layer import (
+        LayerField,
+        TransformField,
+        TextureField,
+        ShaderField,
+        VideoField,
+        AudioField,
+        ImageField,
+        TextField,
+        TextStyleField,
+        RectField,
+        CircleField,
+        TriField,
+        LineField
+    )
+    from .layer.unit import UnitField
 
 
 @dataclass
@@ -24,7 +39,24 @@ class KronContext:
     atoms: list['AtomEntry'] = field(default_factory=list, init=False)
     layers: list['LayerField'] = field(default_factory=list, init=False)
 
+    t_transforms: list['TransformField'] = field(default_factory=list, init=False)
+    t_textures: list['TextureField'] = field(default_factory=list, init=False)
+    t_shaders: list['ShaderField'] = field(default_factory=list, init=False)
+    t_videos: list['VideoField'] = field(default_factory=list, init=False)
+    t_audios: list['AudioField'] = field(default_factory=list, init=False)
+    t_images: list['ImageField'] = field(default_factory=list, init=False)
+    t_texts: list['TextField'] = field(default_factory=list, init=False)
+    t_text_styles: list['TextStyleField'] = field(default_factory=list, init=False)
+
+    t_rects: list['RectField'] = field(default_factory=list, init=False)
+    t_circles: list['CircleField'] = field(default_factory=list, init=False)
+    t_tris: list['TriField'] = field(default_factory=list, init=False)
+    t_lines: list['LineField'] = field(default_factory=list, init=False)
+
+    t_units: list['UnitField'] = field(default_factory=list, init=False)
+
     _cur_unit_ids: list[int] = field(default_factory=list, init=False)
+    _cur_layer_id: int = -1
 
     @staticmethod
     def init(config: AKConf) -> KronContext:
@@ -58,7 +90,7 @@ class AtomEntry:
     uuid: UUID
     layer_indices: list[int] = field(default_factory=list, init=False)
     bg_color: str = "#000000"  # "#rrggbb"
-    _duration: sec = field(default=sec(0), init=False)
+    _duration: sec = field(default_factory=lambda: sec(0), init=False)
 
 
 @dataclass
@@ -77,12 +109,11 @@ class AtomHandle:
         atom_fitted_layer_indices: list[int] = []
         for layer_idx in cur_atom.layer_indices:
             cur_layer = cur_layers[layer_idx]
+            if cur_layer.slice_offset == NOT_FIXED_SEC:
+                cur_layer.slice_offset = cur_layer.frame_offset
+
             if isinstance(cur_layer._duration, sec):
-
-                if cur_layer.duration == NOT_FIXED_SEC:
-                    cur_layer.duration = cur_layer._duration
-
-                layer_to = cur_layer.atom_offset + cur_layer.duration
+                layer_to = cur_layer.slice_offset + cur_layer._duration
                 if layer_to > max_to:
                     max_to = layer_to
             else:
@@ -92,7 +123,7 @@ class AtomHandle:
 
         # resolve atom fitted layers
         for at_layer_idx in atom_fitted_layer_indices:
-            cur_layers[at_layer_idx].duration = cur_atom._duration
+            cur_layers[at_layer_idx]._duration = cur_atom._duration
 
         return False
 
@@ -159,7 +190,9 @@ def _cur_local_size() -> tuple[int, int]:
     if len(unit_ids) == 0:
         return cur_ctx.config.video.resolution
     else:
-        return cast('UnitEntry', cur_ctx.layers[unit_ids[-1]]).unit.fb_size
+        cur_unit_layer = cur_ctx.layers[unit_ids[-1]]
+        assert cur_unit_layer.t_unit != -1
+        return cur_ctx.t_units[cur_unit_layer.t_unit].fb_size
 
 
 def width() -> int:

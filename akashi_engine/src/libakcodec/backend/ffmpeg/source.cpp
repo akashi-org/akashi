@@ -39,7 +39,11 @@ namespace akashi {
 
             auto act_from = m_input_src.layer_prof.from +
                             (core::Rational(m_input_src.loop_cnt, 1) * m_input_src.act_dur);
-            auto seek_rpts = m_input_src.layer_prof.start + (decode_start - act_from);
+
+            auto media_offset = m_input_src.layer_prof.layer_local_offset;
+
+            auto seek_rpts =
+                (media_offset + m_input_src.layer_prof.start) + (decode_start - act_from);
 
             if (seek_rpts > Rational(0, 1)) {
                 if (!this->seek(seek_rpts)) {
@@ -215,6 +219,10 @@ namespace akashi {
                 m_input_src.loop_cnt = 0;
             } else {
                 m_input_src.loop_cnt = (r_dts / m_input_src.act_dur).to_decimal();
+                if (m_input_src.layer_prof.layer_local_offset > 0 and
+                    r_dts > (m_input_src.act_dur - m_input_src.layer_prof.layer_local_offset)) {
+                    m_input_src.loop_cnt += 1;
+                }
             }
 
             // input_src[i].io_ctx = new IOContext(input_paths[i]);
@@ -291,7 +299,7 @@ namespace akashi {
                     media_type == AVMediaType::AVMEDIA_TYPE_AUDIO) {
                     // skip a video stream if audio only
                     if (media_type == AVMediaType::AVMEDIA_TYPE_VIDEO) {
-                        if (m_input_src.layer_prof.type == core::LayerType::AUDIO) {
+                        if (m_input_src.layer_prof.type & core::MediaFlagAudio) {
                             m_input_src.dec_streams[i].is_active = false;
                             continue;
                         }
@@ -319,7 +327,7 @@ namespace akashi {
                     m_input_src.dec_streams[i].dec_ctx = avcodec_alloc_context3(av_codec);
                     m_input_src.dec_streams[i].swr_ctx = nullptr;
                     m_input_src.dec_streams[i].swr_ctx_init_done = false;
-                    m_input_src.dec_streams[i].is_checked_first_pts = false;
+                    m_input_src.dec_streams[i].is_checked_first_rpts = false;
                     m_input_src.dec_streams[i].input_start_pts =
                         format_ctx->start_time == AV_NOPTS_VALUE ? 0 : format_ctx->start_time;
                     m_input_src.dec_streams[i].cur_decode_pts = akashi::core::Rational(0, 1);
@@ -441,11 +449,6 @@ namespace akashi {
                 av_frame_ref(m_input_src.frame, m_input_src.proxy_frame);
             }
 
-            if (!dec_stream->is_checked_first_pts) {
-                dec_stream->first_pts = m_input_src.frame->pts;
-                dec_stream->is_checked_first_pts = true;
-            }
-
             return true;
         }
 
@@ -467,10 +470,17 @@ namespace akashi {
                 return false;
             }
 
+            auto dec_stream = &m_input_src.dec_streams[m_input_src.pkt->stream_index];
+
             if (!pts_set.within_range()) {
-                m_input_src.dec_streams[m_input_src.pkt->stream_index].decode_ended = true;
+                dec_stream->decode_ended = true;
                 decode_result->result = DecodeResultCode::DECODE_STREAM_ENDED;
                 return false;
+            }
+
+            if (!dec_stream->is_checked_first_rpts) {
+                dec_stream->first_rpts = pts_set.frame_rpts();
+                dec_stream->is_checked_first_rpts = true;
             }
 
             return true;

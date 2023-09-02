@@ -20,13 +20,13 @@ namespace akashi {
             core::Rational cur_frame_time{1, 24}; // 1 / fps
             long cur_time_msec = 0;
             long cur_duration_msec = 0;
-            size_t cur_frame = 0;
-            size_t cur_total_frames = 2000;
+            size_t cur_frame_idx = 0;
+            size_t cur_max_frame_idx = 2000;
 
             std::string str_cur_time_msec;
             std::string str_cur_duration_msec;
-            std::string str_cur_frame;
-            std::string str_cur_total_frames;
+            std::string str_cur_frame_idx;
+            std::string str_cur_max_frame_idx;
         };
         Timecode::Timecode(OSCRenderContext& render_ctx, const BoundingBox& bbox)
             : BaseWidget(render_ctx, bbox) {
@@ -36,8 +36,8 @@ namespace akashi {
 
             m_ctx->str_cur_time_msec = core::to_time_string(m_ctx->cur_time_msec);
             m_ctx->str_cur_duration_msec = core::to_time_string(m_ctx->cur_duration_msec);
-            m_ctx->str_cur_frame = this->formatted_frame_count(m_ctx->cur_frame);
-            m_ctx->str_cur_total_frames = this->formatted_frame_count(m_ctx->cur_total_frames);
+            m_ctx->str_cur_frame_idx = this->formatted_frame_count(m_ctx->cur_frame_idx);
+            m_ctx->str_cur_max_frame_idx = this->formatted_frame_count(m_ctx->cur_max_frame_idx);
 
             osc::TextLabel::Params text_params;
             text_params.text = this->construct_time_string();
@@ -87,9 +87,10 @@ namespace akashi {
                         m_ctx->cur_time_msec = cur_time_msec;
                         m_ctx->str_cur_time_msec = core::to_time_string(m_ctx->cur_time_msec);
 
-                        m_ctx->cur_frame =
+                        m_ctx->cur_frame_idx =
                             (event.current_time / m_ctx->cur_frame_time).to_decimal();
-                        m_ctx->str_cur_frame = this->formatted_frame_count(m_ctx->cur_frame);
+                        m_ctx->str_cur_frame_idx =
+                            this->formatted_frame_count(m_ctx->cur_frame_idx);
 
                         return true;
                     }
@@ -104,10 +105,11 @@ namespace akashi {
                         m_ctx->str_cur_duration_msec =
                             core::to_time_string(m_ctx->cur_duration_msec);
 
-                        m_ctx->cur_total_frames =
-                            (event.duration / m_ctx->cur_frame_time).to_decimal();
-                        m_ctx->str_cur_total_frames =
-                            this->formatted_frame_count(m_ctx->cur_total_frames);
+                        m_ctx->cur_max_frame_idx =
+                            ((event.duration / m_ctx->cur_frame_time) - core::Rational(1l))
+                                .to_decimal();
+                        m_ctx->str_cur_max_frame_idx =
+                            this->formatted_frame_count(m_ctx->cur_max_frame_idx);
 
                         return true;
                     }
@@ -121,7 +123,7 @@ namespace akashi {
 
         std::string Timecode::construct_time_string() {
             return m_ctx->str_cur_time_msec + " / " + m_ctx->str_cur_duration_msec + " ( " +
-                   m_ctx->str_cur_frame + " / " + m_ctx->str_cur_total_frames + " )";
+                   m_ctx->str_cur_frame_idx + " / " + m_ctx->str_cur_max_frame_idx + " )";
         }
 
         std::string Timecode::formatted_frame_count(long count, int pad_digit) {

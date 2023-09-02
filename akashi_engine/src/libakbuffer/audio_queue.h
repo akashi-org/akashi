@@ -55,7 +55,10 @@ namespace akashi {
 
             void clear_by_id(uuid_t layer_uuid);
 
-            void clear_by_loop_cnt(const std::string& loop_cnt);
+            size_t total_queue_size(void);
+
+            // just for debugging
+            void dump_all();
 
           private:
             core::borrowed_ptr<state::AKState> m_state;

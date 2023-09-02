@@ -29,6 +29,7 @@ namespace akashi {
 
           public:
             explicit PlayerWidget(akashi::core::borrowed_ptr<akashi::state::AKState> state,
+                                  akashi::core::borrowed_ptr<akashi::player::AKPlayer> player,
                                   QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
             virtual ~PlayerWidget(void);
             void play(void);
@@ -67,7 +68,7 @@ namespace akashi {
 
           private:
             akashi::core::borrowed_ptr<akashi::state::AKState> m_state;
-            akashi::core::owned_ptr<akashi::player::AKPlayer> m_player;
+            akashi::core::borrowed_ptr<akashi::player::AKPlayer> m_player;
             QTimer* m_cursor_timer;
             bool m_enable_smart_cursor = true; // if true, hide the cursor automatically
         };

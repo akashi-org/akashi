@@ -187,7 +187,6 @@ class _expr(Generic[_T]):
 
 @dataclass
 class _LayerUniform:
-
     time: Final['uniform'[float]] = _uniform_default()
     global_time: Final['uniform'[float]] = _uniform_default()
     local_duration: Final['uniform'[float]] = _uniform_default()
@@ -195,10 +194,22 @@ class _LayerUniform:
     resolution: Final['uniform'['vec2']] = _uniform_default()
     mesh_size: Final['uniform'['vec2']] = _uniform_default()
 
+    video_textureY: Final['uniform'['sampler2D']] = _uniform_default()
+    video_textureCb: Final['uniform'['sampler2D']] = _uniform_default()
+    video_textureCr: Final['uniform'['sampler2D']] = _uniform_default()
+
+    image_textures: Final['uniform'['sampler2DArray']] = _uniform_default()
+
+    unit_texture0: Final['uniform'['sampler2D']] = _uniform_default()
+    text_texture0: Final['uniform'['sampler2D']] = _uniform_default()
+    shape_texture0: Final['uniform'['sampler2D']] = _uniform_default()
+
 
 @dataclass
 class _GS_OUT:
-    vUvs: 'vec2' = _default()
+    video_luma_uv: 'vec2' = _default()
+    video_chroma_uv: 'vec2' = _default()
+    uv: 'vec2' = _default()
     sprite_idx: float = _default()
 
 
@@ -208,13 +219,15 @@ class _LayerFragInput:
 
 
 @dataclass
-class _frag(_LayerUniform):
+class _frag(_LayerUniform, _LayerFragInput):
     ...
 
 
 @dataclass
 class _VS_OUT:
-    vUvs: 'vec2' = _default()
+    video_luma_uv: 'vec2' = _default()
+    video_chroma_uv: 'vec2' = _default()
+    uv: 'vec2' = _default()
     sprite_idx: float = _default()
 
 
@@ -224,7 +237,7 @@ class _LayerPolyOutput:
 
 
 @dataclass
-class _poly(_LayerUniform):
+class _poly(_LayerUniform, _LayerPolyOutput):
     ...
 
 
@@ -243,18 +256,14 @@ def lib(stage: _NamedFnStage) -> Callable[[Callable[_NamedFnP, _NamedFnR]], Call
     return deco
 
 
-_TFragBuffer = TypeVar('_TFragBuffer', bound='_frag')
-_TPolyBuffer = TypeVar('_TPolyBuffer', bound='_poly')
-
-
 @overload
-def entry(buffer_type: Type[_TFragBuffer]) -> Callable[['_NamedEntryFragFn'['_TFragBuffer']], _TEntryFnOpaque['_NamedEntryFragFn'['_TFragBuffer']]]:  # noqa: E501
+def entry(buffer_type: Type[_frag]) -> Callable[['_NamedEntryFragFn'], _TEntryFnOpaque['_NamedEntryFragFn']]:  # noqa: E501
 
     ...
 
 
 @overload
-def entry(buffer_type: Type[_TPolyBuffer]) -> Callable[['_NamedEntryPolyFn'['_TPolyBuffer']], _TEntryFnOpaque['_NamedEntryPolyFn'['_TPolyBuffer']]]:  # noqa: E501
+def entry(buffer_type: Type[_poly]) -> Callable[['_NamedEntryPolyFn'], _TEntryFnOpaque['_NamedEntryPolyFn']]:  # noqa: E501
 
     ...
 

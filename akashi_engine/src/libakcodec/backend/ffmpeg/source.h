@@ -6,6 +6,7 @@
 #include <libakcore/element.h>
 #include <libakcore/class.h>
 #include <libakcore/hw_accel.h>
+#include <libakcore/rational.h>
 
 extern "C" {
 #include <libavutil/avutil.h>
@@ -22,7 +23,6 @@ namespace akashi {
         class AVBufferData;
     }
     namespace core {
-        class Rational;
         enum class VideoDecodeMethod;
     }
     namespace codec {
@@ -38,8 +38,8 @@ namespace akashi {
             struct SwrContext* swr_ctx = nullptr;
             bool swr_ctx_init_done = false;
 
-            int64_t first_pts = 0;
-            bool is_checked_first_pts = false;
+            akashi::core::Rational first_rpts = akashi::core::Rational(0l);
+            bool is_checked_first_rpts = false;
             int64_t input_start_pts = 0;
 
             akashi::core::Rational cur_decode_pts = akashi::core::Rational(0, 1);

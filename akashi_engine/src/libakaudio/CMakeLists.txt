@@ -8,6 +8,7 @@ add_library(${PROJECT_NAME} ${AKASHI_BUILD_LIB_TYPE}
 
   "./backend/pulseaudio/context.cpp"
   "./backend/pulseaudio/callback.cpp"
+  "./backend/pulseaudio/callback_context.cpp"
   "./backend/pulseaudio/stream.cpp"
   "./backend/pulseaudio/mixer.cpp"
   "./backend/pulseaudio/util.cpp"
@@ -50,3 +51,7 @@ endif()
 install(TARGETS ${PROJECT_NAME}
   PUBLIC_HEADER DESTINATION include/lib${PROJECT_NAME}
 )
+
+if(AKASHI_BUILD_TESTS)
+  add_subdirectory("./test")
+endif()

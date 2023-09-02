@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
     encode_loop.run({akashi::core::borrowed_ptr(&state)});
 
     do_sigwait(ss);
-    encode_loop.terminate();
+    encode_loop.close_and_wait();
 
 #ifndef NDEBUG
     if (std::getenv("AK_DEBUG_WINDOW")) {

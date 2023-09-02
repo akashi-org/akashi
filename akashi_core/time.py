@@ -1,6 +1,6 @@
 # pyright: reportIncompatibleMethodOverride=false
 from __future__ import annotations
-from typing import Union, Final
+from typing import Union, Final, Literal
 from fractions import Fraction
 from decimal import Decimal
 from math import trunc
@@ -31,6 +31,9 @@ def parse_timestr(tstr: str) -> datetime:
 
 _SEC_LIKE = Union['sec', int, float]
 
+root_time_tp = Literal['ak_root_time']
+root_time: Final[root_time_tp] = 'ak_root_time'
+
 
 class sec(Fraction):
 
@@ -48,6 +51,9 @@ class sec(Fraction):
 
     def to_json(self):
         return {"num": self.numerator, "den": self.denominator}
+
+    def __hash__(self):
+        return hash((self.numerator, self.denominator))
 
     def __repr__(self):
         return f'sec({self.numerator}/{self.denominator}, {float(self)})'

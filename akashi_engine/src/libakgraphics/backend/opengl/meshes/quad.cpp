@@ -1,6 +1,6 @@
 #include "./quad.h"
 
-#include "../actors/video_actor_texture.h"
+#include "../objects/layer_video_texture.h"
 
 #include <libakcore/logger.h>
 
